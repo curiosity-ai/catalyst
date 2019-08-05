@@ -18,6 +18,7 @@
     <PackageId>Catalyst</PackageId>
     <Description>Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
     <PackageTags>Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
+    <PackageIcon>catalyst-logo.png</PackageIcon>
   </PropertyGroup>
   
   <ItemGroup>
@@ -30,4 +31,12 @@
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="catalyst-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>  
+  
 </Project>
