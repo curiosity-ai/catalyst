@@ -1,7 +1,4 @@
-﻿// Copyright (c) Curiosity GmbH - All Rights Reserved. Proprietary and Confidential.
-// Unauthorized copying of this file, via any medium is strictly prohibited.
-
-//based on code from  https://github.com/mplatt/fold-to-ascii
+﻿//based on code from  https://github.com/mplatt/fold-to-ascii
 //Original code: Copyright (c) Moritz Platt, licensed under Apache License 2.0 (http://www.apache.org/licenses/)
 
 using Mosaik.Core;

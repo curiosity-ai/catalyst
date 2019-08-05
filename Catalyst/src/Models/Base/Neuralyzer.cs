@@ -1,7 +1,4 @@
-﻿// Copyright (c) Curiosity GmbH - All Rights Reserved. Proprietary and Confidential.
-// Unauthorized copying of this file, via any medium is strictly prohibited.
-
-using UID;
+﻿using UID;
 using Mosaik.Core;
 using System;
 using System.Collections.Generic;

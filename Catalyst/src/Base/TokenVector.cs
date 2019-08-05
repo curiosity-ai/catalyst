@@ -1,7 +1,4 @@
-﻿// Copyright (c) Curiosity GmbH - All Rights Reserved. Proprietary and Confidential.
-// Unauthorized copying of this file, via any medium is strictly prohibited.
-
-using MessagePack;
+﻿using MessagePack;
 using Mosaik.Core;
 
 namespace Catalyst
