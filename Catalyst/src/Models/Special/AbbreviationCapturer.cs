@@ -1,0 +1,254 @@
+﻿// Copyright (c) Curiosity GmbH - All Rights Reserved. Proprietary and Confidential.
+// Unauthorized copying of this file, via any medium is strictly prohibited.
+
+using UID;
+using MessagePack;
+using Mosaik.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace Catalyst.Models
+{
+    public class AbbreviationCapturerCommonWords
+    {
+        public static string[] Get(Language language)
+        {
+            switch (language)
+            {
+                case Language.English: { return English; }
+                default: { return Array.Empty<string>(); }
+            }
+        }
+
+        private static string[] English = new[] { "is", "was", "be", "am", "are", "were", "how", "who", "when", "where", "why", "what", "which", "whence", "whereby", "wherein", "whereupon", "aboard", "about", "above", "across", "after", "against", "along", "amid", "among", "and", "around", "as", "at", "before", "behind", "below", "beneath", "beside", "besides", "between", "beyond", "but", "by", "concerning", "considering", "despite", "down", "during", "except", "excepting", "excluding", "following", "for", "from", "in", "inside", "into", "like", "minus", "near", "of", "off", "on", "onto", "opposite", "or", "outside", "over", "past", "per", "plus", "regarding", "round", "save", "since", "than", "through", "to", "toward", "towards", "under", "underneath", "unlike", "until", "up", "upon", "versus", "via", "with", "within", "without" }.Distinct().ToArray();
+    }
+
+    public class AbbreviationCapturer
+    {
+        public int MinimumAbbreviationbLength = 2;
+        public MatchingPattern CapturePattern = new MatchingPattern(new MatchingPatternPrototype(nameof(AbbreviationCapturer)).Add(PatternUnitPrototype.Single().IsOpeningParenthesis(), PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), PatternUnitPrototype.Multiple().IsLetterOrDigit()), PatternUnitPrototype.Single().IsClosingParenthesis()));
+
+        private static char[] Parenthesis = new[] { '(', ')', '[', ']', '{', '}' };
+        private PatternUnit DiscardCommonWords;
+
+        private HashSet<ulong> Stopwords;
+        private PatternUnit DiscardIsSymbol = new PatternUnit(PatternUnitPrototype.ShouldNotMatch().IsLetterOrDigit());
+        private PatternUnit DiscardOnlyLowerCase = new PatternUnit(PatternUnitPrototype.Single().IsLowerCase());
+        private int MaximumTokensToTestForDescriptionPerLetter = 5;
+
+        private int ContextWindow = 250; // Number of characters on both directions to take tokens as context
+
+        public Language Language { get; private set; }
+
+        public AbbreviationCapturer(Language language)
+        {
+            Language = language;
+            var commonWords = AbbreviationCapturerCommonWords.Get(language);
+            DiscardCommonWords = new PatternUnit(PatternUnitPrototype.Single().WithTokens(commonWords, ignoreCase: true));
+            Stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => w.AsSpan().IgnoreCaseHash64()).ToArray());
+        }
+
+        public List<AbbreviationCandidate> ParseDocument(Document doc, Func<AbbreviationCandidate, bool> shouldSkip)
+        {
+            var found = new List<AbbreviationCandidate>();
+            if (doc.Language != Language && doc.Language != Language.Any) { return found; }
+
+            foreach (var span in doc)
+            {
+                var tokens = span.ToTokenSpan();
+                int N = tokens.Length - 2;
+
+                for (int i = 0; i < N; i++)
+                {
+                    if (CapturePattern.IsMatch(tokens.Slice(i), out var consumedTokens) && consumedTokens == 3)
+                    {
+                        var innerToken = tokens.Slice(i + 1, consumedTokens - 2)[0]; //Skips opening and closing parenthesis
+
+                        bool shouldDiscard = false;
+                        shouldDiscard |= DiscardOnlyLowerCase.IsMatch(ref innerToken); //All lower case
+                        shouldDiscard |= DiscardCommonWords.IsMatch(ref innerToken);
+                        shouldDiscard |= DiscardIsSymbol.IsMatch(ref innerToken);
+
+                        if (!shouldDiscard)
+                        {
+                            //Backtrack on the previous tokens to see if we find the explanation of the
+
+                            var lettersToMatch = innerToken.ValueAsSpan.ToArray().Where(c => char.IsUpper(c)).ToArray();
+
+                            if (lettersToMatch.Length >= MinimumAbbreviationbLength && lettersToMatch.Length > (0.5 * innerToken.Length)) //Accept abbreviations with up to 50% lower-case letters, as long as they have enough upper-case letters
+                            {
+                                var matchedLetters = new bool[lettersToMatch.Length];
+
+                                int maxTokensToTry = MaximumTokensToTestForDescriptionPerLetter * lettersToMatch.Length;
+                                int min = i - 1 - maxTokensToTry;
+                                if (min < 0) { min = 0; }
+
+                                for (int j = i - 1; j > min; j--)
+                                {
+                                    var cur = tokens[j].ValueAsSpan;
+
+                                    if (cur.IndexOfAny(Parenthesis) >= 0)
+                                    {
+                                        break;
+                                    }
+
+                                    //Try to consume tokens
+                                    for (int k = 0; k < lettersToMatch.Length; k++)
+                                    {
+                                        if (cur.IndexOf(lettersToMatch[k]) >= 0)
+                                        {
+                                            matchedLetters[k] = true;
+                                        }
+                                    }
+
+                                    if (matchedLetters.All(b => b))
+                                    {
+                                        //Found all letters, so hopefully we have a match
+                                        //Make sure now that the letters appear in sequence
+                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i - 1].End - tokens[j].Begin + 1);
+
+                                        if (IsSubSequenceOf(lettersToMatch.AsSpan(), fullSpan))
+                                        {
+                                            var allUpper = fullSpan.ToArray().Where(c => char.IsUpper(c)).ToList();
+                                            var allUpperAbb = new HashSet<char>(lettersToMatch);
+                                            while (allUpper.Count > 0 && allUpperAbb.Count > 0)
+                                            {
+                                                var c = allUpper[0];
+                                                if (allUpperAbb.Remove(c))
+                                                {
+                                                    allUpper.RemoveAt(0);
+                                                }
+                                                else
+                                                {
+                                                    break;
+                                                }
+                                            }
+
+                                            //Only add this as an abbreviation if the abbreviation contains all candidate description upper-case letters
+                                            if (allUpper.Count == 0)
+                                            {
+                                                var context = GetContextForCandidate(doc, innerToken);
+
+                                                var candidate = new AbbreviationCandidate
+                                                {
+                                                    Abbreviation = innerToken.Value,
+                                                    Description = GetStandardForm(fullSpan),
+                                                    Context = context
+                                                };
+
+                                                if (!shouldSkip(candidate))
+                                                {
+                                                    found.Add(candidate);
+                                                }
+                                            }
+
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        i += consumedTokens - 1; //-1 as we'll do an i++ imediatelly after
+                    }
+                }
+            }
+            return found;
+        }
+
+        public static string GetStandardForm(ReadOnlySpan<char> fullSpan)
+        {
+            var sb = new StringBuilder(fullSpan.Length);
+            bool lastWasSpace = true;
+            for (int i = 0; i < fullSpan.Length; i++)
+            {
+                if (fullSpan.Slice(i, 1).IsWhiteSpace())
+                {
+                    if (!lastWasSpace)
+                    {
+                        sb.Append(' '); lastWasSpace = true;
+                    }
+                }
+                else if (fullSpan.Slice(i, 1).IsQuoteCharacters())
+                {
+                    if ((fullSpan[i] == '\'' || fullSpan[i] == '’') && i > 0 && !fullSpan.Slice(i - 1, 1).IsWhiteSpace())
+                    {
+                        sb.Append('\''); //Keep ' in the middle of a word, normalize ’ to '
+                    }
+                    else
+                    {
+                        //do nothing;
+                    }
+                }
+                else
+                {
+                    sb.Append(fullSpan[i]); lastWasSpace = false;
+                }
+            }
+            return sb.ToString();
+        }
+
+        public string[] GetContextForCandidate(Document doc, IToken innerToken)
+        {
+            var context = new List<string>(); // We let duplicates happen here, as they contribute to show what are the most important words after
+
+            var b = innerToken.Begin - ContextWindow;
+            var e = innerToken.End + ContextWindow;
+
+            if (b < 0) { b = 0; }
+            if (e > doc.Length - 1) { e = doc.Length - 1; }
+
+            foreach (var s in doc)
+            {
+                foreach (var tk in s)
+                {
+                    if (tk.Begin >= b && tk.End < e)
+                    {
+                        //Almost same filtering as Spotter
+                        bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN);
+                        bool skipIfHasUpperCase = !tk.ValueAsSpan.IsAllLowerCase();
+                        bool skipIfTooSmall = (tk.Length < 3);
+                        bool skipIfNotAllLetterOrDigit = !(tk.ValueAsSpan.IsAllLetterOrDigit());
+                        bool skipIfStopWordOrEntity = Stopwords.Contains(tk.ValueAsSpan.IgnoreCaseHash64()) || tk.EntityTypes.Any();
+
+                        bool skipIfMaybeOrdinal = (tk.ValueAsSpan.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' }, 0) >= 0 &&
+                                                   tk.ValueAsSpan.IndexOfAny(new char[] { 't', 'h', 's', 't', 'r', 'd' }, 0) >= 0 &&
+                                                   tk.ValueAsSpan.IndexOfAny(new char[] { 'a', 'b', 'c', 'e', 'f', 'g', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'u', 'v', 'w', 'x', 'y', 'z' }, 0) < 0);
+
+                        bool skipThisToken = filterPartOfSpeech || skipIfHasUpperCase || skipIfTooSmall || skipIfNotAllLetterOrDigit || skipIfStopWordOrEntity || skipIfMaybeOrdinal;
+
+                        if (!skipThisToken)
+                        {
+                            context.Add(tk.Value);
+                        }
+                    }
+                }
+            }
+
+            return context.ToArray();
+        }
+
+        private static bool IsSubSequenceOf(ReadOnlySpan<char> inner, ReadOnlySpan<char> original)
+        {
+            int j = 0;
+            int m = inner.Length;
+            int n = original.Length;
+            for (int i = 0; i < n && j < m; i++)
+            {
+                if (inner[j] == original[i]) { j++; }
+            }
+
+            return (j == m);
+        }
+    }
+
+    [MessagePackObject(keyAsPropertyName: true)]
+    public class AbbreviationCandidate
+    {
+        public string Abbreviation;
+        public string Description;
+        public string[] Context;
+    }
+}
