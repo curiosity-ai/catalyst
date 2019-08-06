@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mosaik.Core;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,10 @@ namespace Catalyst
 {
     public static class StringExtensions
     {
+
+        public static ObjectPool<StringBuilder> StringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder(), 20, sb => sb.Clear());
+
+
         public static string RemoveControlCharacters(this string text)
         {
             return text.AsSpan().RemoveControlCharacters();

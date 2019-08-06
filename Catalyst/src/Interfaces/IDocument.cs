@@ -33,5 +33,7 @@ namespace Catalyst
         void RemoveOverlapingTokens();
 
         void WriteAsJson(JsonTextWriter jw);
+
+        string ToJson();
     }
 }
