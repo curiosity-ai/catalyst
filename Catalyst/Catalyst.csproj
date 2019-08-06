@@ -20,7 +20,7 @@
     <PackageTags>Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
     <PackageIcon>catalyst-logo.png</PackageIcon>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="1.7.3.7" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.2.5" />
@@ -31,12 +31,16 @@
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <None Include="catalyst-logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>  
-  
+  </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <Exec Command="dotnet tool install --global NuKeeper&#xD;&#xA;pushd $(SolutionDir)&#xD;&#xA;nukeeper update -a 0 -c Patch&#xD;&#xA;popd&#xD;&#xA;exit 0" />
+  </Target>
+
 </Project>
