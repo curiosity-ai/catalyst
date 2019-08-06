@@ -17,7 +17,7 @@ namespace Catalyst
 
         internal ConcurrentDictionary<string, (ObjectInfo objInfo, bool compressed)> MapPathToObjectInfo = new ConcurrentDictionary<string, (ObjectInfo objInfo, bool compressed)>();
 
-        public OnlineRepositoryStorage(IStorage disk, string onlineRepository = "https://models.curiosity.ai/", HttpClient client = null)
+        public OnlineRepositoryStorage(IStorage disk, string onlineRepository = "https://models.curiosity.ai/api/", HttpClient client = null)
         {
             if(!onlineRepository.EndsWith("/")) { onlineRepository = onlineRepository + "/"; }
 
@@ -86,7 +86,7 @@ namespace Catalyst
 
         private async Task<Stream> DownloadFileAsync(ObjectInfo objInfo, bool compressed)
         {
-            var resp = await Client.GetAsync(RepositoryAddress + $"api/models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
+            var resp = await Client.GetAsync(RepositoryAddress + $"models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
             if (resp.IsSuccessStatusCode)
             {
                 return await resp.Content.ReadAsStreamAsync();
@@ -116,7 +116,7 @@ namespace Catalyst
 
         private async Task<bool> ExistsOnlineAsync(ObjectInfo objInfo, bool compressed)
         {
-            var resp = await Client.GetAsync(RepositoryAddress + $"api/models/exist?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
+            var resp = await Client.GetAsync(RepositoryAddress + $"models/exist?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
             if (resp.IsSuccessStatusCode)
             {
                 return true;

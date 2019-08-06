@@ -9,7 +9,7 @@ namespace Catalyst
 {
     public class OnlineWriteableRepositoryStorage : OnlineRepositoryStorage
     {
-        public OnlineWriteableRepositoryStorage(IStorage disk, string token, string onlineRepository = "https://models.curiosity.ai/", HttpClient client = null) : base(disk, onlineRepository, client)
+        public OnlineWriteableRepositoryStorage(IStorage disk, string token, string onlineRepository = "https://models.curiosity.ai/api/", HttpClient client = null) : base(disk, onlineRepository, client)
         {
             Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
@@ -45,7 +45,7 @@ namespace Catalyst
             fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
             form.Add(fileContent, "file", Path.GetFileName(path));
 
-            var resp = await Client.PostAsync(RepositoryAddress + $"api/models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}", form);
+            var resp = await Client.PostAsync(RepositoryAddress + $"models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}", form);
 
             if (!resp.IsSuccessStatusCode)
             {
