@@ -102,6 +102,11 @@ namespace Catalyst.Models
         {
             throw new NotImplementedException();
         }
+
+        public string ToJson()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [FormerName("Mosaik.NLU.Models", "VectorizerModel")]
