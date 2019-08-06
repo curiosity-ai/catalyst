@@ -87,17 +87,17 @@ namespace Catalyst
         private async Task<Stream> DownloadFileAsync(ObjectInfo objInfo, bool compressed)
         {
             var resp = await Client.GetAsync(RepositoryAddress + $"models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
-            if (resp.IsSuccessStatusCode)
+            if (resp.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 return await resp.Content.ReadAsStreamAsync();
             }
-            else if (resp.StatusCode == System.Net.HttpStatusCode.NoContent || resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
                 throw new FileNotFoundException();
             }
             else
             {
-                throw new Exception("Invalid response from repository:" + resp.StatusCode);
+                throw new Exception("Invalid response from repository: " + resp.StatusCode);
             }
         }
 
@@ -117,7 +117,7 @@ namespace Catalyst
         private async Task<bool> ExistsOnlineAsync(ObjectInfo objInfo, bool compressed)
         {
             var resp = await Client.GetAsync(RepositoryAddress + $"models/exist?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
-            if (resp.IsSuccessStatusCode)
+            if (resp.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 return true;
             }
@@ -127,7 +127,7 @@ namespace Catalyst
             }
             else
             {
-                throw new Exception("Invalid response from repository:" + resp.StatusCode);
+                throw new Exception("Invalid response from repository: " + resp.StatusCode);
             }
         }
 
