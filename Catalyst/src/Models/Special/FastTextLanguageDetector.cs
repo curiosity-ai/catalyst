@@ -36,6 +36,11 @@ namespace Catalyst.Models
             Tokenizer = new SpaceTokenizer();
         }
 
+        public static Task<FastTextLanguageDetector> LoadAsync(int version)
+        {
+            return FromStoreAsync(Language.Any, version, "");
+        }
+
         public new static async Task<FastTextLanguageDetector> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new FastTextLanguageDetector(version);

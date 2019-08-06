@@ -10,12 +10,12 @@ namespace Catalyst
 {
     public class OnlineRepositoryStorage : IStorage
     {
-        public IStorage Disk { get; }
+        internal IStorage Disk { get; }
 
-        private static HttpClient Client;
-        private Uri RepositoryAddress;
+        internal static HttpClient Client;
+        internal Uri RepositoryAddress;
 
-        private ConcurrentDictionary<string, (StoredObjectInfo objInfo, bool compressed)> MapPathToObjectInfo = new ConcurrentDictionary<string, (StoredObjectInfo objInfo, bool compressed)>();
+        internal ConcurrentDictionary<string, (ObjectInfo objInfo, bool compressed)> MapPathToObjectInfo = new ConcurrentDictionary<string, (ObjectInfo objInfo, bool compressed)>();
 
         public OnlineRepositoryStorage(IStorage disk, string onlineRepository = "https://models.curiosity.ai/", HttpClient client = null)
         {
@@ -46,13 +46,13 @@ namespace Catalyst
 
         public Task<LockedMemoryMappedFile> OpenMemoryMappedFileAsync(string path) => Disk.OpenMemoryMappedFileAsync(path);
 
-        public Task PutAsync(Stream data, string path) => Disk.PutAsync(data, path);
+        public virtual Task PutAsync(Stream data, string path) => Disk.PutAsync(data, path);
 
         public Task<Stream> OpenStreamAsync(string path, FileAccess access) => Disk.OpenStreamAsync(path, access);
 
         public Task<FileInfo> GetFileInfoAsync(string path) => Disk.GetFileInfoAsync(path);
 
-        public async Task<LockedStream> OpenLockedStreamAsync(string path, FileAccess access)
+        public virtual async Task<LockedStream> OpenLockedStreamAsync(string path, FileAccess access)
         {
             if(access == FileAccess.Read && await Disk.ExistsAsync(path))
             {
@@ -64,11 +64,12 @@ namespace Catalyst
                 var (objInfo, compressed) = MapPathToObjectInfo[path];
                 if(await ExistsOnlineAsync(objInfo, compressed))
                 {
-                    using(var target = await Disk.OpenLockedStreamAsync(path, FileAccess.Write))
                     using (var f = await DownloadFileAsync(objInfo, compressed))
+                    using (var target = await Disk.OpenLockedStreamAsync(path, FileAccess.Write))
                     {
                         await f.CopyToAsync(target);
                         await target.FlushAsync();
+                        target.Close();
                     }
                     return await Disk.OpenLockedStreamAsync(path, access);
                 }
@@ -83,12 +84,16 @@ namespace Catalyst
             }
         }
 
-        private async Task<Stream> DownloadFileAsync(StoredObjectInfo objInfo, bool compressed)
+        private async Task<Stream> DownloadFileAsync(ObjectInfo objInfo, bool compressed)
         {
-            var resp = await Client.GetAsync(RepositoryAddress + $"/api/models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag}&compress={compressed}");
+            var resp = await Client.GetAsync(RepositoryAddress + $"api/models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
             if (resp.IsSuccessStatusCode)
             {
                 return await resp.Content.ReadAsStreamAsync();
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NoContent || resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                throw new FileNotFoundException();
             }
             else
             {
@@ -109,9 +114,9 @@ namespace Catalyst
             }
         }
 
-        private async Task<bool> ExistsOnlineAsync(StoredObjectInfo objInfo, bool compressed)
+        private async Task<bool> ExistsOnlineAsync(ObjectInfo objInfo, bool compressed)
         {
-            var resp = await Client.GetAsync(RepositoryAddress + $"/api/models/exists?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag}&compress={compressed}");
+            var resp = await Client.GetAsync(RepositoryAddress + $"api/models/exist?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
             if (resp.IsSuccessStatusCode)
             {
                 return true;
@@ -129,9 +134,33 @@ namespace Catalyst
         public string GetPath(IStorageTarget storeTarget, Language language, string modelType, int version, string tag, bool compressed)
         {
             var pathOnDisk = Disk.GetPath(storeTarget, language, modelType, version, tag, compressed);
-            var objInfo = new StoredObjectInfo(modelType, language, version, tag);
+            var objInfo = new ObjectInfo(modelType, language, version, tag);
             MapPathToObjectInfo[pathOnDisk] = (objInfo, compressed);
             return pathOnDisk;
+        }
+
+        public string GetDataPath(Language language, string modelType, int version, string tag)
+        {
+            var pathOnDisk = Disk.GetDataPath(language, modelType, version, tag);
+            var objInfo = new ObjectInfo(modelType, language, version, tag);
+            MapPathToObjectInfo[pathOnDisk] = (objInfo, false);
+            return pathOnDisk;
+        }
+
+        internal class ObjectInfo
+        {
+            public ObjectInfo(string modelType, Language language, int version, string tag)
+            {
+                ModelType = modelType;
+                Language = language;
+                Version = version;
+                Tag = tag;
+            }
+
+            public string ModelType { get; set; }
+            public Language Language { get; set; }
+            public int Version { get; set; }
+            public string Tag { get; set; }
         }
     }
 }
