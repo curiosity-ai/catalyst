@@ -12,6 +12,7 @@ using System.Linq;
 //using MessagePack;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace Catalyst
 {
@@ -637,6 +638,26 @@ namespace Catalyst
                     }
                 }
             }
+        }
+
+        private static ObjectPool<StringBuilder> StringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder(), 20, sb => sb.Clear());
+
+        public string ToJson()
+        {
+            var sb = StringBuilderPool.Rent();
+            using(var tw = new StringWriter(sb))
+            using (var jw = new JsonTextWriter(tw))
+            {
+                WriteAsJson(jw);
+            }
+            var json = sb.ToString();
+            if(json.Length < 1024*1024) StringBuilderPool.Return(sb); //let the StringBuilder be collected in case it grows too large
+            return json;
+        }
+
+        public static Document FromJson(string json)
+        {
+            return FromJObject(JObject.Parse(json));
         }
 
         public void WriteAsJson(JsonTextWriter jw)
