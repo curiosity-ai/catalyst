@@ -40,9 +40,9 @@ IEnumerable<IDocument> GetDocuments()
 {
     //Generates a few documents, to demonstrate multi-threading & lazy evaluation
     for(int i = 0; i < 1000; i++)
-	{
+    {
         yield return new Document("The quick brown fox jumps over the lazy dog", Language.English);
-	}
+    }
 }
 
 void DoSomething(IEnumerable<IDocument> docs)
