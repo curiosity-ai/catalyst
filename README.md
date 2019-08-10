@@ -43,7 +43,7 @@ void DoSomething(IEnumerable<IDocument> docs)
 ```
 
 
-## 📖 Documentation
+## 📖 Documentation (coming soon)
 
 | Documentation     |                                                                |
 | ----------------- | -------------------------------------------------------------- |
