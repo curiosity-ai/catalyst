@@ -386,11 +386,13 @@ namespace Catalyst
         public IEnumerable<IDocument> Process(IEnumerable<IDocument> documents, ParallelOptions parallelOptions = default)
         {
             var sw = Stopwatch.StartNew();
-            long docsCount = 0, spansCount = 0, tokensCount = 0, tokensDelta = 0;
+            long docsCount = 0, spansCount = 0, tokensCount = 0;
             double kts;
 
             var enumerator = documents.GetEnumerator();
             var buffer = new List<IDocument>();
+
+            parallelOptions = parallelOptions ?? new ParallelOptions();
 
             RWLock.EnterReadLock();
 
@@ -412,7 +414,7 @@ namespace Catalyst
                         }
                     }
                     //Process any remaining
-                    Parallel.ForEach(buffer, (doc) => ProcessSingleWithoutLocking(doc));
+                    Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc));
                     foreach (var doc in buffer) { spansCount += doc.SpansCount; tokensCount += doc.TokensCount; docsCount++; yield return doc; }
                     buffer.Clear();
                     kts = (double)tokensCount / m.ElapsedSeconds / 1000;
@@ -423,115 +425,6 @@ namespace Catalyst
             {
                 RWLock.ExitReadLock();
             }
-
-            //return documents.AsParallel().Select(doc =>
-            //{
-            //    try
-            //    {
-            //        var d = ProcessSingle(doc);
-
-            //        Interlocked.Add(ref spansCount, doc.SpansCount);
-            //        Interlocked.Add(ref tokensCount, doc.TokensCount);
-
-            //        if (Interlocked.Increment(ref docsCount) % 1000 == 0)
-            //        {
-            //            var elapsed = sw.Elapsed.TotalSeconds;
-            //            var kts = tokensCount / elapsed / 1000;
-            //            Logger.LogInformation("Parsed {DOCS:n0} documents, {SPANS:n0} sentences and {TOKENS:n0} tokens in {ELAPSED::n1} seconds at {KTS:n0} kTokens/second", docsCount, spansCount, tokensCount, (int)elapsed, (int)kts);
-            //        }
-            //        return d;
-            //    }
-            //    catch(Exception E)
-            //    {
-            //        Logger.LogError(E, "Error parsing document");
-            //        return null;
-            //    }
-            //}).Where(d => !(d is null));
-
-            //return Parallel.ForEach(documents, doc => ProcessSingle(doc));
-
-            //foreach (var docs in documents.AsyncSplit(nThreads * DocumentBufferSize))
-            //{
-            //    Parallel.ForEach(documents, new ParallelOptions() { MaxDegreeOfParallelism = MaximumThreads }, doc => { ProcessSingle(doc); });
-
-            //    foreach (var doc in documents)
-            //    {
-            //        docsCount++; spansCount += doc.SpansCount; tokensCount += doc.TokensCount;
-            //        yield return doc;
-            //    }
-
-            //    var elapsed = sw.Elapsed.TotalSeconds;
-            //    var kts = tokensCount / sw.Elapsed.TotalSeconds / 1000;
-
-            //    Logger.LogInformation("Parsed {DOCS} documents, {SPANS} sentences and {TOKENS} tokens in {ELAPSED:0.00} seconds at {KTS} kTokens/second", docsCount, spansCount, tokensCount, (int)elapsed, (int)kts);
-            //}
-
-            ////Do split aggregation in a separate thread
-            //foreach (var docs in documents.AsyncSplit(nThreads * DocumentBufferSize))
-            //{
-            //    using (var m = new Measure(Logger, "Processing document batch"))
-            //    {
-            //        sw.Restart();
-
-            //        var threads = new Thread[nThreads];
-            //        tokensDelta = 0;
-            //        for (int i = 0; i < nThreads; i++)
-            //        {
-            //            threads[i] = new Thread((objDocs) =>
-            //            {
-            //                var tDocs = (IList<IDocument>)objDocs;
-            //                //Thread.BeginThreadAffinity();
-            //                int dk = 0, sk = 0, tk = 0;
-
-            //                foreach (var p in Processes)
-            //                {
-            //                    foreach (var doc in tDocs)
-            //                    {
-            //                        if (p.Language != Language.Any && p.Language != doc.Language) { continue; }
-            //                        p.Process(doc);
-            //                    }
-            //                }
-
-            //                foreach (var doc in tDocs)
-            //                {
-            //                    dk++; sk += doc.SpansCount; tk += doc.TokensCount;
-            //                }
-            //                Interlocked.Add(ref docsCount, dk);
-            //                Interlocked.Add(ref spansCount, sk);
-            //                Interlocked.Add(ref tokensCount, tk);
-            //                Interlocked.Add(ref tokensDelta, tk);
-            //                Thread.EndThreadAffinity();
-            //            });
-            //        }
-
-            //        for (int i = 0; i < nThreads; i++)
-            //        {
-            //            threads[i].Priority = ThreadPriority.Highest;
-            //            threads[i].Start(docs.Skip(DocumentBufferSize * i).Take(DocumentBufferSize).ToArray());
-            //        }
-
-            //        for (int i = 0; i < nThreads; i++)
-            //        {
-            //            threads[i].Join();
-            //        }
-
-            //        threads = null;
-
-            //        foreach (var doc in docs)
-            //        {
-            //            yield return doc;
-            //        }
-
-            //        sw.Stop();
-
-            //        var elapsed = sw.Elapsed.TotalSeconds;
-            //        var kts = ((double)tokensDelta / sw.Elapsed.TotalSeconds) / 1000;
-
-            //        Logger.LogInformation("Parsed {DOCS} documents, {SPANS} sentences and {TOKENS} tokens in {ELAPSED} seconds at {KTS}k tokens/second", docsCount, spansCount, tokensCount, (int)elapsed, (int)kts);
-            //    }
-            //}
-
-            //yield break;
         }
 
         public IList<IModel> GetModelsList()
