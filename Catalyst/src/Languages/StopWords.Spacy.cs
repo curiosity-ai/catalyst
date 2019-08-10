@@ -15,14 +15,14 @@ namespace Catalyst
             {
                 switch (lang)
                 {
-                    case Language.Any:        { return English; }
-                    case Language.English:    { return English; }
-                    case Language.French:     { return French; }
-                    case Language.German:     { return German; }
-                    case Language.Italian:    { return Italian; }
-                    case Language.Spanish:    { return Spanish; }
-                    case Language.Portuguese: { return Portuguese; }
-                    default:                  { return Empty; }
+                    case Language.Any:        return Empty;
+                    case Language.English:    return English;
+                    case Language.French:     return French;
+                    case Language.German:     return German;
+                    case Language.Italian:    return Italian;
+                    case Language.Spanish:    return Spanish;
+                    case Language.Portuguese: return Portuguese;
+                    default:                  return Empty;
                 }
             }
         }

@@ -19,7 +19,7 @@ namespace Catalyst
                     if (EnglishExceptions is null)
                     {
                         EnglishExceptions = BaseExceptions();
-                        
+
                         Create(EnglishExceptions, "i", "'m|'ma", "am|am going to");
                         Create(EnglishExceptions, "", "'m|'ma|n't|'s", "am|am going to|not|'s");
                         Create(EnglishExceptions, "", "shalln't|shan't", "shall not|shall not");
@@ -33,7 +33,6 @@ namespace Catalyst
                         Create(EnglishExceptions, "could|do|does|did|had|may|might|must|need|ought|should|would", "n't|nt|n't've|ntve", "not|not|not have|not have");
                         Create(EnglishExceptions, "could|might|must|should|would", "'ve|ve", "have|have");
                         Create(EnglishExceptions, "is|are|was|were", "n't|nt", "not|not");
-                        Create(EnglishExceptions, "0|1|2|3|4|5|6|7|8|9|10|11|12", "am|a.m|a.m.|am.|pm|p.m|p.m.|pm.", "a.m.|a.m.|a.m.|a.m.|p.m.|p.m.|p.m.|p.m.");
                         Create(EnglishExceptions, "", "'ll|'re|'d|'cause|'em|'nuff|doin'|goin'|nothin'|ol'|somethin'", "will|are|had|because|them|enough|doing|going|nothing|old|something");
                         Create(EnglishExceptions, "", "can't|cant|shall've|won't|wont|ain't|aint", "can not|can not|shall have|will not|will not|is not|is not");
                         Create(EnglishExceptions, "", "and/or|o.k.", "and/or|ok");

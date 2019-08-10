@@ -12,7 +12,13 @@ namespace Catalyst
         {
             switch (language)
             {
-                case Language.English: { return GetEnglishExceptions(); }
+                case Language.English:    return GetEnglishExceptions();
+                case Language.French:     return GetFrenchExceptions();
+                case Language.German:     return GetGermanExceptions();
+                case Language.Italian:    return GetItalianExceptions();
+                case Language.Spanish:    return GetSpanishExceptions();
+                case Language.Portuguese: return GetPortugueseExceptions();
+
                 default: { return new Dictionary<int, TokenizationException>(); }
             }
         }
@@ -24,6 +30,9 @@ namespace Catalyst
             {
                 exceptions[emoji.CaseSensitiveHash32()] = new TokenizationException(new string[] { emoji });
             }
+
+            Create(exceptions, "0|1|2|3|4|5|6|7|8|9|10|11|12", "am|a.m|a.m.|am.|pm|p.m|p.m.|pm.", "a.m.|a.m.|a.m.|a.m.|p.m.|p.m.|p.m.|p.m.");
+
             return exceptions;
         }
 
