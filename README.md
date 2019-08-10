@@ -4,6 +4,18 @@
 
 _**catalyst**_ is a C# Natural Language Processing library built for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.
 
+## ⚡ Features
+- Fast, modern pure-C# NLP library, supporting [.NET standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
+- Cross-platform, runs anywhere [.NET core](https://dotnet.microsoft.com/download) is supported - Windows, Linux, macOS and even ARM
+- Non-destructive [tokenization](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Base/FastTokenizer.cs), >99.9% [RegEx-free](https://blog.codinghorror.com/regex-performance/), >1M tokens/s on a modern CPU
+- Named Entity Recognition ([gazeteer](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/Spotter.cs), [rule-based](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/PatternSpotter.cs) & [perceptron-based](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/AveragePerceptronEntityRecognizer.cs))
+- Pre-trained models based on [Universal Dependencies](https://universaldependencies.org/) project
+- Custom models for learning [Abbreviations](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/AbbreviationCapturer.cs) & [Senses](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/Spotter.cs#L214)
+- Out-of-the-box support for training [FastText](https://fasttext.cc/) and [StarSpace](https://github.com/facebookresearch/StarSpace) embeddings (pre-trained models coming soon)
+- Part-of-speech tagging
+- Language detection using [FastText](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/FastTextLanguageDetector.cs) or [cld3](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/LanguageDetector.cs)
+- Efficient binary serialization based on [MessagePack](https://github.com/neuecc/MessagePack-CSharp/)
+
 
 ## ✨ Getting Started
 
@@ -51,7 +63,7 @@ ft.Train(nlp.Process(GetDocs()));
 ft.StoreAsync();
 ```
 
-For fast embedding search, there is a C# version of the ["Hierarchical Navigable Small World" (HNSW)](https://arxiv.org/abs/1603.09320) algorithm on [NuGet](https://www.nuget.org/packages/HNSW/), based on our fork of Microsoft's [HNSW.Net](https://github.com/curiosity-ai/hnsw.net). We also released a C# version of the "Uniform Manifold Approximation and Projection" ([UMAP](https://umap-learn.readthedocs.io/en/latest/how_umap_works.html)) algorithm for dimensionality reduction on [GitHub](https://github.com/curiosity-ai/umap-csharp) and on [NuGet](https://www.nuget.org/packages/UMAP/).
+For fast embedding search, we have also released a C# version of the ["Hierarchical Navigable Small World" (HNSW)](https://arxiv.org/abs/1603.09320) algorithm on [NuGet](https://www.nuget.org/packages/HNSW/), based on our fork of Microsoft's [HNSW.Net](https://github.com/curiosity-ai/hnsw.net). We have also released a C# version of the "Uniform Manifold Approximation and Projection" ([UMAP](https://umap-learn.readthedocs.io/en/latest/how_umap_works.html)) algorithm for dimensionality reduction on [GitHub](https://github.com/curiosity-ai/umap-csharp) and on [NuGet](https://www.nuget.org/packages/UMAP/).
 
 
 
