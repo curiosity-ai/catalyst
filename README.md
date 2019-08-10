@@ -59,6 +59,8 @@ Training a new [FastText](https://fasttext.cc/) [word2vec](https://en.wikipedia.
 ```csharp
 var nlp = await Pipeline.ForAsync(Language.English);
 var ft = new FastText(Language.English, 0, "wiki-word2vec");
+ft.Data.Type = FastText.ModelType.CBow;
+ft.Data.Loss = FastText.LossType.NegativeSampling;
 ft.Train(nlp.Process(GetDocs()));
 ft.StoreAsync();
 ```
