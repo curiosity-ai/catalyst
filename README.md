@@ -42,14 +42,26 @@ void DoSomething(IEnumerable<IDocument> docs)
 }
 ```
 
+Training a new [FastText](https://fasttext.cc/) [word2vec](https://en.wikipedia.org/wiki/Word2vec) embedding model is as simple as this:
+
+```csharp
+var nlp = await Pipeline.ForAsync(Language.English);
+var ft = new FastText(Language.English, 0, "wiki-word2vec");
+ft.Train(nlp.Process(GetDocs()));
+ft.StoreAsync();
+```
+
+For fast embedding search, there is a C# version of the ["Hierarchical Navigable Small World" (HNSW)](https://arxiv.org/abs/1603.09320) algorithm on [NuGet](https://www.nuget.org/packages/HNSW/), based on our fork of Microsoft's [HNSW.Net](https://github.com/curiosity-ai/hnsw.net). We also released a C# version of the "Uniform Manifold Approximation and Projection" ([UMAP](https://umap-learn.readthedocs.io/en/latest/how_umap_works.html)) algorithm for dimensionality reduction on [GitHub](https://github.com/curiosity-ai/umap-csharp) and on [NuGet](https://www.nuget.org/packages/UMAP/).
+
+
 
 ## 📖 Documentation (coming soon)
 
-| Documentation     |                                                                |
-| ----------------- | -------------------------------------------------------------- |
-| [Getting Started] | How to use _**catalyst**_ and its features.                          |
-| [API Reference]   | The detailed reference for _**catalyst**_'s API.                     |
-| [Contribute]      | How to contribute to _**catalyst**_ codebase.                  |
+| Documentation     |                                                       |
+| ----------------- | ----------------------------------------------------- |
+| [Getting Started] | How to use _**catalyst**_ and its features.           |
+| [API Reference]   | The detailed reference for _**catalyst**_'s API.      |
+| [Contribute]      | How to contribute to _**catalyst**_ codebase.         |
 
 [Getting Started]: https://catalyst.curiosity.ai/getting-started
 [api reference]: https://catalyst.curiosity.ai/api
