@@ -25,10 +25,6 @@ namespace Catalyst
 
         private ReaderWriterLockSlim RWLock = new ReaderWriterLockSlim();
 
-        public int MaximumThreads { get; set; } = Environment.ProcessorCount;
-
-        public int DocumentBufferSize { get; set; } = 10_000;
-
         public Pipeline(Language language = Language.Any, int version = 0, string tag = "") : base(language, version, tag)
         {
         }
@@ -233,8 +229,8 @@ namespace Catalyst
         {
             var p = new Pipeline(language);
             p.Add(new FastTokenizer(language));
-            if (sentenceDetector) { p.Add(SentenceDetector.FromStoreAsync(language, 0, "").WaitResult()); }
-            if (tagger) { p.Add(AveragePerceptronTagger.FromStoreAsync(language, 0, "").WaitResult()); }
+            if (sentenceDetector) { p.Add(SentenceDetector.FromStoreAsync(language, -1, "").WaitResult()); }
+            if (tagger) { p.Add(AveragePerceptronTagger.FromStoreAsync(language, -1, "").WaitResult()); }
             return p;
         }
 
@@ -253,8 +249,8 @@ namespace Catalyst
             foreach (var language in languages)
             {
                 processes.Add(new FastTokenizer(language));
-                if (sentenceDetector) { processes.Add(await SentenceDetector.FromStoreAsync(language, 0, "")); }
-                if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
+                if (sentenceDetector) { processes.Add(await SentenceDetector.FromStoreAsync(language, -1, "")); }
+                if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, -1, "")); }
             }
             var p = new Pipeline(processes) { Language = Language.Any };
             return p;
@@ -270,7 +266,7 @@ namespace Catalyst
             try
             {
                 //Uses english sentence detector as a default
-                sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, 0, "");
+                sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, -1, "");
                 p.Add(sd);
             }
             catch
@@ -282,7 +278,7 @@ namespace Catalyst
             {
                 try
                 {
-                    sd = await SentenceDetector.FromStoreAsync(Language.English, 0, "");
+                    sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
                     p.Add(sd);
                 }
                 catch

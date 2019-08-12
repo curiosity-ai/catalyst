@@ -1461,6 +1461,7 @@ namespace Catalyst.Models
 
             int ignoredDocuments = 0;
 
+            parallelOptions = parallelOptions ?? new ParallelOptions();
             CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
 
             Parallel.ForEach(documents, parallelOptions, doc =>

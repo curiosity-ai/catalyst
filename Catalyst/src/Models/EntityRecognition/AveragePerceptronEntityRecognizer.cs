@@ -139,12 +139,11 @@ namespace Catalyst.Models
 
         public string SingleOrOutside(IList<EntityType> types)
         {
-            var tmp = types.Where(et => Data.EntityTypes.Any(t => t == et.Type)).ToArray();
+            EntityType tmp = types.Where(et => Data.EntityTypes.Any(t => t == et.Type)).FirstOrDefault();
 
-            if (tmp.Length > 0)
+            if (tmp.Type != null)
             {
-                var et = tmp.First();
-                return $"{(char)et.Tag}{Separator}{et.Type}";
+                return $"{(char)tmp.Tag}{Separator}{tmp.Type}";
             }
             else
             {
@@ -176,14 +175,15 @@ namespace Catalyst.Models
             var trainSentences = sentences.Take(N_dev).ToList();
             var testSentences = sentences.Skip(N_dev).ToList();
 
-            var trainSentencesTags = trainSentences.Select(st => st.Tokens.Select(tk => MapEntityTypeToTag[SingleOrOutside(tk.EntityTypes)]).ToArray()).ToList();
-            var testSentencesTags = testSentences.Select(st => st.Tokens.Select(tk => MapEntityTypeToTag[SingleOrOutside(tk.EntityTypes)]).ToArray()).ToList();
+            var trainSentencesTags = trainSentences.Select(st => st.Tokens.Select(tk => MapEntityTypeToTag[SingleOrOutside(tk.EntityTypes)]).ToArray()).ToArray();
+            var testSentencesTags  = testSentences.Select(st => st.Tokens.Select(tk => MapEntityTypeToTag[SingleOrOutside(tk.EntityTypes)]).ToArray()).ToArray();
 
-            double totalTrain = trainSentences.Sum(st => st.Tokens.Count(tk => SingleOrOutside(tk.EntityTypes) != TagOutside.ToString()));
-            double totalTest = testSentences.Sum(st => st.Tokens.Count(tk => SingleOrOutside(tk.EntityTypes) != TagOutside.ToString()));
+            string tOutside   = TagOutside.ToString();
+            double totalTrain = trainSentences.Sum(st => st.Tokens.Count(tk => SingleOrOutside(tk.EntityTypes) != tOutside));
+            double totalTest  = testSentences.Sum(st => st.Tokens.Count(tk => SingleOrOutside(tk.EntityTypes) != tOutside));
 
-            double totalTokensTrain = trainSentences.Sum(st => st.Tokens.Count());
-            double totalTokensTest = testSentences.Sum(st => st.Tokens.Count());
+            double totalTokensTrain = trainSentences.Sum(st => st.TokensCount);
+            double totalTokensTest  = testSentences.Sum(st => st.TokensCount);
 
             int TP = 0, FN = 0, FP = 0; double precision, recall;
 
@@ -196,10 +196,9 @@ namespace Catalyst.Models
                 Parallel.ForEach(Enumerable.Range(0, trainSentences.Count), i =>
                 {
                     Span<float> ScoreBuffer = stackalloc float[N_Tags];
-                    Span<int> Features = stackalloc int[N_Features];
+                    Span<int> Features      = stackalloc int[N_Features];
 
-                    var tags = trainSentencesTags[i];
-                    var (_TP, _FN, _FP) = TrainOnSentence(trainSentences[i], ref tags, ScoreBuffer, Features);
+                    var (_TP, _FN, _FP) = TrainOnSentence(trainSentences[i], ref trainSentencesTags[i], ScoreBuffer, Features);
                     Interlocked.Add(ref TP, _TP);
                     Interlocked.Add(ref FP, _FP);
                     Interlocked.Add(ref FN, _FN);
@@ -215,10 +214,9 @@ namespace Catalyst.Models
                 Parallel.ForEach(Enumerable.Range(0, testSentences.Count), i =>
                 {
                     Span<float> ScoreBuffer = stackalloc float[N_Tags];
-                    Span<int> Features = stackalloc int[N_Features];
+                    Span<int> Features      = stackalloc int[N_Features];
 
-                    var tags = testSentencesTags[i];
-                    var (_TP, _FN, _FP) = TrainOnSentence(trainSentences[i], ref tags, ScoreBuffer, Features, updateModel: false);
+                    var (_TP, _FN, _FP) = TrainOnSentence(testSentences[i], ref testSentencesTags[i], ScoreBuffer, Features, updateModel: false);
                     Interlocked.Add(ref TP, _TP);
                     Interlocked.Add(ref FP, _FP);
                     Interlocked.Add(ref FN, _FN);
@@ -226,7 +224,7 @@ namespace Catalyst.Models
 
                 sw.Stop();
                 precision = (double)TP / (TP + FP);
-                recall = (double)TP / (TP + FN);
+                recall    = (double)TP / (TP + FN);
                 Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} Test set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTest / sw.ElapsedMilliseconds, 0) } tokens/second");
 
                 UpdateAverages();

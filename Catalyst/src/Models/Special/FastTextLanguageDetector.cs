@@ -90,7 +90,7 @@ namespace Catalyst.Models
         {
             if (document.Length == 0 || (document.Language != Language.Unknown && document.Language != Language.Any)) { return; } //Don't try to identify documents that already have their language set or is empty
 
-            IDocument tempDocument = null;
+            IDocument tempDocument = document;
 
             if (document.SpansCount == 0) // Have to tokenize temporarily the document
             {
