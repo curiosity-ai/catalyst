@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace Catalyst.Models
 {
@@ -18,7 +20,7 @@ namespace Catalyst.Models
         public Dictionary<int, string> IndexToEntityType { get; set; }
         public Dictionary<int, EntityTag> IndexToEntityTag { get; set; }
 
-        public Dictionary<int, float[]> Weights { get; set; }
+        public ConcurrentDictionary<int, float[]> Weights { get; set; }
 
         public string[] Tags { get; set; }
         public int[] TagHashes { get; set; }
@@ -50,9 +52,7 @@ namespace Catalyst.Models
 
         private int[] POShashes;
 
-        private Dictionary<int, float[]> AverageWeights { get; set; }
-
-        private object _lockModel = new object();
+        private ConcurrentDictionary<int, float[]> AverageWeights { get; set; }
 
         public Dictionary<string, int> MapEntityTypeToTag { get; set; }
 
@@ -163,8 +163,8 @@ namespace Catalyst.Models
                 Data.Gazeteers = new List<HashSet<int>>();
             }
 
-            Data.Weights = new Dictionary<int, float[]>();
-            AverageWeights = new Dictionary<int, float[]>();
+            Data.Weights = new ConcurrentDictionary<int, float[]>();
+            AverageWeights = new ConcurrentDictionary<int, float[]>();
 
             var sentences = documents.SelectMany(doc => doc.Spans).ToList();
 
@@ -206,7 +206,7 @@ namespace Catalyst.Models
                 sw.Stop();
                 precision = (double)TP / (TP + FP);
                 recall = (double)TP / (TP + FN);
-                Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} Train set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTrain / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} Train set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTrain / sw.ElapsedMilliseconds, 0) } tokens/second");
 
                 TP = 0; FN = 0; FP = 0;
                 sw.Restart();
@@ -225,7 +225,7 @@ namespace Catalyst.Models
                 sw.Stop();
                 precision = (double)TP / (TP + FP);
                 recall    = (double)TP / (TP + FN);
-                Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} Test set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTest / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} Test set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTest / sw.ElapsedMilliseconds, 0) } tokens/second");
 
                 UpdateAverages();
             }
@@ -253,7 +253,7 @@ namespace Catalyst.Models
 
             precision = (double)TP / (TP + FP);
             recall = (double)TP / (TP + FN);
-            Console.WriteLine($"{Languages.EnumToCode(Language)} FINAL Train set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTrain / sw.ElapsedMilliseconds, 0) } tokens/second");
+            Logger.LogInformation($"{Languages.EnumToCode(Language)} FINAL Train set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTrain / sw.ElapsedMilliseconds, 0) } tokens/second");
 
             TP = 0; FN = 0; FP = 0;
             sw.Restart();
@@ -270,18 +270,14 @@ namespace Catalyst.Models
             sw.Stop();
             precision = (double)TP / (TP + FP);
             recall = (double)TP / (TP + FN);
-            Console.WriteLine($"{Languages.EnumToCode(Language)} FINAL Test set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTest / sw.ElapsedMilliseconds, 0) } tokens/second");
+            Logger.LogInformation($"{Languages.EnumToCode(Language)} FINAL Test set: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * totalTokensTest / sw.ElapsedMilliseconds, 0) } tokens/second");
         }
 
         private void UpdateAverages(bool final = false, float trainingSteps = -1)
         {
             foreach (var feature in Data.Weights)
             {
-                if (!AverageWeights.TryGetValue(feature.Key, out float[] weights))
-                {
-                    weights = new float[N_Tags];
-                    AverageWeights.Add(feature.Key, weights);
-                }
+                var weights = AverageWeights.GetOrAdd(feature.Key, k => new float[N_Tags]);
 
                 for (int i = 0; i < N_Tags; i++)
                 {
@@ -316,10 +312,7 @@ namespace Catalyst.Models
 
                     GetFeatures(features, curr, prev, prev2, next, next2, prevTag, prev2Tag);
 
-                    lock (_lockModel) //For training, we need to lock the model here!
-                    {
-                        currTag = PredictTagFromFeatures(features, ScoreBuffer);
-                    }
+                    currTag = PredictTagFromFeatures(features, ScoreBuffer);
 
                     if (updateModel) { UpdateModel(tokenTag, currTag, features); }
 
@@ -439,19 +432,12 @@ namespace Catalyst.Models
         private void UpdateModel(int correctTag, int predictedTag, Span<int> features)
         {
             if (correctTag == predictedTag) { return; } //nothing to update
-            lock (_lockModel)
+            foreach (var feature in features)
             {
-                foreach (var feature in features)
-                {
-                    if (!Data.Weights.TryGetValue(feature, out float[] weights))
-                    {
-                        weights = new float[N_Tags];
-                        Data.Weights.Add(feature, weights);
-                    }
+                var weights = Data.Weights.GetOrAdd(feature, k => new float[N_Tags]);
 
-                    weights[correctTag] += 1f;
-                    weights[predictedTag] -= 1f;
-                }
+                weights[correctTag] += 1f;
+                weights[predictedTag] -= 1f;
             }
         }
 
