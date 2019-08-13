@@ -10,15 +10,18 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Catalyst.Training
 {
     public class TrainPOSTagger
     {
+        private static ILogger Logger = ApplicationLogging.CreateLogger<TrainPOSTagger>();
+
         public static void Train(string udSource, string ontonotesSource)
         {
             var trainFiles = Directory.GetFiles(udSource, "*-train.conllu", SearchOption.AllDirectories);
-            var testFiles  = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
+            var testFiles = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
 
 
             List<string> trainFilesOntonotesEnglish = null;
@@ -26,22 +29,17 @@ namespace Catalyst.Training
             if (!string.IsNullOrWhiteSpace(ontonotesSource))
             {
                 trainFilesOntonotesEnglish = Directory.GetFiles(ontonotesSource, "*.parse.ddg", SearchOption.AllDirectories)
-                                                      .Where(fn => !fn.Contains("sel_") || int.Parse(Path.GetFileNameWithoutExtension(fn).Split(new char[] { '_', '.'}).Skip(1).First()) < 3654)
+                                                      .Where(fn => !fn.Contains("sel_") || int.Parse(Path.GetFileNameWithoutExtension(fn).Split(new char[] { '_', '.' }).Skip(1).First()) < 3654)
                                                       .ToList();
             }
 
             var trainFilesPerLanguage = trainFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
-            var testFilesPerLanguage  = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
+            var testFilesPerLanguage = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
             var languages = trainFilesPerLanguage.Keys.ToList();
 
-            Console.WriteLine($"Found these languages for training: {string.Join(", ", languages)}");
-
-            //TODO: Convert this to parallel training
+            Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages)}");
 
             int N_training = 5;
-
-            languages = new List<string>();
-            languages.Add("en");
 
             Parallel.ForEach(languages, lang =>
             {
@@ -52,16 +50,16 @@ namespace Catalyst.Training
                 }
                 catch
                 {
-                    Console.WriteLine($"Unknown language {lang}");
+                    Logger.LogWarning($"Unknown language {lang}");
                     return;
                 }
 
                 var arcNames = new HashSet<string>();
 
-                if (trainFilesPerLanguage.TryGetValue(lang, out var trainFiles) && testFilesPerLanguage.TryGetValue(lang, out var testFiles))
+                if (trainFilesPerLanguage.TryGetValue(lang, out var langTrainFiles) && testFilesPerLanguage.TryGetValue(lang, out var langTestFiles))
                 {
-                    var trainDocuments = ReadCorpus(trainFiles, ref arcNames, language);
-                    var testDocuments = ReadCorpus(testFiles, ref arcNames, language);
+                    var trainDocuments = ReadCorpus(langTrainFiles, ref arcNames, language);
+                    var testDocuments = ReadCorpus(langTestFiles, ref arcNames, language);
 
                     if (language == Language.English)
                     {
@@ -79,13 +77,13 @@ namespace Catalyst.Training
                         var scoreTest = TestTagger(testDocuments, Tagger);
                         if (scoreTest > bestScore)
                         {
-                            Console.WriteLine($"\n>>>>> {lang}: NEW POS BEST: {scoreTest:0.0}%");
+                            Logger.LogInformation($"\n>>>>> {lang}: NEW POS BEST: {scoreTest:0.0}%");
                             Tagger.StoreAsync().Wait();
                             bestScore = scoreTest;
                         }
                         else
                         {
-                            Console.WriteLine($"\n>>>>> {lang}: POS BEST IS STILL : {bestScore:0.0}%");
+                            Logger.LogInformation($"\n>>>>> {lang}: POS BEST IS STILL : {bestScore:0.0}%");
                         }
                     }
 
@@ -100,12 +98,12 @@ namespace Catalyst.Training
                         }
                         catch (Exception E)
                         {
-                            Console.WriteLine("FAIL: " + E.Message);
+                            Logger.LogInformation("FAIL: " + E.Message);
                             continue;
                         }
 
-                        trainDocuments = ReadCorpus(trainFiles, ref arcNames, language);
-                        testDocuments = ReadCorpus(testFiles, ref arcNames, language);
+                        trainDocuments = ReadCorpus(langTrainFiles, ref arcNames, language);
+                        testDocuments = ReadCorpus(langTestFiles, ref arcNames, language);
 
                         if (language == Language.English)
                         {
@@ -118,13 +116,13 @@ namespace Catalyst.Training
 
                         if (scoreTest > bestScore)
                         {
-                            Console.WriteLine($"\n>>>>> {lang}: NEW DEP BEST: {scoreTest:0.0}%");
+                            Logger.LogInformation($"\n>>>>> {lang}: NEW DEP BEST: {scoreTest:0.0}%");
                             Parser.StoreAsync().Wait();
                             bestScore = scoreTest;
                         }
                         else
                         {
-                            Console.WriteLine($"\n>>>>> {lang}: DEP BEST IS STILL : {bestScore:0.0}%");
+                            Logger.LogInformation($"\n>>>>> {lang}: DEP BEST IS STILL : {bestScore:0.0}%");
                         }
                         Parser = null;
                     }
@@ -140,7 +138,7 @@ namespace Catalyst.Training
                 }
                 catch
                 {
-                    Console.WriteLine($"Unknown language {lang}");
+                    Logger.LogInformation($"Unknown language {lang}");
                     return;
                 }
 
@@ -157,20 +155,20 @@ namespace Catalyst.Training
                 }
 
                 var Tagger = AveragePerceptronTagger.FromStoreAsync(language, 0, "").WaitResult();
-                Console.WriteLine($"\n{lang} - TAGGER / TRAIN");
+                Logger.LogInformation($"\n{lang} - TAGGER / TRAIN");
                 TestTagger(trainDocuments, Tagger);
 
-                Console.WriteLine($"\n{lang} - TAGGER / TEST");
+                Logger.LogInformation($"\n{lang} - TAGGER / TEST");
                 TestTagger(testDocuments, Tagger);
 
                 trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], ref arcNames, language);
                 testDocuments = ReadCorpus(testFilesPerLanguage[lang], ref arcNames, language);
 
                 var Parser = AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "").WaitResult();
-                Console.WriteLine($"\n{lang} - PARSER / TRAIN");
+                Logger.LogInformation($"\n{lang} - PARSER / TRAIN");
                 TestParser(trainDocuments, Parser);
 
-                Console.WriteLine($"\n{lang} - PARSER / TEST");
+                Logger.LogInformation($"\n{lang} - PARSER / TEST");
                 TestParser(testDocuments, Parser);
             }
         }
@@ -213,7 +211,7 @@ namespace Catalyst.Training
             });
             sw.Stop();
             double UASscore = 100D * correctUnlabeled / total;
-            Console.WriteLine($"UAS:{UASscore:0.00}% & LAS:{100D * correctLabeled / total:0.00}% & & R:{100D * correctRoot / sentences.Count:0.00}% @ {1000D * total / sw.ElapsedMilliseconds:0} tokens/second");
+            Logger.LogInformation($"UAS:{UASscore:0.00}% & LAS:{100D * correctLabeled / total:0.00}% & & R:{100D * correctRoot / sentences.Count:0.00}% @ {1000D * total / sw.ElapsedMilliseconds:0} tokens/second");
 
             return UASscore;
         }
@@ -280,12 +278,12 @@ namespace Catalyst.Training
             });
             sw.Stop();
 
-            Console.WriteLine($"POS: {Math.Round(100D * correct / total, 2)}% at a rate of {Math.Round(1000D * total / sw.ElapsedMilliseconds, 0) } tokens/second");
+            Logger.LogInformation($"POS: {Math.Round(100D * correct / total, 2)}% at a rate of {Math.Round(1000D * total / sw.ElapsedMilliseconds, 0) } tokens/second");
 
             var precision = (double)TP / (TP + FP);
             var recall = (double)TP / (TP + FN);
 
-            Console.WriteLine($"F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% ");
+            Logger.LogInformation($"F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% ");
 
             return 100D * correct / total;
         }
@@ -350,7 +348,7 @@ namespace Catalyst.Training
                         if (parts[0].Contains("-")) { continue; } //Pseudo-token, such as cannot -> proceed by can + not
 
                         double index;
-                        if (Double.TryParse(parts[0], out index))
+                        if (double.TryParse(parts[0], out index))
                         {
                             if((int)(index*10) == ((int)index) * 10)
                             {
@@ -476,7 +474,7 @@ namespace Catalyst.Training
                 }
                 else
                 {
-                    Console.WriteLine("skipping document:\n" + doc.TokenizedValue + "\n");
+                    Logger.LogInformation("skipping document:\n" + doc.TokenizedValue + "\n");
                 }
             }
 

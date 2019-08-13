@@ -6,21 +6,21 @@ using Microsoft.Extensions.Logging.Console;
 using System.Threading.Tasks;
 using CommandLine;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace Catalyst.Training
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             ApplicationLogging.SetLoggerFactory(new LoggerFactory().AddConsole());
-            Console.InputEncoding = System.Text.Encoding.Unicode;
-            Console.OutputEncoding = System.Text.Encoding.Unicode;
+            ForceInvariantCultureAndUTF8Output();
 
-            Parser.Default
+            await Parser.Default
                         .ParseArguments<CommandLineOptions>(args)
                         .MapResult(
-                        options =>
+                        async options =>
                         {
                             Storage.Current = new DiskStorage(options.DiskStoragePath);
                             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
@@ -37,15 +37,15 @@ namespace Catalyst.Training
 
                             if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
                             {
-                                TrainWikiNER.Train(options.WikiNERPath, Language.English,    0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.French,     0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.German,     0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Spanish,    0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Italian,    0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Portuguese, 0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Russian,    0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Dutch,      0, "WikiNER");
-                                TrainWikiNER.Train(options.WikiNERPath, Language.Polish,     0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.English,    0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.French,     0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.German,     0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Spanish,    0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Italian,    0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Portuguese, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Russian,    0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Dutch,      0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Polish,     0, "WikiNER");
                             }
 
                             if (!string.IsNullOrWhiteSpace(options.FastTextLanguageSentencesPath))
@@ -53,9 +53,17 @@ namespace Catalyst.Training
                                 TrainLanguageDetector.Train(options.FastTextLanguageSentencesPath);
                                 TrainLanguageDetector.Test(options.FastTextLanguageSentencesPath);
                             }
-                            return true;
                         },
-                        error => false);
+                        error => Task.CompletedTask);
         }
+
+        private static void ForceInvariantCultureAndUTF8Output()
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+            Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+        }
+
     }
 }
