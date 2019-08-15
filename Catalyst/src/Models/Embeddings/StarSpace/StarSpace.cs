@@ -1144,7 +1144,6 @@ namespace Catalyst.Models
             public int docCount;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
         internal class ThreadState
         {
             private const int MAX_VOCAB_SIZE = 10000000;
