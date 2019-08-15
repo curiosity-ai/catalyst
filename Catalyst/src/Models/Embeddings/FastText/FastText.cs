@@ -739,7 +739,12 @@ namespace Catalyst.Models
             if (entries.Length > 0)
             {
                 ComputeHidden(ref hidden, entries);
-                ComputeOutputSoftmax(ref output, ref hidden);
+                switch(Data.Loss)
+                {
+                    case LossType.SoftMax: ComputeOutputSoftmax(ref output, ref hidden); break;
+                    case LossType.NegativeSampling: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
+                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
+                }
             }
 
             var ans = new Dictionary<string, float>(OutputLength);
@@ -1191,7 +1196,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void ComputeOutputSoftmax(ref float[] output, ref float[] hidden)
+        private void ComputeOutputSoftmax(ref float[] output, ref float[] hidden)
         {
             float z = 0.0f;
 
@@ -1209,6 +1214,18 @@ namespace Catalyst.Models
             }
             z = 1.0f / z;
             SIMD.Multiply(ref output, z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ComputeOutputBinaryLogistic(ref float[] output, ref float[] hidden)
+        {
+            float z = 0.0f;
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = Wo.DotRow(ref hidden, i);
+                output[i] = PredictionMPS.Sigmoid(output[i]);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
