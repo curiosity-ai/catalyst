@@ -1171,16 +1171,16 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private float ComputeSoftmax(ref ThreadState state, int target, float lr, bool addToOutput = true)
         {
-            state.Gradient.Zero();
             ComputeOutputSoftmax(ref state.Output, ref state.Hidden);
-            for (int i = 0; i < Wo.Rows; i++)
+            if (addToOutput)
             {
-                float label = (i == target) ? 1.0f : 0.0f;
-                float alpha = lr * (label - state.Output[i]);
-                SIMD.Add(ref state.Gradient, ref Wo.GetRowRef(i));
-
-                if (addToOutput)
+                state.Gradient.Zero();
+                for (int i = 0; i < Wo.Rows; i++)
                 {
+                    float label = (i == target) ? 1.0f : 0.0f;
+                    float alpha = lr * (label - state.Output[i]);
+                    SIMD.Add(ref state.Gradient, ref Wo.GetRowRef(i));
+
                     Wo.AddToRow(state.Hidden, i, alpha);
                 }
             }
@@ -1192,22 +1192,19 @@ namespace Catalyst.Models
         {
             float z = 0.0f;
 
-            fixed (float* o = output)
+            for (int i = 0; i < output.Length; i++)
             {
-                for (int i = 0; i < output.Length; i++)
-                {
-                    o[i] = Wo.DotRow(ref hidden, i);
-                }
-
-                float max = SIMD.Max(ref output);
-
-                for (int i = 0; i < output.Length; i++)
-                {
-                    o[i] = (float)(Math.Exp(o[i] - max));
-                    z += o[i];
-                }
-                z = 1.0f / z;
+                output[i] = Wo.DotRow(ref hidden, i);
             }
+
+            float max = SIMD.Max(ref output);
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = (float)(Math.Exp(output[i] - max));
+                z += output[i];
+            }
+            z = 1.0f / z;
             SIMD.Multiply(ref output, z);
         }
 
