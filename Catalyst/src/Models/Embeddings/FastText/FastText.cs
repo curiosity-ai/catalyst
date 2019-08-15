@@ -177,6 +177,16 @@ namespace Catalyst.Models
             return deleted;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ThreadState GetPredictionState()
+        {
+            if (PredictionMPS is null)
+            {
+                PredictionMPS = new ThreadState(new Line[0], HiddenLength, OutputLength, GradientLength, -1, CancellationToken.None);
+            }
+            return PredictionMPS;
+        }
+
         public bool TryGetTrainingData(out VectorizerTrainingData previousTrainingCorpus)
         {
             previousTrainingCorpus = null;
@@ -410,12 +420,6 @@ namespace Catalyst.Models
 
             if (Data.Type != ModelType.PVDM) { throw new Exception("GetDocumentVector can only be used on PVDM models"); }
 
-            if (PredictionMPS.Hidden is null)
-            {
-                //Never used before for this thread
-                PredictionMPS = new ThreadState(new Line[0], HiddenLength, OutputLength, GradientLength, -1, CancellationToken.None);
-            }
-
             if (doc.Language != Language)
             {
                 vector = default;
@@ -448,6 +452,7 @@ namespace Catalyst.Models
                 vector = default;
                 return false;
             }
+            var mps = GetPredictionState();
 
             for (int i = 0; i < tries; i++)
             {
@@ -459,13 +464,13 @@ namespace Catalyst.Models
                 }
 
                 TokenCount = tokenIndexes.Length;
-                PredictionMPS.NumberOfExamples = 0;
-                PredictionMPS.Loss = 0f;
+                mps.NumberOfExamples = 0;
+                mps.Loss = 0f;
 
                 for (int epoch = 0; epoch < Data.Epoch; epoch++)
                 {
                     float lr = Data.LearningRate * (1.0f - (float)epoch / (Data.Epoch));
-                    PredictPVDM(ref predictedVector, ref PredictionMPS, ref line, lr);
+                    PredictPVDM(ref predictedVector, mps, ref line, lr);
                 }
 
                 SIMD.Add(ref averageVector, ref predictedVector);
@@ -658,13 +663,12 @@ namespace Catalyst.Models
             }
         }
 
-        public (string label, float score) PredictMax(IDocument doc, int maxTokens = -1) //TODO: RETURN VALUE FOR PREDICT
+        public (string label, float score) PredictMax(IDocument doc, int maxTokens = -1)
         {
             if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
             if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
-            var hidden = new float[HiddenLength];
-            var output = new float[OutputLength];
+            var state = GetPredictionState();
 
             IToken[] tokens;
             if (maxTokens <= 0)
@@ -698,22 +702,20 @@ namespace Catalyst.Models
 
             if (entries.Length > 0)
             {
-                ComputeHidden(ref hidden, entries);
-                ComputeOutputSoftmax(ref output, ref hidden);
+                ComputeHidden(state, entries);
+                ComputeOutputSoftmax(state);
             }
 
-            var index = output.Argmax();
-            return (Data.Labels[index].Word, output[index]);
+            var index = state.Output.Argmax();
+            return (Data.Labels[index].Word, state.Output[index]);
         }
 
-        public Dictionary<string, float> Predict(IDocument doc) //TODO: RETURN VALUE FOR PREDICT
+        public Dictionary<string, float> Predict(IDocument doc)
         {
             if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
             if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
-            var hidden = new float[HiddenLength];
-            var output = new float[OutputLength];
-
+            var state = GetPredictionState();
             var tokens = doc.SelectMany(span => span.GetTokenized()).ToArray();
 
             var tokenHashes = new List<uint>(tokens.Length);
@@ -738,20 +740,20 @@ namespace Catalyst.Models
 
             if (entries.Length > 0)
             {
-                ComputeHidden(ref hidden, entries);
+                ComputeHidden(state, entries);
                 switch(Data.Loss)
                 {
-                    case LossType.SoftMax: ComputeOutputSoftmax(ref output, ref hidden); break;
-                    case LossType.NegativeSampling: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
-                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
+                    case LossType.SoftMax:             ComputeOutputSoftmax(state);        break;
+                    case LossType.NegativeSampling:    ComputeOutputBinaryLogistic(state); break;
+                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
                 }
             }
 
             var ans = new Dictionary<string, float>(OutputLength);
 
-            for (int i = 0; i < output.Length; i++)
+            for (int i = 0; i < state.Output.Length; i++)
             {
-                ans[Data.Labels[i].Word] = output[i];
+                ans[Data.Labels[i].Word] = state.Output[i];
             }
 
             return ans;
@@ -777,11 +779,11 @@ namespace Catalyst.Models
 
                     switch (Data.Type)
                     {
-                        case ModelType.CBow: { CBow(ref state, ref state.Corpus[i].EntryIndexes, lr); break; }
-                        case ModelType.Skipgram: { Skipgram(ref state, ref state.Corpus[i].EntryIndexes, lr); break; }
-                        case ModelType.Supervised: { Supervised(ref state, ref state.Corpus[i], lr); break; }
-                        case ModelType.PVDM: { PVDM(ref state, ref state.Corpus[i], lr); break; }
-                        case ModelType.PVDBow: { PVDBow(ref state, ref state.Corpus[i], lr); break; }
+                        case ModelType.CBow:       { CBow(state, ref state.Corpus[i].EntryIndexes, lr);     break; }
+                        case ModelType.Skipgram:   { Skipgram(state, ref state.Corpus[i].EntryIndexes, lr); break; }
+                        case ModelType.Supervised: { Supervised(state, ref state.Corpus[i], lr);            break; }
+                        case ModelType.PVDM:       { PVDM(state, ref state.Corpus[i], lr);                  break; }
+                        case ModelType.PVDBow:     { PVDBow(state, ref state.Corpus[i], lr);                break; }
                     }
 
                     if (localTokenCount > Data.LearningRateUpdateRate)
@@ -824,13 +826,13 @@ namespace Catalyst.Models
             }
         }
 
-        private bool ShouldDiscard(ref ThreadState mps, int index)
+        private bool ShouldDiscard(ThreadState mps, int index)
         {
             //if(Type == VectorModelType.Supervised) { return false; } //Unnecessary as we don't call this function during supervised traning - differently than the original FastText
             return (ThreadSafeFastRandom.Next() < EntryDiscardProbability[index]);
         }
 
-        private void CBow(ref ThreadState mps, ref int[] l, float lr)
+        private void CBow(ThreadState mps, ref int[] l, float lr)
         {
             if (l is null) { return; }
             var bow = new List<int>();
@@ -839,7 +841,7 @@ namespace Catalyst.Models
             if (len < cw * 2) { return; }
             for (int w = 0; w < len; w++)
             {
-                if (!ShouldDiscard(ref mps, l[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
+                if (!ShouldDiscard(mps, l[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
                 {
                     int contextSize = ThreadSafeFastRandom.Next(1, cw);
                     bow.Clear();
@@ -856,12 +858,12 @@ namespace Catalyst.Models
                     }
 
                     var bow_a = bow.ToArray();
-                    Update(ref mps, bow_a, l[w], lr);
+                    Update(mps, bow_a, l[w], lr);
                 }
             }
         }
 
-        private void Skipgram(ref ThreadState mps, ref int[] l, float lr)
+        private void Skipgram(ThreadState mps, ref int[] l, float lr)
         {
             if (l is null) { return; }
             int len = l.Length;
@@ -869,7 +871,7 @@ namespace Catalyst.Models
             if (len < cw * 2) { return; }
             for (int w = 0; w < len; w++)
             {
-                if (!ShouldDiscard(ref mps, l[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
+                if (!ShouldDiscard(mps, l[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
                 {
                     int contextSize = ThreadSafeFastRandom.Next(1, cw);
                     var ngrams = GetEntrySubwords(l[w]);
@@ -877,35 +879,35 @@ namespace Catalyst.Models
                     {
                         if (c != 0 && w + c >= 0 && w + c < len)
                         {
-                            Update(ref mps, ngrams, l[w + c], lr);
+                            Update(mps, ngrams, l[w + c], lr);
                         }
                     }
                 }
             }
         }
 
-        private void Supervised(ref ThreadState mps, ref Line l, float lr)
+        private void Supervised(ThreadState mps, ref Line l, float lr)
         {
             if (l.Labels.Length == 0 || l.EntryIndexes.Length == 0) { return; }
             int r = l.Labels.Length == 1 ? 0 : ThreadSafeFastRandom.Next(0, l.Labels.Length - 1);
 
-            Update(ref mps, l.EntryIndexes, l.Labels[r], lr);
+            Update(mps, l.EntryIndexes, l.Labels[r], lr);
         }
 
-        private void PVDBow(ref ThreadState mps, ref Line l, float lr)
+        private void PVDBow(ThreadState mps, ref Line l, float lr)
         {
             int len = l.EntryIndexes.Length;
             if (len == 0) { return; }
             for (int w = 0; w < len; w++)
             {
-                if (!ShouldDiscard(ref mps, l.EntryIndexes[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
+                if (!ShouldDiscard(mps, l.EntryIndexes[w])) // Not exactly the same as the original FastText (they discard when creating a line from the text on every iteration), but as we pre-process the text, this is the best place to do it without allocating anything extra
                 {
                     int contextSize = ThreadSafeFastRandom.Next(1, Data.ContextWindow);
                     for (int c = -contextSize; c <= contextSize; c++)
                     {
                         if (c != 0 && w + c >= 0 && w + c < len)
                         {
-                            Update(ref mps, l.Labels, l.EntryIndexes[w + c], lr);
+                            Update(mps, l.Labels, l.EntryIndexes[w + c], lr);
                         }
                     }
                 }
@@ -913,7 +915,7 @@ namespace Catalyst.Models
         }
 
         //source: https://arxiv.org/pdf/1405.4053v2.pdf
-        private void PVDM(ref ThreadState mps, ref Line l, float lr)
+        private void PVDM(ThreadState mps, ref Line l, float lr)
         {
             int cw = Data.ContextWindow;
             int len = l.EntryIndexes.Length - cw;
@@ -936,11 +938,11 @@ namespace Catalyst.Models
                 bow.AddRange(l.Labels);
 
                 var bow_a = bow.ToArray();
-                Update(ref mps, bow_a, l.EntryIndexes[w], lr);
+                Update(mps, bow_a, l.EntryIndexes[w], lr);
             }
         }
 
-        private void PredictPVDM(ref float[] predictionVector, ref ThreadState mps, ref Line l, float lr)
+        private void PredictPVDM(ref float[] predictionVector, ThreadState mps, ref Line l, float lr)
         {
             int cw = Data.ContextWindow;
             int len = l.EntryIndexes.Length - cw;
@@ -959,21 +961,21 @@ namespace Catalyst.Models
                 AppendWordNGrams(ref bow, create: false);
 
                 var bow_a = bow.ToArray();
-                UpdatePredictionOnly(ref predictionVector, ref mps, ref bow_a, l.EntryIndexes[w], lr);
+                UpdatePredictionOnly(ref predictionVector, mps, ref bow_a, l.EntryIndexes[w], lr);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Update(ref ThreadState state, Span<int> input, int target, float lr)
+        private void Update(ThreadState state, Span<int> input, int target, float lr)
         {
             if (input.Length == 0) { return; }
             state.NumberOfExamples++;
-            ComputeHidden(ref state.Hidden, input);
+            ComputeHidden(state, input);
             switch (Data.Loss)
             {
-                case LossType.NegativeSampling: { state.Loss += ComputeNegativeSampling(ref state, target, lr); break; }
-                case LossType.HierarchicalSoftMax: { state.Loss += ComputeHierarchicalSoftMax(ref state, target, lr); break; }
-                case LossType.SoftMax: { state.Loss += ComputeSoftmax(ref state, target, lr); break; }
+                case LossType.NegativeSampling:    { state.Loss += ComputeNegativeSampling(state, target, lr);    break; }
+                case LossType.HierarchicalSoftMax: { state.Loss += ComputeHierarchicalSoftMax(state, target, lr); break; }
+                case LossType.SoftMax:             { state.Loss += ComputeSoftmax(state, target, lr);             break; }
             }
 
             if (Data.Type == ModelType.Supervised || Data.Type == ModelType.PVDM)
@@ -988,7 +990,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdatePredictionOnly(ref float[] predictionVector, ref ThreadState state, ref int[] input, int target, float lr)
+        private void UpdatePredictionOnly(ref float[] predictionVector, ThreadState state, ref int[] input, int target, float lr)
         {
             if (input.Length == 0) { return; }
             state.NumberOfExamples++;
@@ -997,9 +999,9 @@ namespace Catalyst.Models
 
             switch (Data.Loss)
             {
-                case LossType.NegativeSampling: { state.Loss += ComputeNegativeSampling(ref state, target, lr, addToOutput: false); break; }
-                case LossType.HierarchicalSoftMax: { state.Loss += ComputeHierarchicalSoftMax(ref state, target, lr, addToOutput: false); break; }
-                case LossType.SoftMax: { state.Loss += ComputeSoftmax(ref state, target, lr, addToOutput: false); break; }
+                case LossType.NegativeSampling:    { state.Loss += ComputeNegativeSampling(state, target, lr, addToOutput: false);    break; }
+                case LossType.HierarchicalSoftMax: { state.Loss += ComputeHierarchicalSoftMax(state, target, lr, addToOutput: false); break; }
+                case LossType.SoftMax:             { state.Loss += ComputeSoftmax(state, target, lr, addToOutput: false);             break; }
             }
 
             SIMD.Multiply(ref state.Gradient, 1.0f / (input.Length + 1));
@@ -1096,7 +1098,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private float ComputeNegativeSampling(ref ThreadState state, int target, float lr, bool addToOutput = true)
+        private float ComputeNegativeSampling(ThreadState state, int target, float lr, bool addToOutput = true)
         {
             state.Gradient.Zero();
 
@@ -1105,11 +1107,11 @@ namespace Catalyst.Models
             {
                 if (n == 0)
                 {
-                    loss += BinaryLogistic(ref state, target, true, lr, addToOutput);
+                    loss += BinaryLogistic(state, target, true, lr, addToOutput);
                 }
                 else
                 {
-                    loss += BinaryLogistic(ref state, GetNegative(ref state.NegativePosition, target), false, lr, addToOutput);
+                    loss += BinaryLogistic(state, GetNegative(ref state.NegativePosition, target), false, lr, addToOutput);
                 }
             }
 
@@ -1117,7 +1119,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private float BinaryLogistic(ref ThreadState state, int target, bool label, float lr, bool addToOutput = true)
+        private float BinaryLogistic(ThreadState state, int target, bool label, float lr, bool addToOutput = true)
         {
             var v = Wo.GetRowCopy(target);
             Quantize(ref v);
@@ -1163,7 +1165,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private float ComputeHierarchicalSoftMax(ref ThreadState state, int target, float lr, bool addToOutput = true)
+        private float ComputeHierarchicalSoftMax(ThreadState state, int target, float lr, bool addToOutput = true)
         {
             float loss = 0.0f;
             state.Gradient.Zero();
@@ -1171,15 +1173,15 @@ namespace Catalyst.Models
             var pathToRoot = HS_Paths[target];
             for (int i = 0; i < pathToRoot.Count; i++)
             {
-                loss += BinaryLogistic(ref state, pathToRoot[i], binaryCode[i], lr, addToOutput);
+                loss += BinaryLogistic(state, pathToRoot[i], binaryCode[i], lr, addToOutput);
             }
             return loss;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private float ComputeSoftmax(ref ThreadState state, int target, float lr, bool addToOutput = true)
+        private float ComputeSoftmax(ThreadState state, int target, float lr, bool addToOutput = true)
         {
-            ComputeOutputSoftmax(ref state.Output, ref state.Hidden);
+            ComputeOutputSoftmax(state);
             if (addToOutput)
             {
                 state.Gradient.Zero();
@@ -1196,9 +1198,11 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ComputeOutputSoftmax(ref float[] output, ref float[] hidden)
+        private void ComputeOutputSoftmax(ThreadState state)
         {
             float z = 0.0f;
+            ref float[] hidden = ref state.Hidden;
+            ref float[] output = ref state.Output;
 
             for (int i = 0; i < output.Length; i++)
             {
@@ -1217,21 +1221,23 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ComputeOutputBinaryLogistic(ref float[] output, ref float[] hidden)
+        private void ComputeOutputBinaryLogistic(ThreadState state)
         {
             float z = 0.0f;
-
+            ref float[] hidden = ref state.Hidden;
+            ref float[] output = ref state.Output;
             for (int i = 0; i < output.Length; i++)
             {
                 output[i] = Wo.DotRow(ref hidden, i);
-                output[i] = PredictionMPS.Sigmoid(output[i]);
+                output[i] = state.Sigmoid(output[i]);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ComputeHidden(ref float[] hidden, Span<int> input)
+        private void ComputeHidden(ThreadState state, Span<int> input)
         {
             float z = 1.0f / (float)input.Length;
+            ref float[] hidden = ref state.Hidden;
             hidden.Zero();
             foreach (var ix in input)
             {

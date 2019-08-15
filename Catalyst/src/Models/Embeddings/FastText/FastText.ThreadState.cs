@@ -7,22 +7,21 @@ namespace Catalyst.Models
 {
     public partial class FastText
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct ThreadState //Per thread
+        internal class ThreadState //Per thread
         {
             public int ThreadID;
+            public long NumberOfExamples;
+            public float Loss;
             public float[] Hidden;
             public float[] Output;
             public float[] Gradient;
-            public float Loss;
-            public long NumberOfExamples;
-            public Line[] Corpus;
             public float[] t_log;
             public float[] t_sigmoid;
+            public Line[] Corpus;
             public CancellationToken CancellationToken;
-
-            public int NegativePosition;
             public TrainingHistory TrainingHistory;
+            public int NegativePosition;
+
 
             public ThreadState(Line[] corpus, int hlen, int olen, int glen, int thread, CancellationToken token)
             {
