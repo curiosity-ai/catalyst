@@ -144,6 +144,9 @@ namespace Catalyst.Models
             var wiStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wi");
             var woStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wo");
 
+            wiStream.SetLength(0);
+            woStream.SetLength(0);
+
             Wi.ToStream(wiStream, Data.VectorQuantization);
             Wo.ToStream(woStream, Data.VectorQuantization);
 
