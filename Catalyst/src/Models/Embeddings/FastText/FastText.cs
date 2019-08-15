@@ -144,6 +144,9 @@ namespace Catalyst.Models
             var wiStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wi");
             var woStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wo");
 
+            wiStream.SetLength(0);
+            woStream.SetLength(0);
+
             Wi.ToStream(wiStream, Data.VectorQuantization);
             Wo.ToStream(woStream, Data.VectorQuantization);
 
@@ -736,7 +739,12 @@ namespace Catalyst.Models
             if (entries.Length > 0)
             {
                 ComputeHidden(ref hidden, entries);
-                ComputeOutputSoftmax(ref output, ref hidden);
+                switch(Data.Loss)
+                {
+                    case LossType.SoftMax: ComputeOutputSoftmax(ref output, ref hidden); break;
+                    case LossType.NegativeSampling: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
+                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(ref output, ref hidden); break;
+                }
             }
 
             var ans = new Dictionary<string, float>(OutputLength);
@@ -1171,16 +1179,16 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private float ComputeSoftmax(ref ThreadState state, int target, float lr, bool addToOutput = true)
         {
-            state.Gradient.Zero();
             ComputeOutputSoftmax(ref state.Output, ref state.Hidden);
-            for (int i = 0; i < Wo.Rows; i++)
+            if (addToOutput)
             {
-                float label = (i == target) ? 1.0f : 0.0f;
-                float alpha = lr * (label - state.Output[i]);
-                SIMD.Add(ref state.Gradient, ref Wo.GetRowRef(i));
-
-                if (addToOutput)
+                state.Gradient.Zero();
+                for (int i = 0; i < Wo.Rows; i++)
                 {
+                    float label = (i == target) ? 1.0f : 0.0f;
+                    float alpha = lr * (label - state.Output[i]);
+                    SIMD.Add(ref state.Gradient, ref Wo.GetRowRef(i));
+
                     Wo.AddToRow(state.Hidden, i, alpha);
                 }
             }
@@ -1188,27 +1196,36 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void ComputeOutputSoftmax(ref float[] output, ref float[] hidden)
+        private void ComputeOutputSoftmax(ref float[] output, ref float[] hidden)
         {
             float z = 0.0f;
 
-            fixed (float* o = output)
+            for (int i = 0; i < output.Length; i++)
             {
-                for (int i = 0; i < output.Length; i++)
-                {
-                    o[i] = Wo.DotRow(ref hidden, i);
-                }
-
-                float max = SIMD.Max(ref output);
-
-                for (int i = 0; i < output.Length; i++)
-                {
-                    o[i] = (float)(Math.Exp(o[i] - max));
-                    z += o[i];
-                }
-                z = 1.0f / z;
+                output[i] = Wo.DotRow(ref hidden, i);
             }
+
+            float max = SIMD.Max(ref output);
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = (float)(Math.Exp(output[i] - max));
+                z += output[i];
+            }
+            z = 1.0f / z;
             SIMD.Multiply(ref output, z);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ComputeOutputBinaryLogistic(ref float[] output, ref float[] hidden)
+        {
+            float z = 0.0f;
+
+            for (int i = 0; i < output.Length; i++)
+            {
+                output[i] = Wo.DotRow(ref hidden, i);
+                output[i] = PredictionMPS.Sigmoid(output[i]);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1461,6 +1478,7 @@ namespace Catalyst.Models
 
             int ignoredDocuments = 0;
 
+            parallelOptions = parallelOptions ?? new ParallelOptions();
             CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
 
             Parallel.ForEach(documents, parallelOptions, doc =>

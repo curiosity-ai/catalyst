@@ -25,10 +25,6 @@ namespace Catalyst
 
         private ReaderWriterLockSlim RWLock = new ReaderWriterLockSlim();
 
-        public int MaximumThreads { get; set; } = Environment.ProcessorCount;
-
-        public int DocumentBufferSize { get; set; } = 10_000;
-
         public Pipeline(Language language = Language.Any, int version = 0, string tag = "") : base(language, version, tag)
         {
         }
@@ -233,8 +229,8 @@ namespace Catalyst
         {
             var p = new Pipeline(language);
             p.Add(new FastTokenizer(language));
-            if (sentenceDetector) { p.Add(SentenceDetector.FromStoreAsync(language, 0, "").WaitResult()); }
-            if (tagger) { p.Add(AveragePerceptronTagger.FromStoreAsync(language, 0, "").WaitResult()); }
+            if (sentenceDetector) { p.Add(SentenceDetector.FromStoreAsync(language, -1, "").WaitResult()); }
+            if (tagger) { p.Add(AveragePerceptronTagger.FromStoreAsync(language, -1, "").WaitResult()); }
             return p;
         }
 
@@ -253,8 +249,8 @@ namespace Catalyst
             foreach (var language in languages)
             {
                 processes.Add(new FastTokenizer(language));
-                if (sentenceDetector) { processes.Add(await SentenceDetector.FromStoreAsync(language, 0, "")); }
-                if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
+                if (sentenceDetector) { processes.Add(await SentenceDetector.FromStoreAsync(language, -1, "")); }
+                if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, -1, "")); }
             }
             var p = new Pipeline(processes) { Language = Language.Any };
             return p;
@@ -270,7 +266,7 @@ namespace Catalyst
             try
             {
                 //Uses english sentence detector as a default
-                sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, 0, "");
+                sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, -1, "");
                 p.Add(sd);
             }
             catch
@@ -282,7 +278,7 @@ namespace Catalyst
             {
                 try
                 {
-                    sd = await SentenceDetector.FromStoreAsync(Language.English, 0, "");
+                    sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
                     p.Add(sd);
                 }
                 catch
@@ -348,38 +344,51 @@ namespace Catalyst
 
             Logger.LogInformation("Started pipeline single thread processing");
 
-            RWLock.EnterReadLock();
-            try
+            var buffer = new List<IDocument>();
+
+            foreach (var block in documents.Split(1000))
             {
-                foreach (var doc in documents)
+                RWLock.EnterReadLock(); //Acquire the read lock only for the duration of the block processing, not during the yield return
+                try
                 {
-                    IDocument d;
-                    try
+                    foreach (var doc in block)
                     {
-                        d = ProcessSingleWithoutLocking(doc);
-
-                        Interlocked.Add(ref spansCount, doc.SpansCount);
-                        Interlocked.Add(ref tokensCount, doc.TokensCount);
-
-                        if (Interlocked.Increment(ref docsCount) % 1000 == 0)
+                        IDocument d;
+                        try
                         {
-                            var elapsed = sw.Elapsed.TotalSeconds;
-                            var kts = tokensCount / elapsed / 1000;
-                            Logger.LogInformation("Parsed {DOCS} documents, {SPANS} sentences and {TOKENS} tokens in {ELAPSED:0.00} seconds at {KTS} kTokens/second", docsCount, spansCount, tokensCount, (int)elapsed, (int)kts);
+                            d = ProcessSingleWithoutLocking(doc);
+
+                            Interlocked.Add(ref spansCount, doc.SpansCount);
+                            Interlocked.Add(ref tokensCount, doc.TokensCount);
+
+                            if (Interlocked.Increment(ref docsCount) % 1000 == 0)
+                            {
+                                var elapsed = sw.Elapsed.TotalSeconds;
+                                var kts = tokensCount / elapsed / 1000;
+                                Logger.LogInformation("Parsed {DOCS} documents, {SPANS} sentences and {TOKENS} tokens in {ELAPSED:0.00} seconds at {KTS} kTokens/second", docsCount, spansCount, tokensCount, (int)elapsed, (int)kts);
+                            }
+                        }
+                        catch (Exception E)
+                        {
+                            Logger.LogError(E, "Error parsing document");
+                            d = null;
+                        }
+
+                        if (d is object)
+                        {
+                            buffer.Add(d);
                         }
                     }
-                    catch (Exception E)
-                    {
-                        Logger.LogError(E, "Error parsing document");
-                        d = null;
-                    }
-
-                    if (d is object) { yield return d; }
                 }
-            }
-            finally
-            {
-                RWLock.ExitReadLock();
+                finally
+                {
+                    RWLock.ExitReadLock(); //Return the lock here, otherwise we don't have control due to the yield return pattern
+                }
+
+                foreach(var d in block)
+                {
+                    yield return d;
+                }
             }
         }
 
@@ -394,36 +403,47 @@ namespace Catalyst
 
             parallelOptions = parallelOptions ?? new ParallelOptions();
 
-            RWLock.EnterReadLock();
-
-            try
+            using (var m = new Measure(Logger, "Parsing documents"))
             {
-                using (var m = new Measure(Logger, "Parsing documents"))
+                while (enumerator.MoveNext())
                 {
-                    while (enumerator.MoveNext())
-                    {
-                        buffer.Add(enumerator.Current);
+                    buffer.Add(enumerator.Current);
 
-                        if (buffer.Count >= 10_000)
+                    if (buffer.Count >= 10_000)
+                    {
+
+                        RWLock.EnterReadLock(); //Acquire the read lock only for the duration of the processing, not during the yield return
+                        try
                         {
                             Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc));
-                            foreach (var doc in buffer) { spansCount += doc.SpansCount; tokensCount += doc.TokensCount; docsCount++; yield return doc; }
-                            buffer.Clear();
-                            kts = (double)tokensCount / m.ElapsedSeconds / 1000;
-                            m.SetOperations(docsCount).EmitPartial($"{kts:n0} kTokens/second, found {spansCount:n0} sentences and {tokensCount:n0} tokens");
                         }
+                        finally
+                        {
+                            RWLock.ExitReadLock(); //Return the lock here, otherwise we don't have control due to the yield return pattern
+                        }
+
+                        foreach (var doc in buffer) { spansCount += doc.SpansCount; tokensCount += doc.TokensCount; docsCount++; yield return doc; }
+                        buffer.Clear();
+                        kts = (double)tokensCount / m.ElapsedSeconds / 1000;
+                        m.SetOperations(docsCount).EmitPartial($"{kts:n0} kTokens/second, found {spansCount:n0} sentences and {tokensCount:n0} tokens");
                     }
+                }
+
+                RWLock.EnterReadLock(); //Acquire the read lock only for the duration of the processing, not during the yield return
+                try
+                {
                     //Process any remaining
                     Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc));
-                    foreach (var doc in buffer) { spansCount += doc.SpansCount; tokensCount += doc.TokensCount; docsCount++; yield return doc; }
-                    buffer.Clear();
-                    kts = (double)tokensCount / m.ElapsedSeconds / 1000;
-                    m.SetOperations(docsCount).EmitPartial($"{kts:n0} kTokens/second, found {spansCount:n0} sentences and {tokensCount:n0} tokens");
                 }
-            }
-            finally
-            {
-                RWLock.ExitReadLock();
+                finally
+                {
+                    RWLock.ExitReadLock(); //Return the lock here, otherwise we don't have control due to the yield return pattern
+                }
+
+                foreach (var doc in buffer) { spansCount += doc.SpansCount; tokensCount += doc.TokensCount; docsCount++; yield return doc; }
+                buffer.Clear();
+                kts = (double)tokensCount / m.ElapsedSeconds / 1000;
+                m.SetOperations(docsCount).EmitPartial($"{kts:n0} kTokens/second, found {spansCount:n0} sentences and {tokensCount:n0} tokens");
             }
         }
 

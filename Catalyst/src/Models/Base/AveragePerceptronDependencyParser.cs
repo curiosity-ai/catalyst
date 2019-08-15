@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Catalyst.Models
 {
@@ -13,7 +14,7 @@ namespace Catalyst.Models
     {
         public DateTime TrainedTime { get; set; }
 
-        public Dictionary<int, float[]> Weights { get; set; }
+        public ConcurrentDictionary<int, float[]> Weights { get; set; }
 
         public Dictionary<int, string> Actions { get; set; }
         public Dictionary<string, int> Action2Index { get; set; }
@@ -29,13 +30,11 @@ namespace Catalyst.Models
         private const int RIGHT = 1;
         private const int LEFT = 2;
 
-        private Dictionary<int, float[]> AverageWeights { get; set; }
-
-        private object _lockModel = new object();
+        private ConcurrentDictionary<int, float[]> AverageWeights { get; set; }
 
         public AveragePerceptronDependencyParser(Language language, int version, string tag = "") : base(language, version, tag, compress: true)
         {
-            Data.Weights = new Dictionary<int, float[]>();
+            Data.Weights = new ConcurrentDictionary<int, float[]>();
         }
 
         public new static async Task<AveragePerceptronDependencyParser> FromStoreAsync(Language language, int version, string tag)
@@ -47,7 +46,7 @@ namespace Catalyst.Models
 
         public void Train(IEnumerable<IDocument> documents, int trainingSteps = 10, float learningRate = 0.9f)
         {
-            AverageWeights = new Dictionary<int, float[]>();
+            AverageWeights = new ConcurrentDictionary<int, float[]>();
 
             var sentences = documents.SelectMany(d => d.Spans).Where(s => s.IsProjective() && s.TokensCount > 4 && !s.Any(tk => tk.Value.Contains("@") || tk.Value.Contains("://"))).ToList();
 
@@ -653,19 +652,14 @@ namespace Catalyst.Models
             if (CanRight) { moves[k] = RIGHT; scores[k] = buffer.Scores[RIGHT]; k++; }
             if (CanLeft) { moves[k] = LEFT; scores[k] = buffer.Scores[LEFT]; k++; }
 
-            return (moves: moves, scores: scores);
+            return (moves, scores);
         }
 
         private void UpdateAverages(int epoch, bool final = false)
         {
-            float[] weights;
             foreach (var feature in Data.Weights)
             {
-                if (!AverageWeights.TryGetValue(feature.Key, out weights))
-                {
-                    weights = new float[N_ACTIONS];
-                    AverageWeights.Add(feature.Key, weights);
-                }
+                var weights = AverageWeights.GetOrAdd(feature.Key, k => new float[N_ACTIONS]);
 
                 for (int i = 0; i < N_ACTIONS; i++)
                 {
@@ -678,42 +672,31 @@ namespace Catalyst.Models
         private void UpdateModel(int correctAction, int predictedAction, ref Buffer buffer, float learningRate)
         {
             if (correctAction == predictedAction) { return; } //nothing to update
-            float[] weights;
-            lock (_lockModel)
-            {
-                foreach (var feature in buffer.Features)
-                {
-                    if (feature != _HashEmpty)
-                    {
-                        if (!Data.Weights.TryGetValue(feature, out weights))
-                        {
-                            weights = new float[N_ACTIONS];
-                            Data.Weights.Add(feature, weights);
-                        }
 
-                        weights[correctAction] += learningRate;
-                        weights[predictedAction] -= learningRate;
-                    }
+            foreach (var feature in buffer.Features)
+            {
+                if (feature != _HashEmpty)
+                {
+                    var weights = Data.Weights.GetOrAdd(feature, k => new float[N_ACTIONS]);
+                    weights[correctAction] += learningRate;
+                    weights[predictedAction] -= learningRate;
                 }
             }
         }
 
         private void ComputeWeights(ref Buffer buffer)
         {
-            lock (_lockModel)
+            for (int i = 0; i < N_ACTIONS; i++) { buffer.Scores[i] = 0f; }
+
+            foreach (var feature in buffer.Features)
             {
-                for (int i = 0; i < N_ACTIONS; i++) { buffer.Scores[i] = 0; }
-                float[] weights;
-                foreach (var feature in buffer.Features)
+                if (feature != _HashEmpty)
                 {
-                    if (feature != _HashEmpty)
+                    if (Data.Weights.TryGetValue(feature, out var weights))
                     {
-                        if (Data.Weights.TryGetValue(feature, out weights))
+                        for (int i = 0; i < N_ACTIONS; i++)
                         {
-                            for (int i = 0; i < N_ACTIONS; i++)
-                            {
-                                buffer.Scores[i] += weights[i];
-                            }
+                            buffer.Scores[i] += weights[i];
                         }
                     }
                 }

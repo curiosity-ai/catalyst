@@ -143,17 +143,19 @@ namespace Catalyst.Models
             return deleted;
         }
 
-        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, CancellationToken cancellationToken = default)
+        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default)
         {
             InputData inputData;
 
             Data.InputType = InputType.LabeledDocuments;
 
+            CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
+
             using (var scope = Logger.BeginScope($"Training StarSpace '{Tag}' of type {Data.Type} from documents"))
             {
                 using (var m = new Measure(Logger, "Document parsing", 1))
                 {
-                    inputData = ProcessDocuments(documents, ignorePattern, parallelOptions, cancellationToken);
+                    inputData = ProcessDocuments(documents, ignorePattern, parallelOptions);
                     m.SetOperations(inputData.docCount);
                 }
 
@@ -164,16 +166,19 @@ namespace Catalyst.Models
             }
         }
 
-        private InputData ProcessDocuments(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern, ParallelOptions parallelOptions, CancellationToken token)
+        private InputData ProcessDocuments(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern, ParallelOptions parallelOptions)
         {
             var ID = new InputData();
             ID.docCount = -1;
 
             int ignoredDocuments = 0;
 
+            parallelOptions = parallelOptions ?? new ParallelOptions();
+            CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
+
             Parallel.ForEach(documents, parallelOptions, doc =>
             {
-                if (token.IsCancellationRequested) { return; }
+                if (cancellationToken.IsCancellationRequested) { return; }
                 if (Language != Language.Any && doc.Language != Language) { Interlocked.Increment(ref ignoredDocuments); return; }
 
                 if (Data.Type == ModelType.WordEmbeddings && doc.TokensCount < 2 * Data.ContextWindow) { return; } //Skip documents that are too small
@@ -223,7 +228,7 @@ namespace Catalyst.Models
                 Logger.LogWarning("Ignored {COUNT} documents that were in a different language from {LANGUAGE}", ignoredDocuments, Language);
             }
 
-            token.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             return ID;
         }
