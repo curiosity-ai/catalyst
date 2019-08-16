@@ -746,6 +746,7 @@ namespace Catalyst.Models
                     case LossType.SoftMax:             ComputeOutputSoftmax(state);        break;
                     case LossType.NegativeSampling:    ComputeOutputBinaryLogistic(state); break;
                     case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
+                    case LossType.OneVsAll:            ComputeOutputBinaryLogistic(state); break;
                 }
             }
 
@@ -889,9 +890,15 @@ namespace Catalyst.Models
         private void Supervised(ThreadState mps, ref Line l, float lr)
         {
             if (l.Labels.Length == 0 || l.EntryIndexes.Length == 0) { return; }
-            int r = l.Labels.Length == 1 ? 0 : ThreadSafeFastRandom.Next(0, l.Labels.Length - 1);
-
-            Update(mps, l.EntryIndexes, l.Labels[r], lr);
+            if(Data.Loss == LossType.OneVsAll)
+            {
+                UpdateOneVsAll(mps, l.EntryIndexes, l.Labels, lr);
+            }
+            else
+            {
+                int r = l.Labels.Length == 1 ? 0 : ThreadSafeFastRandom.Next(0, l.Labels.Length - 1);
+                Update(mps, l.EntryIndexes, l.Labels[r], lr);
+            }
         }
 
         private void PVDBow(ThreadState mps, ref Line l, float lr)
@@ -973,15 +980,34 @@ namespace Catalyst.Models
             ComputeHidden(state, input);
             switch (Data.Loss)
             {
-                case LossType.NegativeSampling:    { state.Loss += ComputeNegativeSampling(state, target, lr);    break; }
+                case LossType.NegativeSampling: { state.Loss += ComputeNegativeSampling(state, target, lr); break; }
                 case LossType.HierarchicalSoftMax: { state.Loss += ComputeHierarchicalSoftMax(state, target, lr); break; }
-                case LossType.SoftMax:             { state.Loss += ComputeSoftmax(state, target, lr);             break; }
+                case LossType.SoftMax: { state.Loss += ComputeSoftmax(state, target, lr); break; }
             }
 
             if (Data.Type == ModelType.Supervised || Data.Type == ModelType.PVDM)
             {
                 SIMD.Multiply(ref state.Gradient, 1.0f / input.Length);
             }
+
+            foreach (var ix in input)
+            {
+                Wi.AddToRow(ref state.Gradient, ix);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void UpdateOneVsAll(ThreadState state, Span<int> input, int[] targets, float lr)
+        {
+            //Only for supervised models
+            Debug.Assert(Data.Type == ModelType.Supervised && Data.Loss == LossType.OneVsAll);
+            if (input.Length == 0) { return; }
+            state.NumberOfExamples += targets.Length;
+            ComputeHidden(state, input);
+
+            state.Loss += ComputeOneVsAllLoss(state, targets, lr);
+
+            SIMD.Multiply(ref state.Gradient, 1.0f / input.Length);
 
             foreach (var ix in input)
             {
@@ -1113,6 +1139,20 @@ namespace Catalyst.Models
                 {
                     loss += BinaryLogistic(state, GetNegative(ref state.NegativePosition, target), false, lr, addToOutput);
                 }
+            }
+
+            return loss;
+        }
+
+        private float ComputeOneVsAllLoss(ThreadState state, int[] targets, float lr, bool addToOutput = true)
+        {
+            state.Gradient.Zero();
+            float loss = 0f;
+
+            for (int i = 0; i <= state.Output.Length; i++)
+            {
+                bool isMatch = targets.Contains(i);
+                loss += BinaryLogistic(state, i, isMatch, lr, addToOutput);
             }
 
             return loss;

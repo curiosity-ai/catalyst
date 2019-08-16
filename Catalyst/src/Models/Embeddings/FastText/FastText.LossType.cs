@@ -6,7 +6,8 @@
         {
             HierarchicalSoftMax,
             SoftMax,
-            NegativeSampling
+            NegativeSampling,
+            OneVsAll
         }
     }
 }
