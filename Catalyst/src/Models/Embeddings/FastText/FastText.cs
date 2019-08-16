@@ -1149,7 +1149,7 @@ namespace Catalyst.Models
             state.Gradient.Zero();
             float loss = 0f;
 
-            for (int i = 0; i <= state.Output.Length; i++)
+            for (int i = 0; i < state.Output.Length; i++)
             {
                 bool isMatch = targets.Contains(i);
                 loss += BinaryLogistic(state, i, isMatch, lr, addToOutput);
