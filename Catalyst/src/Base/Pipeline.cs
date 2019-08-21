@@ -342,7 +342,7 @@ namespace Catalyst
             var sw = Stopwatch.StartNew();
             long docsCount = 0, spansCount = 0, tokensCount = 0, tokensDelta = 0;
 
-            Logger.LogInformation("Started pipeline single thread processing");
+            Logger.LogTrace("Started pipeline single thread processing");
 
             var buffer = new List<IDocument>();
 
@@ -361,7 +361,7 @@ namespace Catalyst
                             Interlocked.Add(ref spansCount, doc.SpansCount);
                             Interlocked.Add(ref tokensCount, doc.TokensCount);
 
-                            if (Interlocked.Increment(ref docsCount) % 1000 == 0)
+                            if (Interlocked.Increment(ref docsCount) % 10_000 == 0)
                             {
                                 var elapsed = sw.Elapsed.TotalSeconds;
                                 var kts = tokensCount / elapsed / 1000;
@@ -403,7 +403,7 @@ namespace Catalyst
 
             parallelOptions = parallelOptions ?? new ParallelOptions();
 
-            using (var m = new Measure(Logger, "Parsing documents"))
+            using (var m = new Measure(Logger, "Parsing documents", logOnlyDuration:true))
             {
                 while (enumerator.MoveNext())
                 {
