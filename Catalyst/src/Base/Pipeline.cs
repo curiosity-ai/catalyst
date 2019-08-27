@@ -340,7 +340,7 @@ namespace Catalyst
             RWLock.EnterReadLock();
 
             var sw = Stopwatch.StartNew();
-            long docsCount = 0, spansCount = 0, tokensCount = 0, tokensDelta = 0;
+            long docsCount = 0, spansCount = 0, tokensCount = 0;
 
             Logger.LogTrace("Started pipeline single thread processing");
 

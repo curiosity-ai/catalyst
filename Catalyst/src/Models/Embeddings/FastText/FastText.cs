@@ -204,26 +204,6 @@ namespace Catalyst.Models
             }
         }
 
-        private static Stream TryPreloadInMemory(Stream s, string name)
-        {
-            if (s is object && s.Length > 0 && s.Length < (int.MaxValue / 2))
-            {
-                try
-                {
-                    var s2 = new MemoryStream((int)s.Length);
-                    s.CopyTo(s2);
-                    s.Dispose();
-                    s2.Seek(0, SeekOrigin.Begin);
-                    s = s2;
-                }
-                catch (Exception E)
-                {
-                }
-            }
-
-            return s;
-        }
-
         public new static async Task<FastText> FromStoreAsync(Language language, int version, string tag)
         {
             return await FromStoreAsync_Internal(language, version, tag, bufferedMatrix: false);
@@ -243,9 +223,7 @@ namespace Catalyst.Models
             }
             else
             {
-                wiStream = TryPreloadInMemory(wiStream, a.GetStoredObjectInfo().ToString() + "-wi");
                 a.Wi = Matrix.FromStream(wiStream, a.Data.VectorQuantization);
-                woStream = TryPreloadInMemory(woStream, a.GetStoredObjectInfo().ToString() + "-wo");
                 a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
                 wiStream.Close();
                 woStream.Close();
@@ -1263,7 +1241,6 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComputeOutputBinaryLogistic(ThreadState state)
         {
-            float z = 0.0f;
             ref float[] hidden = ref state.Hidden;
             ref float[] output = ref state.Output;
             for (int i = 0; i < output.Length; i++)
