@@ -662,13 +662,16 @@ namespace Catalyst.Models
             var tokenNGramsIndexes = new List<int>(tokens.Length);
             foreach (var tk in tokens)
             {
-                uint hash = HashToken(tk, Language);
-                tokenHashes.Add(hash);
-                var subwords = GetCharNgrams(tk.Value);
-                subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
-                if (subwords.Any())
+                if (tk.Value.Length > 0)
                 {
-                    tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
+                    uint hash = HashToken(tk, Language);
+                    tokenHashes.Add(hash);
+                    var subwords = GetCharNgrams(tk.Value);
+                    subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
+                    if (subwords.Any())
+                    {
+                        tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
+                    }
                 }
             }
 

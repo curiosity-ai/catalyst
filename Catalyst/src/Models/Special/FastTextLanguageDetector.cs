@@ -17,6 +17,7 @@ namespace Catalyst.Models
     {
         private SpaceTokenizer Tokenizer;
         private FastText Model;
+        private NumberToWordNormalizer NumberNormalizer = new NumberToWordNormalizer() { ReplacementText = "" };
 
         public FastTextLanguageDetector(int version) : base(Language.Any, version, nameof(FastTextLanguageDetector), compress: false)
         {
@@ -94,15 +95,16 @@ namespace Catalyst.Models
 
             if (document.SpansCount == 0) // Have to tokenize temporarily the document
             {
-                if (document.Length > 200)
+                if (document.Length > 1000)
                 {
-                    tempDocument = new Document(document.Value.Substring(0, 200));
+                    tempDocument = new Document(document.Value.Substring(0, 1000));
                 }
                 else
                 {
                     tempDocument = new Document(document.Value);
                 }
                 Tokenizer.Process(tempDocument);
+                NumberNormalizer.Process(tempDocument);
             }
 
             var tag = Model.PredictMax(tempDocument, 200);

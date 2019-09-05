@@ -10,6 +10,8 @@ namespace Catalyst.Models
         public string Tag => "";
         public int Version => 0;
 
+        public string ReplacementText { get; set; } = "_number_";
+
         public static async Task<NumberToWordNormalizer> FromStoreAsync(Language language, int version, string tag)
         {
             return await Task.FromResult(new NumberToWordNormalizer());
@@ -31,7 +33,7 @@ namespace Catalyst.Models
             {
                 foreach (var token in span)
                 {
-                    if (token.ValueAsSpan.IsNumeric()) { token.Replacement = "_number_"; }
+                    if (token.ValueAsSpan.IsNumeric()) { token.Replacement = ReplacementText; }
                 }
             }
         }
