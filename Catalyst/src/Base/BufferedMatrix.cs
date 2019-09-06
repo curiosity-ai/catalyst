@@ -65,7 +65,7 @@ namespace Catalyst
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float[] GetRowCopy(int index)
+        public float[] GetRow(int index)
         {
             float[] data;
 
@@ -153,7 +153,7 @@ namespace Catalyst
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float DotRow(ref float[] vec, int i)
         {
-            var row = GetRowCopy(i);
+            var row = GetRow(i);
             var d = SIMD.DotProduct(ref row, ref vec);
             Debug.Assert(!float.IsNaN(d));
             return d;

@@ -19,7 +19,7 @@ namespace Catalyst
 
         ref float[] GetRowRef(int row);
 
-        float[] GetRowCopy(int row);
+        float[] GetRow(int row);
 
         Matrix Multiply(Matrix other);
 

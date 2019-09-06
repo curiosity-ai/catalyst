@@ -485,7 +485,7 @@ namespace Catalyst.Models
                 {
                     foreach (var ngram in ngrams)
                     {
-                        var ngram_vec = Wi.GetRowCopy(ngram);
+                        var ngram_vec = Wi.GetRow(ngram);
                         SIMD.Add(ref vec, ref ngram_vec);
                     }
                 }
@@ -648,18 +648,20 @@ namespace Catalyst.Models
 
             var state = GetPredictionState();
 
-            IToken[] tokens;
+            IEnumerable<IToken> tokens;
             if (maxTokens <= 0)
             {
-                tokens = doc.SelectMany(span => span.GetTokenized()).ToArray();
+                tokens = doc.SelectMany(span => span.GetTokenized());
+                maxTokens = doc.TokensCount;
             }
             else
             {
-                tokens = doc.SelectMany(span => span.GetTokenized()).Take(maxTokens).ToArray();
+                tokens = doc.SelectMany(span => span.GetTokenized()).Take(maxTokens);
+                maxTokens = Math.Min(maxTokens, doc.TokensCount);
             }
 
-            var tokenHashes = new List<uint>(tokens.Length);
-            var tokenNGramsIndexes = new List<int>(tokens.Length);
+            var tokenHashes = new List<uint>(maxTokens);
+            var tokenNGramsIndexes = new List<int>(maxTokens);
             foreach (var tk in tokens)
             {
                 if (tk.Value.Length > 0)
@@ -684,11 +686,22 @@ namespace Catalyst.Models
             if (entries.Length > 0)
             {
                 ComputeHidden(state, entries);
-                ComputeOutputSoftmax(state);
-            }
 
-            var index = state.Output.Argmax();
-            return (Data.Labels[index].Word, state.Output[index]);
+                switch (Data.Loss)
+                {
+                    case LossType.SoftMax            : ComputeOutputSoftmax(state);        break;
+                    case LossType.NegativeSampling   : ComputeOutputBinaryLogistic(state); break;
+                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
+                    case LossType.OneVsAll           : ComputeOutputBinaryLogistic(state); break;
+                }
+
+                var index = state.Output.Argmax();
+                return (Data.Labels[index].Word, state.Output[index]);
+            }
+            else
+            {
+                return (null, float.NaN);
+            }
         }
 
         public Dictionary<string, float> Predict(IDocument doc)
@@ -1142,7 +1155,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private float BinaryLogistic(ThreadState state, int target, bool label, float lr, bool addToOutput = true)
         {
-            var v = Wo.GetRowCopy(target);
+            var v = Wo.GetRow(target);
             Quantize(ref v);
             float score = state.Sigmoid(Wo.DotRow(ref state.Hidden, ref v));
 
@@ -1150,7 +1163,7 @@ namespace Catalyst.Models
 
             if (Wo is BufferedMatrix)
             {
-                var tmp = Wo.GetRowCopy(target);
+                var tmp = Wo.GetRow(target);
                 SIMD.MultiplyAndAdd(ref state.Gradient, ref tmp, alpha);
             }
             else
@@ -1261,7 +1274,7 @@ namespace Catalyst.Models
             hidden.Zero();
             foreach (var ix in input)
             {
-                var v = Wi.GetRowCopy(ix);
+                var v = Wi.GetRow(ix);
                 Quantize(ref v);
                 SIMD.Add(ref hidden, ref v);
             }
@@ -1275,7 +1288,7 @@ namespace Catalyst.Models
             hidden.Zero();
             foreach (var ix in input)
             {
-                var v = Wi.GetRowCopy(ix);
+                var v = Wi.GetRow(ix);
                 Quantize(ref v);
                 SIMD.Add(ref hidden, ref v);
             }

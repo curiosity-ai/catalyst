@@ -107,9 +107,22 @@ namespace Catalyst.Models
                 NumberNormalizer.Process(tempDocument);
             }
 
-            var tag = Model.PredictMax(tempDocument, 200);
-
-            document.Language = Languages.CodeToEnum(tag.label);
+            try
+            {
+                var tag = Model.PredictMax(tempDocument, 200);
+                if (tag.label is null)
+                {
+                    document.Language = Language.Unknown;
+                }
+                else
+                {
+                    document.Language = Languages.CodeToEnum(tag.label);
+                }
+            }
+            catch
+            {
+                document.Language = Language.Unknown;
+            }
         }
 
         public void Train(IEnumerable<IDocument> documents)
