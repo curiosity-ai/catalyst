@@ -1,8 +1,4 @@
-﻿using UID;
-using MessagePack;
-using Microsoft.Extensions.Logging;
-using Mosaik.Core;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +8,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using MessagePack;
+using Microsoft.Extensions.Logging;
+using Mosaik.Core;
+using UID;
 
 namespace Catalyst.Models
 {
@@ -295,6 +295,10 @@ namespace Catalyst.Models
 
         public void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus = null)
         {
+            // If there are no documents to process then we can't perform any training (maybe documents WERE provided to the Train method but they all had to be ignored for one reason or another - eg. wrong language)
+            if (ID.docCount < 1)
+                return;
+
             cancellationToken.ThrowIfCancellationRequested();
 
             ThreadState[] modelPrivateState;
