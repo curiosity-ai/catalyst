@@ -307,7 +307,7 @@ namespace Catalyst.Models
                     }
                 });
             }
-            catch (OperationCanceledException OCE)
+            catch (OperationCanceledException)
             {
                 return;
             }

@@ -1,8 +1,4 @@
-﻿using UID;
-using MessagePack;
-using Microsoft.Extensions.Logging;
-using Mosaik.Core;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +8,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using MessagePack;
+using Microsoft.Extensions.Logging;
+using Mosaik.Core;
+using UID;
 
 namespace Catalyst.Models
 {
@@ -204,26 +204,6 @@ namespace Catalyst.Models
             }
         }
 
-        private static Stream TryPreloadInMemory(Stream s, string name)
-        {
-            if (s is object && s.Length > 0 && s.Length < (int.MaxValue / 2))
-            {
-                try
-                {
-                    var s2 = new MemoryStream((int)s.Length);
-                    s.CopyTo(s2);
-                    s.Dispose();
-                    s2.Seek(0, SeekOrigin.Begin);
-                    s = s2;
-                }
-                catch (Exception E)
-                {
-                }
-            }
-
-            return s;
-        }
-
         public new static async Task<FastText> FromStoreAsync(Language language, int version, string tag)
         {
             return await FromStoreAsync_Internal(language, version, tag, bufferedMatrix: false);
@@ -243,9 +223,7 @@ namespace Catalyst.Models
             }
             else
             {
-                wiStream = TryPreloadInMemory(wiStream, a.GetStoredObjectInfo().ToString() + "-wi");
                 a.Wi = Matrix.FromStream(wiStream, a.Data.VectorQuantization);
-                woStream = TryPreloadInMemory(woStream, a.GetStoredObjectInfo().ToString() + "-wo");
                 a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
                 wiStream.Close();
                 woStream.Close();
@@ -317,6 +295,10 @@ namespace Catalyst.Models
 
         public void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus = null)
         {
+            // If there are no documents to process then we can't perform any training (maybe documents WERE provided to the Train method but they all had to be ignored for one reason or another - eg. wrong language)
+            if (ID.docCount < 1)
+                return;
+
             cancellationToken.ThrowIfCancellationRequested();
 
             ThreadState[] modelPrivateState;
@@ -513,7 +495,7 @@ namespace Catalyst.Models
                 {
                     foreach (var ngram in ngrams)
                     {
-                        var ngram_vec = Wi.GetRowCopy(ngram);
+                        var ngram_vec = Wi.GetRow(ngram);
                         SIMD.Add(ref vec, ref ngram_vec);
                     }
                 }
@@ -676,27 +658,32 @@ namespace Catalyst.Models
 
             var state = GetPredictionState();
 
-            IToken[] tokens;
+            IEnumerable<IToken> tokens;
             if (maxTokens <= 0)
             {
-                tokens = doc.SelectMany(span => span.GetTokenized()).ToArray();
+                tokens = doc.SelectMany(span => span.GetTokenized());
+                maxTokens = doc.TokensCount;
             }
             else
             {
-                tokens = doc.SelectMany(span => span.GetTokenized()).Take(maxTokens).ToArray();
+                tokens = doc.SelectMany(span => span.GetTokenized()).Take(maxTokens);
+                maxTokens = Math.Min(maxTokens, doc.TokensCount);
             }
 
-            var tokenHashes = new List<uint>(tokens.Length);
-            var tokenNGramsIndexes = new List<int>(tokens.Length);
+            var tokenHashes = new List<uint>(maxTokens);
+            var tokenNGramsIndexes = new List<int>(maxTokens);
             foreach (var tk in tokens)
             {
-                uint hash = HashToken(tk, Language);
-                tokenHashes.Add(hash);
-                var subwords = GetCharNgrams(tk.Value);
-                subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
-                if (subwords.Any())
+                if (tk.Value.Length > 0)
                 {
-                    tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
+                    uint hash = HashToken(tk, Language);
+                    tokenHashes.Add(hash);
+                    var subwords = GetCharNgrams(tk.Value);
+                    subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
+                    if (subwords.Any())
+                    {
+                        tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
+                    }
                 }
             }
 
@@ -709,11 +696,22 @@ namespace Catalyst.Models
             if (entries.Length > 0)
             {
                 ComputeHidden(state, entries);
-                ComputeOutputSoftmax(state);
-            }
 
-            var index = state.Output.Argmax();
-            return (Data.Labels[index].Word, state.Output[index]);
+                switch (Data.Loss)
+                {
+                    case LossType.SoftMax            : ComputeOutputSoftmax(state);        break;
+                    case LossType.NegativeSampling   : ComputeOutputBinaryLogistic(state); break;
+                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
+                    case LossType.OneVsAll           : ComputeOutputBinaryLogistic(state); break;
+                }
+
+                var index = state.Output.Argmax();
+                return (Data.Labels[index].Word, state.Output[index]);
+            }
+            else
+            {
+                return (null, float.NaN);
+            }
         }
 
         public Dictionary<string, float> Predict(IDocument doc)
@@ -1167,7 +1165,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private float BinaryLogistic(ThreadState state, int target, bool label, float lr, bool addToOutput = true)
         {
-            var v = Wo.GetRowCopy(target);
+            var v = Wo.GetRow(target);
             Quantize(ref v);
             float score = state.Sigmoid(Wo.DotRow(ref state.Hidden, ref v));
 
@@ -1175,7 +1173,7 @@ namespace Catalyst.Models
 
             if (Wo is BufferedMatrix)
             {
-                var tmp = Wo.GetRowCopy(target);
+                var tmp = Wo.GetRow(target);
                 SIMD.MultiplyAndAdd(ref state.Gradient, ref tmp, alpha);
             }
             else
@@ -1269,7 +1267,6 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComputeOutputBinaryLogistic(ThreadState state)
         {
-            float z = 0.0f;
             ref float[] hidden = ref state.Hidden;
             ref float[] output = ref state.Output;
             for (int i = 0; i < output.Length; i++)
@@ -1287,7 +1284,7 @@ namespace Catalyst.Models
             hidden.Zero();
             foreach (var ix in input)
             {
-                var v = Wi.GetRowCopy(ix);
+                var v = Wi.GetRow(ix);
                 Quantize(ref v);
                 SIMD.Add(ref hidden, ref v);
             }
@@ -1301,7 +1298,7 @@ namespace Catalyst.Models
             hidden.Zero();
             foreach (var ix in input)
             {
-                var v = Wi.GetRowCopy(ix);
+                var v = Wi.GetRow(ix);
                 Quantize(ref v);
                 SIMD.Add(ref hidden, ref v);
             }

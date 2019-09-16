@@ -60,7 +60,7 @@ namespace Catalyst
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float[] GetRowCopy(int row)
+        public float[] GetRow(int row)
         {
             return Data[row];
         }
