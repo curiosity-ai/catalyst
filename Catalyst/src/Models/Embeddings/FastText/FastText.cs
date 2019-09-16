@@ -420,6 +420,12 @@ namespace Catalyst.Models
 
             if (Data.Type != ModelType.PVDM) { throw new Exception("GetDocumentVector can only be used on PVDM models"); }
 
+
+            if (doc.UID.IsNotNull() && TryGetLabelVector(doc.UID.ToString(), out vector))
+            {
+                return true;
+            }
+
             if (doc.Language != Language)
             {
                 vector = default;
@@ -1580,9 +1586,6 @@ namespace Catalyst.Models
                if (Data.Type == ModelType.PVDBow || Data.Type == ModelType.PVDM)
                {
                    string id = doc.UID.ToString();
-                    //if (doc.Metadata.ContainsKey("UID")) { id = doc.Metadata["UID"]; }
-                    //else if (doc.Metadata.ContainsKey("Labels")) { id = doc.Metadata["Labels"]; }
-                    //else { throw new Exception("All documents need to have a UID field to identify them"); /*id = docIndex.ToString();*/ }
                     var hash = HashLabel(id);
                    ID.docIDHashes.TryAdd(docIndex, hash);
                    ID.uniqueIDs.TryAdd(hash, new SingleToken(id, Language));
