@@ -451,7 +451,6 @@ namespace Catalyst.Models
                     predictedVector[j] = (float)(ThreadSafeFastRandom.NextDouble()) * (2 * a) - a;
                 }
 
-                TokenCount = tokenIndexes.Length;
                 mps.NumberOfExamples = 0;
                 mps.Loss = 0f;
 

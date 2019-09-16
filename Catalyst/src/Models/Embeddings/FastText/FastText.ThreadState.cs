@@ -7,7 +7,7 @@ namespace Catalyst.Models
 {
     public partial class FastText
     {
-        internal class ThreadState //Per thread
+        public class ThreadState //Per thread
         {
             public int ThreadID;
             public long NumberOfExamples;
