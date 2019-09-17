@@ -1,4 +1,5 @@
 ﻿using Catalyst.Tensors.Models.Tools;
+using Mosaik.Core;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,28 +11,31 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Catalyst.Tensors
-{     
+{
     [Serializable]
     public class WeightMatrix : IWeightMatrix
     {
+        internal float[] weight;
+        internal float[] gradient;
+
         public int Rows { get; set; }
-        public int Columns { get; set; } 
-        public float[] Weight { get; set; }
-        public float[] Gradient { get; set; }
-        public float[] Cash { get; set; }
+        public int Columns { get; set; }
+        public float[] Weight { get => weight; set => weight = value; }
+        public float[] Gradient { get => gradient; set => gradient = value; }
+        public float[] Cache { get; set; }
         public float[] LrW { get; set; }
         public Dictionary<int, int> RowToBeUpdated { get; set; } = new Dictionary<int, int>();
 
         public int DeviceId { get; set; }
 
-        public WeightMatrix( )
+        public WeightMatrix()
         {
-          
+
         }
 
         public float[] ToWeightArray()
         {
-            return Weight;
+            return weight;
         }
 
         public int GetMaxWeightIdx()
@@ -63,126 +67,120 @@ namespace Catalyst.Tensors
 
             return q.Select(x => x.Value).ToList();
         }
-      
+
         public void SetWeightArray(float[] v)
         {
-            Weight = v;
+            weight = v;
         }
 
         public void SetGradientFromArray(float[] array)
         {
-            Gradient = array;
+            gradient = array;
         }
 
         public void ClearGradient()
         {
-            Array.Clear(Gradient, 0, Gradient.Length);
+            SIMD.Zero(ref gradient);
         }
 
         public void ClearWeight()
         {
-            Array.Clear(Weight, 0, Weight.Length);
+            SIMD.Zero(ref weight);
         }
 
-        public WeightMatrix(int rows, int columns,  bool normal=false)
+        public WeightMatrix(int rows, int columns, bool normal = false)
         {
-            this.Rows = rows;
-            this.Columns = columns; 
-            var n = rows * columns  ;
-            this.Weight = new float[n];
-            this.Gradient = new float[n];
-            this.Cash = new float[n];
-            this.LrW = new float[n];
+            Rows = rows;
+            Columns = columns;
+            var n = rows * columns;
+            weight = new float[n];
+            gradient = new float[n];
+            Cache = new float[n];
+            LrW = new float[n];
 
-            var scale = (float)Math.Sqrt(1.0 / (rows * columns ));
+            var scale = (float)Math.Sqrt(1.0 / (rows * columns));
             if (normal)
             {
                 scale = 0.08f;
             }
-            for (int i = 0; i < n; i++)
-            {
-                this.Weight[i] = RandomGenerator.NormalRandom(0.0f, scale);  
-            }
 
+            float a2 = 2 * scale;
+            float an = -scale;
+
+            ThreadSafeFastRandom.NextFloats(weight);
+            SIMD.Multiply(ref weight, a2);
+            SIMD.Add(ref weight, an);
         }
 
         public WeightMatrix(int rows, int columns)
         {
-            this.Rows = rows;
-            this.Columns = columns;
+            Rows = rows;
+            Columns = columns;
             var n = rows * columns;
-            this.Weight = new float[n];
-            this.Gradient = new float[n];
+            weight = new float[n];
+            gradient = new float[n];
         }
 
         public WeightMatrix(int rows, int columns, float c)
         {
-            this.Rows = rows;
-            this.Columns = columns; 
-            var n = rows * columns  ;
-            this.Weight = new float[n];
-            this.Gradient = new float[n];
-            this.Cash = new float[n];
-            this.LrW = new float[n];
+            Rows = rows;
+            Columns = columns;
+            var n = rows * columns;
+            weight = new float[n];
+            gradient = new float[n];
+            Cache = new float[n];
+            LrW = new float[n];
 
             if (c != 0.0)
             {
-                for (int i = 0; i < n; i++)
-                {
-                    this.Weight[i] = c;
-                }
-            }        
+                SIMD.Add(ref weight, c);
+            }
         }
 
         public void SetWeightAtRow(int row, float[] val)
         {
-            var offset = this.Columns * row;
-            Array.Copy(val, 0, Weight, offset, val.Length);
+            var offset = Columns * row;
+            Array.Copy(val, 0, weight, offset, val.Length);
         }
 
         public WeightMatrix Clone()
         {
-            var v= new WeightMatrix(this.Rows, this.Columns, 0);
-            var n = this.Weight.Length;
-            for (int i = 0; i < n; i++)
-            {
-                v.Weight[i] = this.Weight[i];
-            }
+            var v = new WeightMatrix(Rows, Columns, 0);
+            weight.AsSpan().CopyTo(v.weight.AsSpan());
             return v;
         }
 
         public void Dispose()
         {
+
         }
 
         public void CleanCache()
         {
-            Cash = new float[Cash.Length];
+            Cache = new float[Cache.Length];
             LrW = new float[LrW.Length];
         }
 
 
         public float GetWeightAt(int offset)
         {
-            return Weight[offset];
+            return weight[offset];
         }
 
         public void SetGradientAt(float val, int offset)
         {
-            Gradient[offset] = val;
+            gradient[offset] = val;
         }
 
         public void SetWeightAt(float val, int offset)
         {
-            Weight[offset] = val;
+            weight[offset] = val;
         }
 
         public void SetGradientByWeight(IWeightMatrix src)
         {
             WeightMatrix m = src as WeightMatrix;
-//            Gradient = m.Weight;
-
-            Array.Copy(m.Weight, Gradient, m.Weight.Length);
+            Array.Copy(m.weight, gradient, m.weight.Length);
         }
 
         public void Save(Stream stream)
@@ -222,7 +220,21 @@ namespace Catalyst.Tensors
 
         public void AddGradient(IWeightMatrix src)
         {
-            throw new NotImplementedException();
+            WeightMatrix m = src as WeightMatrix;
+
+            SIMD.Add(ref gradient, ref m.gradient);
+
+            foreach (var kv in m.RowToBeUpdated)
+            {
+                if (RowToBeUpdated.ContainsKey(kv.Key) == false)
+                {
+                    RowToBeUpdated.Add(kv.Key, kv.Value);
+                }
+                else
+                {
+                    RowToBeUpdated[kv.Key] += kv.Value;
+                }
+            }
         }
     }
 }

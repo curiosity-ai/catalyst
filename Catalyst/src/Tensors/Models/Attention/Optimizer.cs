@@ -94,7 +94,7 @@ namespace Catalyst.Tensors.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateWeights(float step_size, float regc, float clipval, WeightMatrix m, Vector<float> vecMaxClipval, Vector<float> vecMinClipval, int n, int i)
         {
-            var s = m.Cash;
+            var s = m.Cache;
             var l = m.LrW;
             var vecBaseLR = new Vector<float>(step_size);
 

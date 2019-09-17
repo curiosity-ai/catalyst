@@ -16,5 +16,10 @@ namespace Catalyst.Models
         public long TokensCount { get; set; }
         public DateTimeOffset StartDateTime { get; set; }
         public float LearningRate { get; set; }
+
+        public override string ToString()
+        {
+            return $"E:{Epoch:n0} L:{Loss:n2} D:{DocumentCount:n0} S:{SpansCount:n0} T:{TokensCount:n0} LR:{LearningRate:n5}";
+        }
     }
 }

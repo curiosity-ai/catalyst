@@ -7,62 +7,18 @@ using System.Threading.Tasks;
 
 namespace Catalyst.Tensors.Models.Tools
 {
-    public class WeightMatrixList
-    {
-        public List<WeightMatrix> WeightMatrixs = new List<WeightMatrix>();
-        public int index = 0;
-
-    }
-
     public class WeightMatrixFactory : IWeightFactory
     {
-        //private object locker = new object();
-        ConcurrentDictionary<int, ConcurrentDictionary<int, WeightMatrixList>> buffer = new ConcurrentDictionary<int, ConcurrentDictionary<int, WeightMatrixList>>();
         public WeightMatrix CreateWeightMatrix(int row, int column, bool cleanWeights = false)
         {
-            var k = buffer.GetOrAdd(row, x => new ConcurrentDictionary<int, WeightMatrixList>());
-            var mList = k.GetOrAdd(column, x => new WeightMatrixList());
+            return new WeightMatrix(row, column);
 
-            WeightMatrix r;
-            if (mList.index == mList.WeightMatrixs.Count)
-            {
-                r = new WeightMatrix(row, column);
-                //if (cleanWeights)
-                //{
-                //    r.ClearWeight();
-                //}
-
-                mList.WeightMatrixs.Add(r);
-            }
-            else
-            {
-                r = mList.WeightMatrixs[mList.index];
-                if (cleanWeights)
-                {
-                    r.ClearWeight();
-                }
-                r.ClearGradient();
-            }
-
-            mList.index++;
-
-
-            return r;
-
+            //TODO: refactor this to use an object pool instead
         }
 
         public void Clear()
         {
-            foreach (var kv in buffer)
-            {
-                foreach (var subKV in kv.Value)
-                {
-                    subKV.Value.index = 0;
-                }
-            }
-
-            buffer.Clear();
-
+            //TODO: refactor this to use an object pool instead
         }
 
         public IWeightMatrix CreateWeights(int row, int column, int deviceId)

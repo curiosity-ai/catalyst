@@ -12,15 +12,15 @@ namespace Catalyst.Tensors.Models.Tools
 {
     public class TokenPairs
     {
-        public List<string> Source;
-        public List<string> Target;
+        public string[] Source;
+        public string[] Target;
     }
 
     public class Corpus : IEnumerable<TokenPairs>
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<Corpus>();
 
-        public IEnumerable<IDocument[]> DocumentPairs { get; }
+        public IEnumerable<ISpan[]> SentencePairs { get; }
         public Func<IToken, string> SourceSelector { get; }
         public Func<IToken, string> TargetSelector { get; }
 
@@ -28,7 +28,7 @@ namespace Catalyst.Tensors.Models.Tools
         {
             var list = new List<TokenPairs>();
 
-            foreach(var pair in DocumentPairs)
+            foreach(var pair in SentencePairs)
             {
                 if(pair.Length != 2)
                 {
@@ -37,8 +37,8 @@ namespace Catalyst.Tensors.Models.Tools
 
                 list.Add(new TokenPairs()
                 {
-                    Source = pair[0].ToTokenList().Select(t => SourceSelector(t)).ToList(),
-                    Target = pair[1].ToTokenList().Select(t => SourceSelector(t)).ToList()
+                    Source = pair[0].Select(t => SourceSelector(t)).ToArray(),
+                    Target = pair[1].Select(t => SourceSelector(t)).ToArray()
                 });
 
 
@@ -64,19 +64,19 @@ namespace Catalyst.Tensors.Models.Tools
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public Corpus(IEnumerable<IDocument[]> documentPairs, Func<IToken, string> sourceSelector = null, Func<IToken, string> targetSelector = null)
+        public Corpus(IEnumerable<ISpan[]> sentences, Func<IToken, string> sourceSelector = null, Func<IToken, string> targetSelector = null)
         {
             SourceSelector = sourceSelector ?? ((t) => t.Value);
             TargetSelector = targetSelector ?? ((t) => t.Value);
 
-            DocumentPairs = documentPairs;
+            SentencePairs = sentences;
         }
 
         private class TokenPairCompareByLength : IComparer<TokenPairs>
         {
             public int Compare(TokenPairs x, TokenPairs y)
             {
-                return x.Source.Count.CompareTo(y.Source.Count);
+                return x.Source.Length.CompareTo(y.Source.Length);
             }
         }
     }

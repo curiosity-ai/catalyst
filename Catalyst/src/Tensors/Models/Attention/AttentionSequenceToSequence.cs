@@ -47,15 +47,14 @@ namespace Catalyst.Tensors.Models
     {
         public static int[] DeviceIDs = new int[0];
 
-        public event EventHandler IterationDone;
-        public Corpus TrainCorpus { get; set; }
+        public event EventHandler<TrainingEvent> IterationDone;
         
         private const string m_UNK = "<UNK>";
         private const string m_END = "<END>";
         private const string m_START = "<START>";
         private IWeightFactory[] m_weightFactory;
         private int m_maxWord = 100;
-        private Optimizer m_solver;
+        private Optimizer Solver;
 
         private IWeightMatrix[] SourceEmbeddings;
         private IWeightMatrix[] TargetEmbeddings;
@@ -70,10 +69,8 @@ namespace Catalyst.Tensors.Models
         private int DefaultDeviceID_DecoderFeedForwardLayer = 0;
 
         // optimization  hyperparameters
-        private int m_parameterUpdateCount = 0;
         
         private int m_defaultDeviceId = 0;
-        private double m_avgCostPerWordInTotalInLastEpoch = 100000.0;
 
         public new static async Task<AttentionSequenceToSequence> FromStoreAsync(Language language, int version, string tag)
         {
@@ -125,12 +122,16 @@ namespace Catalyst.Tensors.Models
 
             await base.StoreAsync();
         }
+        bool initialized = false;
 
         private void Initialize()
         {
+            if(initialized) { return; }
+            initialized = true;
+            CheckBatchSizeAndDeviceIDs();
+
             InitWeights();
 
-            CheckParameters(Data.BatchSize, Data.ArchType, DeviceIDs);
             if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
             {
                 TensorAllocator.InitDevices(DeviceIDs);
@@ -148,7 +149,7 @@ namespace Catalyst.Tensors.Models
 
         public void Train(Corpus trainCorpus)
         {
-            CheckParameters(Data.BatchSize, Data.ArchType, DeviceIDs);
+            CheckBatchSizeAndDeviceIDs();
 
             if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
             {
@@ -156,20 +157,19 @@ namespace Catalyst.Tensors.Models
                 SetDefaultDeviceIds(DeviceIDs.Length);
             }
 
-            TrainCorpus = trainCorpus;
-
-            InitializeVocabulary(TrainCorpus);
 
             Initialize();
 
             Logger.LogInformation("Start to train...");
 
-            m_solver = new Optimizer();
+            Solver = new Optimizer();
+
+            AccumulatedCostInLastEpoch = double.MaxValue;
 
             float learningRate = Data.StartLearningRate;
             for (int i = 0; i < Data.Epochs; i++)
             {
-                TrainEp(i, learningRate);
+                TrainEp(i, learningRate, trainCorpus);
                 learningRate = Data.StartLearningRate / (1.0f + 0.95f * (i + 1));
             }
         }
@@ -187,14 +187,12 @@ namespace Catalyst.Tensors.Models
             DefaultDeviceID_DecoderFeedForwardLayer = (i++) % deviceNum;
         }
 
-        private static void CheckParameters(int batchSize, ArchTypeEnums archType, int[] deviceIds)
+        private void CheckBatchSizeAndDeviceIDs()
         {
-            if (archType != ArchTypeEnums.GPU_CUDA)
+            if (Data.ArchType != ArchTypeEnums.GPU_CUDA)
             {
-                if (batchSize != 1 || deviceIds.Length != 1)
-                {
-                    throw new ArgumentException($"Batch size and device Ids length must be 1 if arch type is not GPU");
-                }
+                Data.BatchSize = 1;
+                DeviceIDs = Enumerable.Range(0, Environment.ProcessorCount).ToArray();
             }
         }
 
@@ -276,6 +274,8 @@ namespace Catalyst.Tensors.Models
 
         public void UseFastTextEmbeddings(FastText sourceModel, FastText targetModel)
         {
+            Initialize();
+
             for (int i = 0; i < DeviceIDs.Length; i++)
             {
                 //If pre-trained embedding weights are speicifed, loading them from files
@@ -311,7 +311,7 @@ namespace Catalyst.Tensors.Models
             }
         }
 
-        private void InitializeVocabulary(Corpus trainCorpus)
+        public void InitializeVocabulary(Corpus trainCorpus)
         {
             Logger.LogInformation("Building vocabulary from training corpus...");
             
@@ -386,18 +386,22 @@ namespace Catalyst.Tensors.Models
 
         private object locker = new object();
 
-        private void TrainEp(int ep, float learningRate)
+        private double AccumulatedCostInLastEpoch = double.MaxValue;
+
+        private void TrainEp(int ep, float learningRate, Corpus trainCorpus)
         {
-            int processedLine = 0;
+            int processedPairsCount = 0;
+            int parameterUpdateCount = 0;
 
             DateTimeOffset startDateTime = DateTime.UtcNow;
 
-            double costInTotal = 0.0;
-            long srcWordCnts = 0;
-            long tgtWordCnts = 0;
-            double avgCostPerWordInTotal = 0.0;
+            double accumulatedCostInCurrentEpoch = 0.0;
+            long sourceWordCount = 0;
+            long targetWordCount = 0;
 
-            List<TokenPairs> sntPairs = new List<TokenPairs>();
+            int totalBatchSize = Data.BatchSize * DeviceIDs.Length;
+
+            List<TokenPairs> sentencePairs = new List<TokenPairs>();
 
             TensorAllocator.FreeMemoryAllDevices();
 
@@ -409,116 +413,113 @@ namespace Catalyst.Tensors.Models
 
             Logger.LogInformation($"Start to process training corpus.");
             
-            foreach (var sntPair in TrainCorpus)
+            foreach (var pair in trainCorpus)
             {
-                sntPairs.Add(sntPair);
-
-                if (sntPairs.Count == Data.BatchSize)
-                {                  
-                    List<IWeightMatrix> encoded = new List<IWeightMatrix>();
-                    List<List<string>> srcSnts = new List<List<string>>();
-                    List<List<string>> tgtSnts = new List<List<string>>();
-
-                    var slen = 0;
-                    var tlen = 0;
-                    for (int j = 0; j < Data.BatchSize; j++)
-                    {
-                        List<string> srcSnt = new List<string>();
-
-                        //Add BOS and EOS tags to source sentences
-                        srcSnt.Add(m_START);
-                        srcSnt.AddRange(sntPairs[j].Source);
-                        srcSnt.Add(m_END);
-
-                        srcSnts.Add(srcSnt);
-                        tgtSnts.Add(sntPairs[j].Target);
-
-                        slen += srcSnt.Count;
-                        tlen += sntPairs[j].Target.Count;
-                    }
-                    srcWordCnts += slen;
-                    tgtWordCnts += tlen;
-
-                    Reset();
-
-                    //Copy weights from weights kept in default device to all other devices
-                    SyncWeights();
-
-                    float cost = 0.0f;
-                    Parallel.For(0, DeviceIDs.Length, i =>
-                    {
-                        IComputeGraph computeGraph = CreateComputGraph(i);
-
-                        //Bi-directional encoding input source sentences
-                        IWeightMatrix encodedWeightMatrix = Encode(computeGraph, srcSnts.GetRange(i * Data.BatchSize, Data.BatchSize), BiEncoder[i], SourceEmbeddings[i]);
-
-                        //Generate output decoder sentences
-                        List<List<string>> predictSentence;
-                        float lcost = Decode(tgtSnts.GetRange(i * Data.BatchSize, Data.BatchSize), computeGraph, encodedWeightMatrix, Decoder[i], DecoderFeedForwardLayer[i], TargetEmbeddings[i], out predictSentence);
-
-                        lock (locker)
-                        {
-                            cost += lcost;
-                        }
-                        //Calculate gradients
-                        computeGraph.Backward();
-                    });
-
-                    //Sum up gradients in all devices, and kept it in default device for parameters optmization
-                    SyncGradientsBackToDefaultDevices();
-                   
-
-                    if (float.IsInfinity(cost) == false && float.IsNaN(cost) == false)
-                    {
-                        processedLine += Data.BatchSize;
-                        double costPerWord = (cost / tlen);
-                        costInTotal += cost;
-                        avgCostPerWordInTotal = costInTotal / tgtWordCnts;
-                    }
-                    else
-                    {
-                        Logger.LogInformation($"Invalid cost value.");
-                    }
-
-                    float avgAllLR = UpdateParameters(learningRate, Data.BatchSize);
-                    m_parameterUpdateCount++;
-
-                    ClearGradient();
-
-                    if (IterationDone != null && processedLine % (100 * Data.BatchSize) == 0)
-                    {
-                        IterationDone(this, new TrainingEvent()
-                        {
-                            LearningRate = avgAllLR,
-                            Loss = cost / tlen,
-                            Epoch = ep,
-                            Update = m_parameterUpdateCount,
-                            SpansCount = processedLine,
-                            TokensCount = srcWordCnts * 2 + tgtWordCnts,
-                            StartDateTime = startDateTime
-                        });
-                    }
-
-
-                    //Save model for each 10000 steps
-                    if (m_parameterUpdateCount % 1000 == 0 && m_avgCostPerWordInTotalInLastEpoch > avgCostPerWordInTotal)
-                    {
-                        this.StoreAsync().Wait();
-                        TensorAllocator.FreeMemoryAllDevices();
-                    }
-
-                    sntPairs.Clear();
+                sentencePairs.Add(pair);
+                
+                if (sentencePairs.Count == totalBatchSize)
+                {
+                    ProcessBatch(sentencePairs);
+                    sentencePairs.Clear();
                 }
             }
 
-            Logger.LogInformation($"Epoch '{ep}' took '{DateTime.Now - startDateTime}' time to finish. AvgCost = {avgCostPerWordInTotal.ToString("F6")}, AvgCostInLastEpoch = {m_avgCostPerWordInTotalInLastEpoch.ToString("F6")}");
-
-            if (m_avgCostPerWordInTotalInLastEpoch > avgCostPerWordInTotal)
+            if (sentencePairs.Count > 0)
             {
-                this.StoreAsync().Wait();
+                ProcessBatch(sentencePairs);
+                sentencePairs.Clear();
             }
 
-            m_avgCostPerWordInTotalInLastEpoch = avgCostPerWordInTotal;
+            Logger.LogInformation($"Epoch '{ep}' took '{DateTime.Now - startDateTime}' time to finish. AvgCost = {accumulatedCostInCurrentEpoch/ targetWordCount:n6}");
+
+            if (AccumulatedCostInLastEpoch > accumulatedCostInCurrentEpoch)
+            {
+                StoreAsync().Wait();
+                TensorAllocator.FreeMemoryAllDevices();
+                AccumulatedCostInLastEpoch = accumulatedCostInCurrentEpoch;
+            }
+
+            void ProcessBatch(List<TokenPairs> pairs)
+            {
+                float cost = 0.0f;
+                var targetWordCountBefore = targetWordCount;
+                Reset();
+                
+                SyncWeights(); //Copy weights from weights kept in default device to all other devices
+                int threadID = 0; 
+                Parallel.ForEach(pairs.SplitIntoN(DeviceIDs.Length), batchPairs =>
+                {
+                    var thID = Interlocked.Increment(ref threadID) % DeviceIDs.Length;
+                    var srcSnts = new List<List<string>>();
+                    var tgtSnts = new List<List<string>>();
+
+                    var slen = 0;
+                    var tlen = 0;
+                    foreach (var batchPair in batchPairs)
+                    {
+                        var srcSnt = new List<string>();
+
+                        //Add BOS and EOS tags to source sentences
+                        srcSnt.Add(m_START);
+                        srcSnt.AddRange(batchPair.Source);
+                        srcSnt.Add(m_END);
+
+                        srcSnts.Add(srcSnt);
+                        tgtSnts.Add(batchPair.Target.ToList());
+
+                        slen += srcSnt.Count;
+                        tlen += batchPair.Target.Length;
+                    }
+
+                    Interlocked.Add(ref sourceWordCount, slen);
+                    Interlocked.Add(ref targetWordCount, tlen);
+
+                    var computeGraph = CreateComputGraph(thID);
+
+                    var encodedWeightMatrix = Encode(computeGraph, srcSnts, BiEncoder[thID], SourceEmbeddings[thID]);
+                        
+                    float lcost = Decode(tgtSnts, computeGraph, encodedWeightMatrix, Decoder[thID], DecoderFeedForwardLayer[thID], TargetEmbeddings[thID], out _);
+
+                    lock (locker)
+                    {
+                        cost += lcost;
+                    }
+
+                    computeGraph.Backward();
+                });
+
+                //Sum up gradients in all devices, and kept it in default device for parameters optmization
+                SyncGradientsBackToDefaultDevices();
+
+                if (float.IsInfinity(cost) == false && float.IsNaN(cost) == false)
+                {
+                    processedPairsCount += pairs.Count;
+                    accumulatedCostInCurrentEpoch += cost;
+                }
+                else
+                {
+                    Logger.LogInformation($"Invalid cost value.");
+                }
+
+                float avgAllLR = UpdateParameters(learningRate, Data.BatchSize);
+                parameterUpdateCount++;
+
+                ClearGradient();
+
+                if (IterationDone != null /*&& processedPairsCount % (100 * Data.BatchSize) == 0*/)
+                {
+                    IterationDone(this, new TrainingEvent()
+                    {
+                        LearningRate = avgAllLR,
+                        Loss = cost / (targetWordCount - targetWordCountBefore),
+                        Epoch = ep,
+                        Update = parameterUpdateCount,
+                        SpansCount = processedPairsCount,
+                        TokensCount = sourceWordCount * 2 + targetWordCount,
+                        StartDateTime = startDateTime
+                    });
+                }
+            }
         }
 
         private IComputeGraph CreateComputGraph(int deviceIdIdx, bool needBack = true)
@@ -540,28 +541,20 @@ namespace Catalyst.Tensors.Models
             return g;
         }
 
-        private List<int> PadSentences(List<List<string>> s)
+        private List<int> PadSentences(List<List<string>> sentencesList)
         {
             List<int> originalLengths = new List<int>();
 
-            int maxLen = -1;
-            foreach (var item in s)
-            {
-                if (item.Count > maxLen)
-                {
-                    maxLen = item.Count;
-                }
+            int maxLen = sentencesList.Max(l =>l.Count);
 
-            }
-
-            for (int i = 0; i < s.Count; i++)
+            foreach (var l in sentencesList)
             {
-                int count = s[i].Count;
+                int count = l.Count;
                 originalLengths.Add(count);
 
                 for (int j = 0; j < maxLen - count; j++)
                 {
-                    s[i].Add(m_END);
+                    l.Add(m_END);
                 }
             }
 
@@ -571,11 +564,9 @@ namespace Catalyst.Tensors.Models
         private IWeightMatrix Encode(IComputeGraph g, List<List<string>> inputSentences, BiEncoder biEncoder, IWeightMatrix Embedding)
         {
             PadSentences(inputSentences);
-            List<IWeightMatrix> forwardOutputs = new List<IWeightMatrix>();
-            List<IWeightMatrix> backwardOutputs = new List<IWeightMatrix>();
 
             int seqLen = inputSentences[0].Count;
-            List<IWeightMatrix> forwardInput = new List<IWeightMatrix>();
+            var forwardInput = new List<IWeightMatrix>();
             for (int i = 0; i < seqLen; i++)
             {
                 for (int j = 0; j < inputSentences.Count; j++)
@@ -588,7 +579,7 @@ namespace Catalyst.Tensors.Models
                     }
                     else
                     {
-                        Logger.LogInformation($"'{inputSentence[i]}' is an unknown word.");
+                        Logger.LogTrace("{WORD} is an unknown word.", inputSentence[i]);
                     }
                     var x = g.PeekRow(Embedding, ix_source);
                     forwardInput.Add(x);
@@ -670,7 +661,7 @@ namespace Catalyst.Tensors.Models
 
                 //Calculate loss for each word in the batch
                 List<IWeightMatrix> probs_g = g.UnFolderRow(probs, Data.BatchSize, false);
-                for (int k = 0; k < Data.BatchSize; k++)
+                for (int k = 0; k < Data.BatchSize; k++)    
                 {
                     var probs_k = probs_g[k];
                     var score_k = probs_k.GetWeightAt(ix_targets[k]);
@@ -703,7 +694,7 @@ namespace Catalyst.Tensors.Models
         private float UpdateParameters(float learningRate, int batchSize)
         {
             var models = GetParametersFromDefaultDevice();
-            return m_solver.UpdateWeights(models, batchSize, learningRate, Data.L2RegularizationStrength, Data.ClipGradientsValue, Data.ArchType);
+            return Solver.UpdateWeights(models, batchSize, learningRate, Data.L2RegularizationStrength, Data.ClipGradientsValue, Data.ArchType);
         }
     
         private List<IWeightMatrix> GetParametersFromDeviceAt(int i)
@@ -764,7 +755,8 @@ namespace Catalyst.Tensors.Models
         private void SyncGradientsBackToDefaultDevices()
         {
             var model = GetParametersFromDefaultDevice();
-            Parallel.For(0, DeviceIDs.Length, i =>
+            
+            foreach(var i in DeviceIDs)
             {
                 var model_i = GetParametersFromDeviceAt(i);
                 for (int j = 0; j < model.Count; j++)
@@ -774,13 +766,13 @@ namespace Catalyst.Tensors.Models
                         model[j].AddGradient(model_i[j]);
                     }
                 }
-            });           
+            }
         }
 
         private void CleanWeightCache()
         {
             var model = GetParametersFromDefaultDevice();
-            m_solver.CleanCache(model);
+            Solver.CleanCache(model);
         }
 
         private void Reset()
