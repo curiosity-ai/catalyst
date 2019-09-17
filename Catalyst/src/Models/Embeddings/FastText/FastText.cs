@@ -114,12 +114,12 @@ namespace Catalyst.Models
         private int[] NegativeTable;
         private Barrier TrainingBarrier; //Barrier to force all threads to be in sync between Epochs
 
-        private IMatrix Wi;
-        private IMatrix Wo;
+        public IMatrix Wi;
+        public IMatrix Wo;
 
-        private int GradientLength;
-        private int HiddenLength;
-        private int OutputLength;
+        public int GradientLength;
+        public int HiddenLength;
+        public int OutputLength;
 
         private List<List<int>> HS_Paths = new List<List<int>>();
         private List<List<bool>> HS_Codes = new List<List<bool>>();
