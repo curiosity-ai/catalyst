@@ -106,6 +106,11 @@ namespace Catalyst.Models
                                         //Make sure now that the letters appear in sequence
                                         var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i - 1].End - tokens[j].Begin + 1);
 
+                                        if (AppearsIn(innerToken.ValueAsSpan, fullSpan) && !fullSpan.IsAllUpperCase())
+                                        {
+                                            break;
+                                        }
+
                                         if (IsSubSequenceOf(lettersToMatch.AsSpan(), fullSpan))
                                         {
                                             var allUpper = fullSpan.ToArray().Where(c => char.IsUpper(c)).ToList();
@@ -153,6 +158,24 @@ namespace Catalyst.Models
                 }
             }
             return found;
+        }
+
+        private bool AppearsIn(ReadOnlySpan<char> abbreviation, ReadOnlySpan<char> description)
+        {
+            int m = description.Length - abbreviation.Length + 1;
+            for (int i = 0; i < m; i++)
+            {
+                if(description[i] == abbreviation[0])
+                {
+                    bool found = true;
+                    for(int k = 1; k < abbreviation.Length; k++)
+                    {
+                        found &= (description[i+k] == abbreviation[k]);
+                    }
+                    if (found) return true;
+                }
+            }
+            return false;
         }
 
         public static string GetStandardForm(ReadOnlySpan<char> fullSpan)
