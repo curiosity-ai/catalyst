@@ -30,6 +30,8 @@ namespace Catalyst.Models
         public bool StoreTrainingData = false;
         public double ReusePreviousCorpusFactor;
 
+        public bool CBowUseWordNgrams = false;
+
         public int Epoch = 5;
         public float LearningRate = 0.05f;
         public long LearningRateUpdateRate = 100;
@@ -842,6 +844,7 @@ namespace Catalyst.Models
             var bow = new List<int>();
             int len = l.Length;
             int cw = Data.ContextWindow;
+            bool useWNG = Data.CBowUseWordNgrams;
             if (len < cw * 2) { return; }
             for (int w = 0; w < len; w++)
             {
@@ -858,6 +861,20 @@ namespace Catalyst.Models
                             {
                                 bow.Add(ng);
                             }
+                        }
+                    }
+
+                    if (useWNG)
+                    {
+                        if(w > contextSize)
+                        {
+                            var wng_before = GetWordNGrams(l.AsSpan().Slice(w - contextSize, contextSize), false);
+                            bow.AddRange(wng_before);
+                        }
+                        if(w < len - contextSize)
+                        {
+                            var wng_after = GetWordNGrams(l.AsSpan().Slice(w + 1, contextSize), false);
+                            bow.AddRange(wng_after);
                         }
                     }
 
@@ -1412,6 +1429,10 @@ namespace Catalyst.Models
 
                     labels = ID.docIDHashes.ContainsKey(di) ? new int[1] { Data.EntryHashToIndex[ID.docIDHashes[di]] } : new int[0];
                 }
+                else if (Data.CBowUseWordNgrams && Data.Type == ModelType.CBow)
+                {
+                    GetWordNGrams(entries, create: true); //create entries on the index, but don't add them to the InputData - they're re-computed on the fly during training
+                }
 
                 trainingCorpus[di] = new Line(entries, labels);
                 Interlocked.Add(ref NumberOfTokens, trainingCorpus[di].EntryIndexes.Length);
@@ -1702,9 +1723,9 @@ namespace Catalyst.Models
             return indexes;
         }
 
-        private int[] GetWordNGrams(IList<int> list, bool create)
+        private int[] GetWordNGrams(Span<int> list, bool create)
         {
-            int len = list.Count;
+            int len = list.Length;
             var hashes = new List<uint>();
             for (int w = 0; w < len; w++)
             {
