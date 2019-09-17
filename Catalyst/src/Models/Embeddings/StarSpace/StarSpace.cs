@@ -449,7 +449,7 @@ namespace Catalyst.Models
                     for (int j = 0; j < examples.Count; j++)
                     {
                         wordExamples.Add(examples[i]);
-                        if (wordExamples.Count >= Data.BatchSize || i == examples.Count - 1)
+                        if (wordExamples.Count >= Data.BatchSize || j == examples.Count - 1)
                         {
                             if (Data.LossType == LossType.SoftMax)
                             {
@@ -948,10 +948,10 @@ namespace Catalyst.Models
 
         private ParseResults GetExample(ThreadState state, int i)
         {
-            return Convert(ref state.Corpus[i]);
+            return Convert(state.Corpus[i]);
         }
 
-        private ParseResults Convert(ref ParseResults example)
+        private ParseResults Convert(ParseResults example)
         {
             var result = new ParseResults();
             result.Weight = example.Weight;
