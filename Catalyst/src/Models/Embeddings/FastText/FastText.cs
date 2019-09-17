@@ -1665,7 +1665,7 @@ namespace Catalyst.Models
                     }
 
                     double f = (double)kv.Value.Count / NumberOfTokens;
-                    EntryDiscardProbability[kv.Key] = (int)(System.Int32.MaxValue * (1.0 - Math.Sqrt(Data.SamplingThreshold / f)));// + SamplingThreshold / f;
+                    EntryDiscardProbability[kv.Key] = (int)(int.MaxValue * (1.0 - Math.Sqrt(Data.SamplingThreshold / f)));// + SamplingThreshold / f;
                 }
 
                 if (Data.Type == ModelType.Supervised)
