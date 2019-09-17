@@ -1723,7 +1723,7 @@ namespace Catalyst.Models
             return indexes;
         }
 
-        private int[] GetWordNGrams(Span<int> list, bool create)
+        public int[] GetWordNGrams(Span<int> list, bool create)
         {
             int len = list.Length;
             var hashes = new List<uint>();
