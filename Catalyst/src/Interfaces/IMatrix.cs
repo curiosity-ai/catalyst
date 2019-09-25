@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace Catalyst
 {
@@ -9,17 +10,15 @@ namespace Catalyst
 
         float this[int i, int j] { get; set; }
 
-        void AddToRow(float[] vec, int i, float a);
+        void AddToRow(ReadOnlySpan<float> vec, int i, float a);
 
-        void AddToRow(ref float[] vec, int i);
+        void AddToRow(ReadOnlySpan<float> vec, int i);
 
-        float DotRow(ref float[] vec, int i);
+        float DotRow(ReadOnlySpan<float> vec, int i);
 
-        float DotRow(ref float[] vec, ref float[] data);
+        float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> data);
 
-        ref float[] GetRowRef(int row);
-
-        float[] GetRow(int row);
+        Span<float> GetRow(int row);
 
         Matrix Multiply(Matrix other);
 
