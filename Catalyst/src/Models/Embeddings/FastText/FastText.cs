@@ -451,12 +451,12 @@ namespace Catalyst.Models
                 for (int epoch = 0; epoch < Data.Epoch; epoch++)
                 {
                     float lr = Data.LearningRate * (1.0f - (float)epoch / (Data.Epoch));
-                    PredictPVDM(ref predictedVector, mps, ref line, lr);
+                    PredictPVDM(predictedVector, mps, ref line, lr);
                 }
 
-                SIMD.Add(ref averageVector, ref predictedVector);
+                SIMD.Add(averageVector, predictedVector);
             }
-            SIMD.Multiply(ref averageVector, 1f / tries);
+            SIMD.Multiply(averageVector, 1f / tries);
             vector = averageVector;
             return true;
         }
@@ -941,7 +941,7 @@ namespace Catalyst.Models
                     }
                 }
 
-                AppendWordNGrams(ref bow, create: false);
+                AppendWordNGrams(bow, create: false);
 
                 bow.AddRange(l.Labels);
 
@@ -950,7 +950,7 @@ namespace Catalyst.Models
             }
         }
 
-        private void PredictPVDM(ref float[] predictionVector, ThreadState mps, ref Line l, float lr)
+        private void PredictPVDM(Span<float> predictionVector, ThreadState mps, ref Line l, float lr)
         {
             int cw = Data.ContextWindow;
             int len = l.EntryIndexes.Length - cw;
@@ -966,7 +966,7 @@ namespace Catalyst.Models
                     }
                 }
 
-                AppendWordNGrams(ref bow, create: false);
+                AppendWordNGrams(bow, create: false);
 
                 var bow_a = bow.ToArray();
                 UpdatePredictionOnly(predictionVector, mps, bow_a, l.EntryIndexes[w], lr);
@@ -1268,16 +1268,16 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComputeHidden(ThreadState state, Span<int> input)
         {
-            float z = 1.0f / (float)input.Length;
-            ref float[] hidden = ref state.Hidden;
-            hidden.Zero();
+            float z = 1.0f / input.Length;
+            Span<float> hidden = state.Hidden;
+            hidden.Fill(0f);
             foreach (var ix in input)
             {
                 var v = Wi.GetRow(ix);
                 Quantize(v);
                 SIMD.Add(hidden, v);
             }
-            SIMD.Multiply(ref hidden, z);
+            SIMD.Multiply(hidden, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1721,7 +1721,7 @@ namespace Catalyst.Models
             return hashes.Select(h => (int)h).ToArray();
         }
 
-        private void AppendWordNGrams(ref List<int> list, bool create)
+        private void AppendWordNGrams(List<int> list, bool create)
         {
             if (Data.MaximumWordNgrams < 2) { return; }
             int len = list.Count;

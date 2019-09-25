@@ -16,7 +16,7 @@ namespace Catalyst
 
         float DotRow(ReadOnlySpan<float> vec, int i);
 
-        float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> data);
+        float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> other);
 
         Span<float> GetRow(int row);
 

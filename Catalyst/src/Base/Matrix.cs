@@ -10,26 +10,6 @@ using System.Threading.Tasks;
 
 namespace Catalyst
 {
-    //TODO: refactor this classs to use Span, flatten Matrix to use large arrays of floats and slices to calculate on them
-    //public static void daxpy(double alpha, Span<double> x, Span<double> y)
-    //{
-    //    if (Vector.IsHardwareAccelerated)
-    //    {
-    //        var vx = x.NonPortableCast<double, Vector<double>>();
-    //        var vy = y.NonPortableCast<double, Vector<double>>();
-
-    //        var valpha = new Vector<double>(alpha);
-    //        for (var i = 0; i < vx.Length; ++i)
-    //            vy[i] += vx[i] * valpha;
-
-    //        x = x.Slice(Vector<double>.Count * vx.Length);
-    //        y = y.Slice(Vector<double>.Count * vy.Length);
-    //    }
-
-    //    for (var i = 0; i < x.Length; ++i)
-    //        y[i] += x[i] * alpha;
-    //}
-
     // Cannot use [MessagePackObject] here, as it will limit the maximum size of the matrix - have to instead serialize manually to a stream
     public class Matrix : IMatrix
     {
@@ -72,7 +52,7 @@ namespace Catalyst
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<float> GetRow(int row)
         {
-            return Data.AsSpan().Slice(row*Columns);
+            return Data.AsSpan().Slice(row*Columns, Columns);
         }
 
         public Matrix(float[][] data)
@@ -81,7 +61,7 @@ namespace Catalyst
             Columns = data[0].Length;
             for(int i = 0; i < Rows; i++)
             {
-                data[i].AsSpan().CopyTo(Data.AsSpan().Slice(i*Columns));
+                data[i].AsSpan().CopyTo(Data.AsSpan().Slice(i*Columns, Columns));
             }
         }
 
@@ -98,7 +78,7 @@ namespace Catalyst
                     var byteArray = new byte[Columns * sizeof(float)];
                     for (int i = 0; i < Rows; i++)
                     {
-                        var row = data.Slice(i * Columns);
+                        var row = data.Slice(i * Columns, Columns);
                         MemoryMarshal.Cast<float, byte>(row).CopyTo(byteArray);
                         MessagePackBinary.WriteBytes(stream, byteArray);
                     }
@@ -217,27 +197,27 @@ namespace Catalyst
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddToRow(ReadOnlySpan<float> vec, int i, float a)
         {
-            SIMD.MultiplyAndAdd(Data.AsSpan().Slice(i*Columns), vec, a);
+            SIMD.MultiplyAndAdd(Data.AsSpan().Slice(i*Columns, Columns), vec, a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddToRow(ReadOnlySpan<float> vec, int i)
         {
-            SIMD.Add(Data.AsSpan().Slice(i * Columns), vec);
+            SIMD.Add(Data.AsSpan().Slice(i * Columns, Columns), vec);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float DotRow(ReadOnlySpan<float> vec, int i)
         {
-            var d = SIMD.DotProduct(Data.AsSpan().Slice(i * Columns), vec);
+            var d = SIMD.DotProduct(Data.AsSpan().Slice(i * Columns, Columns), vec);
             Debug.Assert(!float.IsNaN(d));
             return d;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> data)
+        public float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> other)
         {
-            var d = SIMD.DotProduct(data, vec);
+            var d = SIMD.DotProduct(vec, other);
             Debug.Assert(!float.IsNaN(d));
             return d;
         }
