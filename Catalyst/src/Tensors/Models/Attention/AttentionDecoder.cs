@@ -62,7 +62,7 @@ namespace Catalyst.Tensors.Models
         public IWeightMatrix Decode(IWeightMatrix input, AttentionPreProcessResult attenPreProcessResult, IComputeGraph g)
         {
             var V = input;
-            var lastStatus = this.decoders.LastOrDefault().ct;
+            var lastStatus = decoders.LastOrDefault().ct;
             var context = attentionLayer.Perform(lastStatus, attenPreProcessResult, g);
 
             foreach (var decoder in decoders)

@@ -18,8 +18,8 @@ namespace Catalyst.Tensors.CUDA
 
         public CudaRandom()
         {
-            this.cpuAllocator = new CpuAllocator();
-            this.cpuRandom = new CpuRandom();
+            cpuAllocator = new CpuAllocator();
+            cpuRandom = new CpuRandom();
         }
 
 

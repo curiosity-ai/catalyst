@@ -29,18 +29,18 @@ namespace Catalyst.Tensors.CUDA
 
         public DeviceState(int deviceId)
         {
-            this.CudaContext = new CudaContext(deviceId);
-            this.DeviceInfo = this.CudaContext.GetDeviceInfo();
+            CudaContext = new CudaContext(deviceId);
+            DeviceInfo = CudaContext.GetDeviceInfo();
 
-            this.BlasHandles = new ObjectPool<CudaBlas>(1, () =>
+            BlasHandles = new ObjectPool<CudaBlas>(1, () =>
             {
                 CudaContext.SetCurrent();
                 return new CudaBlas();
             },
                 blas => blas.Dispose());
 
-            this.MemoryAllocator = new PoolingDeviceAllocator(CudaContext);
-            this.ScratchSpace = AllocScratchSpace(CudaContext, DeviceInfo);
+            MemoryAllocator = new PoolingDeviceAllocator(CudaContext);
+            ScratchSpace = AllocScratchSpace(CudaContext, DeviceInfo);
         }
 
 
@@ -53,7 +53,7 @@ namespace Catalyst.Tensors.CUDA
         {
             BlasHandles.Dispose();
             CudaContext.Dispose();
-            this.MemoryAllocator.Dispose();
+            MemoryAllocator.Dispose();
         }
 
         private static ScratchSpace AllocScratchSpace(CudaContext context, CudaDeviceProperties deviceProps)

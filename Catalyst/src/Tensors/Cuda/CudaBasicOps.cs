@@ -28,7 +28,7 @@ namespace Catalyst.Tensors.CUDA
 
         public CudaBasicOps()
         {
-            this.copyOps = new CopyOps(fillCopyKernels);
+            copyOps = new CopyOps(fillCopyKernels);
         }
 
 

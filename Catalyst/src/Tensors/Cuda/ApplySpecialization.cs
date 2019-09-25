@@ -25,10 +25,10 @@ namespace Catalyst.Tensors.CUDA
         {
             if (tensors.All(ApplyUtils.CanUse32BitIndexMath))
             {
-                this.Use32BitIndices = true;
+                Use32BitIndices = true;
 
                 // Specialize each tensor dimenionality independently
-                this.TensorDims = tensors.Select(tensor =>
+                TensorDims = tensors.Select(tensor =>
                 {
                     if (tensor.IsContiguous())
                         return -2;
@@ -38,7 +38,7 @@ namespace Catalyst.Tensors.CUDA
             }
             else
             {
-                this.Use32BitIndices = false;
+                Use32BitIndices = false;
                 // For 64-bit index case (ie. large tensors), only specalize on totally contiguous
                 // or totally generic
                 if (tensors.All(x => x.IsContiguous()))
@@ -57,8 +57,8 @@ namespace Catalyst.Tensors.CUDA
 
         public ApplySpecialization(bool use32BitIndices, params int[] tensorDims)
         {
-            this.Use32BitIndices = use32BitIndices;
-            this.TensorDims = tensorDims;
+            Use32BitIndices = use32BitIndices;
+            TensorDims = tensorDims;
         }
 
         
@@ -72,7 +72,7 @@ namespace Catalyst.Tensors.CUDA
             for (int i = 0; i < TensorDims.Length; ++i)
             {
                 var tensorName = (char)('A' + i);
-                result.Set("DIMS" + tensorName, this.TensorDims[i].ToString());
+                result.Set("DIMS" + tensorName, TensorDims[i].ToString());
             }
 
             return result;

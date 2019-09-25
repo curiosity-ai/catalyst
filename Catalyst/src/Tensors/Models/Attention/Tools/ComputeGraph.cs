@@ -6,58 +6,24 @@ using System.Threading.Tasks;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Catalyst.Tensors.Models.Tools;
+using System.Collections.Concurrent;
 
 namespace Catalyst.Tensors
 {
-    public class ConcurrentList<T>
-    {
-        const int MaxSize = 1024000;
-        T[] array;
-        int count = 0;
-        public int Count => count;
-
-        public T this[int key]
-        {
-            get
-            {
-                return array[key];
-            }
-            set
-            {
-                array[key] = value;
-            }
-        }
-
-        public ConcurrentList()
-        {
-            array = new T[MaxSize];
-        }
-
-        public void Add(T item)
-        {
-            int n = System.Threading.Interlocked.Increment(ref count);
-            array[n - 1] = item;
-        }
-
-        public void RemoveLastItem()
-        {
-            System.Threading.Interlocked.Decrement(ref count);
-        }
-    }
-
     public class ComputeGraph : IComputeGraph
     {
         internal static WeightMatrixFactory weightMatrixFactory;
 
 
-        public ConcurrentList<Action> backprop = new ConcurrentList<Action>();
+        public ConcurrentStack<Action> backprop = new ConcurrentStack<Action>();
+
         public bool needs_backprop { get; set; }
         public ComputeGraph(IWeightFactory weightFactory, bool needBack = true)
         {
             weightMatrixFactory = weightFactory as WeightMatrixFactory;
 
 
-            this.needs_backprop = needBack;
+            needs_backprop = needBack;
         }
 
 
@@ -143,7 +109,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -169,7 +135,7 @@ namespace Catalyst.Tensors
 
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -207,7 +173,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -242,7 +208,7 @@ namespace Catalyst.Tensors
 
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -273,7 +239,7 @@ namespace Catalyst.Tensors
                 Array.Copy(m2.Weight, i * m2.Columns, res.Weight, i * res.Columns + m1.Columns, m2.Columns);
             }
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -327,7 +293,7 @@ namespace Catalyst.Tensors
                         }
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -341,7 +307,7 @@ namespace Catalyst.Tensors
 
             Array.Copy(m.Weight, d * ix, res.Weight, 0, d * num);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -378,7 +344,7 @@ namespace Catalyst.Tensors
                         }
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -414,7 +380,7 @@ namespace Catalyst.Tensors
             res = V2;
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -429,7 +395,7 @@ namespace Catalyst.Tensors
                     }
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -496,7 +462,7 @@ namespace Catalyst.Tensors
 
             }//);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -549,7 +515,7 @@ namespace Catalyst.Tensors
                         }
                     }//);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -601,7 +567,7 @@ namespace Catalyst.Tensors
 
             }//);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -676,7 +642,7 @@ namespace Catalyst.Tensors
 
                     }//);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -711,7 +677,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
 
                 Action backward = () =>
@@ -751,7 +717,7 @@ namespace Catalyst.Tensors
                     }
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
 
@@ -788,7 +754,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
 
                 Action backward = () =>
@@ -821,7 +787,7 @@ namespace Catalyst.Tensors
                     }
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -855,7 +821,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
 
                 Action backward = () =>
@@ -887,25 +853,25 @@ namespace Catalyst.Tensors
                     }
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
            
         public void Backward()
         {
-            for (var i = this.backprop.Count - 1; i >= 0; i--)
+            while(backprop.TryPop(out var action))
             {
-                this.backprop[i](); // tick!
+                action();
             }
         }
 
         public void RunTopBackward()
         {
-            backprop[backprop.Count - 1]();
-
-            backprop.RemoveLastItem();
-
+            if(backprop.TryPop(out var action))
+            {
+                action();
+            }
         }
 
         public IWeightMatrix CreatePositionMatrix(int dimWords, int dimEmb)
@@ -972,7 +938,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -1018,7 +984,7 @@ namespace Catalyst.Tensors
                         }
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -1105,7 +1071,7 @@ namespace Catalyst.Tensors
                 k++;
             }
 
-            if (this.needs_backprop && bp)
+            if (needs_backprop && bp)
             {
                 Action backward = () =>
                 {
@@ -1123,7 +1089,7 @@ namespace Catalyst.Tensors
 
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -1159,7 +1125,7 @@ namespace Catalyst.Tensors
                 }
             }
                       
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -1194,7 +1160,7 @@ namespace Catalyst.Tensors
                         }
                     }                   
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }      
@@ -1221,7 +1187,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -1237,7 +1203,7 @@ namespace Catalyst.Tensors
                         startIdx += r.Columns;
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -1282,7 +1248,7 @@ namespace Catalyst.Tensors
                 startIdx += twl[i].Weight.Length;
             }
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -1313,7 +1279,7 @@ namespace Catalyst.Tensors
                         startIdx += n;
                     }                
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -1345,7 +1311,7 @@ namespace Catalyst.Tensors
                 }
             }
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -1357,7 +1323,7 @@ namespace Catalyst.Tensors
                         }
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -1412,7 +1378,7 @@ namespace Catalyst.Tensors
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
 
                 Action backward = () =>
@@ -1439,7 +1405,7 @@ namespace Catalyst.Tensors
                     }
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }

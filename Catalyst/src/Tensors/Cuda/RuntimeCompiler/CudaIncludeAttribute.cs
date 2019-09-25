@@ -13,8 +13,8 @@ namespace Catalyst.Tensors.CUDA.RuntimeCompiler
 
         public CudaIncludeAttribute(string fieldName, string includeName)
         {
-            this.FieldName = fieldName;
-            this.IncludeName = includeName;
+            FieldName = fieldName;
+            IncludeName = includeName;
         }
     }
 }

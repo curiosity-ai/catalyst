@@ -42,16 +42,16 @@ namespace Catalyst.Tensors.Models
                 Wxhc = new WeightTensor(dim + hdim + contextSize, hdim * 4, deviceId, true);
                 b = new WeightTensor(1, hdim * 4, 0, deviceId);
 
-                this.ht = new WeightTensor(batchSize, hdim, 0, deviceId);
-                this.ct = new WeightTensor(batchSize, hdim, 0, deviceId);
+                ht = new WeightTensor(batchSize, hdim, 0, deviceId);
+                ct = new WeightTensor(batchSize, hdim, 0, deviceId);
             }
             else
             {
                 Wxhc = new WeightMatrix(dim + hdim + contextSize, hdim * 4, true);
                 b = new WeightMatrix(1, hdim * 4, 0);
 
-                this.ht = new WeightMatrix(batchSize, hdim, 0);
-                this.ct = new WeightMatrix(batchSize, hdim, 0);
+                ht = new WeightMatrix(batchSize, hdim, 0);
+                ct = new WeightMatrix(batchSize, hdim, 0);
             }
 
             layerNorm1 = new LayerNormalization(hdim * 4, archType, deviceId);

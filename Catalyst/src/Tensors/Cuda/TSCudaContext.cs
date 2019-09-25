@@ -66,8 +66,8 @@ namespace Catalyst.Tensors.CUDA
             //    p2pAccess = new bool[0, 0];
             //}
 
-            this.diskCache = new RuntimeCompiler.KernelDiskCache(Path.Combine(Environment.CurrentDirectory, CacheDir));
-            this.compiler = new RuntimeCompiler.CudaCompiler(diskCache);
+            diskCache = new RuntimeCompiler.KernelDiskCache(Path.Combine(Environment.CurrentDirectory, CacheDir));
+            compiler = new RuntimeCompiler.CudaCompiler(diskCache);
 
             OpRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
         }

@@ -22,11 +22,11 @@ namespace Catalyst.Tensors.CUDA
         public CudaStorage(IAllocator allocator, TSCudaContext tsContext, CudaContext context, DType ElementType, long elementCount)
             : base(allocator, ElementType, elementCount)
         {
-            this.TSContext = tsContext;
+            TSContext = tsContext;
             this.context = context;
 
-            this.bufferHandle = tsContext.AllocatorForDevice(DeviceId).Allocate(this.ByteLength);
-            this.deviceBuffer = this.bufferHandle.Pointer;
+            bufferHandle = tsContext.AllocatorForDevice(DeviceId).Allocate(ByteLength);
+            deviceBuffer = bufferHandle.Pointer;
         }
 
         public TSCudaContext TSContext { get; private set; }

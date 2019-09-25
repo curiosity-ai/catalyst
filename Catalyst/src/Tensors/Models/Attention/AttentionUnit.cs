@@ -35,19 +35,19 @@ namespace Catalyst.Tensors.Models
 
             if (archType == ArchTypeEnums.GPU_CUDA)
             {
-                this.Ua = new WeightTensor(context, size, deviceId, true);
-                this.Wa = new WeightTensor(size, size, deviceId, true);
-                this.bUa = new WeightTensor(1, size, 0, deviceId);
-                this.bWa = new WeightTensor(1, size, 0, deviceId);
-                this.V = new WeightTensor(size, 1, deviceId, true);
+                Ua = new WeightTensor(context, size, deviceId, true);
+                Wa = new WeightTensor(size, size, deviceId, true);
+                bUa = new WeightTensor(1, size, 0, deviceId);
+                bWa = new WeightTensor(1, size, 0, deviceId);
+                V = new WeightTensor(size, 1, deviceId, true);
             }
             else
             {
-                this.Ua = new WeightMatrix((size * 2), size, true);
-                this.Wa = new WeightMatrix(size, size, true);
-                this.bUa = new WeightMatrix(1, size, 0);
-                this.bWa = new WeightMatrix(1, size, 0);
-                this.V = new WeightMatrix(size, 1, true);
+                Ua = new WeightMatrix((size * 2), size, true);
+                Wa = new WeightMatrix(size, size, true);
+                bUa = new WeightMatrix(1, size, 0);
+                bWa = new WeightMatrix(1, size, 0);
+                V = new WeightMatrix(size, 1, true);
             }
         }
 

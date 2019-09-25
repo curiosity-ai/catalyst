@@ -24,7 +24,7 @@ namespace Catalyst.Tensors.CUDA.Util
         {
             get
             {
-                if (disposed) throw new ObjectDisposedException(this.ToString());
+                if (disposed) throw new ObjectDisposedException(ToString());
                 return value;
             }
         }
@@ -38,7 +38,7 @@ namespace Catalyst.Tensors.CUDA.Util
             }
             else
             {
-                throw new ObjectDisposedException(this.ToString());
+                throw new ObjectDisposedException(ToString());
             }
         }
     }

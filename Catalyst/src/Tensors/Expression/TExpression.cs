@@ -11,7 +11,7 @@ namespace Catalyst.Tensors.Expression
 
         public TExpression(bool isValidLvalue = false)
         {
-            this.IsValidLvalue = isValidLvalue;
+            IsValidLvalue = isValidLvalue;
         }
 
         public abstract Tensor Evaluate(Tensor writeTarget);

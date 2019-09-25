@@ -145,7 +145,7 @@ namespace Catalyst
 
         public IEnumerable<IToken> GetTokenized()
         {
-            var tc = this.TokensCount;
+            var tc = TokensCount;
             for (int i = 0; i < tc; i++)
             {
                 var t = this[i];

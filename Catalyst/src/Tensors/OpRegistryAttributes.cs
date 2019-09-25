@@ -18,7 +18,7 @@ namespace Catalyst.Tensors
 
         public RegisterOp(string opName)
         {
-            this.OpName = opName;
+            OpName = opName;
         }
 
         public abstract void DoRegister(object instance, MethodInfo method, IEnumerable<OpConstraint> paramConstraints);

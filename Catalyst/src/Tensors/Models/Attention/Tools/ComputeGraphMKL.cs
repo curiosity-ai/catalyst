@@ -97,14 +97,14 @@ namespace Catalyst.Tensors
 
             cblas_sgemm(Order.Row, Transpose.NoTrans, Transpose.NoTrans, m1.Rows, m2.Columns, m1.Columns, 1.0f, m1.Weight, m1.Columns, m2.Weight, m2.Columns, 0.0f, res.Weight, m2.Columns);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     cblas_sgemm(Order.Row, Transpose.NoTrans, Transpose.Trans, m1.Rows, m1.Columns, res.Columns, 1.0f, res.Gradient, res.Columns, m2.Weight, res.Columns, 1.0f, m1.Gradient, m1.Columns);
                     cblas_sgemm(Order.Row, Transpose.Trans, Transpose.NoTrans, m2.Rows, m2.Columns, res.Rows, 1.0f, m1.Weight, m2.Rows, res.Gradient, m2.Columns, 1.0f, m2.Gradient, m2.Columns);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -125,7 +125,7 @@ namespace Catalyst.Tensors
                 }
             }
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
 
                 Action backward = () =>
@@ -139,7 +139,7 @@ namespace Catalyst.Tensors
                         }
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
 
@@ -161,7 +161,7 @@ namespace Catalyst.Tensors
 
             cblas_sgemm(Order.Row, Transpose.NoTrans, Transpose.NoTrans, m1.Rows, m2.Columns, m1.Columns, 1.0f, m1.Weight, m1.Columns, m2.Weight, m2.Columns, 1.0f, res.Weight, m2.Columns);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -177,7 +177,7 @@ namespace Catalyst.Tensors
                     cblas_sgemm(Order.Row, Transpose.Trans, Transpose.NoTrans, m2.Rows, m2.Columns, res.Rows, 1.0f, m1.Weight, m2.Rows, res.Gradient, m2.Columns, 1.0f, m2.Gradient, m2.Columns);
              
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }       

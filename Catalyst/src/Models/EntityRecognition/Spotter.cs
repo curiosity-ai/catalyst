@@ -96,7 +96,7 @@ namespace Catalyst.Models
         public bool IsEquivalentTo(Spotter other)
         {
             var omd = other.Data;
-            var tmd = this.Data;
+            var tmd = Data;
             return omd.IgnoreOnlyNumeric == tmd.IgnoreOnlyNumeric &&
                    omd.IgnoreCase == tmd.IgnoreCase &&
                    omd.Hashes.SetEquals(tmd.Hashes) &&

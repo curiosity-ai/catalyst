@@ -15,7 +15,7 @@ namespace Catalyst.Tensors.Cpu
         public CpuStorage(IAllocator allocator, DType ElementType, long elementCount)
             : base(allocator, ElementType, elementCount)
         {
-            this.buffer = Marshal.AllocHGlobal(new IntPtr(this.ByteLength));
+            buffer = Marshal.AllocHGlobal(new IntPtr(ByteLength));
         }
 
         protected override void Destroy()

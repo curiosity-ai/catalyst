@@ -237,7 +237,7 @@ namespace Catalyst
                 for (int j = 0; j < M.Columns; j++)
                 {
                     //M.Data[i][j] = SIMD.DotProduct(ref Data[i], ref OT.Data[j]);
-                    for (int k = 0; k < this.Rows; k++)
+                    for (int k = 0; k < Rows; k++)
                     {
                         M.Data[i][j] += Data[i][k] * other.Data[k][j];
                     }

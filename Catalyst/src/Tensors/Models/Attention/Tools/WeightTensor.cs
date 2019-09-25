@@ -199,8 +199,8 @@ namespace Catalyst.Tensors.Models.Tools
 
         public WeightTensor(int rows, int columns, Tensor weight, Tensor gradient)
         {
-            this.Rows = rows;
-            this.Columns = columns;
+            Rows = rows;
+            Columns = columns;
 
             m_TGradient = gradient;
             m_TWeight = weight;

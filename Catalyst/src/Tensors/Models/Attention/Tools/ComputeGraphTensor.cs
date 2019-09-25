@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace Catalyst.Tensors.Models.Tools
     public class ComputeGraphTensor : IComputeGraph
     {
         internal WeightTensorFactory weightTensorFactory;
-        public ConcurrentList<Action> backprop = new ConcurrentList<Action>();
+        public ConcurrentStack<Action> backprop = new ConcurrentStack<Action>();
         public bool needs_backprop { get; set; }
         private int deviceId;
 
@@ -22,23 +23,22 @@ namespace Catalyst.Tensors.Models.Tools
             this.deviceId = deviceId;
         }
 
-
         public void Backward()
         {
-            for (var i = this.backprop.Count - 1; i >= 0; i--)
+            while (backprop.TryPop(out var action))
             {
-                this.backprop[i](); // tick!
+                action();
             }
         }
 
         public void RunTopBackward()
         {
-            backprop[backprop.Count - 1]();
-
-            backprop.RemoveLastItem();
-
+            if (backprop.TryPop(out var action))
+            {
+                action();
+            }
         }
-
+        
         public IWeightMatrix Sigmoid(IWeightMatrix w, bool updateWeightsInPlace = false)
         {
             var m = w as WeightTensor;
@@ -50,7 +50,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Sigmoid(res.TWeight, m.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -60,7 +60,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -75,7 +75,7 @@ namespace Catalyst.Tensors.Models.Tools
             var res = weightTensorFactory.CreateWeightTensor(m1.Rows, m1.Columns, deviceId);
             Ops.AddTanh(res.TWeight, m1.TWeight, m2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -88,7 +88,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -104,13 +104,13 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Mul(res.TWeight, m.TWeight, v);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     Ops.AddMulV(m.TGradient, m.TGradient, res.TGradient, v);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -128,7 +128,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.MulMulAdd(res.TWeight, m1.TWeight, m2.TWeight, m3.TWeight, m4.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -148,7 +148,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -162,7 +162,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Mul(res.TWeight, m1.TWeight, m2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -176,7 +176,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -190,7 +190,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Add(res.TWeight, m1.TWeight, m2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -204,7 +204,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -221,7 +221,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Tanh(res.TWeight, m.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -231,7 +231,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -252,7 +252,7 @@ namespace Catalyst.Tensors.Models.Tools
             Ops.AddmmBatch(rW, 0.0f, rW, 1.0f, t1W, t2W);
             rW.Dispose();
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -281,7 +281,7 @@ namespace Catalyst.Tensors.Models.Tools
                     res.Dispose();
 
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             else
             {
@@ -303,7 +303,7 @@ namespace Catalyst.Tensors.Models.Tools
             res = weightTensorFactory.CreateWeightTensor(n, d, deviceId);
             Ops.Addmm(res.TWeight, 0.0f, res.TWeight, 1.0f, t1.TWeight, t2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -320,7 +320,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -339,7 +339,7 @@ namespace Catalyst.Tensors.Models.Tools
             WeightTensor res = weightTensorFactory.CreateWeightTensor(n, d, deviceId);
             Ops.Addmm(res.TWeight, 1.0f, t3.TWeight, 1.0f, t1.TWeight, t2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -361,7 +361,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -376,13 +376,13 @@ namespace Catalyst.Tensors.Models.Tools
 
             var res = weightTensorFactory.CreateWeightTensor(m.Columns, m.Rows, wT, gT);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -396,7 +396,7 @@ namespace Catalyst.Tensors.Models.Tools
             var res = weightTensorFactory.CreateWeightTensor(m.Rows, m.Columns, deviceId);
             Ops.Softmax(res.TWeight, m.TWeight);
 
-            if (this.needs_backprop && bp)
+            if (needs_backprop && bp)
             {
                 Action backward = () =>
                 {
@@ -406,7 +406,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -438,13 +438,13 @@ namespace Catalyst.Tensors.Models.Tools
                 }
             }
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -462,7 +462,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             Ops.Concat(res.TWeight, 1, m1.TWeight, m2.TWeight);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -483,7 +483,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -495,13 +495,13 @@ namespace Catalyst.Tensors.Models.Tools
             {
                 var res = weightTensorFactory.CreateWeightTensor(m.Rows * n, m.Columns, m.TWeight.Expand(n, m.Columns), m.TGradient.Expand(n, m.Columns));
 
-                if (this.needs_backprop)
+                if (needs_backprop)
                 {
                     Action backward = () =>
                     {
                         res.Dispose();
                     };
-                    this.backprop.Add(backward);
+                    backprop.Push(backward);
                 }
 
                 return res;
@@ -542,7 +542,7 @@ namespace Catalyst.Tensors.Models.Tools
             Ops.Concat(res.TWeight, 0, twl.ToArray());
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -565,7 +565,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
 
@@ -599,7 +599,7 @@ namespace Catalyst.Tensors.Models.Tools
             resTWC1.Dispose();
             resTWC2.Dispose();
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -630,7 +630,7 @@ namespace Catalyst.Tensors.Models.Tools
                     res2.Dispose();
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -661,7 +661,7 @@ namespace Catalyst.Tensors.Models.Tools
             Ops.Concat(res.TWeight, 1, twl.ToArray());
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -684,7 +684,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
             return res;
         }
@@ -706,7 +706,7 @@ namespace Catalyst.Tensors.Models.Tools
             }
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -726,7 +726,7 @@ namespace Catalyst.Tensors.Models.Tools
                         i++;
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -754,14 +754,14 @@ namespace Catalyst.Tensors.Models.Tools
             var res = weightTensorFactory.CreateWeightTensor(r, c, deviceId);
             res.TWeight = t.TWeight.View(r, c);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     var g = res.TGradient.View(m.Rows, m.Columns);
                     t.CopyOrAddGradient(g);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -776,7 +776,7 @@ namespace Catalyst.Tensors.Models.Tools
 
             res.TWeight = Ops.AsContiguous(t.TWeight.View(sizeEveryBatch, batchSize, m.Columns).Permute(1, 0, 2)).View(m.Rows, m.Columns);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -788,7 +788,7 @@ namespace Catalyst.Tensors.Models.Tools
                     t2.Dispose();
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -841,7 +841,7 @@ namespace Catalyst.Tensors.Models.Tools
                 tw.Dispose();
             }
 
-            if (this.needs_backprop && gradient)
+            if (needs_backprop && gradient)
             {
                 Action backward = () =>
                 {
@@ -850,7 +850,7 @@ namespace Catalyst.Tensors.Models.Tools
                         item.Dispose();
                     }
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
 
@@ -912,13 +912,13 @@ namespace Catalyst.Tensors.Models.Tools
             Ops.LayerNorm(res.TWeight, srcT.TWeight, alphaT.TWeight, betaT.TWeight, eps);
 
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
                     Ops.LayerNormGrad(srcT.TGradient, alphaT.TGradient, betaT.TGradient, res.TGradient, res.TWeight, srcT.TWeight, alphaT.TWeight, betaT.TWeight, eps);
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;
@@ -933,7 +933,7 @@ namespace Catalyst.Tensors.Models.Tools
             Tensor noise = BuildRandomTensor(V.Rows, V.Columns, p);
             Ops.Mul(res.TWeight, w.TWeight, noise);
 
-            if (this.needs_backprop)
+            if (needs_backprop)
             {
                 Action backward = () =>
                 {
@@ -947,7 +947,7 @@ namespace Catalyst.Tensors.Models.Tools
 
                     res.Dispose();
                 };
-                this.backprop.Add(backward);
+                backprop.Push(backward);
             }
 
             return res;

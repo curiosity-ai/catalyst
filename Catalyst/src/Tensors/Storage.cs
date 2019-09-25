@@ -11,9 +11,9 @@ namespace Catalyst.Tensors
     {
         public Storage(IAllocator allocator, DType elementType, long elementCount)
         {
-            this.Allocator = allocator;
-            this.ElementType = elementType;
-            this.ElementCount = elementCount;
+            Allocator = allocator;
+            ElementType = elementType;
+            ElementCount = elementCount;
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace Catalyst.Tensors
 
         public bool IsOwnerExclusive()
         {
-            return this.GetCurrentRefCount() == 1;
+            return GetCurrentRefCount() == 1;
         }
 
 

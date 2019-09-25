@@ -34,8 +34,8 @@ namespace Catalyst.Tensors
         {
             this.sizes = sizes;
             this.strides = strides;
-            this.storageOffset = 0;
-            this.storage = allocator.Allocate(elementType, TensorDimensionHelpers.GetStorageSize(sizes, strides));
+            storageOffset = 0;
+            storage = allocator.Allocate(elementType, TensorDimensionHelpers.GetStorageSize(sizes, strides));
         }
 
         public Tensor(long[] sizes, long[] strides, Storage storage, long storageOffset)
@@ -66,7 +66,7 @@ namespace Catalyst.Tensors
             if (!isDisposed)
             {
                 isDisposed = true;
-                this.storage.Release();
+                storage.Release();
             }
             else
             {
@@ -80,10 +80,10 @@ namespace Catalyst.Tensors
             if (o == null) return false;
 
             return
-                Object.ReferenceEquals(this.storage, o.storage) &&
-                this.storageOffset == o.storageOffset &&
-                TensorResultBuilder.ArrayEqual(this.sizes, o.sizes) &&
-                TensorResultBuilder.ArrayEqual(this.strides, o.strides);
+                Object.ReferenceEquals(storage, o.storage) &&
+                storageOffset == o.storageOffset &&
+                TensorResultBuilder.ArrayEqual(sizes, o.sizes) &&
+                TensorResultBuilder.ArrayEqual(strides, o.strides);
         }
 
         public override int GetHashCode()
@@ -148,7 +148,7 @@ namespace Catalyst.Tensors
 
         public bool IsSameSizeAs(Tensor other)
         {
-            return Core.TensorResultBuilder.ArrayEqual(this.sizes, other.sizes);
+            return Core.TensorResultBuilder.ArrayEqual(sizes, other.sizes);
         }
 
         /// <summary>
@@ -228,14 +228,14 @@ namespace Catalyst.Tensors
 
         public Tensor View(params long[] sizes)
         {
-            if (!this.IsContiguous()) throw new InvalidOperationException("Cannot use View on a non-contiguous tensor");
+            if (!IsContiguous()) throw new InvalidOperationException("Cannot use View on a non-contiguous tensor");
 
-            if (this.ElementCount() != TensorDimensionHelpers.ElementCount(sizes))
+            if (ElementCount() != TensorDimensionHelpers.ElementCount(sizes))
             {
                 throw new InvalidOperationException("Output tensor must have the same number of elements as the input");
             }
 
-            return new Tensor(sizes, TensorDimensionHelpers.GetContiguousStride(sizes), this.storage, this.storageOffset);
+            return new Tensor(sizes, TensorDimensionHelpers.GetContiguousStride(sizes), storage, storageOffset);
         }
 
         public Tensor Narrow(int dimension, long startIndex, long size)
@@ -296,10 +296,10 @@ namespace Catalyst.Tensors
 
         public Tensor Permute(params int[] dims)
         {
-            if (dims.Length != this.DimensionCount)
+            if (dims.Length != DimensionCount)
                 throw new InvalidOperationException("The number of permutation indices must equal the number of tensor dimensions");
 
-            var result = this.CopyRef();
+            var result = CopyRef();
             foreach (var swap in SwapsForPermutation(dims))
             {
                 var resultOld = result;
@@ -333,7 +333,7 @@ namespace Catalyst.Tensors
                 }
             }
 
-            return new Tensor(newSizes, newStrides, this.storage, this.storageOffset);
+            return new Tensor(newSizes, newStrides, storage, storageOffset);
         }
 
 
@@ -395,12 +395,12 @@ namespace Catalyst.Tensors
             Array.Copy(strides, newStrides, DimensionCount);
 
             newSize[DimensionCount] = size;
-            newStrides[DimensionCount] = this.strides[dimension];
+            newStrides[DimensionCount] = strides[dimension];
 
-            newSize[dimension] = (this.sizes[dimension] - size) / step + 1;
-            newStrides[dimension] = step * this.strides[dimension];
+            newSize[dimension] = (sizes[dimension] - size) / step + 1;
+            newStrides[dimension] = step * strides[dimension];
 
-            return new Tensor(newSize, newStrides, this.Storage, this.StorageOffset);
+            return new Tensor(newSize, newStrides, Storage, StorageOffset);
         }
 
 
@@ -424,24 +424,24 @@ namespace Catalyst.Tensors
         // Prepend singleton dimensions until DimensionCount equals newDimCount
         private Tensor PadToDimCount(int newDimCount)
         {
-            var newSizes = Pad1Prepend(this.sizes, newDimCount);
+            var newSizes = Pad1Prepend(sizes, newDimCount);
 
             var newStrides = TensorDimensionHelpers.GetContiguousStride(newSizes);
-            Array.Copy(this.strides, 0, newStrides, newStrides.Length - this.strides.Length, this.strides.Length);
+            Array.Copy(strides, 0, newStrides, newStrides.Length - strides.Length, strides.Length);
 
-            return new Tensor(newSizes, newStrides, this.storage, this.storageOffset);
+            return new Tensor(newSizes, newStrides, storage, storageOffset);
         }
 
         public Tensor RepeatTensor(params long[] repetitions)
         {
-            if (repetitions.Length < this.DimensionCount)
+            if (repetitions.Length < DimensionCount)
                 throw new InvalidOperationException("repetitions must be at least the same length as the number of tensor dimensions");
             if (repetitions.Any(x => x < 1)) throw new InvalidOperationException("All dimensions must be repeated at least once");
 
-            var paddedSrc = this.PadToDimCount(repetitions.Length);
+            var paddedSrc = PadToDimCount(repetitions.Length);
             var resultSize = paddedSrc.Sizes.Zip(repetitions, (s, r) => s * r).ToArray();
 
-            var result = new Tensor(this.Allocator, this.ElementType, resultSize);
+            var result = new Tensor(Allocator, ElementType, resultSize);
 
             var urTensor = result.CopyRef();
             for (int i = 0; i < paddedSrc.DimensionCount; ++i)
@@ -500,15 +500,15 @@ namespace Catalyst.Tensors
         {
             var elementType = DTypeBuilder.FromCLRType(array.GetType().GetElementType());
 
-            if (!this.IsContiguous()) throw new InvalidOperationException("Tensor must be contiguous to copy from CLR array");
-            if (this.ElementCount() != array.LongLength) throw new InvalidOperationException("Tensor and array must have the same number of elements");
-            if (this.ElementType != elementType) throw new InvalidOperationException("Tensor and array must have the same element types");
+            if (!IsContiguous()) throw new InvalidOperationException("Tensor must be contiguous to copy from CLR array");
+            if (ElementCount() != array.LongLength) throw new InvalidOperationException("Tensor and array must have the same number of elements");
+            if (ElementType != elementType) throw new InvalidOperationException("Tensor and array must have the same element types");
 
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
                 var length = Buffer.ByteLength(array);
-                this.Storage.CopyToStorage(this.StorageOffset, handle.AddrOfPinnedObject(), length);
+                Storage.CopyToStorage(StorageOffset, handle.AddrOfPinnedObject(), length);
             }
             finally
             {
@@ -521,15 +521,15 @@ namespace Catalyst.Tensors
         {
             var elementType = DTypeBuilder.FromCLRType(array.GetType().GetElementType());
 
-            if (!this.IsContiguous()) throw new InvalidOperationException("Tensor must be contiguous to copy from CLR array");
-            if (this.ElementCount() != array.LongLength) throw new InvalidOperationException("Tensor and array must have the same number of elements");
-            if (this.ElementType != elementType) throw new InvalidOperationException("Tensor and array must have the same element types");
+            if (!IsContiguous()) throw new InvalidOperationException("Tensor must be contiguous to copy from CLR array");
+            if (ElementCount() != array.LongLength) throw new InvalidOperationException("Tensor and array must have the same number of elements");
+            if (ElementType != elementType) throw new InvalidOperationException("Tensor and array must have the same element types");
 
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
                 var length = Buffer.ByteLength(array);
-                this.Storage.CopyFromStorage(handle.AddrOfPinnedObject(), this.StorageOffset, length);
+                Storage.CopyFromStorage(handle.AddrOfPinnedObject(), StorageOffset, length);
             }
             finally
             {

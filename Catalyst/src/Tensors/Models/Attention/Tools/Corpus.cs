@@ -49,6 +49,7 @@ namespace Catalyst.Tensors.Models.Tools
                     list.Clear();
                 }
             }
+
             if (list.Count > 0)
             {
                 ShuffleByLength(list);

@@ -49,12 +49,14 @@ namespace Catalyst.Tensors.Models
 
         public event EventHandler<TrainingEvent> IterationDone;
         
-        private const string m_UNK = "<UNK>";
-        private const string m_END = "<END>";
-        private const string m_START = "<START>";
-        private IWeightFactory[] m_weightFactory;
+        private const string UNK = "<UNK>";
+        private const string END = "<END>";
+        private const string START = "<START>";
+
+        private IWeightFactory[] WeightFactory;
         private int m_maxWord = 100;
         private Optimizer Solver;
+        private bool initialized = false;
 
         private IWeightMatrix[] SourceEmbeddings;
         private IWeightMatrix[] TargetEmbeddings;
@@ -67,10 +69,7 @@ namespace Catalyst.Tensors.Models
         private int DefaultDeviceID_TargetEmbeddings = 0;
         private int DefaultDeviceID_BiEncoder = 0;
         private int DefaultDeviceID_DecoderFeedForwardLayer = 0;
-
-        // optimization  hyperparameters
-        
-        private int m_defaultDeviceId = 0;
+        private int DeviceID_Default = 0;
 
         public new static async Task<AttentionSequenceToSequence> FromStoreAsync(Language language, int version, string tag)
         {
@@ -122,7 +121,7 @@ namespace Catalyst.Tensors.Models
 
             await base.StoreAsync();
         }
-        bool initialized = false;
+
 
         private void Initialize()
         {
@@ -131,12 +130,6 @@ namespace Catalyst.Tensors.Models
             CheckBatchSizeAndDeviceIDs();
 
             InitWeights();
-
-            if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
-            {
-                TensorAllocator.InitDevices(DeviceIDs);
-                SetDefaultDeviceIds(DeviceIDs.Length);
-            }
 
             InitWeightsFactory();
             SetBatchSize(Data.BatchSize);
@@ -169,7 +162,7 @@ namespace Catalyst.Tensors.Models
             float learningRate = Data.StartLearningRate;
             for (int i = 0; i < Data.Epochs; i++)
             {
-                TrainEp(i, learningRate, trainCorpus);
+                TrainEpoch(i, learningRate, trainCorpus);
                 learningRate = Data.StartLearningRate / (1.0f + 0.95f * (i + 1));
             }
         }
@@ -194,6 +187,11 @@ namespace Catalyst.Tensors.Models
                 Data.BatchSize = 1;
                 DeviceIDs = Enumerable.Range(0, Environment.ProcessorCount).ToArray();
             }
+            else if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
+            {
+                TensorAllocator.InitDevices(DeviceIDs);
+                SetDefaultDeviceIds(DeviceIDs.Length);
+            }
         }
 
         private void SetBatchSize(int batchSize)
@@ -205,31 +203,31 @@ namespace Catalyst.Tensors.Models
 
                 if (BiEncoder[i] != null)
                 {
-                    BiEncoder[i].SetBatchSize(m_weightFactory[i], batchSize);
+                    BiEncoder[i].SetBatchSize(WeightFactory[i], batchSize);
                 }
 
                 if (Decoder[i] != null)
                 {
-                    Decoder[i].SetBatchSize(m_weightFactory[i], batchSize);
+                    Decoder[i].SetBatchSize(WeightFactory[i], batchSize);
                 }
             }
         }
 
         private void InitWeightsFactory()
         {
-            m_weightFactory = new IWeightFactory[DeviceIDs.Length];
+            WeightFactory = new IWeightFactory[DeviceIDs.Length];
             if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
             {
                 for (int i = 0; i < DeviceIDs.Length; i++)
                 {
-                    m_weightFactory[i] = new WeightTensorFactory();
+                    WeightFactory[i] = new WeightTensorFactory();
                 }
             }
             else
             {
                 for (int i = 0; i < DeviceIDs.Length; i++)
                 {
-                    m_weightFactory[i] = new WeightMatrixFactory();
+                    WeightFactory[i] = new WeightMatrixFactory();
                 }
             }
         }
@@ -339,21 +337,21 @@ namespace Catalyst.Tensors.Models
                 }
             }
 
-            Data.SourceWordToIndex[m_END] = (int)SENTTAGS.END;
-            Data.SourceWordToIndex[m_START] = (int)SENTTAGS.START;
-            Data.SourceWordToIndex[m_UNK] = (int)SENTTAGS.UNK;
+            Data.SourceWordToIndex[END] = (int)SentenceTags.END;
+            Data.SourceWordToIndex[START] = (int)SentenceTags.START;
+            Data.SourceWordToIndex[UNK] = (int)SentenceTags.UNK;
 
-            Data.IndexToSourceWord[(int)SENTTAGS.END] = m_END;
-            Data.IndexToSourceWord[(int)SENTTAGS.START] = m_START;
-            Data.IndexToSourceWord[(int)SENTTAGS.UNK] = m_UNK;
+            Data.IndexToSourceWord[(int)SentenceTags.END] = END;
+            Data.IndexToSourceWord[(int)SentenceTags.START] = START;
+            Data.IndexToSourceWord[(int)SentenceTags.UNK] = UNK;
 
-            Data.TargetWordToIndex[m_END] = (int)SENTTAGS.END;
-            Data.TargetWordToIndex[m_START] = (int)SENTTAGS.START;
-            Data.TargetWordToIndex[m_UNK] = (int)SENTTAGS.UNK;
+            Data.TargetWordToIndex[END] = (int)SentenceTags.END;
+            Data.TargetWordToIndex[START] = (int)SentenceTags.START;
+            Data.TargetWordToIndex[UNK] = (int)SentenceTags.UNK;
 
-            Data.IndexToTargetWord[(int)SENTTAGS.END] = m_END;
-            Data.IndexToTargetWord[(int)SENTTAGS.START] = m_START;
-            Data.IndexToTargetWord[(int)SENTTAGS.UNK] = m_UNK;
+            Data.IndexToTargetWord[(int)SentenceTags.END] = END;
+            Data.IndexToTargetWord[(int)SentenceTags.START] = START;
+            Data.IndexToTargetWord[(int)SentenceTags.UNK] = UNK;
 
             var k = 3;
             foreach (var ch in sourceW2I)
@@ -388,12 +386,12 @@ namespace Catalyst.Tensors.Models
 
         private double AccumulatedCostInLastEpoch = double.MaxValue;
 
-        private void TrainEp(int ep, float learningRate, Corpus trainCorpus)
+        private void TrainEpoch(int ep, float learningRate, Corpus trainCorpus)
         {
             int processedPairsCount = 0;
             int parameterUpdateCount = 0;
 
-            DateTimeOffset startDateTime = DateTime.UtcNow;
+            var startDateTime = DateTimeOffset.UtcNow;
 
             double accumulatedCostInCurrentEpoch = 0.0;
             long sourceWordCount = 0;
@@ -401,7 +399,7 @@ namespace Catalyst.Tensors.Models
 
             int totalBatchSize = Data.BatchSize * DeviceIDs.Length;
 
-            List<TokenPairs> sentencePairs = new List<TokenPairs>();
+            var sentencePairs = new List<TokenPairs>();
 
             TensorAllocator.FreeMemoryAllDevices();
 
@@ -445,7 +443,7 @@ namespace Catalyst.Tensors.Models
                 var targetWordCountBefore = targetWordCount;
                 Reset();
                 
-                SyncWeights(); //Copy weights from weights kept in default device to all other devices
+                SyncWeightsFromDefaultToOtherDevices(); //Copy weights from weights kept in default device to all other devices
                 int threadID = 0; 
                 Parallel.ForEach(pairs.SplitIntoN(DeviceIDs.Length), batchPairs =>
                 {
@@ -460,9 +458,9 @@ namespace Catalyst.Tensors.Models
                         var srcSnt = new List<string>();
 
                         //Add BOS and EOS tags to source sentences
-                        srcSnt.Add(m_START);
+                        srcSnt.Add(START);
                         srcSnt.AddRange(batchPair.Source);
-                        srcSnt.Add(m_END);
+                        srcSnt.Add(END);
 
                         srcSnts.Add(srcSnt);
                         tgtSnts.Add(batchPair.Target.ToList());
@@ -527,15 +525,15 @@ namespace Catalyst.Tensors.Models
             IComputeGraph g;
             if (Data.ArchType == ArchTypeEnums.CPU_MKL)
             {
-                g = new ComputeGraphMKL(m_weightFactory[deviceIdIdx], needBack);
+                g = new ComputeGraphMKL(WeightFactory[deviceIdIdx], needBack);
             }
             else if (Data.ArchType == ArchTypeEnums.GPU_CUDA)
             {
-                g = new ComputeGraphTensor(m_weightFactory[deviceIdIdx], DeviceIDs[deviceIdIdx], needBack);
+                g = new ComputeGraphTensor(WeightFactory[deviceIdIdx], DeviceIDs[deviceIdIdx], needBack);
             }
             else
             {
-                g = new ComputeGraph(m_weightFactory[deviceIdIdx], needBack);
+                g = new ComputeGraph(WeightFactory[deviceIdIdx], needBack);
             }
 
             return g;
@@ -554,7 +552,7 @@ namespace Catalyst.Tensors.Models
 
                 for (int j = 0; j < maxLen - count; j++)
                 {
-                    l.Add(m_END);
+                    l.Add(END);
                 }
             }
 
@@ -572,10 +570,10 @@ namespace Catalyst.Tensors.Models
                 for (int j = 0; j < inputSentences.Count; j++)
                 {
                     var inputSentence = inputSentences[j];
-                    int ix_source = (int)SENTTAGS.UNK;
-                    if (Data.SourceWordToIndex.ContainsKey(inputSentence[i]))
+                    int ix_source = (int)SentenceTags.UNK;
+                    if (Data.SourceWordToIndex.TryGetValue(inputSentence[i], out var val))
                     {
-                        ix_source = Data.SourceWordToIndex[inputSentence[i]];
+                        ix_source = val;
                     }
                     else
                     {
@@ -587,7 +585,7 @@ namespace Catalyst.Tensors.Models
             }
 
             var forwardInputsM = g.ConcatRows(forwardInput);
-            List<IWeightMatrix> attResults = new List<IWeightMatrix>();
+            var attResults = new List<IWeightMatrix>();
             for (int i = 0; i < seqLen; i++)
             {
                 var emb_i = g.PeekRow(forwardInputsM, i * inputSentences.Count, inputSentences.Count);             
@@ -613,27 +611,27 @@ namespace Catalyst.Tensors.Models
             int[] ix_targets = new int[Data.BatchSize];
             for (int i = 0; i < ix_inputs.Length; i++)
             {
-                ix_inputs[i] = (int)SENTTAGS.START;
+                ix_inputs[i] = (int)SentenceTags.START;
             }
 
             for (int i = 0; i < seqLen + 1; i++)
             {
                 //Get embedding for all sentence in the batch at position i
-                List<IWeightMatrix> inputs = new List<IWeightMatrix>();
+                var inputs = new List<IWeightMatrix>();
                 for (int j = 0; j < Data.BatchSize; j++)
                 {
-                    List<string> OutputSentence = outputSentences[j];
+                   var outputSentence = outputSentences[j];
 
-                    ix_targets[j] = (int)SENTTAGS.UNK;
+                    ix_targets[j] = (int)SentenceTags.UNK;
                     if (i >= seqLen)
                     {
-                        ix_targets[j] = (int)SENTTAGS.END;
+                        ix_targets[j] = (int)SentenceTags.END;
                     }
                     else
                     {
-                        if (Data.TargetWordToIndex.ContainsKey(OutputSentence[i]))
+                        if (Data.TargetWordToIndex.TryGetValue(outputSentence[i], out var val))
                         {
-                            ix_targets[j] = Data.TargetWordToIndex[OutputSentence[i]];
+                            ix_targets[j] = val;
                         }
                     }
 
@@ -660,7 +658,7 @@ namespace Catalyst.Tensors.Models
                 o.ReleaseWeight();
 
                 //Calculate loss for each word in the batch
-                List<IWeightMatrix> probs_g = g.UnFolderRow(probs, Data.BatchSize, false);
+                var probs_g = g.UnFolderRow(probs, Data.BatchSize, false);
                 for (int k = 0; k < Data.BatchSize; k++)    
                 {
                     var probs_k = probs_g[k];
@@ -721,13 +719,10 @@ namespace Catalyst.Tensors.Models
             return model;
         }
 
-        /// <summary>
-        /// Copy weights in default device to all other devices
-        /// </summary>
-        private void SyncWeights()
+        private void SyncWeightsFromDefaultToOtherDevices()
         {
             var model = GetParametersFromDefaultDevice();           
-            Parallel.For(0, DeviceIDs.Length, i =>
+            Parallel.ForEach(DeviceIDs, i =>
             {
                 var model_i = GetParametersFromDeviceAt(i);
                 for (int j = 0; j < model.Count; j++)
@@ -779,53 +774,54 @@ namespace Catalyst.Tensors.Models
         {
             for (int i = 0; i < DeviceIDs.Length; i++)
             {
-                m_weightFactory[i].Clear();
+                WeightFactory[i].Clear();
 
-                BiEncoder[i].Reset(m_weightFactory[i]);
-                Decoder[i].Reset(m_weightFactory[i]);
+                BiEncoder[i].Reset(WeightFactory[i]);
+                Decoder[i].Reset(WeightFactory[i]);
             }
         }
 
         public List<List<string>> Predict(List<string> input, int beamSearchSize = 1)
         {
-            var biEncoder = BiEncoder[m_defaultDeviceId];
-            var srcEmbedding = SourceEmbeddings[m_defaultDeviceId];
-            var tgtEmbedding = TargetEmbeddings[m_defaultDeviceId];
-            var decoder = Decoder[m_defaultDeviceId];
-            var decoderFFLayer = DecoderFeedForwardLayer[m_defaultDeviceId];
+            var biEncoder      = BiEncoder[DeviceID_Default];
+            var srcEmbedding   = SourceEmbeddings[DeviceID_Default];
+            var tgtEmbedding   = TargetEmbeddings[DeviceID_Default];
+            var decoder        = Decoder[DeviceID_Default];
+            var decoderFFLayer = DecoderFeedForwardLayer[DeviceID_Default];
 
-            List<BeamSearchStatus> bssList = new List<BeamSearchStatus>();
+            var bssList = new List<BeamSearchStatus>();
 
-            var g = CreateComputGraph(m_defaultDeviceId, false);
+            var g = CreateComputGraph(DeviceID_Default, false);
             Reset();
 
-            List<string> inputSeq = new List<string>();
-            inputSeq.Add(m_START);
+            var inputSeq = new List<string>();
+            inputSeq.Add(START);
             inputSeq.AddRange(input);
-            inputSeq.Add(m_END);
+            inputSeq.Add(END);
          
             var inputSeqs = new List<List<string>>();
             inputSeqs.Add(inputSeq);
-            IWeightMatrix encodedWeightMatrix = Encode(g, inputSeqs, biEncoder, srcEmbedding);
+            var encodedWeightMatrix = Encode(g, inputSeqs, biEncoder, srcEmbedding);
 
             var attPreProcessResult = decoder.PreProcess(encodedWeightMatrix, g);
 
-            BeamSearchStatus bss = new BeamSearchStatus();
-            bss.OutputIds.Add((int)SENTTAGS.START);
+            var bss = new BeamSearchStatus();
+            bss.OutputIds.Add((int)SentenceTags.START);
             bss.CTs = decoder.GetCTs();
             bss.HTs = decoder.GetHTs();
 
             bssList.Add(bss);
 
-            List<BeamSearchStatus> newBSSList = new List<BeamSearchStatus>();
-            bool finished = false;
-            while (finished == false)
+            var newBSSList = new List<BeamSearchStatus>();
+            var finished = false;
+
+            while (!finished)
             {
                 finished = true;
                 for (int i = 0; i < bssList.Count; i++)
                 {
                     bss = bssList[i];
-                    if (bss.OutputIds[bss.OutputIds.Count - 1] == (int)SENTTAGS.END || bss.OutputIds.Count > m_maxWord)
+                    if (bss.OutputIds[bss.OutputIds.Count - 1] == (int)SentenceTags.END || bss.OutputIds.Count > m_maxWord)
                     {
                         newBSSList.Add(bss);
                     }
@@ -846,7 +842,7 @@ namespace Catalyst.Tensors.Models
 
                         for (int j = 0; j < preds.Count; j++)
                         {
-                            BeamSearchStatus newBSS = new BeamSearchStatus();
+                            var newBSS = new BeamSearchStatus();
                             newBSS.OutputIds.AddRange(bss.OutputIds);
                             newBSS.OutputIds.Add(preds[j]);
 
@@ -869,7 +865,7 @@ namespace Catalyst.Tensors.Models
                 newBSSList.Clear();
             }
            
-            List<List<string>> results = new List<List<string>>();
+            var results = new List<List<string>>();
             for (int i = 0; i < bssList.Count; i++)
             {
                 results.Add(PrintString(bssList[i].OutputIds));                
@@ -880,15 +876,15 @@ namespace Catalyst.Tensors.Models
 
         private List<string> PrintString(List<int> idxs)
         {
-            List<string> result = new List<string>();
+            var result = new List<string>();
             foreach (var idx in idxs)
             {
-                var letter = m_UNK;
-                if (Data.IndexToTargetWord.ContainsKey(idx))
+                var token = UNK;
+                if (Data.IndexToTargetWord.TryGetValue(idx, out var value))
                 {
-                    letter = Data.IndexToTargetWord[idx];
+                    token = value;
                 }
-                result.Add(letter);
+                result.Add(token);
             }
 
             return result;
@@ -896,7 +892,7 @@ namespace Catalyst.Tensors.Models
 
         private List<BeamSearchStatus> GetTopNBSS(List<BeamSearchStatus> bssList, int topN)
         {
-            FixedSizePriorityQueue<ComparableItem<BeamSearchStatus>> q = new FixedSizePriorityQueue<ComparableItem<BeamSearchStatus>>(topN, new ComparableItemComparer<BeamSearchStatus>(false));
+            var q = new FixedSizePriorityQueue<ComparableItem<BeamSearchStatus>>(topN, new ComparableItemComparer<BeamSearchStatus>(false));
 
             for (int i = 0; i < bssList.Count; i++)
             {
@@ -907,7 +903,7 @@ namespace Catalyst.Tensors.Models
         }
     }
 
-    public enum SENTTAGS
+    public enum SentenceTags
     {
         END = 0,
         START,

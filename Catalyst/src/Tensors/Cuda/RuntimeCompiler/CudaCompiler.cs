@@ -52,7 +52,7 @@ namespace Catalyst.Tensors.CUDA.RuntimeCompiler
 
         public void RegisterHeader(string name, string content)
         {
-            this.includes.Add(name, content);
+            includes.Add(name, content);
         }
 
 

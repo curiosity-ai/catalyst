@@ -17,7 +17,7 @@ namespace Catalyst.Tensors.CUDA.ContextState
 
         public BasicDeviceAllocator(CudaContext cudaContext)
         {
-            this.context = cudaContext;
+            context = cudaContext;
         }
 
         public void Dispose()
