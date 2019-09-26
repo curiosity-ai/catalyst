@@ -1052,6 +1052,12 @@ namespace Catalyst.Models
 
         private void InitializeTableNegatives(List<long> counts)
         {
+            if (counts.Count < 2)
+            {
+                // If we don't perform this check and there is only a single label specified then the GetNegative method will get stuck in an infinite loop
+                throw new Exception("It will not be possible to use NegativeSampling without specifying multiple labels");
+            }
+
             double z = 0.0;
             var negatives = new List<int>();
             for (int i = 0; i < counts.Count; i++)
