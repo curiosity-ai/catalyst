@@ -46,17 +46,17 @@ namespace Catalyst
             return Document.FromImmutable(this);
         }
 
-        public void WriteAsJson(JsonTextWriter jw)
+        public void WriteAsJson(IJsonWriter jw)
         {
             jw.WriteStartObject();
 
-            jw.WritePropertyName(nameof(Language)); jw.WriteValue(Languages.EnumToCode(Language));
-            jw.WritePropertyName(nameof(Length)); jw.WriteValue(Length);
-            jw.WritePropertyName(nameof(Value)); jw.WriteValue(Value);
+            jw.WritePropertyName(nameof(Language)); jw.WriteStringValue(Languages.EnumToCode(Language));
+            jw.WritePropertyName(nameof(Length)); jw.WriteNumberValue(Length);
+            jw.WritePropertyName(nameof(Value)); jw.WriteStringValue(Value);
 
             if (UID.IsNotNull())
             {
-                jw.WritePropertyName(nameof(UID)); jw.WriteValue(UID.ToString());
+                jw.WritePropertyName(nameof(UID)); jw.WriteStringValue(UID);
             }
 
             if (Metadata is object && Metadata.Any())
@@ -65,7 +65,7 @@ namespace Catalyst
                 jw.WriteStartObject();
                 foreach (var kv in Metadata)
                 {
-                    jw.WritePropertyName(kv.Key); jw.WriteValue(kv.Value);
+                    jw.WritePropertyName(kv.Key); jw.WriteStringValue(kv.Value);
                 }
                 jw.WriteEndObject();
             }
@@ -76,7 +76,7 @@ namespace Catalyst
                 jw.WriteStartArray();
                 foreach (var l in Labels)
                 {
-                    jw.WriteValue(l);
+                    jw.WriteStringValue(l);
                 }
                 jw.WriteEndArray();
             }
@@ -95,28 +95,28 @@ namespace Catalyst
                     jw.WriteStartObject();
                     jw.WritePropertyName(nameof(TokenData.Bounds));
                     jw.WriteStartArray();
-                    jw.WriteValue(tk.LowerBound);
-                    jw.WriteValue(tk.UpperBound);
+                    jw.WriteNumberValue(tk.LowerBound);
+                    jw.WriteNumberValue(tk.UpperBound);
                     jw.WriteEndArray();
 
                     if (tk.Tag != PartOfSpeech.NONE)
                     {
-                        jw.WritePropertyName(nameof(TokenData.Tag)); jw.WriteValue(tk.Tag.ToString());
+                        jw.WritePropertyName(nameof(TokenData.Tag)); jw.WriteStringValue(tk.Tag.ToString());
                     }
 
                     if (tk.Head >= 0)
                     {
-                        jw.WritePropertyName(nameof(TokenData.Head)); jw.WriteValue(tk.Head);
+                        jw.WritePropertyName(nameof(TokenData.Head)); jw.WriteNumberValue(tk.Head);
                     }
 
                     if (tk.Frequency != 0)
                     {
-                        jw.WritePropertyName(nameof(TokenData.Frequency)); jw.WriteValue(tk.Frequency);
+                        jw.WritePropertyName(nameof(TokenData.Frequency)); jw.WriteNumberValue(tk.Frequency);
                     }
 
                     if (!string.IsNullOrEmpty(tk.Replacement))
                     {
-                        jw.WritePropertyName(nameof(TokenData.Replacement)); jw.WriteValue(tk.Replacement);
+                        jw.WritePropertyName(nameof(TokenData.Replacement)); jw.WriteStringValue(tk.Replacement);
                     }
 
                     if (TokenMetadata is object)
@@ -129,7 +129,7 @@ namespace Catalyst
                                 jw.WriteStartObject();
                                 foreach (var kv in tokenMetadata)
                                 {
-                                    jw.WritePropertyName(kv.Key); jw.WriteValue(kv.Value);
+                                    jw.WritePropertyName(kv.Key); jw.WriteStringValue(kv.Value);
                                 }
                                 jw.WriteEndObject();
                             }
@@ -147,12 +147,12 @@ namespace Catalyst
                                 for (int k = 0; k < entities.Length; k++)
                                 {
                                     jw.WriteStartObject();
-                                    jw.WritePropertyName(nameof(EntityType.Type)); jw.WriteValue(entities[k].Type);
-                                    jw.WritePropertyName(nameof(EntityType.Tag)); jw.WriteValue(entities[k].Tag.ToString());
+                                    jw.WritePropertyName(nameof(EntityType.Type)); jw.WriteStringValue(entities[k].Type);
+                                    jw.WritePropertyName(nameof(EntityType.Tag)); jw.WriteStringValue(entities[k].Tag.ToString());
 
                                     if (entities[k].TargetUID.IsNotNull())
                                     {
-                                        jw.WritePropertyName(nameof(EntityType.TargetUID)); jw.WriteValue(entities[k].TargetUID.ToString());
+                                        jw.WritePropertyName(nameof(EntityType.TargetUID)); jw.WriteStringValue(entities[k].TargetUID);
                                     }
 
                                     if (!(entities[k].Metadata is null) && entities[k].Metadata.Any())
@@ -161,7 +161,7 @@ namespace Catalyst
                                         jw.WriteStartObject();
                                         foreach (var kv in entities[k].Metadata)
                                         {
-                                            jw.WritePropertyName(kv.Key); jw.WriteValue(kv.Value);
+                                            jw.WritePropertyName(kv.Key); jw.WriteStringValue(kv.Value);
                                         }
                                         jw.WriteEndObject();
                                     }
