@@ -10,44 +10,11 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Catalyst.Models
 {
-    public class StarSpaceModel : StorableObjectData
-    {
-        public StarSpace.ModelType Type { get; set; }
-        public int ContextWindow { get; set; }
-        public bool InvariantCase { get; set; }
-        public long Epoch { get; set; } = 5;
-        public bool IsTrained { get; set; }
-        public ThreadPriority ThreadPriority { get; internal set; } = ThreadPriority.Normal;
-        public Dictionary<uint, int> EntryHashToIndex { get; set; } = new Dictionary<uint, int>();
-        public Dictionary<int, FastText.Entry> Entries { get; set; } = new Dictionary<int, FastText.Entry>();
-        public int MinimumCount { get; set; } = 1;
-        public int EntryCount { get; set; }
-        public int ThreadCount { get; set; } = Environment.ProcessorCount;
-        public bool TrainWordEmbeddings { get; set; }
-        public int BatchSize { get; set; } = 5;
-        public StarSpace.LossType LossType { get; set; } = StarSpace.LossType.Hinge;
-        public int NegativeSamplingSearchLimit { get; set; } = 50;
-        public float WordWeight { get; set; } = 0.5f;
-        public StarSpace.SimilarityType Similarity { get; set; } = StarSpace.SimilarityType.Cosine;
-        public float Margin { get; set; } = 0.05f;
-        public float LearningRate { get; set; } = 0.01f;
-        public int Dimensions { get; set; } = 128;
-        public int MaximumNegativeSamples { get; set; } = 10;
-        public bool AdaGrad { get; set; } = true;
-        public double P { get; set; } = 0.5;
-        public float InitializationStandardDeviation { get; set; } = 0.001f;
-        public bool ShareEmbeddings { get; set; } = true;
-        public int Buckets { get; internal set; } = 2_000_000;
-        public int WordNGrams { get; set; } = 1;
-        public StarSpace.InputType InputType { get; set; }
-
-        public QuantizationType VectorQuantization { get; set; } = QuantizationType.None;
-    }
-
-    public class StarSpace : StorableObject<StarSpace, StarSpaceModel>
+    public class StarSpace : StorableObject<StarSpace, StarSpaceModel>, ITrainableModel
     {
         public const char _BOW_ = '<';
         public const char _EOW_ = '>';
@@ -56,7 +23,11 @@ namespace Catalyst.Models
         private static readonly uint[] POS_Hashes = Enum.GetValues(typeof(PartOfSpeech)).Cast<PartOfSpeech>().Select(pos => (uint)Hashes.CaseSensitiveHash32(pos.ToString())).ToArray();
         private static readonly uint[] Language_Hashes = Enum.GetValues(typeof(Language)).Cast<Language>().Select(lang => (uint)Hashes.CaseSensitiveHash32(lang.ToString())).ToArray();
 
+        public TrainingHistory TrainingHistory => Data.TrainingHistory;
+
         private SharedState Shared;
+
+        public event EventHandler<TrainingUpdate> TrainingStatus;
 
         private StarSpace(Language language, int version, string tag) : base(language, version, tag, compress: true)
         {
@@ -252,6 +223,8 @@ namespace Catalyst.Models
             int impatience = 0;
             float best_valid_err = 1e9f;
 
+            var trainingHistory = new TrainingHistory();
+
             using (var m = new Measure(Logger, "Training", Data.Epoch))
             {
                 for (int epoch = 0; epoch < Data.Epoch; epoch++)
@@ -261,6 +234,7 @@ namespace Catalyst.Models
                         mps.Rate = rate;
                         mps.FinishRate = rate - decrPerEpoch;
                         mps.Epoch = epoch;
+                        mps.TrainingHistory = epoch == 0 ? trainingHistory : null;
                         var t = new Thread(() => ThreadTrain(mps));
                         t.Priority = Data.ThreadPriority;
                         t.Start();
@@ -271,8 +245,9 @@ namespace Catalyst.Models
                     rate -= decrPerEpoch;
                     cancellationToken.ThrowIfCancellationRequested(); //If the training was canceled, all threads will return, so we throw here
                 }
+                trainingHistory.ElapsedTime = TimeSpan.FromSeconds(m.ElapsedSeconds);
             }
-
+            Data.TrainingHistory = trainingHistory;
             Data.IsTrained = true;
             Shared = sharedState;
         }
@@ -420,7 +395,7 @@ namespace Catalyst.Models
             int kDecrStep = 1000;
             var numSamples = state.Corpus.Length;
             var repInterval = (int)(numSamples / 20); //Reports every 5%
-
+            var sw = Stopwatch.StartNew();
             float decrPerKSample = (state.Rate - state.FinishRate) / (numSamples / kDecrStep);
             int negSearchLimit = Math.Min(numSamples, Data.NegativeSamplingSearchLimit);
 
@@ -499,6 +474,10 @@ namespace Catalyst.Models
                 {
                     var curLos = state.Loss / state.Counts;
                     state.Measure.EmitPartial($"E:{state.Epoch} P:{100f * ((float)i / numSamples):n2}% L:{curLos:n8}");
+
+                    var update = new TrainingUpdate().At(state.Epoch + ((float)i / numSamples), Data.Epoch, curLos).Processed(i, sw.Elapsed);
+                    TrainingStatus?.Invoke(this, update);
+                    state.TrainingHistory.Append(update);
                 }
             }
 
@@ -1175,6 +1154,8 @@ namespace Catalyst.Models
             internal float[][] rhsP;
             internal float[][] rhsN;
             internal float[][] nRate;
+
+            public TrainingHistory TrainingHistory { get; internal set; }
 
             public ThreadState(ParseResults[] corpus, int thread, CancellationToken token, SharedState sharedState, Measure measure, int batch_sz, int negSearchLimit, int dim)
             {
