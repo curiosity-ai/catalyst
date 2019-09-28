@@ -5,7 +5,12 @@ VisualStudioVersion = 16.0.29123.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst", "Catalyst\Catalyst.csproj", "{A86A90FD-73AB-49B4-8757-B7649EF6F470}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst.Training", "Catalyst.Training\Catalyst.Training.csproj", "{8D171C86-5A9A-43D3-9A16-7DDE7CE61AA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Training", "Catalyst.Training\Catalyst.Training.csproj", "{8D171C86-5A9A-43D3-9A16-7DDE7CE61AA1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "azure-devops", "azure-devops", "{DCE5551E-4070-45AA-89D2-CE1F8C3D6F6B}"
+	ProjectSection(SolutionItems) = preProject
+		azure-devops\build-nuget.yml = azure-devops\build-nuget.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

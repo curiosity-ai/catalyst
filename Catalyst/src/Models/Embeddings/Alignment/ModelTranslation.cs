@@ -25,8 +25,8 @@ namespace Catalyst.Models
                 {
                     Dictionary.Add(kv.Key, kv.Value);
 
-                    A.Data[k] = source.GetVector(kv.Key, source.Language);
-                    B.Data[k] = target.GetVector(kv.Value, target.Language);
+                    A[k] = source.GetVector(kv.Key, source.Language);
+                    B[k] = target.GetVector(kv.Value, target.Language);
                     k++;
                 }
                 if (k == N) { break; }
@@ -37,7 +37,7 @@ namespace Catalyst.Models
 
             var U = B.Transpose().Multiply(A);
 
-            CalculateSVD(ref U.Data, out float[] w, out float[][] v);
+            CalculateSVD(U.ToArray(), out float[] w, out float[][] v);
 
             TranslationMatrix = U.Multiply(new Matrix(v).Transpose());
 
@@ -51,7 +51,7 @@ namespace Catalyst.Models
             var v = new float[vector.Length];
             for (int i = 0; i < v.Length; i++)
             {
-                v[i] = TranslationMatrix.DotRow(ref vector, i);
+                v[i] = TranslationMatrix.DotRow(vector, i);
             }
             return v;
         }
@@ -60,7 +60,7 @@ namespace Catalyst.Models
         // (as authors state, the code is aimed to be machine readable, so blame them
         // for all those c/f/g/h/s variable)
         // A = U dot W dot V' , using U = A for input
-        private static void CalculateSVD(ref float[][] u, out float[] w, out float[][] v_t)
+        private static void CalculateSVD(float[][] u, out float[] w, out float[][] v_t)
         {
             // number of rows in A
             int m = u.Length;

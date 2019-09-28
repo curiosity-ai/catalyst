@@ -88,7 +88,7 @@ namespace Catalyst.Models
             throw new NotImplementedException();
         }
 
-        public void WriteAsJson(JsonTextWriter jw)
+        public void WriteAsJson(IJsonWriter jw)
         {
             throw new NotImplementedException();
         }

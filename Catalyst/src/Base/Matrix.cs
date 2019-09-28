@@ -5,37 +5,18 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Catalyst
 {
-    //TODO: refactor this classs to use Span, flatten Matrix to use large arrays of floats and slices to calculate on them
-    //public static void daxpy(double alpha, Span<double> x, Span<double> y)
-    //{
-    //    if (Vector.IsHardwareAccelerated)
-    //    {
-    //        var vx = x.NonPortableCast<double, Vector<double>>();
-    //        var vy = y.NonPortableCast<double, Vector<double>>();
-
-    //        var valpha = new Vector<double>(alpha);
-    //        for (var i = 0; i < vx.Length; ++i)
-    //            vy[i] += vx[i] * valpha;
-
-    //        x = x.Slice(Vector<double>.Count * vx.Length);
-    //        y = y.Slice(Vector<double>.Count * vy.Length);
-    //    }
-
-    //    for (var i = 0; i < x.Length; ++i)
-    //        y[i] += x[i] * alpha;
-    //}
-
     // Cannot use [MessagePackObject] here, as it will limit the maximum size of the matrix - have to instead serialize manually to a stream
     public class Matrix : IMatrix
     {
         public int Rows { get; private set; }
         public int Columns { get; private set; }
 
-        public float[][] Data;
+        public float[] Data;
 
         internal Matrix()
         {
@@ -45,37 +26,43 @@ namespace Catalyst
         {
             Rows = rows;
             Columns = columns;
-            Data = data;
+            for (int i = 0; i < Rows; i++)
+            {
+                data[i].AsSpan().CopyTo(Data.AsSpan().Slice(i * Columns, Columns));
+            }
+        }
+
+        internal float[][] ToArray()
+        {
+            var m = new float[Rows][];
+            for (int i = 0; i < Rows; i++)
+            {
+                m[i] = Data.AsSpan().Slice(i * Columns, Columns).ToArray();
+            }
+            return m;
         }
 
         public Matrix(int rows, int columns)
         {
             Rows = rows;
             Columns = columns;
-            Data = new float[Rows][];
-            for (int i = 0; i < Rows; i++)
-            {
-                Data[i] = new float[Columns];
-            }
+            Data = new float[rows * columns];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float[] GetRow(int row)
+        public Span<float> GetRow(int row)
         {
-            return Data[row];
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref float[] GetRowRef(int row)
-        {
-            return ref Data[row];
+            return Data.AsSpan().Slice(row*Columns, Columns);
         }
 
         public Matrix(float[][] data)
         {
             Rows = data.Length;
             Columns = data[0].Length;
-            Data = data;
+            for(int i = 0; i < Rows; i++)
+            {
+                data[i].AsSpan().CopyTo(Data.AsSpan().Slice(i*Columns, Columns));
+            }
         }
 
         public void ToStream(Stream stream, QuantizationType quantization)
@@ -83,6 +70,7 @@ namespace Catalyst
             MessagePackBinary.WriteInt32(stream, Rows);
             MessagePackBinary.WriteInt32(stream, Columns);
 
+            var data = Data.AsSpan();
             switch (quantization)
             {
                 case QuantizationType.None:
@@ -90,7 +78,8 @@ namespace Catalyst
                     var byteArray = new byte[Columns * sizeof(float)];
                     for (int i = 0; i < Rows; i++)
                     {
-                        System.Buffer.BlockCopy(Data[i], 0, byteArray, 0, byteArray.Length);
+                        var row = data.Slice(i * Columns, Columns);
+                        MemoryMarshal.Cast<float, byte>(row).CopyTo(byteArray);
                         MessagePackBinary.WriteBytes(stream, byteArray);
                     }
                     break;
@@ -102,12 +91,12 @@ namespace Catalyst
                     byte[] byteArray = new byte[(bits.Length - 1) / 8 + 1];
                     for (int i = 0; i < Rows; i++)
                     {
+                        var row = data.Slice(i * Columns, Columns);
                         for (int j = 0; j < Columns; j++)
                         {
-                            bits.Set(j, Data[i][j] > 0);
+                            bits.Set(j, row[j] > 0);
                         }
                         bits.CopyTo(byteArray, 0);
-                        System.Buffer.BlockCopy(Data[i], 0, byteArray, 0, byteArray.Length);
                         MessagePackBinary.WriteBytes(stream, byteArray);
                     }
                     break;
@@ -123,6 +112,8 @@ namespace Catalyst
             var Rows = MessagePackBinary.ReadInt32(stream);
             var Columns = MessagePackBinary.ReadInt32(stream);
             var m = new Matrix(Rows, Columns);
+            
+            var data = m.Data.AsSpan();
 
             switch (quantization)
             {
@@ -130,8 +121,9 @@ namespace Catalyst
                 {
                     for (int i = 0; i < Rows; i++)
                     {
+                        var row = data.Slice(i * Columns, Columns);
                         var byteArray = MessagePackBinary.ReadBytes(stream);
-                        System.Buffer.BlockCopy(byteArray, 0, m.Data[i], 0, byteArray.Length);
+                        MemoryMarshal.Cast<byte, float>(byteArray.AsSpan()).CopyTo(row);
                     }
                     break;
                 }
@@ -141,9 +133,10 @@ namespace Catalyst
                     {
                         var byteArray = MessagePackBinary.ReadBytes(stream);
                         var bits = new BitArray(byteArray);
+                        var row = data.Slice(i * Columns, Columns);
                         for (int j = 0; j < Columns; j++)
                         {
-                            m.Data[i][j] = bits[j] ? 0.33f : -0.33f;
+                            row[j] = bits[j] ? 0.33f : -0.33f;
                         }
                     }
                     break;
@@ -156,17 +149,21 @@ namespace Catalyst
 
         public float this[int i, int j]
         {
-            get { return Data[i][j]; }
-            set { Data[i][j] = value; }
+            get { return Data[i * Columns + j]; }
+            set { Data[i * Columns + j] = value; }
         }
+
+        public Span<float> this[int i]
+        {
+            get { return Data.AsSpan().Slice(i * Columns, Columns); }
+            set { value.CopyTo(Data.AsSpan().Slice(i * Columns, Columns)); }
+        }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix Zero()
         {
-            for (int i = 0; i < Rows; i++)
-            {
-                Data[i].Zero();
-            }
+            Data.AsSpan().Fill(0f);
             return this;
         }
 
@@ -175,54 +172,52 @@ namespace Catalyst
         {
             float a2 = 2 * a;
             float an = -a;
+            
+            ThreadSafeFastRandom.NextFloats(Data.AsSpan());
+            SIMD.Multiply(Data.AsSpan(), a2);
+            SIMD.Add(Data.AsSpan(), an);
 
-            Parallel.For(0, Rows, (i) =>
-            {
-                ThreadSafeFastRandom.NextFloats(Data[i]);
-                SIMD.Multiply(ref Data[i], a2);
-                SIMD.Add(ref Data[i], an);
-            });
             return this;
         }
 
         public void ResizeAndFillRows(int newRows, float a)
         {
-            Array.Resize(ref Data, newRows);
-            for (int i = Rows; i < newRows; i++)
-            {
-                Data[i] = new float[Columns];
-                for (int j = 0; j < Columns; j++)
-                {
-                    Data[i][j] = (float)(ThreadSafeRandom.NextDouble()) * (2 * a) - a;
-                }
-            }
+            float a2 = 2 * a;
+            float an = -a;
+
+            Array.Resize(ref Data, newRows * Columns);
+            var toFill = Data.AsSpan().Slice(Rows * Columns);
+            ThreadSafeFastRandom.NextFloats(toFill);
+            SIMD.Multiply(toFill, a2);
+            SIMD.Add(toFill, an);
+
             Rows = newRows;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddToRow(float[] vec, int i, float a)
+        public void AddToRow(ReadOnlySpan<float> vec, int i, float a)
         {
-            SIMD.MultiplyAndAdd(ref Data[i], ref vec, a);
+            SIMD.MultiplyAndAdd(Data.AsSpan().Slice(i*Columns, Columns), vec, a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddToRow(ref float[] vec, int i)
+        public void AddToRow(ReadOnlySpan<float> vec, int i)
         {
-            SIMD.Add(ref Data[i], ref vec);
+            SIMD.Add(Data.AsSpan().Slice(i * Columns, Columns), vec);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float DotRow(ref float[] vec, int i)
+        public float DotRow(ReadOnlySpan<float> vec, int i)
         {
-            var d = SIMD.DotProduct(ref Data[i], ref vec);
+            var d = SIMD.DotProduct(Data.AsSpan().Slice(i * Columns, Columns), vec);
             Debug.Assert(!float.IsNaN(d));
             return d;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float DotRow(ref float[] vec, ref float[] data)
+        public float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> other)
         {
-            var d = SIMD.DotProduct(ref data, ref vec);
+            var d = SIMD.DotProduct(vec, other);
             Debug.Assert(!float.IsNaN(d));
             return d;
         }
@@ -230,16 +225,15 @@ namespace Catalyst
         public Matrix Multiply(Matrix other)
         {
             var M = new Matrix(Rows, other.Columns);
-            //var OT = other.Transpose();
 
             for (int i = 0; i < M.Rows; i++)
             {
+                var iC = i * Columns;
                 for (int j = 0; j < M.Columns; j++)
                 {
-                    //M.Data[i][j] = SIMD.DotProduct(ref Data[i], ref OT.Data[j]);
-                    for (int k = 0; k < this.Rows; k++)
+                    for (int k = 0; k < Rows; k++)
                     {
-                        M.Data[i][j] += Data[i][k] * other.Data[k][j];
+                        M.Data[iC + j] += Data[iC + k] * other.Data[k*other.Columns + j];
                     }
                 }
             }
@@ -253,7 +247,7 @@ namespace Catalyst
             {
                 for (int j = 0; j < Columns; j++)
                 {
-                    M.Data[j][i] = Data[i][j];
+                    M.Data[j * Columns + i] = Data[i * Columns + j];
                 }
             }
             return M;

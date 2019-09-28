@@ -149,28 +149,20 @@ namespace Catalyst.Models
 
         public new static async Task<FastText> FromStoreAsync(Language language, int version, string tag)
         {
-            return await FromStoreAsync_Internal(language, version, tag, bufferedMatrix: false);
+            return await FromStoreAsync_Internal(language, version, tag);
         }
 
-        public static async Task<FastText> FromStoreAsync_Internal(Language language, int version, string tag, bool bufferedMatrix)
+        public static async Task<FastText> FromStoreAsync_Internal(Language language, int version, string tag)
         {
             var a = new FastText(language, version, tag);
             await a.LoadDataAsync();
 
             (Stream wiStream, Stream woStream) = await a.GetMatrixStreamsAsync();
 
-            if (bufferedMatrix)
-            {
-                a.Wi = new BufferedMatrix(wiStream, a.Data.VectorQuantization, 10_000);
-                a.Wo = new BufferedMatrix(woStream, a.Data.VectorQuantization, 10_000);
-            }
-            else
-            {
-                a.Wi = Matrix.FromStream(wiStream, a.Data.VectorQuantization);
-                a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
-                wiStream.Close();
-                woStream.Close();
-            }
+            a.Wi = Matrix.FromStream(wiStream, a.Data.VectorQuantization);
+            a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
+            wiStream.Close();
+            woStream.Close();
 
             //a.TranslateTable = a.Data.TranslateTable;
             a.GradientLength = a.Data.Dimensions;
@@ -276,8 +268,8 @@ namespace Catalyst.Models
             {
                 using (var m = new Measure(Logger, "Quantizing results", Wi.Rows + Wo.Rows))
                 {
-                    for (int r = 0; r < Wi.Rows; r++) { Quantize(ref Wi.GetRowRef(r)); }
-                    for (int r = 0; r < Wo.Rows; r++) { Quantize(ref Wo.GetRowRef(r)); }
+                    for (int r = 0; r < Wi.Rows; r++) { Quantize(Wi.GetRow(r)); }
+                    for (int r = 0; r < Wo.Rows; r++) { Quantize(Wo.GetRow(r)); }
                 }
             }
 
@@ -400,12 +392,12 @@ namespace Catalyst.Models
                 for (int epoch = 0; epoch < Data.Epoch; epoch++)
                 {
                     float lr = Data.LearningRate * (1.0f - (float)epoch / (Data.Epoch));
-                    PredictPVDM(ref predictedVector, mps, ref line, lr);
+                    PredictPVDM(predictedVector, mps, ref line, lr);
                 }
 
-                SIMD.Add(ref averageVector, ref predictedVector);
+                SIMD.Add(averageVector, predictedVector);
             }
-            SIMD.Multiply(ref averageVector, 1f / tries);
+            SIMD.Multiply(averageVector, 1f / tries);
             vector = averageVector;
             return true;
         }
@@ -433,19 +425,8 @@ namespace Catalyst.Models
             var ngrams = GetEntrySubwords(index);
             if (ngrams.Length > 0)
             {
-                if (Wi is BufferedMatrix) //Doesn't support GetRowByRef
-                {
-                    foreach (var ngram in ngrams)
-                    {
-                        var ngram_vec = Wi.GetRow(ngram);
-                        SIMD.Add(ref vec, ref ngram_vec);
-                    }
-                }
-                else
-                {
-                    foreach (var ngram in ngrams) { SIMD.Add(ref vec, ref Wi.GetRowRef(ngram)); }
-                }
-                SIMD.Multiply(ref vec, 1f / ngrams.Length);
+                foreach (var ngram in ngrams) { SIMD.Add(vec, Wi.GetRow(ngram)); }
+                SIMD.Multiply(vec, 1f / ngrams.Length);
             }
             return vec;
         }
@@ -464,9 +445,9 @@ namespace Catalyst.Models
             {
                 foreach (var ngram in subwords)
                 {
-                    SIMD.Add(ref vec, ref Wi.GetRowRef((int)ngram));
+                    SIMD.Add(vec, Wi.GetRow((int)ngram));
                 }
-                SIMD.Multiply(ref vec, 1f / subwords.Count);
+                SIMD.Multiply(vec, 1f / subwords.Count);
             }
             return vec;
         }
@@ -485,9 +466,9 @@ namespace Catalyst.Models
             {
                 foreach (var ngram in subwords)
                 {
-                    SIMD.Add(ref vec, ref Wi.GetRowRef((int)ngram));
+                    SIMD.Add(vec, Wi.GetRow((int)ngram));
                 }
-                SIMD.Multiply(ref vec, 1f / subwords.Count);
+                SIMD.Multiply(vec, 1f / subwords.Count);
             }
             return (vec, 0);
         }
@@ -542,28 +523,28 @@ namespace Catalyst.Models
             {
                 foreach (var ngram in subwords)
                 {
-                    SIMD.Add(ref vec, ref Wi.GetRowRef((int)ngram));
+                    SIMD.Add(vec, Wi.GetRow((int)ngram));
                 }
 
-                SIMD.Multiply(ref vec, 1f / subwords.Count);
+                SIMD.Multiply(vec, 1f / subwords.Count);
             }
             return vec;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Quantize(ref float[] vector)
+        public void Quantize(Span<float> vector)
         {
             switch (Data.VectorQuantization)
             {
                 case QuantizationType.None: return;
                 case QuantizationType.OneBit:
                 {
-                    SIMD.Quantize1Bit(ref vector);
+                    SIMD.Quantize1Bit(vector);
                     return;
                 }
                 case QuantizationType.TwoBits:
                 {
-                    SIMD.Quantize2Bits(ref vector);
+                    SIMD.Quantize2Bits(vector);
                     return;
                 }
                 case QuantizationType.FourBits:
@@ -903,7 +884,7 @@ namespace Catalyst.Models
                     }
                 }
 
-                AppendWordNGrams(ref bow, create: false);
+                AppendWordNGrams(bow, create: false);
 
                 bow.AddRange(l.Labels);
 
@@ -912,7 +893,7 @@ namespace Catalyst.Models
             }
         }
 
-        private void PredictPVDM(ref float[] predictionVector, ThreadState mps, ref Line l, float lr)
+        private void PredictPVDM(Span<float> predictionVector, ThreadState mps, ref Line l, float lr)
         {
             int cw = Data.ContextWindow;
             int len = l.EntryIndexes.Length - cw;
@@ -928,10 +909,10 @@ namespace Catalyst.Models
                     }
                 }
 
-                AppendWordNGrams(ref bow, create: false);
+                AppendWordNGrams(bow, create: false);
 
                 var bow_a = bow.ToArray();
-                UpdatePredictionOnly(ref predictionVector, mps, ref bow_a, l.EntryIndexes[w], lr);
+                UpdatePredictionOnly(predictionVector, mps, bow_a, l.EntryIndexes[w], lr);
             }
         }
 
@@ -955,7 +936,7 @@ namespace Catalyst.Models
 
             foreach (var ix in input)
             {
-                Wi.AddToRow(ref state.Gradient, ix);
+                Wi.AddToRow(state.Gradient, ix);
             }
         }
 
@@ -974,17 +955,17 @@ namespace Catalyst.Models
 
             foreach (var ix in input)
             {
-                Wi.AddToRow(ref state.Gradient, ix);
+                Wi.AddToRow(state.Gradient, ix);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdatePredictionOnly(ref float[] predictionVector, ThreadState state, ref int[] input, int target, float lr)
+        private void UpdatePredictionOnly(Span<float> predictionVector, ThreadState state, Span<int> input, int target, float lr)
         {
             if (input.Length == 0) { return; }
             state.NumberOfExamples++;
 
-            ComputeHiddenForPrediction(ref state.Hidden, ref input, ref predictionVector);
+            ComputeHiddenForPrediction(state.Hidden, input, predictionVector);
 
             switch (Data.Loss)
             {
@@ -995,7 +976,7 @@ namespace Catalyst.Models
 
             SIMD.Multiply(ref state.Gradient, 1.0f / (input.Length + 1));
 
-            SIMD.Add(ref predictionVector, ref state.Gradient);
+            SIMD.Add(predictionVector, state.Gradient);
         }
 
         private void SetTargetCounts(List<long> counts)
@@ -1014,6 +995,12 @@ namespace Catalyst.Models
 
         private void InitializeTableNegatives(List<long> counts)
         {
+            if (counts.Count < 2)
+            {
+                // If we don't perform this check and there is only a single label specified then the GetNegative method will get stuck in an infinite loop
+                throw new Exception("It will not be possible to use NegativeSampling without specifying multiple labels");
+            }
+
             double z = 0.0;
             var negatives = new List<int>();
             for (int i = 0; i < counts.Count; i++)
@@ -1125,20 +1112,12 @@ namespace Catalyst.Models
         private float BinaryLogistic(ThreadState state, int target, bool label, float lr, bool addToOutput = true)
         {
             var v = Wo.GetRow(target);
-            Quantize(ref v);
-            float score = state.Sigmoid(Wo.DotRow(ref state.Hidden, ref v));
+            Quantize(v);
+            float score = state.Sigmoid(Wo.DotRow(state.Hidden, v));
 
             float alpha = lr * ((label ? 1.0f : 0f) - score);
 
-            if (Wo is BufferedMatrix)
-            {
-                var tmp = Wo.GetRow(target);
-                SIMD.MultiplyAndAdd(ref state.Gradient, ref tmp, alpha);
-            }
-            else
-            {
-                SIMD.MultiplyAndAdd(ref state.Gradient, ref Wo.GetRowRef(target), alpha);
-            }
+            SIMD.MultiplyAndAdd(state.Gradient, Wo.GetRow(target), alpha);
 
             if (addToOutput)
             {
@@ -1192,7 +1171,7 @@ namespace Catalyst.Models
                 {
                     float label = (i == target) ? 1.0f : 0.0f;
                     float alpha = lr * (label - state.Output[i]);
-                    SIMD.Add(ref state.Gradient, ref Wo.GetRowRef(i));
+                    SIMD.Add(state.Gradient, Wo.GetRow(i));
 
                     Wo.AddToRow(state.Hidden, i, alpha);
                 }
@@ -1209,7 +1188,7 @@ namespace Catalyst.Models
 
             for (int i = 0; i < output.Length; i++)
             {
-                output[i] = Wo.DotRow(ref hidden, i);
+                output[i] = Wo.DotRow(hidden, i);
             }
 
             float max = SIMD.Max(ref output);
@@ -1230,7 +1209,7 @@ namespace Catalyst.Models
             ref float[] output = ref state.Output;
             for (int i = 0; i < output.Length; i++)
             {
-                output[i] = Wo.DotRow(ref hidden, i);
+                output[i] = Wo.DotRow(hidden, i);
                 output[i] = state.Sigmoid(output[i]);
             }
         }
@@ -1238,35 +1217,35 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComputeHidden(ThreadState state, Span<int> input)
         {
-            float z = 1.0f / (float)input.Length;
-            ref float[] hidden = ref state.Hidden;
-            hidden.Zero();
+            float z = 1.0f / input.Length;
+            Span<float> hidden = state.Hidden;
+            hidden.Fill(0f);
             foreach (var ix in input)
             {
                 var v = Wi.GetRow(ix);
-                Quantize(ref v);
-                SIMD.Add(ref hidden, ref v);
+                Quantize(v);
+                SIMD.Add(hidden, v);
             }
-            SIMD.Multiply(ref hidden, z);
+            SIMD.Multiply(hidden, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ComputeHiddenForPrediction(ref float[] hidden, ref int[] input, ref float[] extraVector)
+        private void ComputeHiddenForPrediction(Span<float> hidden, Span<int> input, Span<float> extraVector)
         {
             float z = 1.0f / (input.Length + 1);
-            hidden.Zero();
+            hidden.Fill(0f);
             foreach (var ix in input)
             {
                 var v = Wi.GetRow(ix);
-                Quantize(ref v);
-                SIMD.Add(ref hidden, ref v);
+                Quantize(v);
+                SIMD.Add(hidden, v);
             }
 
             var ve = extraVector.ToArray();
-            Quantize(ref ve);
-            SIMD.Add(ref hidden, ref ve);
+            Quantize(ve);
+            SIMD.Add(hidden, ve);
 
-            SIMD.Multiply(ref hidden, z);
+            SIMD.Multiply(hidden, z);
         }
 
         private ThreadState[] Initialize(InputData ID, CancellationToken token, VectorizerTrainingData previousTrainingCorpus = null)
@@ -1691,7 +1670,7 @@ namespace Catalyst.Models
             return hashes.Select(h => (int)h).ToArray();
         }
 
-        private void AppendWordNGrams(ref List<int> list, bool create)
+        private void AppendWordNGrams(List<int> list, bool create)
         {
             if (Data.MaximumWordNgrams < 2) { return; }
             int len = list.Count;

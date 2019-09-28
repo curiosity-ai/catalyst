@@ -73,7 +73,7 @@ namespace Catalyst.Models
                 }
             }
 
-            a.Model = await FastText.FromStoreAsync_Internal(Language.Any, version, "language-detector", bufferedMatrix: false);
+            a.Model = await FastText.FromStoreAsync_Internal(Language.Any, version, "language-detector");
 
             return a;
         }

@@ -287,7 +287,7 @@ namespace Catalyst.Models
             //TODO: check if this is correct - not sure what this vector is supposed to be here, as we are now adding all the features to the same basket
             float[] vector = new float[Data.Dimensions];
 
-            ProjectLHS(Shared, parse, ref vector);
+            ProjectLHS(Shared, parse, vector);
 
             return vector;
         }
@@ -555,8 +555,8 @@ namespace Catalyst.Models
 
             for (int i = 0; i < batch_sz; i++)
             {
-                ProjectLHS(state.Shared, batch_exs[i].LHSTokens, ref state.lhs[i]);
-                ProjectRHS(state.Shared, batch_exs[i].RHSTokens, ref state.rhsP[i]);
+                ProjectLHS(state.Shared, batch_exs[i].LHSTokens, state.lhs[i]);
+                ProjectRHS(state.Shared, batch_exs[i].RHSTokens, state.rhsP[i]);
                 posSim[i] = Similarity(ref state.lhs[i], ref state.rhsP[i]);
             }
 
@@ -573,7 +573,7 @@ namespace Catalyst.Models
                 {
                     GetRandomRHS(state, negLabels);
                 }
-                ProjectRHS(state.Shared, negLabels, ref state.rhsN[i]);
+                ProjectRHS(state.Shared, negLabels, state.rhsN[i]);
                 state.batch_negLabels.Add(negLabels);
             }
 
@@ -645,14 +645,14 @@ namespace Catalyst.Models
         {
             var cols = Data.Dimensions;
 
-            void Update(ref float[] dest, ref float[] src, float rate, float weight, ref float[] adagradWeight, int idx)
+            void Update(Span<float> dest, ReadOnlySpan<float> src, float rate, float weight, Span<float> adagradWeight, int idx)
             {
                 if (Data.AdaGrad)
                 {
                     adagradWeight[idx] += weight / cols;
                     rate /= (float)Math.Sqrt(adagradWeight[idx] + 1e-6f);
                 }
-                SIMD.MultiplyAndAdd(ref dest, ref src, -rate);
+                SIMD.MultiplyAndAdd(dest, src, -rate);
             }
 
             var batch_sz = batch_exs.Count;
@@ -664,8 +664,8 @@ namespace Catalyst.Models
                 {
                     if (num_negs[i] > 0)
                     {
-                        n1[i] = SIMD.DotProduct(ref gradW[i], ref gradW[i]);
-                        n2[i] = SIMD.DotProduct(ref lhs[i], ref lhs[i]);
+                        n1[i] = SIMD.DotProduct(gradW[i], gradW[i]);
+                        n2[i] = SIMD.DotProduct(lhs[i], lhs[i]);
                     }
                 }
             }
@@ -679,13 +679,13 @@ namespace Catalyst.Models
                     var labels = batch_exs[i].RHSTokens;
                     foreach (var w in items)
                     {
-                        var row = state.Shared.LHSEmbeddings.GetRowRef(w.ID);
-                        Update(ref row, ref gradW[i], rate_lhs * w.Weight, n1[i], ref state.Shared.LHSUpdates, w.ID);
+                        var row = state.Shared.LHSEmbeddings.GetRow(w.ID);
+                        Update(row, gradW[i], rate_lhs * w.Weight, n1[i], state.Shared.LHSUpdates, w.ID);
                     }
                     foreach (var la in labels)
                     {
-                        var row = state.Shared.RHSEmbeddings.GetRowRef(la.ID);
-                        Update(ref row, ref lhs[i], rate_rhsP[i] * la.Weight, n2[i], ref state.Shared.RHSUpdates, la.ID);
+                        var row = state.Shared.RHSEmbeddings.GetRow(la.ID);
+                        Update(row, lhs[i], rate_rhsP[i] * la.Weight, n2[i], state.Shared.RHSUpdates, la.ID);
                     }
                 }
             }
@@ -699,8 +699,8 @@ namespace Catalyst.Models
                     {
                         foreach (var la in batch_negLabels[j])
                         {
-                            var row = state.Shared.RHSEmbeddings.GetRowRef(la.ID);
-                            Update(ref row, ref lhs[i], nRate[i][j] * la.Weight, n2[i], ref state.Shared.RHSUpdates, la.ID);
+                            var row = state.Shared.RHSEmbeddings.GetRow(la.ID);
+                            Update(row, lhs[i], nRate[i][j] * la.Weight, n2[i], state.Shared.RHSUpdates, la.ID);
                         }
                     }
                 }
@@ -761,40 +761,40 @@ namespace Catalyst.Models
             }
         }
 
-        private void ProjectRHS(SharedState state, List<Base> ws, ref float[] retval)
+        private void ProjectRHS(SharedState state, List<Base> ws, Span<float> retval)
         {
-            Forward(ref state.RHSEmbeddings, ws, ref retval);
+            Forward(state.RHSEmbeddings, ws, retval);
             if (ws.Count > 0)
             {
-                var norm = (float)(Data.Similarity == SimilarityType.Dot ? Math.Pow(ws.Count, Data.P) : Norm2(ref retval));
-                SIMD.Multiply(ref retval, 1f / norm);
+                var norm = (float)(Data.Similarity == SimilarityType.Dot ? Math.Pow(ws.Count, Data.P) : Norm2(retval));
+                SIMD.Multiply(retval, 1f / norm);
             }
         }
 
-        private void Forward(ref Matrix matrix, List<Base> ws, ref float[] retval)
+        private void Forward(Matrix matrix, List<Base> ws, Span<float> retval)
         {
-            retval.Zero();
+            retval.Fill(0f);
             foreach (var b in ws)
             {
-                var row = matrix.GetRowRef(b.ID);
-                SIMD.Add(ref retval, ref row);
+                var row = matrix.GetRow(b.ID);
+                SIMD.Add(retval, row);
             }
         }
 
-        private double Norm2(ref float[] a)
+        private double Norm2(Span<float> a)
         {
             const float Epsilon = 1.192092896e-07F;
-            var norm = (float)Math.Sqrt(SIMD.DotProduct(ref a, ref a));
+            var norm = (float)Math.Sqrt(SIMD.DotProduct(a, a));
             return (norm < Epsilon) ? Epsilon : norm;
         }
 
-        private void ProjectLHS(SharedState state, List<Base> ws, ref float[] retval)
+        private void ProjectLHS(SharedState state, List<Base> ws, Span<float> retval)
         {
-            Forward(ref state.LHSEmbeddings, ws, ref retval);
+            Forward(state.LHSEmbeddings, ws, retval);
             if (ws.Count > 0)
             {
-                var norm = (float)(Data.Similarity == SimilarityType.Dot ? Math.Pow(ws.Count, Data.P) : Norm2(ref retval));
-                SIMD.Multiply(ref retval, 1f / norm);
+                var norm = (float)(Data.Similarity == SimilarityType.Dot ? Math.Pow(ws.Count, Data.P) : Norm2(retval));
+                SIMD.Multiply(retval, 1f / norm);
             }
         }
 
@@ -814,8 +814,8 @@ namespace Catalyst.Models
 
             for (int i = 0; i < batch_sz; i++)
             {
-                ProjectLHS(state.Shared, batch_exs[i].LHSTokens, ref state.lhs[i]);
-                ProjectRHS(state.Shared, batch_exs[i].RHSTokens, ref state.rhsP[i]);
+                ProjectLHS(state.Shared, batch_exs[i].LHSTokens, state.lhs[i]);
+                ProjectRHS(state.Shared, batch_exs[i].RHSTokens, state.rhsP[i]);
             }
 
             state.batch_negLabels.Clear();
@@ -831,7 +831,7 @@ namespace Catalyst.Models
                 {
                     GetRandomRHS(state, negLabels);
                 }
-                ProjectRHS(state.Shared, negLabels, ref state.rhsN[i]);
+                ProjectRHS(state.Shared, negLabels, state.rhsN[i]);
                 state.batch_negLabels.Add(negLabels);
             }
 

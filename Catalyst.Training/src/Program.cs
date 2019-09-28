@@ -14,7 +14,7 @@ namespace Catalyst.Training
     {
         static async Task Main(string[] args)
         {
-            ApplicationLogging.SetLoggerFactory(new LoggerFactory().AddConsole());
+            ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(builder => builder.AddConsole()));
             ForceInvariantCultureAndUTF8Output();
 
             await Parser.Default
