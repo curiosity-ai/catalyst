@@ -25,19 +25,33 @@ namespace Catalyst
         [Key(3)] public float ItemsPerSecond { get; set; }
         [Key(4)] public TimeSpan ElapsedTime { get; set; }
 
-        [IgnoreMember] public TimeSpan EstimatedRemainingTime => TimeSpan.FromSeconds((1 - Progress) * ElapsedTime.TotalSeconds / Progress);
+        [IgnoreMember] public TimeSpan EstimatedRemainingTime => Progress > 0 ? TimeSpan.FromSeconds((1 - Progress) * ElapsedTime.TotalSeconds / Progress) : TimeSpan.Zero;
 
         public TrainingUpdate At(float epoch, float maxEpoch, float loss)
         {
             Epoch = epoch;
-            Progress = epoch / maxEpoch;
+            if(maxEpoch > 0)
+            {
+                Progress = epoch / maxEpoch;
+            }
+            else
+            {
+                Progress = epoch;
+            }
             Loss = loss;
             return this;
         }
 
         public TrainingUpdate Processed(float items, TimeSpan elapsed)
         {
-            ItemsPerSecond = items / (float)elapsed.TotalSeconds;
+            if(elapsed.TotalSeconds > 0)
+            {
+                ItemsPerSecond = items / (float)elapsed.TotalSeconds;
+            }
+            else
+            {
+                ItemsPerSecond = 0;
+            }
             ElapsedTime = elapsed;
             return this;
         }
