@@ -94,6 +94,11 @@ namespace Catalyst
             TokenMetadata = (tokenMetadata is null || tokenMetadata.Count == 0) ? null : tokenMetadata;
         }
 
+        public Document Clone()
+        {
+            return new Document(this);
+        }
+
         public void Clear()
         {
             SpanBounds.Clear();
