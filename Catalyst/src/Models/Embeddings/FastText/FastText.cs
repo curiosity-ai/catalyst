@@ -690,7 +690,7 @@ namespace Catalyst.Models
         private void ThreadTrain(ThreadState state)
         {
             long localTokenCount = 0;
-            var sinceEpochWatch = = Stopwatch.StartNew();
+            var sinceEpochWatch = Stopwatch.StartNew();
             var sinceBeginingWatch = Stopwatch.StartNew();
 
             float progress = 0f, lr = Data.LearningRate;
