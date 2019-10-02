@@ -690,8 +690,9 @@ namespace Catalyst.Models
         private void ThreadTrain(ThreadState state)
         {
             long localTokenCount = 0;
-            Stopwatch Watch = null;
-            if (state.ThreadID == 0) { Watch = Stopwatch.StartNew(); }
+            var sinceEpochWatch = = Stopwatch.StartNew();
+            var sinceBeginingWatch = Stopwatch.StartNew();
+
             float progress = 0f, lr = Data.LearningRate;
 
             float baseLR = Data.LearningRate / 200;
@@ -734,14 +735,14 @@ namespace Catalyst.Models
                         {
                             nextProgressReport += 0.01f; //Report every 1%
                             var loss = state.GetLoss();
-                            var ws = (double)(Interlocked.Exchange(ref PartialTokenCount, 0)) / Watch.Elapsed.TotalSeconds;
-                            Watch.Restart();
+                            var ws = (double)(Interlocked.Exchange(ref PartialTokenCount, 0)) / sinceEpochWatch.Elapsed.TotalSeconds;
+                            sinceEpochWatch.Restart();
                             float wst = (float)(ws / Data.Threads);
 
                             Logger.LogInformation("At {PROGRESS:n1}%, w/s/t: {WST:n0}, w/s: {WS:n0}, loss at epoch {EPOCH}/{MAXEPOCH}: {LOSS:n5}", (progress * 100), wst, ws, epoch + 1, Data.Epoch, loss);
 
                             var update = new TrainingUpdate().At(epoch, Data.Epoch, loss)
-                                                             .Processed(Interlocked.Read(ref TokenCount), Watch.Elapsed);
+                                                             .Processed(Interlocked.Read(ref TokenCount), sinceBeginingWatch.Elapsed);
                             state.TrainingHistory.Append(update);
 
                             TrainingStatus?.Invoke(this, update);
@@ -752,7 +753,7 @@ namespace Catalyst.Models
             }
             if (state.ThreadID == 0)
             {
-                state.TrainingHistory.ElapsedTime = Watch.Elapsed;
+                state.TrainingHistory.ElapsedTime = sinceBeginingWatch.Elapsed;
             }
         }
 
