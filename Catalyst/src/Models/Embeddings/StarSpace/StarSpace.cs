@@ -597,7 +597,7 @@ namespace Catalyst.Models
                     {
                         num_negs[i]++;
                         loss[i] += thisLoss;
-                        SIMD.Add(ref negMean[i], ref state.rhsN[j]);
+                        SIMD.Add(negMean[i], state.rhsN[j]);
                         update_flag[i][j] = true;
                         if (num_negs[i] == Data.MaximumNegativeSamples) { break; }
                     }
@@ -605,11 +605,11 @@ namespace Catalyst.Models
                 if (num_negs[i] == 0) { continue; }
 
                 loss[i] /= negSearchLimit;
-                SIMD.Multiply(ref negMean[i], 1f / num_negs[i]);
+                SIMD.Multiply(negMean[i], 1f / num_negs[i]);
                 total_loss += loss[i];
 
                 // gradW for i
-                SIMD.MultiplyAndAdd(ref negMean[i], ref state.rhsP[i], -1f);
+                SIMD.MultiplyAndAdd(negMean[i], state.rhsP[i], -1f);
                 for (int j = 0; j < negSearchLimit; j++)
                 {
                     if (update_flag[i][j])
@@ -645,6 +645,7 @@ namespace Catalyst.Models
         {
             var cols = Data.Dimensions;
 
+#if NETCOREAPP3_0
             void Update(Span<float> dest, ReadOnlySpan<float> src, float rate, float weight, Span<float> adagradWeight, int idx)
             {
                 if (Data.AdaGrad)
@@ -654,7 +655,17 @@ namespace Catalyst.Models
                 }
                 SIMD.MultiplyAndAdd(dest, src, -rate);
             }
-
+#else
+            void Update(float[] dest, float[] src, float rate, float weight, Span<float> adagradWeight, int idx)
+            {
+                if (Data.AdaGrad)
+                {
+                    adagradWeight[idx] += weight / cols;
+                    rate /= (float)Math.Sqrt(adagradWeight[idx] + 1e-6f);
+                }
+                SIMD.MultiplyAndAdd(dest, src, -rate);
+            }
+#endif
             var batch_sz = batch_exs.Count;
             var n1 = new float[batch_sz];
             var n2 = new float[batch_sz];
@@ -761,7 +772,11 @@ namespace Catalyst.Models
             }
         }
 
+#if NETCOREAPP3_0
         private void ProjectRHS(SharedState state, List<Base> ws, Span<float> retval)
+#else
+        private void ProjectRHS(SharedState state, List<Base> ws, float[] retval)
+#endif
         {
             Forward(state.RHSEmbeddings, ws, retval);
             if (ws.Count > 0)
@@ -771,9 +786,15 @@ namespace Catalyst.Models
             }
         }
 
+#if NETCOREAPP3_0
         private void Forward(Matrix matrix, List<Base> ws, Span<float> retval)
         {
             retval.Fill(0f);
+#else
+        private void Forward(Matrix matrix, List<Base> ws, float[] retval)
+        {
+            retval.Zero();
+#endif
             foreach (var b in ws)
             {
                 var row = matrix.GetRow(b.ID);
@@ -781,14 +802,28 @@ namespace Catalyst.Models
             }
         }
 
+
+#if NETCOREAPP3_0
         private double Norm2(Span<float> a)
         {
             const float Epsilon = 1.192092896e-07F;
             var norm = (float)Math.Sqrt(SIMD.DotProduct(a, a));
             return (norm < Epsilon) ? Epsilon : norm;
         }
+#else
+        private double Norm2(float[] a)
+        {
+            const float Epsilon = 1.192092896e-07F;
+            var norm = (float)Math.Sqrt(SIMD.DotProduct(a, a));
+            return (norm < Epsilon) ? Epsilon : norm;
+        }
+#endif
 
+#if NETCOREAPP3_0
         private void ProjectLHS(SharedState state, List<Base> ws, Span<float> retval)
+#else
+        private void ProjectLHS(SharedState state, List<Base> ws, float[] retval)
+#endif
         {
             Forward(state.LHSEmbeddings, ws, retval);
             if (ws.Count > 0)
@@ -843,14 +878,14 @@ namespace Catalyst.Models
 
                 int cls_cnt = 1;
                 state.prob[i].Clear();
-                state.prob[i].Add(SIMD.DotProduct(ref state.lhs[i], ref state.rhsP[i]));
+                state.prob[i].Add(SIMD.DotProduct(state.lhs[i], state.rhsP[i]));
                 float max = state.prob[i][0];
 
                 for (int j = 0; j < negSearchLimit; j++)
                 {
                     state.nRate[i][j] = 0f;
                     if (state.batch_negLabels[j] == batch_exs[i].RHSTokens) { continue; }
-                    state.prob[i].Add(SIMD.DotProduct(ref state.lhs[i], ref state.rhsN[j]));
+                    state.prob[i].Add(SIMD.DotProduct(state.lhs[i], state.rhsN[j]));
                     max = Math.Max(state.prob[i][0], state.prob[i][cls_cnt]);
                     index.Add(j);
                     cls_cnt += 1;
@@ -895,12 +930,12 @@ namespace Catalyst.Models
 
                 state.rhsP[i].AsSpan().CopyTo(state.gradW[i].AsSpan());
 
-                SIMD.Multiply(ref state.gradW[i], state.prob[i][0] - 1);
+                SIMD.Multiply(state.gradW[i], state.prob[i][0] - 1);
 
                 for (int j = 1; j < cls_cnt; j++)
                 {
                     var inj = index[j - 1];
-                    SIMD.MultiplyAndAdd(ref state.gradW[i], ref state.rhsN[inj], state.prob[i][j]); //TODO Check if equivalent to this: gradW[i].add(rhsN[inj], prob[i][j]);
+                    SIMD.MultiplyAndAdd(state.gradW[i], state.rhsN[inj], state.prob[i][j]); //TODO Check if equivalent to this: gradW[i].add(rhsN[inj], prob[i][j]);
                     state.nRate[i][inj] = state.prob[i][j] * rate0;
                 }
 
@@ -922,7 +957,7 @@ namespace Catalyst.Models
 
         private float Similarity(ref float[] lhs, ref float[] rhs)
         {
-            return Data.Similarity == SimilarityType.Dot ? SIMD.DotProduct(ref lhs, ref rhs) : SIMD.CosineSimilarity(ref lhs, ref rhs);
+            return Data.Similarity == SimilarityType.Dot ? SIMD.DotProduct(lhs, rhs) : SIMD.CosineSimilarity(lhs, rhs);
         }
 
         private ParseResults GetExample(ThreadState state, int i)

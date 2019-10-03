@@ -532,7 +532,11 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NETCOREAPP3_0
         public void Quantize(Span<float> vector)
+#else
+        public void Quantize(float[] vector)
+#endif
         {
             switch (Data.VectorQuantization)
             {
@@ -892,8 +896,11 @@ namespace Catalyst.Models
                 Update(mps, bow_a, l.EntryIndexes[w], lr);
             }
         }
-
+#if NETCOREAPP3_0
         private void PredictPVDM(Span<float> predictionVector, ThreadState mps, ref Line l, float lr)
+#else
+        private void PredictPVDM(float[] predictionVector, ThreadState mps, ref Line l, float lr)
+#endif
         {
             int cw = Data.ContextWindow;
             int len = l.EntryIndexes.Length - cw;
@@ -931,7 +938,7 @@ namespace Catalyst.Models
 
             if (Data.Type == ModelType.Supervised || Data.Type == ModelType.PVDM)
             {
-                SIMD.Multiply(ref state.Gradient, 1.0f / input.Length);
+                SIMD.Multiply(state.Gradient, 1.0f / input.Length);
             }
 
             foreach (var ix in input)
@@ -951,7 +958,7 @@ namespace Catalyst.Models
 
             state.Loss += ComputeOneVsAllLoss(state, targets, lr);
 
-            SIMD.Multiply(ref state.Gradient, 1.0f / input.Length);
+            SIMD.Multiply(state.Gradient, 1.0f / input.Length);
 
             foreach (var ix in input)
             {
@@ -960,7 +967,11 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NETCOREAPP3_0
         private void UpdatePredictionOnly(Span<float> predictionVector, ThreadState state, Span<int> input, int target, float lr)
+#else
+        private void UpdatePredictionOnly(float[] predictionVector, ThreadState state, Span<int> input, int target, float lr)
+#endif
         {
             if (input.Length == 0) { return; }
             state.NumberOfExamples++;
@@ -974,7 +985,7 @@ namespace Catalyst.Models
                 case LossType.SoftMax:             { state.Loss += ComputeSoftmax(state, target, lr, addToOutput: false);             break; }
             }
 
-            SIMD.Multiply(ref state.Gradient, 1.0f / (input.Length + 1));
+            SIMD.Multiply(state.Gradient, 1.0f / (input.Length + 1));
 
             SIMD.Add(predictionVector, state.Gradient);
         }
@@ -1191,7 +1202,7 @@ namespace Catalyst.Models
                 output[i] = Wo.DotRow(hidden, i);
             }
 
-            float max = SIMD.Max(ref output);
+            float max = SIMD.Max(output);
 
             for (int i = 0; i < output.Length; i++)
             {
@@ -1199,7 +1210,7 @@ namespace Catalyst.Models
                 z += output[i];
             }
             z = 1.0f / z;
-            SIMD.Multiply(ref output, z);
+            SIMD.Multiply(output, z);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1218,8 +1229,13 @@ namespace Catalyst.Models
         private void ComputeHidden(ThreadState state, Span<int> input)
         {
             float z = 1.0f / input.Length;
+#if NETCOREAPP3_0
             Span<float> hidden = state.Hidden;
             hidden.Fill(0f);
+#else
+            float[] hidden = state.Hidden;
+            hidden.Zero();
+#endif
             foreach (var ix in input)
             {
                 var v = Wi.GetRow(ix);
@@ -1230,10 +1246,16 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NETCOREAPP3_0
         private void ComputeHiddenForPrediction(Span<float> hidden, Span<int> input, Span<float> extraVector)
         {
-            float z = 1.0f / (input.Length + 1);
             hidden.Fill(0f);
+#else
+        private void ComputeHiddenForPrediction(float[] hidden, Span<int> input, Span<float> extraVector)
+        {
+            hidden.Zero();
+#endif
+            float z = 1.0f / (input.Length + 1);
             foreach (var ix in input)
             {
                 var v = Wi.GetRow(ix);
