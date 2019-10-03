@@ -399,6 +399,9 @@ namespace Catalyst.Models
             float decrPerKSample = (state.Rate - state.FinishRate) / (numSamples / kDecrStep);
             int negSearchLimit = Math.Min(numSamples, Data.NegativeSamplingSearchLimit);
 
+            var elapsedTillNow = state.TrainingHistory?.ElapsedTime ?? TimeSpan.Zero;
+
+
             //todo: access state.corpus in random order - i.e. create array of indices, shuffle and use this to index "i"
 
             // Compute word negatives
@@ -475,7 +478,7 @@ namespace Catalyst.Models
                     var curLos = state.Loss / state.Counts;
                     state.Measure.EmitPartial($"E:{state.Epoch} P:{100f * ((float)i / numSamples):n2}% L:{curLos:n8}");
 
-                    var update = new TrainingUpdate().At(state.Epoch + ((float)i / numSamples), Data.Epoch, curLos).Processed(i, sw.Elapsed);
+                    var update = new TrainingUpdate().At(state.Epoch + ((float)i / numSamples), Data.Epoch, curLos).Processed(i, sw.Elapsed + elapsedTillNow);
                     TrainingStatus?.Invoke(this, update);
                     state.TrainingHistory.Append(update);
                 }
