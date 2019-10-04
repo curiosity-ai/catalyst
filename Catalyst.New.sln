@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "azure-devops", "azure-devop
 		azure-devops\build-nuget.yml = azure-devops\build-nuget.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{BAD44084-4D40-4BF5-99A2-9107CEF1ADC2}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9873879B-0FE8-4FFF-A337-AE75F0B4FAB3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Azure.Tests", "tests\Catalyst.Azure.Tests\Catalyst.Azure.Tests.csproj", "{05051CDB-636C-4884-8D2B-58B01267E33D}"
