@@ -745,7 +745,7 @@ namespace Catalyst.Models
 
                             Logger.LogInformation("At {PROGRESS:n1}%, w/s/t: {WST:n0}, w/s: {WS:n0}, loss at epoch {EPOCH}/{MAXEPOCH}: {LOSS:n5}", (progress * 100), wst, ws, epoch + 1, Data.Epoch, loss);
 
-                            var update = new TrainingUpdate().At(epoch + progress, Data.Epoch, loss)
+                            var update = new TrainingUpdate().At(progress, Data.Epoch, loss)
                                                              .Processed(Interlocked.Read(ref TokenCount), sinceBeginingWatch.Elapsed);
                             state.TrainingHistory.Append(update);
 
