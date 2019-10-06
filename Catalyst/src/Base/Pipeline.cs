@@ -40,12 +40,6 @@ namespace Catalyst
             await a.LoadDataAsync();
             var set = new HashSet<string>();
 
-            var normalizers         = new List<IProcess>();
-            var tokenizers          = new List<IProcess>();
-            var sentenceDetectors   = new List<IProcess>();
-            var others              = new List<IProcess>();
-
-
             foreach (var md in a.Data.Processes.ToArray()) //Copy here as we'll modify the list bellow if model not found
             {
                 if (await md.ExistsAsync())
@@ -55,23 +49,7 @@ namespace Catalyst
                         if (set.Add(md.ToStringWithoutVersion()))
                         {
                             var process = (IProcess)await md.FromStoreAsync();
-
-                            if(process is INormalizer)
-                            {
-                                normalizers.Add(process);
-                            }
-                            else if (process is ITokenizer)
-                            {
-                                tokenizers.Add(process);
-                            }
-                            else if (process is ISentenceDetector)
-                            {
-                                sentenceDetectors.Add(process);
-                            }
-                            else
-                            {
-                                others.Add(process);
-                            }
+                            a.Add(process);
                         }
                     }
                     catch (FileNotFoundException)
@@ -84,11 +62,6 @@ namespace Catalyst
                 {
                     a.Data.Processes.Remove(md);
                 }
-            }
-
-            foreach(var p in normalizers.Concat(tokenizers).Concat(sentenceDetectors).Concat(others)) //Ensure models are in order
-            {
-                a.Add(p);
             }
 
             if (!a.Processes.Any(p => p is ITokenizer))
@@ -228,7 +201,32 @@ namespace Catalyst
             RWLock.EnterWriteLock();
             try
             {
-                Processes.Add(process);
+                //Ensure correct order when adding new processes
+
+                var normalizers       = Processes.Where(p => p is INormalizer).ToList();
+                var tokenizers        = Processes.Where(p => p is ITokenizer).ToList();
+                var sentenceDetectors = Processes.Where(p => p is ISentenceDetector).ToList();
+                var others            = Processes.Except(normalizers).Except(tokenizers).Except(sentenceDetectors).ToList();
+
+                if (process is INormalizer)
+                {
+                    normalizers.Add(process);
+                }
+                else if (process is ITokenizer)
+                {
+                    tokenizers.Add(process);
+                }
+                else if (process is ISentenceDetector)
+                {
+                    sentenceDetectors.Add(process);
+                }
+                else
+                {
+                    others.Add(process);
+                }
+
+                Processes = normalizers.Concat(tokenizers).Concat(sentenceDetectors).Concat(others).ToList();
+
                 TryImportSpecialCases(process);
             }
             finally
