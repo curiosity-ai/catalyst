@@ -18,6 +18,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Azure.Tests", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Azure", "Catalyst.Azure\Catalyst.Azure.csproj", "{CE8805D3-D498-4788-BF3A-7513491BC924}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Samples", "Catalyst.Samples\Catalyst.Samples.csproj", "{A626F677-9EF7-4139-A430-88E6EE873019}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,15 +42,16 @@ Global
 		{CE8805D3-D498-4788-BF3A-7513491BC924}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE8805D3-D498-4788-BF3A-7513491BC924}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE8805D3-D498-4788-BF3A-7513491BC924}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A626F677-9EF7-4139-A430-88E6EE873019}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A626F677-9EF7-4139-A430-88E6EE873019}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A626F677-9EF7-4139-A430-88E6EE873019}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A626F677-9EF7-4139-A430-88E6EE873019}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{A86A90FD-73AB-49B4-8757-B7649EF6F470} = {BAD44084-4D40-4BF5-99A2-9107CEF1ADC2}
-		{8D171C86-5A9A-43D3-9A16-7DDE7CE61AA1} = {BAD44084-4D40-4BF5-99A2-9107CEF1ADC2}
 		{05051CDB-636C-4884-8D2B-58B01267E33D} = {9873879B-0FE8-4FFF-A337-AE75F0B4FAB3}
-		{CE8805D3-D498-4788-BF3A-7513491BC924} = {BAD44084-4D40-4BF5-99A2-9107CEF1ADC2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {53B493B7-329B-4286-97BE-D464877CF17D}

@@ -1,0 +1,1 @@
+﻿NOTE: This samples project defaults to using the public Nuget release of Catalyst. To use the local build, remove nuget references and add project references as needed.
