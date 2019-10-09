@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mosaik.Core" Version="0.0.2705" />
-    <PackageReference Include="WindowsAzure.Storage" Version="8.4.0" />
+    <PackageReference Include="Mosaik.Core" Version="0.0.2794" />
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
   
 </Project>
