@@ -1,6 +1,7 @@
 ﻿using System;
 
 using Catalyst.Azure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
