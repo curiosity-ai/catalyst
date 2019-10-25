@@ -22,7 +22,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="src\Models\LDA\LatentDirichletAllocationEstimator.cs" />
+    <Compile Remove="src\Models\LDA\LatentDirichletAllocationTransformer.cs" />
+    <Compile Remove="src\Models\LDA\ML\AnnotationUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\ArrayUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\BitUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\ColumnTypeExtensions.cs" />
+    <Compile Remove="src\Models\LDA\ML\Contracts.cs" />
+    <Compile Remove="src\Models\LDA\ML\Conversions.cs" />
+    <Compile Remove="src\Models\LDA\ML\DataKind.cs" />
+    <Compile Remove="src\Models\LDA\ML\FloatUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\ITransposeDataView.cs" />
+    <Compile Remove="src\Models\LDA\ML\LDA.cs" />
+    <Compile Remove="src\Models\LDA\ML\PlatformUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\ReadOnlyMemoryUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\RootCursorBase.cs" />
+    <Compile Remove="src\Models\LDA\ML\RowCursorUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\SchemaAnnotationsExtensions.cs" />
+    <Compile Remove="src\Models\LDA\ML\SchemaExtensions.cs" />
+    <Compile Remove="src\Models\LDA\ML\SlotCursor.cs" />
+    <Compile Remove="src\Models\LDA\ML\TransposerUtils.cs" />
+    <Compile Remove="src\Models\LDA\ML\Utils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MessagePack" Version="1.7.3.7" />
+    <PackageReference Include="Microsoft.ML" Version="1.3.1" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.2.7" />
     <PackageReference Include="Mosaik.Core" Version="0.0.2794" />
     <PackageReference Include="System.Memory" Version="4.5.3" />
@@ -36,6 +61,27 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+    <None Include="src\Models\LDA\LatentDirichletAllocationEstimator.cs" />
+    <None Include="src\Models\LDA\LatentDirichletAllocationTransformer.cs" />
+    <None Include="src\Models\LDA\ML\AnnotationUtils.cs" />
+    <None Include="src\Models\LDA\ML\ArrayUtils.cs" />
+    <None Include="src\Models\LDA\ML\BitUtils.cs" />
+    <None Include="src\Models\LDA\ML\ColumnTypeExtensions.cs" />
+    <None Include="src\Models\LDA\ML\Contracts.cs" />
+    <None Include="src\Models\LDA\ML\Conversions.cs" />
+    <None Include="src\Models\LDA\ML\DataKind.cs" />
+    <None Include="src\Models\LDA\ML\FloatUtils.cs" />
+    <None Include="src\Models\LDA\ML\ITransposeDataView.cs" />
+    <None Include="src\Models\LDA\LDA.cs" />
+    <None Include="src\Models\LDA\ML\PlatformUtils.cs" />
+    <None Include="src\Models\LDA\ML\ReadOnlyMemoryUtils.cs" />
+    <None Include="src\Models\LDA\ML\RootCursorBase.cs" />
+    <None Include="src\Models\LDA\ML\RowCursorUtils.cs" />
+    <None Include="src\Models\LDA\ML\SchemaAnnotationsExtensions.cs" />
+    <None Include="src\Models\LDA\ML\SchemaExtensions.cs" />
+    <None Include="src\Models\LDA\ML\SlotCursor.cs" />
+    <None Include="src\Models\LDA\ML\TransposerUtils.cs" />
+    <None Include="src\Models\LDA\ML\Utils.cs" />
   </ItemGroup>
 
   <ItemGroup>
