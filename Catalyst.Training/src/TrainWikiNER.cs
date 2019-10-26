@@ -40,6 +40,7 @@ namespace Catalyst.Training
             var aper = new AveragePerceptronEntityRecognizer(language, version, tag, new string[] { "Person", "Organization", "Location" }, ignoreCase:false );
 
             aper.Train(documents);
+
             await aper.StoreAsync();
         }
 

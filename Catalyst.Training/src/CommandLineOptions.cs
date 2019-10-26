@@ -19,5 +19,8 @@ namespace Catalyst.Training
 
         [Option("wikiner", HelpText = "Path to WikiNER training data")]
         public string WikiNERPath { get; set; }
+
+        [Option('t', "token", HelpText = "Upload token for online repository")]
+        public string Token { get; set; }
     }
 }

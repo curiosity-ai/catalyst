@@ -22,8 +22,18 @@ namespace Catalyst.Training
                         .MapResult(
                         async options =>
                         {
-                            Storage.Current = new DiskStorage(options.DiskStoragePath);
+                            if (string.IsNullOrWhiteSpace(options.Token))
+                            {
+                                Storage.Current = new DiskStorage(options.DiskStoragePath);
+                            }
+                            else
+                            {
+                                //For uploading on the online models repository
+                                Storage.Current = new OnlineWriteableRepositoryStorage(new DiskStorage(options.DiskStoragePath), options.Token);
+                            }
+
                             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+
                             using (var p = Process.GetCurrentProcess())
                             {
                                 p.PriorityClass = ProcessPriorityClass.High;
