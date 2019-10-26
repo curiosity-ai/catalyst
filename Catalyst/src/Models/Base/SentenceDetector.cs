@@ -48,7 +48,7 @@ namespace Catalyst.Models
 
             if (document.Spans.Count() != 1)
             {
-                throw new InvalidOperationException("Document must be tokenized first");
+                return; //Document has already been tokenized and passed to the sentence detection, so ignore the second call
             }
 
             var tokens = document.Spans.First().Tokens.ToList();
