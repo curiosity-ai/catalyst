@@ -22,7 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{35AB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EntityRecognition", "samples\EntityRecognition\EntityRecognition.csproj", "{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageDetection", "samples\LanguageDetection\LanguageDetection.csproj", "{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageDetection", "samples\LanguageDetection\LanguageDetection.csproj", "{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

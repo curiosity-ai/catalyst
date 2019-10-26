@@ -17,15 +17,15 @@ namespace Catalyst.Samples.LanguageDetection
         {
             Console.OutputEncoding = Encoding.UTF8;
             //This example shows the two language detection models available on Catalyst. 
-            //The first is derived from the Chrome language detection code
-            //and the second from Facebook's FastText language detection model
+            //The first is derived from the Chrome former language detection code Compact Language Detector 2 (https://github.com/CLD2Owners/cld2)
+            //and the newer model is derived from Facebook's FastText language detection dataset (see: https://fasttext.cc/blog/2017/10/02/blog-post.html)
 
             //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
             Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
 
-            //var chLangDetect = await LanguageDetector.FromStoreAsync(Language.Any, Version.Latest, ""); // Missing model training code
-
-            var ftLangDetect = await FastTextLanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");
+            Console.WriteLine("Loading models... This might take a bit longer the first time you run this sample, as the models have to be downloaded from the online repository");
+            var cld2LanguageDetector     = await LanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");
+            var fastTextLanguageDetector = await FastTextLanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");
 
             //We show bellow the detection on short and longer samples. You can expect lower precision on shorter texts, as there is less information for the model to work with
             //It's also interesting to see the kind of mistakes these models make, such as detecting Welsh as Gaelic_Scottish_Gaelic
@@ -33,24 +33,36 @@ namespace Catalyst.Samples.LanguageDetection
             foreach (var (lang, text) in Data.ShortSamples)
             {
                 var doc = new Document(text);
-                ftLangDetect.Process(doc);
-                Console.WriteLine($"{text}\n\nActual\t\t{lang}\nPredicted\t{doc.Language}\n\n");
+                fastTextLanguageDetector.Process(doc);
+
+                var doc2 = new Document(text);
+                cld2LanguageDetector.Process(doc2);
+
+                Console.WriteLine(text);
+                Console.WriteLine($"Actual:\t{lang}\nFT:\t{doc.Language}\nCLD2\t{doc2.Language}");
+                Console.WriteLine();
             }
 
             foreach (var (lang, text) in Data.LongSamples)
             {
                 var doc = new Document(text);
-                ftLangDetect.Process(doc);
-                Console.WriteLine($"{text}\n\nActual\t\t{lang}\nPredicted\t{doc.Language}\n\n");
+                fastTextLanguageDetector.Process(doc);
+
+                var doc2 = new Document(text);
+                cld2LanguageDetector.Process(doc2);
+
+                Console.WriteLine(text);
+                Console.WriteLine($"Actual:\t{lang}\nFT:\t{doc.Language}\nCLD2\t{doc2.Language}");
+                Console.WriteLine();
             }
 
             // You can also access all predictions via the Predict method:
-            var allPredictions = ftLangDetect.Predict(new Document(Data.LongSamples[Language.English]));
+            var allPredictions = fastTextLanguageDetector.Predict(new Document(Data.LongSamples[Language.Spanish]));
             
-            Console.WriteLine($"\n\nTop 10 predictions and scores for the English sample:");
+            Console.WriteLine($"\n\nTop 10 predictions and scores for the Spanish sample:");
             foreach (var kv in allPredictions.OrderByDescending(kv => kv.Value).Take(10))
             {
-                Console.WriteLine($"{kv.Key.PadRight(40)}\tScore: {kv.Value:n2}");
+                Console.WriteLine($"{kv.Key.ToString().PadRight(40)}\tScore: {kv.Value:n2}");
             }
         }
     }
