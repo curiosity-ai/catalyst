@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AssemblyName>EntityRecognition</AssemblyName>
+    <RootNamespace>Catalyst.Samples.EntityRecognition</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Catalyst" Version="0.0.2942" />
+  </ItemGroup>
+
+</Project>
