@@ -3,6 +3,7 @@
 using Mosaik.Core;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Catalyst.Models
@@ -91,21 +92,7 @@ namespace Catalyst.Models
         {
             if (document.Length == 0 || (document.Language != Language.Unknown && document.Language != Language.Any)) { return; } //Don't try to identify documents that already have their language set or is empty
 
-            IDocument tempDocument = document;
-
-            if (document.SpansCount == 0) // Have to tokenize temporarily the document
-            {
-                if (document.Length > 1000)
-                {
-                    tempDocument = new Document(document.Value.Substring(0, 1000));
-                }
-                else
-                {
-                    tempDocument = new Document(document.Value);
-                }
-                Tokenizer.Process(tempDocument);
-                NumberNormalizer.Process(tempDocument);
-            }
+            IDocument tempDocument = Prepare(document);
 
             try
             {
@@ -123,6 +110,45 @@ namespace Catalyst.Models
             {
                 document.Language = Language.Unknown;
             }
+        }
+
+        public Dictionary<Language, float> Predict(IDocument document)
+        {
+            IDocument tempDocument = Prepare(document);
+
+            try
+            {
+                var predictions = Model.Predict(tempDocument);
+                return predictions.ToDictionary(kv => Languages.CodeToEnum(kv.Key), kv => kv.Value);
+            }
+            catch
+            {
+                return new Dictionary<Language, float>()
+                {
+                    [Language.Unknown] = 1f
+                };
+            }
+        }
+
+        private IDocument Prepare(IDocument document)
+        {
+            IDocument tempDocument = document;
+
+            if (document.SpansCount == 0) // Have to tokenize temporarily the document
+            {
+                if (document.Length > 1000)
+                {
+                    tempDocument = new Document(document.Value.Substring(0, 1000));
+                }
+                else
+                {
+                    tempDocument = new Document(document.Value);
+                }
+                Tokenizer.Process(tempDocument);
+                NumberNormalizer.Process(tempDocument);
+            }
+
+            return tempDocument;
         }
 
         public void Train(IEnumerable<IDocument> documents)

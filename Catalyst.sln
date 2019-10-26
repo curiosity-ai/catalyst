@@ -20,7 +20,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Azure", "Catalyst.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{35ABD74D-8096-4B71-8FB4-320D1C0C51B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntityRecognition", "samples\EntityRecognition\EntityRecognition.csproj", "{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EntityRecognition", "samples\EntityRecognition\EntityRecognition.csproj", "{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanguageDetection", "samples\LanguageDetection\LanguageDetection.csproj", "{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +50,10 @@ Global
 		{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,6 +61,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{05051CDB-636C-4884-8D2B-58B01267E33D} = {9873879B-0FE8-4FFF-A337-AE75F0B4FAB3}
 		{C0D411D8-49F3-489D-9F4E-F2A0D93B40B9} = {35ABD74D-8096-4B71-8FB4-320D1C0C51B0}
+		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE} = {35ABD74D-8096-4B71-8FB4-320D1C0C51B0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {53B493B7-329B-4286-97BE-D464877CF17D}
