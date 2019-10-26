@@ -256,10 +256,6 @@ namespace Catalyst.Models
             MaxLength = p.MaxLength;
         }
 
-        public PatternUnit(Func<PatternUnitPrototype, PatternUnitPrototype> pattern) : this(pattern(new PatternUnitPrototype()))
-        {
-        }
-
         public PatternUnit()
         {
             //Constructor for Json serialization
