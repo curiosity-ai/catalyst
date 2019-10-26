@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Catalyst.Models
 {
@@ -342,7 +343,7 @@ namespace Catalyst.Models
                 ld.Data.Languages.Add(language);
 
                 string json = File.ReadAllText(f);
-                var jsonProfile = Newtonsoft.Json.JsonConvert.DeserializeObject<JsonLanguageProfile>(json);
+                var jsonProfile = JsonConvert.DeserializeObject<JsonLanguageProfile>(json);
                 foreach (var word in jsonProfile.freq.Keys)
                 {
                     int hash = GetHash(word);

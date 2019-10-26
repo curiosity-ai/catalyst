@@ -35,6 +35,11 @@ namespace Catalyst.Training
             ldm.StoreAsync().Wait();
         }
 
+        public static void CreateLanguageDetector(string pathToJson)
+        {
+            LanguageDetector.TransformJsonDataInModelData(pathToJson);
+        }
+
         public static void Test(string pathToSentences)
         {
             var vectorizer = FastTextLanguageDetector.FromStoreAsync(Language.Any, 0, null).WaitResult();

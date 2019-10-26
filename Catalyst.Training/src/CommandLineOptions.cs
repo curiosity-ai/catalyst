@@ -14,8 +14,11 @@ namespace Catalyst.Training
         [Option("ontonotes", HelpText = "Path to the Ontonotes data folder")]
         public string OntonotesPath { get; set; }
 
-        [Option("langdetect", HelpText = "Path to fast-text language detection sentences.csv file")]
+        [Option("langdetect", HelpText = "Path to FastText language detection sentences.csv file")]
         public string FastTextLanguageSentencesPath { get; set; }
+
+        [Option("cld3", HelpText = "Path to cld3 language detection json files")]
+        public string LanguageJsonPath { get; set; }
 
         [Option("wikiner", HelpText = "Path to WikiNER training data")]
         public string WikiNERPath { get; set; }
