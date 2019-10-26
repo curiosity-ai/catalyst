@@ -14,7 +14,7 @@
     <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageId>Catalyst</PackageId>
     <Description>Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
     <PackageTags>Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>

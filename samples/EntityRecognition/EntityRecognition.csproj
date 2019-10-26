@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="0.0.2942" />
+    <PackageReference Include="Catalyst" Version="0.0.2945" />
   </ItemGroup>
 
 </Project>

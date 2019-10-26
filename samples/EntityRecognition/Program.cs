@@ -21,6 +21,7 @@ namespace Catalyst.Samples.EntityRecognition
             Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
 
             //Create a new pipeline for the english language, and add the WikiNER model to it
+            Console.WriteLine("Loading models... This might take a bit longer the first time you run this sample, as the models have to be downloaded from the online repository");
             var nlp = await Pipeline.ForAsync(Language.English);
             nlp.Add(await AveragePerceptronEntityRecognizer.FromStoreAsync(language: Language.English, version: Version.Latest, tag: "WikiNER"));
 
