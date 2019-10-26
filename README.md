@@ -82,4 +82,4 @@ For fast embedding search, we have also released a C# version of the ["Hierarchi
 [Getting Started]: https://catalyst.curiosity.ai/getting-started
 [API Reference]: https://catalyst.curiosity.ai/api
 [Contribute]: https://github.com/curiosity-ai/catalyst/blob/master/CONTRIBUTING.md
-[Samples]:(https://github.com/curiosity-ai/catalyst/tree/master/samples)
+[Samples]: https://github.com/curiosity-ai/catalyst/tree/master/samples
