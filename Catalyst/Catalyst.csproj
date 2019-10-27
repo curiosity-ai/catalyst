@@ -38,10 +38,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="src\Corpus\" />
-  </ItemGroup>
-
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
     <Exec Command="dotnet tool install --global NuKeeper&#xD;&#xA;pushd $(SolutionDir)&#xD;&#xA;nukeeper update -a 0 -c Patch&#xD;&#xA;popd&#xD;&#xA;exit 0" />
   </Target>

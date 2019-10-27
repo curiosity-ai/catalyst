@@ -78,6 +78,10 @@ namespace Catalyst
                     throw new FileNotFoundException(path);
                 }
             }
+            else if(access == FileAccess.Write)
+            {
+                return await Disk.OpenLockedStreamAsync(path, access);
+            }
             else
             {
                 throw new FileNotFoundException(path);
