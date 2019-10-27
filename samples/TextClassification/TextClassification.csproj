@@ -1,15 +1,17 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <AssemblyName>EntityRecognition</AssemblyName>
-    <RootNamespace>Catalyst.Samples.EntityRecognition</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="0.0.2952" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Catalyst\Catalyst.csproj" />
   </ItemGroup>
 
 </Project>

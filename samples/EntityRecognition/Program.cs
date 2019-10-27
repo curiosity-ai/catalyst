@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Version = Mosaik.Core.Version;
 using P = Catalyst.PatternUnitPrototype;
+using System.Text;
 
 namespace Catalyst.Samples.EntityRecognition
 {
@@ -14,6 +15,9 @@ namespace Catalyst.Samples.EntityRecognition
     {
         public static async Task Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
+            ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
+
             //This example uses the WikiNER model, trained on the data provided by the paper "Learning multilingual named entity recognition from Wikipedia", Artificial Intelligence 194 (DOI: 10.1016/j.artint.2012.03.006)
             //The training data was sourced from the following repository: https://github.com/dice-group/FOX/tree/master/input/Wikiner
 

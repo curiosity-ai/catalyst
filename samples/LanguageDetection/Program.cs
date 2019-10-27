@@ -16,6 +16,8 @@ namespace Catalyst.Samples.LanguageDetection
         public static async Task Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
+            ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
+
             //This example shows the two language detection models available on Catalyst. 
             //The first is derived from the Chrome former language detection code Compact Language Detector 2 (https://github.com/CLD2Owners/cld2)
             //and the newer model is derived from Facebook's FastText language detection dataset (see: https://fasttext.cc/blog/2017/10/02/blog-post.html)
