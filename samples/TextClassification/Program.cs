@@ -71,7 +71,7 @@ namespace TextClassification
             Console.WriteLine($"Train: F1={2 * (precision * recall) / (precision + recall):n2} P={precision:n2} R={recall:n2}");
 
             //Compute precision and Recall for the Test Set
-            TP = 0f, FP = 0f, R = 0f,
+            TP = 0f; FP = 0f; R = 0f;
             foreach (var doc in testDocs)
             {
                 var pred = fastText.Predict(doc).Where(kv => kv.Value > cutoff).ToArray();
