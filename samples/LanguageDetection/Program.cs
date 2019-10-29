@@ -8,6 +8,7 @@ using System.Linq;
 using Version = Mosaik.Core.Version;
 using P = Catalyst.PatternUnitPrototype;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Catalyst.Samples.LanguageDetection
 {
