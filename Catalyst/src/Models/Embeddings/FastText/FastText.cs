@@ -65,7 +65,7 @@ namespace Catalyst.Models
         private List<HSNode> HS_Tree = new List<HSNode>();
 
         [ThreadStatic]
-        private ThreadState PredictionMPS;
+        private static ThreadState PredictionMPS;
 
         public TrainingHistory TrainingHistory => Data.TrainingHistory;
 

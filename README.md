@@ -19,7 +19,8 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 
 ## ✨ Getting Started
 
-Using _**catalyst**_ is as simple as installing its [NuGet Package](https://www.nuget.org/packages/Catalyst), and setting the storage to use our online repository. This way, models will be lazy loaded either from disk or downloaded from our online repository.
+Using _**catalyst**_ is as simple as installing its [NuGet Package](https://www.nuget.org/packages/Catalyst), and setting the storage to use our online repository. This way, models will be lazy loaded either from disk or downloaded from our online repository. **Check out also some of the [sample projects](https://github.com/curiosity-ai/catalyst/tree/master/samples)** for more examples on how to use _**catalyst**_.
+
 
 ```csharp
 Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
@@ -71,12 +72,14 @@ For fast embedding search, we have also released a C# version of the ["Hierarchi
 
 ## 📖 Documentation (coming soon)
 
-| Documentation     |                                                       |
-| ----------------- | ----------------------------------------------------- |
-| [Getting Started] | How to use _**catalyst**_ and its features.           |
-| [API Reference]   | The detailed reference for _**catalyst**_'s API.      |
-| [Contribute]      | How to contribute to _**catalyst**_ codebase.         |
+| Documentation     |                                                           |
+| ----------------- | --------------------------------------------------------- |
+| [Getting Started] | How to use _**catalyst**_ and its features.               |
+| [API Reference]   | The detailed reference for _**catalyst**_'s API.          |
+| [Contribute]      | How to contribute to _**catalyst**_ codebase.             |
+| [Samples]         | Sample projects demonstrating _**catalyst**_ capabilities |
 
 [Getting Started]: https://catalyst.curiosity.ai/getting-started
-[api reference]: https://catalyst.curiosity.ai/api
-[contribute]: https://github.com/curiosity-ai/catalyst/blob/master/CONTRIBUTING.md
+[API Reference]: https://catalyst.curiosity.ai/api
+[Contribute]: https://github.com/curiosity-ai/catalyst/blob/master/CONTRIBUTING.md
+[Samples]: https://github.com/curiosity-ai/catalyst/tree/master/samples

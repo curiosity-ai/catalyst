@@ -21,8 +21,7 @@ namespace Catalyst.Training
         public static void Train(string udSource, string ontonotesSource)
         {
             var trainFiles = Directory.GetFiles(udSource, "*-train.conllu", SearchOption.AllDirectories);
-            var testFiles = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
-
+            var testFiles  = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
 
             List<string> trainFilesOntonotesEnglish = null;
 
@@ -58,13 +57,13 @@ namespace Catalyst.Training
 
                 if (trainFilesPerLanguage.TryGetValue(lang, out var langTrainFiles) && testFilesPerLanguage.TryGetValue(lang, out var langTestFiles))
                 {
-                    var trainDocuments = ReadCorpus(langTrainFiles, ref arcNames, language);
-                    var testDocuments = ReadCorpus(langTestFiles, ref arcNames, language);
+                    var trainDocuments = ReadCorpus(langTrainFiles, arcNames, language);
+                    var testDocuments  = ReadCorpus(langTestFiles, arcNames, language);
 
                     if (language == Language.English)
                     {
                         //Merge with Ontonotes 5.0 corpus
-                        trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, ref arcNames, language, isOntoNotes: true));
+                        trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
                     }
 
                     double bestScore = double.MinValue;
@@ -78,7 +77,14 @@ namespace Catalyst.Training
                         if (scoreTest > bestScore)
                         {
                             Logger.LogInformation($"\n>>>>> {lang}: NEW POS BEST: {scoreTest:0.0}%");
-                            Tagger.StoreAsync().Wait();
+                            try
+                            {
+                                Tagger.StoreAsync().Wait();
+                            }
+                            catch (Exception E)
+                            {
+                                Logger.LogError(E, $"\n>>>>> {lang}: Failed to store model");
+                            } 
                             bestScore = scoreTest;
                         }
                         else
@@ -102,13 +108,13 @@ namespace Catalyst.Training
                             continue;
                         }
 
-                        trainDocuments = ReadCorpus(langTrainFiles, ref arcNames, language);
-                        testDocuments = ReadCorpus(langTestFiles, ref arcNames, language);
+                        trainDocuments = ReadCorpus(langTrainFiles, arcNames, language);
+                        testDocuments  = ReadCorpus(langTestFiles,  arcNames, language);
 
                         if (language == Language.English)
                         {
                             //Merge with Ontonotes 5.0 corpus
-                            trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, ref arcNames, language, isOntoNotes: true));
+                            trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
                         }
 
                         var scoreTrain = TestParser(trainDocuments, Parser);
@@ -117,7 +123,14 @@ namespace Catalyst.Training
                         if (scoreTest > bestScore)
                         {
                             Logger.LogInformation($"\n>>>>> {lang}: NEW DEP BEST: {scoreTest:0.0}%");
-                            Parser.StoreAsync().Wait();
+                            try
+                            {
+                                Parser.StoreAsync().Wait();
+                            }
+                            catch (Exception E)
+                            {
+                                Logger.LogError(E, $"\n>>>>> {lang}: Failed to store model");
+                            }
                             bestScore = scoreTest;
                         }
                         else
@@ -144,13 +157,13 @@ namespace Catalyst.Training
 
                 var arcNames = new HashSet<string>();
 
-                var trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], ref arcNames, language);
-                var testDocuments = ReadCorpus(testFilesPerLanguage[lang], ref arcNames, language);
+                var trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
+                var testDocuments  = ReadCorpus(testFilesPerLanguage[lang],  arcNames, language);
 
                 if (language == Language.English)
                 {
                     //Merge with Ontonotes 5.0 corpus
-                    var ontonotesDocuments = ReadCorpus(trainFilesOntonotesEnglish, ref arcNames, language, isOntoNotes: true);
+                    var ontonotesDocuments = ReadCorpus(trainFilesOntonotesEnglish,  arcNames, language, isOntoNotes: true);
                     trainDocuments.AddRange(ontonotesDocuments);
                 }
 
@@ -161,8 +174,8 @@ namespace Catalyst.Training
                 Logger.LogInformation($"\n{lang} - TAGGER / TEST");
                 TestTagger(testDocuments, Tagger);
 
-                trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], ref arcNames, language);
-                testDocuments = ReadCorpus(testFilesPerLanguage[lang], ref arcNames, language);
+                trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
+                testDocuments  = ReadCorpus(testFilesPerLanguage[lang],  arcNames, language);
 
                 var Parser = AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "").WaitResult();
                 Logger.LogInformation($"\n{lang} - PARSER / TRAIN");
@@ -288,7 +301,7 @@ namespace Catalyst.Training
             return 100D * correct / total;
         }
 
-        private static List<IDocument> ReadCorpus(List<string> trainDocuments, ref HashSet<string> arcNames, Language language, bool isOntoNotes = false)
+        private static List<IDocument> ReadCorpus(List<string> trainDocuments, HashSet<string> arcNames, Language language, bool isOntoNotes = false)
         {
             if(trainDocuments is null)
             {

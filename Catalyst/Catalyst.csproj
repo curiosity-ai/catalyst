@@ -14,7 +14,7 @@
     <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageId>Catalyst</PackageId>
     <Description>Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
     <PackageTags>Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
@@ -46,10 +46,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="1.7.3.7" />
     <PackageReference Include="Microsoft.ML" Version="1.3.1" />
+    <PackageReference Include="MessagePack" Version="1.8.74" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.2.7" />
-    <PackageReference Include="Mosaik.Core" Version="0.0.2794" />
+    <PackageReference Include="Mosaik.Core" Version="0.0.2940" />
     <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
@@ -82,10 +82,6 @@
     <None Include="src\Models\LDA\ML\SlotCursor.cs" />
     <None Include="src\Models\LDA\ML\TransposerUtils.cs" />
     <None Include="src\Models\LDA\ML\Utils.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="src\Corpus\" />
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(BuildingInsideVisualStudio)' == 'true'">

@@ -22,8 +22,18 @@ namespace Catalyst.Training
                         .MapResult(
                         async options =>
                         {
-                            Storage.Current = new DiskStorage(options.DiskStoragePath);
+                            if (string.IsNullOrWhiteSpace(options.Token))
+                            {
+                                Storage.Current = new DiskStorage(options.DiskStoragePath);
+                            }
+                            else
+                            {
+                                //For uploading on the online models repository
+                                Storage.Current = new OnlineWriteableRepositoryStorage(new DiskStorage(options.DiskStoragePath), options.Token);
+                            }
+
                             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+
                             using (var p = Process.GetCurrentProcess())
                             {
                                 p.PriorityClass = ProcessPriorityClass.High;
@@ -37,15 +47,15 @@ namespace Catalyst.Training
 
                             if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
                             {
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.English,    0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.French,     0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.German,     0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Spanish,    0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Italian,    0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.English, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.French, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.German, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Spanish, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Italian, 0, "WikiNER");
                                 await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Portuguese, 0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Russian,    0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Dutch,      0, "WikiNER");
-                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Polish,     0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Russian, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Dutch, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Polish, 0, "WikiNER");
                             }
 
                             if (!string.IsNullOrWhiteSpace(options.FastTextLanguageSentencesPath))
@@ -53,6 +63,12 @@ namespace Catalyst.Training
                                 TrainLanguageDetector.Train(options.FastTextLanguageSentencesPath);
                                 TrainLanguageDetector.Test(options.FastTextLanguageSentencesPath);
                             }
+
+                            if (!string.IsNullOrWhiteSpace(options.LanguageJsonPath))
+                            {
+                                TrainLanguageDetector.CreateLanguageDetector(options.LanguageJsonPath);
+                            }
+
                         },
                         error => Task.CompletedTask);
         }
