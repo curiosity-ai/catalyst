@@ -44,7 +44,7 @@ namespace Catalyst.Models
         public HashSet<uint> StopWords { get; set; }
     }
 
-    public class LDA : StorableObject<LDA, LDAModel>, IDisposable
+    public sealed class LDA : StorableObject<LDA, LDAModel>, IDisposable
     {
         private LdaState State;
         public LDA(Language language, int version, string tag) : base(language, version, tag)

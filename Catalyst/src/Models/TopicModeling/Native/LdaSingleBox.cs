@@ -5,6 +5,14 @@ using System.Linq;
 
 namespace Catalyst.Models.Native
 {
+
+    /*  Code derived from original ML.NET implementaion at https://github.com/dotnet/machinelearning, 
+     *  using LightLDA implementation from https://github.com/microsoft/LightLDA
+     *  Both licensed unde the MIT License (MIT)
+     *  LightLDA - Copyright (c) Microsoft Corporation
+     *  ML.NET   - Copyright (c) 2018 .NET Foundation
+     */
+
     internal sealed class LdaSingleBox : IDisposable
     {
         private LdaInterface.LdaEngine _engine;
@@ -21,9 +29,9 @@ namespace Catalyst.Models.Native
         private readonly int _numSummaryTerms;
         private readonly bool _denseOutput;
 
-        public readonly int NumTopic;
-        public readonly int NumVocab;
-        public LdaSingleBox(int numTopic, int numVocab, float alpha, float beta, int numIter, int likelihoodInterval, int numThread, int mhstep, int numSummaryTerms, bool denseOutput, int maxDocToken)
+        internal readonly int NumTopic;
+        internal readonly int NumVocab;
+        internal LdaSingleBox(int numTopic, int numVocab, float alpha, float beta, int numIter, int likelihoodInterval, int numThread, int mhstep, int numSummaryTerms, bool denseOutput, int maxDocToken)
         {
             NumTopic = numTopic;
             NumVocab = numVocab;
@@ -44,7 +52,7 @@ namespace Catalyst.Models.Native
             _engine = LdaInterface.CreateEngine(numTopic, numVocab, alpha, beta, numIter, likelihoodInterval, numThread, mhstep, maxDocToken);
         }
 
-        public void AllocateModelMemory(int numTopic, int numVocab, long tableSize, long aliasTableSize)
+        internal void AllocateModelMemory(int numTopic, int numVocab, long tableSize, long aliasTableSize)
         {
             Debug.Assert(numTopic >= 0);
             Debug.Assert(numVocab >= 0);
@@ -53,14 +61,14 @@ namespace Catalyst.Models.Native
             LdaInterface.AllocateModelMemory(_engine, numVocab, numTopic, tableSize, aliasTableSize);
         }
 
-        public void AllocateDataMemory(int docNum, long corpusSize)
+        internal void AllocateDataMemory(int docNum, long corpusSize)
         {
             Debug.Assert(docNum >= 0);
             Debug.Assert(corpusSize >= 0);
             LdaInterface.AllocateDataMemory(_engine, docNum, corpusSize);
         }
 
-        public void Train(string trainOutput)
+        internal void Train(string trainOutput)
         {
             if (string.IsNullOrWhiteSpace(trainOutput))
                 LdaInterface.Train(_engine, null);
@@ -68,12 +76,12 @@ namespace Catalyst.Models.Native
                 LdaInterface.Train(_engine, trainOutput);
         }
 
-        public void GetModelStat(out long memBlockSize, out long aliasMemBlockSize)
+        internal void GetModelStat(out long memBlockSize, out long aliasMemBlockSize)
         {
             LdaInterface.GetModelStat(_engine, out memBlockSize, out aliasMemBlockSize);
         }
 
-        public void Test(int numBurninIter, float[] logLikelihood)
+        internal void Test(int numBurninIter, float[] logLikelihood)
         {
             Debug.Assert(numBurninIter >= 0);
             var pLogLikelihood = new float[numBurninIter];
@@ -81,29 +89,29 @@ namespace Catalyst.Models.Native
             logLikelihood = pLogLikelihood.Select(item => (float)item).ToArray();
         }
 
-        public void CleanData()
+        internal void CleanData()
         {
             LdaInterface.CleanData(_engine);
         }
 
-        public void CleanModel()
+        internal void CleanModel()
         {
             LdaInterface.CleanModel(_engine);
         }
 
-        public void CopyModel(LdaSingleBox trainer, int wordId)
+        internal void CopyModel(LdaSingleBox trainer, int wordId)
         {
             int length = NumTopic;
             LdaInterface.GetWordTopic(trainer._engine, wordId, _topics, _probabilities, ref length);
             LdaInterface.SetWordTopic(_engine, wordId, _topics, _probabilities, length);
         }
 
-        public void SetAlphaSum(float averageDocLength)
+        internal void SetAlphaSum(float averageDocLength)
         {
             LdaInterface.SetAlphaSum(_engine, averageDocLength);
         }
 
-        public int LoadDoc(ReadOnlySpan<int> termID, ReadOnlySpan<double> termVal, int termNum, int numVocab)
+        internal int LoadDoc(ReadOnlySpan<int> termID, ReadOnlySpan<double> termVal, int termNum, int numVocab)
         {
             Debug.Assert(numVocab == NumVocab);
             Debug.Assert(termNum > 0);
@@ -118,21 +126,7 @@ namespace Catalyst.Models.Native
             return LdaInterface.FeedInData(_engine, pID, pVal, termNum, NumVocab);
         }
 
-        public int LoadDocDense(ReadOnlySpan<double> termVal, int termNum, int numVocab)
-        {
-            Debug.Assert(numVocab == NumVocab);
-            Debug.Assert(termNum > 0);
-
-            Debug.Assert(termVal.Length >= termNum);
-
-            int[] pID = new int[termNum];
-            int[] pVal = new int[termVal.Length];
-            for (int i = 0; i < termVal.Length; i++)
-                pVal[i] = (int)termVal[i];
-            return LdaInterface.FeedInDataDense(_engine, pVal, termNum, NumVocab);
-        }
-
-        public List<KeyValuePair<int, float>> GetDocTopicVector(int docID)
+        internal List<KeyValuePair<int, float>> GetDocTopicVector(int docID)
         {
             int numTopicReturn = NumTopic;
             LdaInterface.GetDocTopic(_engine, docID, _topics, _probabilities, ref numTopicReturn);
@@ -169,7 +163,7 @@ namespace Catalyst.Models.Native
             return topicRet;
         }
 
-        public List<KeyValuePair<int, float>> TestDoc(ReadOnlySpan<int> termID, ReadOnlySpan<double> termVal, int termNum, int numBurninIter, bool reset)
+        internal List<KeyValuePair<int, float>> TestDoc(ReadOnlySpan<int> termID, ReadOnlySpan<double> termVal, int termNum, int numBurninIter, bool reset)
         {
             Debug.Assert(termNum > 0);
             Debug.Assert(termVal.Length >= termNum);
@@ -200,50 +194,17 @@ namespace Catalyst.Models.Native
             return topicRet;
         }
 
-        public List<KeyValuePair<int, float>> TestDocDense(ReadOnlySpan<double> termVal, int termNum, int numBurninIter, bool reset)
-        {
-            Debug.Assert(termNum > 0);
-            Debug.Assert(numBurninIter > 0);
-            Debug.Assert(termVal.Length >= termNum);
-            int[] pVal = new int[termVal.Length];
-            for (int i = 0; i < termVal.Length; i++)
-                pVal[i] = (int)termVal[i];
-            int[] pTopic = new int[NumTopic];
-            int[] pProb = new int[NumTopic];
-
-            int numTopicReturn = NumTopic;
-
-            // There are two versions of TestOneDoc interfaces
-            // (1) TestOneDoc
-            // (2) TestOneDocRestart
-            // The second one is the same as the first one except that it will reset
-            // the states of the internal random number generator, so that it yields reproducable results for the same input
-            LdaInterface.TestOneDocDense(_engine, pVal, termNum, pTopic, pProb, ref numTopicReturn, numBurninIter, reset);
-
-            // PREfast suspects that the value of numTopicReturn could be changed in _engine->TestOneDoc, which might result in read overrun in the following loop.
-            if (numTopicReturn > NumTopic)
-            {
-                Debug.Assert(false);
-                numTopicReturn = NumTopic;
-            }
-
-            var topicRet = new List<KeyValuePair<int, float>>();
-            for (int i = 0; i < numTopicReturn; i++)
-                topicRet.Add(new KeyValuePair<int, float>(pTopic[i], (float)pProb[i]));
-            return topicRet;
-        }
-
-        public void InitializeBeforeTrain()
+        internal void InitializeBeforeTrain()
         {
             LdaInterface.InitializeBeforeTrain(_engine);
         }
 
-        public void InitializeBeforeTest()
+        internal void InitializeBeforeTest()
         {
             LdaInterface.InitializeBeforeTest(_engine);
         }
 
-        public KeyValuePair<int, int>[] GetModel(int wordId)
+        internal KeyValuePair<int, int>[] GetModel(int wordId)
         {
             int length = NumTopic;
             LdaInterface.GetWordTopic(_engine, wordId, _topics, _probabilities, ref length);
@@ -254,7 +215,7 @@ namespace Catalyst.Models.Native
             return wordTopicVector;
         }
 
-        public KeyValuePair<int, float>[] GetTopicSummary(int topicId)
+        internal KeyValuePair<int, float>[] GetTopicSummary(int topicId)
         {
             int length = _numSummaryTerms;
             LdaInterface.GetTopicSummary(_engine, topicId, _summaryTerm, _summaryTermProb, ref length);
@@ -265,7 +226,7 @@ namespace Catalyst.Models.Native
             return topicSummary;
         }
 
-        public void SetModel(int termID, int[] topicID, int[] topicProb, int topicNum)
+        internal void SetModel(int termID, int[] topicID, int[] topicProb, int topicNum)
         {
             Debug.Assert(termID >= 0);
             Debug.Assert(topicNum <= NumTopic);
