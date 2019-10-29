@@ -15,6 +15,9 @@ using System.Runtime.InteropServices;
 using System.Collections.Immutable;
 using Catalyst.Models.Native;
 using System.Diagnostics;
+using System.Linq;
+using System.Buffers;
+using System.Collections.Concurrent;
 
 namespace Catalyst.Models
 {
@@ -22,88 +25,237 @@ namespace Catalyst.Models
     {
         public DateTime TrainedTime { get; set; }
 
+        public int VocabularyBuckets        { get; set; } = 2_000_000;
         public int NumberOfTopics               { get; set; } = 100;
         public float AlphaSum                   { get; set; } = 100; //Dirichlet prior on document-topic vectors
         public float Beta                       { get; set; } = 0.01f; //Dirichlet prior on vocab-topic vectors
         public int SamplingStepCount            { get; set; } = 4; //Number of Metropolis Hasting step
         public int MaximumNumberOfIterations    { get; set; } = 200;
 
-        public int NumberOfThreads              { get; set; } = 1; 
         public int LikelihoodInterval           { get; set; } = 5; //Compute log likelihood over local dataset on this iteration interval
         public int MaximumTokenCountPerDocument { get; set; } = 512; //The threshold of maximum count of tokens per doc
+        public int MinimumTokenCountPerDocument { get; set; } = 1;
         public int NumberOfSummaryTermsPerTopic { get; set; } = 10; //The number of words to summarize the topic
         public int NumberOfBurninIterations     { get; set; } = 10;
+        public long MemBlockSize                { get; set; } = 0;
+        public long AliasMemBlockSize           { get; set; } = 0;
+        public KeyValuePair<int, int>[][] LDA_Data { get; set; }
+        public ConcurrentDictionary<int, string> Vocabulary { get; set; } = new ConcurrentDictionary<int, string>();
+        public HashSet<uint> StopWords { get; set; }
     }
 
-    public class Lda : StorableObject<Lda, LDAModel>
+    public class LDA : StorableObject<LDA, LDAModel>, IDisposable
     {
-        public Lda(Language language, int version, string tag) : base(language, version, tag)
+        private LdaState State;
+        public LDA(Language language, int version, string tag) : base(language, version, tag)
         {
         }
 
-        public new static async Task<Lda> FromStoreAsync(Language language, int version, string tag)
+        public new static async Task<LDA> FromStoreAsync(Language language, int version, string tag)
         {
-            var a = new Lda(language, version, tag);
+            var a = new LDA(language, version, tag);
             await a.LoadDataAsync();
+            a.State = new LdaState(a.Data, Environment.ProcessorCount);
+            a.State.InitializePretrained(a.Data);
             return a;
         }
 
-        public void Train(IEnumerable<IDocument> documents, int threads)
+        public void Train(IEnumerable<IDocument> documents, int threads, IEnumerable<string> stopwords = null)
         {
+            var stopWords = new HashSet<uint>((stopwords ?? StopWords.Snowball.For(Language)).Select(s => Hash(s.AsSpan())));
 
+            var state = new LdaState(Data, threads);
+
+            var (count, corpusSize) = InitializeVocabulary(documents, stopWords);
+
+            var vocabulary = new ConcurrentDictionary<int, string>();
+
+            state.AllocateDataMemory(count,corpusSize);
+
+            foreach(var doc in documents)
+            {
+                GetTokensAndFrequencies(doc, vocabulary, stopWords, out var tokenCount, out var tokenIndices, out var tokenFrequencies);
+
+
+                if (tokenCount >= Data.MinimumTokenCountPerDocument)
+                {
+                    var docIndex = state.FeedTrain(Data, tokenIndices, tokenCount, tokenFrequencies);
+                }
+
+                ArrayPool<int>.Shared.Return(tokenIndices);
+                ArrayPool<double>.Shared.Return(tokenFrequencies);
+            }
+            state.CompleteTrain();
+
+            state.ReadModelFromTrainedLDA(Data);
+            Data.Vocabulary = vocabulary;
+            Data.StopWords = stopWords;
+            State = state;
         }
 
 
+        public bool TryPredict(IDocument document, out LDATopic[] topics)
+        {
+            if(State is LdaState state) //Copy the reference
+            {
+                GetTokensAndFrequencies(document, Data.Vocabulary, Data.StopWords, out var tokenCount, out var tokenIndices, out var tokenFrequencies);
+                topics = state.Predict(Data, tokenIndices, tokenCount, tokenFrequencies, false); 
+                ArrayPool<int>.Shared.Return(tokenIndices);
+                ArrayPool<double>.Shared.Return(tokenFrequencies);
+
+                return true;
+            }
+            else
+            {
+                topics = Array.Empty<LDATopic>();
+                return false;
+            }
+        }
+        
+        public bool TryDescribeTopic(int topicID, out LDATopicDescription topicDescription)
+        {
+            if (State is LdaState state) //Copy the reference
+            {
+                var vocabulary = Data.Vocabulary;
+
+                var topic = state.DescribeTopic(topicID);
+
+                var tokens = new Dictionary<string, float>();
+
+                foreach(var kv in topic)
+                {
+                    tokens[vocabulary[kv.Key]] =  kv.Value;
+                }
+
+                topicDescription = new LDATopicDescription(topicID, tokens);
+
+                return true;
+            }
+            else
+            {
+                topicDescription = null;
+                return false;
+            }
+        }
+
+        private void GetTokensAndFrequencies(IDocument doc, ConcurrentDictionary<int, string> vocabulary, HashSet<uint> stopWords,  out int tokenCount, out int[] tokenIndices, out double[] tokenFrequencies)
+        {
+            var tokens = doc.SelectMany(s => s).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).ToArray();
+            var groups = tokens.Select(tk => TokenToIndex(tk, vocabulary)).GroupBy(i => i).ToArray();
+            tokenCount = groups.Length;
+            tokenIndices = ArrayPool<int>.Shared.Rent(tokenCount);
+            tokenFrequencies = ArrayPool<double>.Shared.Rent(tokenCount);
+            for (int i = 0; i < groups.Length; i++)
+            {
+                tokenIndices[i] = groups[i].Key;
+                tokenFrequencies[i] = groups[i].Count();
+            }
+        }
+        
+        private (int count, long corpusSize) InitializeVocabulary(IEnumerable<IDocument> documents, HashSet<uint> stopWords)
+        {
+            int count = 0;
+            long corpusSize = 0;
+            foreach(var doc in documents)
+            {
+                var tokenCount = doc.SelectMany(s => s).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).Count();
+
+                if(tokenCount >= Data.MinimumTokenCountPerDocument)
+                {
+                    count++;
+                    corpusSize += 2 * tokenCount + 1;
+                }
+            }
+            return (count, corpusSize);
+        }
+
+        private static bool ShouldKeepToken(HashSet<uint> stopWords, IToken tk)
+        {
+            bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN);
+
+            //bool skipIfHasUpperCase = (!Data.IgnoreCase && !tk.ValueAsSpan.IsAllLowerCase());
+
+            bool skipIfTooSmall = (tk.Length < 3);
+
+            bool skipIfNotAllLetterOrDigit = !(tk.ValueAsSpan.IsAllLetterOrDigit());
+
+            bool skipIfStopWord = stopWords.Contains(Hash(tk.ValueAsSpan));
+
+            //Heuristic for ordinal numbers (i.e. 1st, 2nd, 33rd, etc)
+            bool skipIfMaybeOrdinal = (tk.ValueAsSpan.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' }, 0) >= 0 &&
+                                       tk.ValueAsSpan.IndexOfAny(new char[] { 't', 'h', 's', 't', 'r', 'd' }, 0) >= 0 &&
+                                       tk.ValueAsSpan.IndexOfAny(new char[] { 'a', 'b', 'c', 'e', 'f', 'g', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'u', 'v', 'w', 'x', 'y', 'z' }, 0) < 0);
+
+            bool skipThisToken = filterPartOfSpeech || skipIfTooSmall || skipIfNotAllLetterOrDigit || skipIfStopWord || skipIfMaybeOrdinal;
+            return !skipThisToken;
+        }
+
+        private int TokenToIndex(IToken token, ConcurrentDictionary<int, string> vocabulary)
+        {
+            var index = (int)(Hash(token.ValueAsSpan) % Data.VocabularyBuckets);
+            
+            if(!vocabulary.ContainsKey(index))
+            {
+                vocabulary[index] = token.Value; //Only add here to not have to materialize every token as a string
+            }
+            return index;
+        }
+
+        private static uint Hash(ReadOnlySpan<char> word)
+        {
+            return (uint)word.CaseSensitiveHash32();
+        }
+
+        public void Dispose()
+        {
+            if(State is object)
+            {
+                State.Dispose();
+                State = null;
+            }
+        }
+
+        public struct LDATopic
+        {
+            public int TopicID;
+            public float Score;
+
+            public LDATopic(int topicID, float score)
+            {
+                TopicID = topicID;
+                Score = score;
+            }
+        }
 
         /// <summary>
         /// Provide details about the topics discovered by <a href="https://arxiv.org/abs/1412.1576">LightLDA.</a>
         /// </summary>
-        public sealed class ModelParameters
+        public class LDATopicDescription
         {
-            public struct ItemScore
+            public int TopicID { get; private set; }
+            public IReadOnlyDictionary<string, float> Tokens { get; private set; }
+
+            public LDATopicDescription(int topicID, Dictionary<string, float> tokens)
             {
-                public readonly int Item;
-                public readonly float Score;
-                public ItemScore(int item, float score)
+                TopicID = topicID;
+                Tokens = tokens;
+            }
+
+            public override string ToString()
+            {
+                var sb = StringExtensions.StringBuilderPool.Rent();
+                foreach(var tk in Tokens.OrderByDescending(kv => kv.Value))
                 {
-                    Item = item;
-                    Score = score;
+                    sb.Append(tk.Key).Append('[').Append(Math.Round(tk.Value, 3)).Append("] ");
                 }
-            }
-            public struct WordItemScore
-            {
-                public readonly int Item;
-                public readonly string Word;
-                public readonly float Score;
-                public WordItemScore(int item, string word, float score)
-                {
-                    Item = item;
-                    Word = word;
-                    Score = score;
-                }
-            }
-
-            // For each topic, provide information about the (item, score) pairs.
-            public readonly IReadOnlyList<IReadOnlyList<ItemScore>> ItemScoresPerTopic;
-
-            // For each topic, provide information about the (item, word, score) tuple.
-            public readonly IReadOnlyList<IReadOnlyList<WordItemScore>> WordScoresPerTopic;
-
-            internal ModelParameters(IReadOnlyList<IReadOnlyList<ItemScore>> itemScoresPerTopic)
-            {
-                ItemScoresPerTopic = itemScoresPerTopic;
-            }
-
-            internal ModelParameters(IReadOnlyList<IReadOnlyList<WordItemScore>> wordScoresPerTopic)
-            {
-                WordScoresPerTopic = wordScoresPerTopic;
+                var s = sb.ToString();
+                StringExtensions.StringBuilderPool.Return(sb);
+                return s;
             }
         }
 
         private sealed class LdaState : IDisposable
         {
-            internal readonly LDAModel InfoEx;
-            private readonly int _numVocab;
             private readonly object _preparationSyncRoot;
             private readonly object _testSyncRoot;
             private bool _predictionPreparationDone;
@@ -115,220 +267,75 @@ namespace Catalyst.Models
                 _testSyncRoot = new object();
             }
 
-            internal LdaState(IExceptionContext ectx, LDAModel ex, int numVocab)
-                : this()
+            internal LdaState(LDAModel model, int numberOfThreads) : this()
             {
-                InfoEx = ex;
-                _numVocab = numVocab;
-
                 _ldaTrainer = new LdaSingleBox(
-                    InfoEx.NumberOfTopics,
-                    numVocab, /* Need to set number of vocabulary here */
-                    InfoEx.AlphaSum,
-                    InfoEx.Beta,
-                    InfoEx.MaximumNumberOfIterations,
-                    InfoEx.LikelihoodInterval,
-                    InfoEx.NumberOfThreads,
-                    InfoEx.SamplingStepCount,
-                    InfoEx.NumberOfSummaryTermsPerTopic,
+                    model.NumberOfTopics,
+                    model.VocabularyBuckets,
+                    model.AlphaSum,
+                    model.Beta,
+                    model.MaximumNumberOfIterations,
+                    model.LikelihoodInterval,
+                    numberOfThreads,
+                    model.SamplingStepCount,
+                    model.NumberOfSummaryTermsPerTopic,
                     false,
-                    InfoEx.MaximumTokenCountPerDocument);
+                    model.MaximumTokenCountPerDocument);
             }
 
-            //internal LdaState(IExceptionContext ectx, ModelLoadContext ctx) : this()
-            //{
-            //    ectx.AssertValue(ctx);
-
-            //    // *** Binary format ***
-            //    // <ColInfoEx>
-            //    // int: vocabnum
-            //    // long: memblocksize
-            //    // long: aliasMemBlockSize
-            //    // (serializing term by term, for one term)
-            //    // int: term_id, int: topic_num, KeyValuePair<int, int>[]: termTopicVector
-
-            //    InfoEx = new LatentDirichletAllocationEstimator.ColumnOptions(ectx, ctx);
-
-            //    _numVocab = ctx.Reader.ReadInt32();
-            //    ectx.CheckDecode(_numVocab > 0);
-
-            //    long memBlockSize = ctx.Reader.ReadInt64();
-            //    ectx.CheckDecode(memBlockSize > 0);
-
-            //    long aliasMemBlockSize = ctx.Reader.ReadInt64();
-            //    ectx.CheckDecode(aliasMemBlockSize > 0);
-
-            //    _ldaTrainer = new LdaSingleBox(
-            //        InfoEx.NumberOfTopics,
-            //        _numVocab, /* Need to set number of vocabulary here */
-            //        InfoEx.AlphaSum,
-            //        InfoEx.Beta,
-            //        InfoEx.NumberOfIterations,
-            //        InfoEx.LikelihoodInterval,
-            //        InfoEx.NumberOfThreads,
-            //        InfoEx.SamplingStepCount,
-            //        InfoEx.NumberOfSummaryTermsPerTopic,
-            //        false,
-            //        InfoEx.MaximumTokenCountPerDocument);
-
-            //    _ldaTrainer.AllocateModelMemory(_numVocab, InfoEx.NumberOfTopics, memBlockSize, aliasMemBlockSize);
-
-            //    for (int i = 0; i < _numVocab; i++)
-            //    {
-            //        int termID = ctx.Reader.ReadInt32();
-            //        ectx.CheckDecode(termID >= 0);
-            //        int termTopicNum = ctx.Reader.ReadInt32();
-            //        ectx.CheckDecode(termTopicNum >= 0);
-
-            //        int[] topicId = new int[termTopicNum];
-            //        int[] topicProb = new int[termTopicNum];
-
-            //        for (int j = 0; j < termTopicNum; j++)
-            //        {
-            //            topicId[j] = ctx.Reader.ReadInt32();
-            //            topicProb[j] = ctx.Reader.ReadInt32();
-            //        }
-
-            //        //set the topic into _ldaTrainer inner topic table
-            //        _ldaTrainer.SetModel(termID, topicId, topicProb, termTopicNum);
-            //    }
-
-            //    //do the preparation
-            //    if (!_predictionPreparationDone)
-            //    {
-            //        lock (_preparationSyncRoot)
-            //        {
-            //            _ldaTrainer.InitializeBeforeTest();
-            //            _predictionPreparationDone = true;
-            //        }
-            //    }
-            //}
-
-            internal ModelParameters GetLdaSummary(VBuffer<ReadOnlyMemory<char>> mapping)
+            internal void InitializePretrained(LDAModel model)
             {
-                if (mapping.Length == 0)
-                {
-                    var itemScoresPerTopicBuilder = ImmutableArray.CreateBuilder<List<ModelParameters.ItemScore>>();
-                    for (int i = 0; i < _ldaTrainer.NumTopic; i++)
-                    {
-                        var scores = _ldaTrainer.GetTopicSummary(i);
-                        var itemScores = new List<ModelParameters.ItemScore>();
-                        foreach (KeyValuePair<int, float> p in scores)
-                        {
-                            itemScores.Add(new ModelParameters.ItemScore(p.Key, p.Value));
-                        }
+                _ldaTrainer.AllocateModelMemory(model.VocabularyBuckets, model.NumberOfTopics, model.MemBlockSize, model.AliasMemBlockSize);
+                Debug.Assert(model.VocabularyBuckets == model.LDA_Data.Length);
 
-                        itemScoresPerTopicBuilder.Add(itemScores);
-                    }
-                    return new ModelParameters(itemScoresPerTopicBuilder.ToImmutable());
-                }
-                else
+                for (int termID = 0; termID < model.VocabularyBuckets; termID++)
                 {
-                    ReadOnlyMemory<char> slotName = default;
-                    var wordScoresPerTopicBuilder = ImmutableArray.CreateBuilder<List<ModelParameters.WordItemScore>>();
-                    for (int i = 0; i < _ldaTrainer.NumTopic; i++)
+                    var kvs          = model.LDA_Data[termID];
+                    var topicId      = kvs.Select(kv => kv.Key).ToArray();
+                    var topicProb    = kvs.Select(kv => kv.Value).ToArray();
+                    var termTopicNum = topicId.Length;
+
+                    _ldaTrainer.SetModel(termID, topicId, topicProb, termTopicNum);
+                }
+
+                //do the preparation
+                if (!_predictionPreparationDone)
+                {
+                    lock (_preparationSyncRoot)
                     {
-                        var scores = _ldaTrainer.GetTopicSummary(i);
-                        var wordScores = new List<ModelParameters.WordItemScore>();
-                        foreach (KeyValuePair<int, float> p in scores)
-                        {
-                            mapping.GetItemOrDefault(p.Key, ref slotName);
-                            wordScores.Add(new ModelParameters.WordItemScore(p.Key, slotName.ToString(), p.Value));
-                        }
-                        wordScoresPerTopicBuilder.Add(wordScores);
+                        _ldaTrainer.InitializeBeforeTest();
+                        _predictionPreparationDone = true;
                     }
-                    return new ModelParameters(wordScoresPerTopicBuilder.ToImmutable());
                 }
             }
 
-            //internal void Save(ModelSaveContext ctx)
-            //{
-            //    Debug.AssertValue(ctx);
-            //    long memBlockSize = 0;
-            //    long aliasMemBlockSize = 0;
-            //    _ldaTrainer.GetModelStat(out memBlockSize, out aliasMemBlockSize);
+            internal void ReadModelFromTrainedLDA(LDAModel model)
+            {
+                _ldaTrainer.GetModelStat(out var memBlockSize, out var aliasMemBlockSize);
+                model.MemBlockSize = memBlockSize;
+                model.AliasMemBlockSize = aliasMemBlockSize;
+                Debug.Assert(_ldaTrainer.NumVocab == model.VocabularyBuckets);
 
-            //    // *** Binary format ***
-            //    // <ColInfoEx>
-            //    // int: vocabnum
-            //    // long: memblocksize
-            //    // long: aliasMemBlockSize
-            //    // (serializing term by term, for one term)
-            //    // int: term_id, int: topic_num, KeyValuePair<int, int>[]: termTopicVector
+                model.LDA_Data = Enumerable.Range(0, _ldaTrainer.NumVocab)
+                                           .Select(i => _ldaTrainer.GetModel(i))
+                                           .ToArray();
+            }
 
-            //    InfoEx.Save(ctx);
-            //    ctx.Writer.Write(_ldaTrainer.NumVocab);
-            //    ctx.Writer.Write(memBlockSize);
-            //    ctx.Writer.Write(aliasMemBlockSize);
-
-            //    //save model from this interface
-            //    for (int i = 0; i < _ldaTrainer.NumVocab; i++)
-            //    {
-            //        KeyValuePair<int, int>[] termTopicVector = _ldaTrainer.GetModel(i);
-
-            //        //write the topic to disk through ctx
-            //        ctx.Writer.Write(i); //term_id
-            //        ctx.Writer.Write(termTopicVector.Length);
-
-            //        foreach (KeyValuePair<int, int> p in termTopicVector)
-            //        {
-            //            ctx.Writer.Write(p.Key);
-            //            ctx.Writer.Write(p.Value);
-            //        }
-            //    }
-            //}
-
-            public void AllocateDataMemory(int docNum, long corpusSize)
+            internal void AllocateDataMemory(int docNum, long corpusSize)
             {
                 _ldaTrainer.AllocateDataMemory(docNum, corpusSize);
             }
 
-            public int FeedTrain(IExceptionContext ectx, in VBuffer<Double> input)
+            internal int FeedTrain(LDAModel model, ReadOnlySpan<int> tokenIndices, int tokenCount, ReadOnlySpan<double> frequency)
             {
-                // REVIEW: Input the counts to your trainer here. This
-                // is called multiple times.
-
-                int docSize = 0;
-                int termNum = 0;
-
-                var inputValues = input.GetValues();
-                for (int i = 0; i < inputValues.Length; i++)
+                if (tokenCount < model.MinimumTokenCountPerDocument)
                 {
-                    int termFreq = GetFrequency(inputValues[i]);
-                    if (termFreq < 0)
-                    {
-                        // Ignore this row.
-                        return 0;
-                    }
-                    if (docSize >= InfoEx.MaximumTokenCountPerDocument - termFreq)
-                        break;
-
-                    // If legal then add the term.
-                    docSize += termFreq;
-                    termNum++;
+                    return 0;
                 }
 
-                // Ignore empty doc.
-                if (docSize == 0)
-                    return 0;
-
-                int actualSize = 0;
-                if (input.IsDense)
-                    actualSize = _ldaTrainer.LoadDocDense(inputValues, termNum, input.Length);
-                else
-                    actualSize = _ldaTrainer.LoadDoc(input.GetIndices(), inputValues, termNum, input.Length);
-
-                return actualSize;
+                return _ldaTrainer.LoadDoc(tokenIndices, frequency, tokenCount, model.VocabularyBuckets);
             }
-
-            private static int GetFrequency(double value)
-            {
-                int result = (int)value;
-                if (!(result == value && result >= 0))
-                    return -1;
-                return result;
-            }
-            public void CompleteTrain()
+            internal void CompleteTrain()
             {
                 //allocate all kinds of in memory sample tables
                 _ldaTrainer.InitializeBeforeTrain();
@@ -337,7 +344,7 @@ namespace Catalyst.Models
                 _ldaTrainer.Train(""); /* Need to pass in an empty string */
             }
 
-            public void Output(in VBuffer<Double> src, ref VBuffer<float> dst, int numBurninIter, bool reset)
+            internal LDATopic[] Predict(LDAModel model, ReadOnlySpan<int> tokenIndices, int tokenCount, ReadOnlySpan<double> frequency, bool reset)
             {
                 // Prediction for a single document.
                 // LdaSingleBox.InitializeBeforeTest() is NOT thread-safe.
@@ -354,78 +361,17 @@ namespace Catalyst.Models
                     }
                 }
 
-                int len = InfoEx.NumberOfTopics;
-                var srcValues = src.GetValues();
-                if (srcValues.Length == 0)
-                {
-                    VBufferUtils.Resize(ref dst, len, 0);
-                    return;
-                }
+                if (tokenCount == 0) return Array.Empty<LDATopic>();
 
-                VBufferEditor<float> editor;
-                // Make sure all the frequencies are valid and truncate if the sum gets too large.
-                int docSize = 0;
-                int termNum = 0;
-                for (int i = 0; i < srcValues.Length; i++)
-                {
-                    int termFreq = GetFrequency(srcValues[i]);
-                    if (termFreq < 0)
-                    {
-                        // REVIEW: Should this log a warning message? And what should it produce?
-                        // It currently produces a vbuffer of all NA values.
-                        // REVIEW: Need a utility method to do this...
-                        editor = VBufferEditor.Create(ref dst, len);
+                var retTopics = _ldaTrainer.TestDoc(tokenIndices, frequency, tokenCount, model.NumberOfBurninIterations, reset);
+                var normFactor = 1f/retTopics.Sum(kv => kv.Value);
+                return retTopics.OrderByDescending(t => t.Value).Select(kv => new LDATopic(kv.Key, kv.Value * normFactor)).ToArray();
+            }
 
-                        for (int k = 0; k < len; k++)
-                            editor.Values[k] = float.NaN;
-                        dst = editor.Commit();
-                        return;
-                    }
 
-                    if (docSize >= InfoEx.MaximumTokenCountPerDocument - termFreq)
-                        break;
-
-                    docSize += termFreq;
-                    termNum++;
-                }
-
-                // REVIEW: Too much memory allocation here on each prediction.
-                List<KeyValuePair<int, float>> retTopics;
-                if (src.IsDense)
-                    retTopics = _ldaTrainer.TestDocDense(srcValues, termNum, numBurninIter, reset);
-                else
-                    retTopics = _ldaTrainer.TestDoc(src.GetIndices(), srcValues, termNum, numBurninIter, reset);
-
-                int count = retTopics.Count;
-                Debug.Assert(count <= len);
-
-                editor = VBufferEditor.Create(ref dst, len, count);
-                double normalizer = 0;
-                for (int i = 0; i < count; i++)
-                {
-                    int index = retTopics[i].Key;
-                    float value = retTopics[i].Value;
-                    Debug.Assert(value >= 0);
-                    Debug.Assert(0 <= index && index < len);
-                    if (count < len)
-                    {
-                        Debug.Assert(i == 0 || editor.Indices[i - 1] < index);
-                        editor.Indices[i] = index;
-                    }
-                    else
-                        Debug.Assert(index == i);
-
-                    editor.Values[i] = value;
-                    normalizer += value;
-                }
-
-                if (normalizer > 0)
-                {
-                    for (int i = 0; i < count; i++)
-                        editor.Values[i] = (float)(editor.Values[i] / normalizer);
-                }
-
-                dst = editor.Commit();
+            internal KeyValuePair<int, float>[] DescribeTopic(int topicID)
+            {
+                return _ldaTrainer.GetTopicSummary(topicID);
             }
 
             public void Dispose()

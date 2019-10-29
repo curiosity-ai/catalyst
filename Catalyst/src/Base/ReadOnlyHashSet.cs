@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using MessagePack;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace Catalyst
