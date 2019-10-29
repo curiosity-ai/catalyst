@@ -78,8 +78,10 @@ For fast embedding search, we have also released a C# version of the ["Hierarchi
 | [API Reference]   | The detailed reference for _**catalyst**_'s API.          |
 | [Contribute]      | How to contribute to _**catalyst**_ codebase.             |
 | [Samples]         | Sample projects demonstrating _**catalyst**_ capabilities |
+| [Slack Channel]   | Join our Slack channel                                    |
 
 [Getting Started]: https://catalyst.curiosity.ai/getting-started
 [API Reference]: https://catalyst.curiosity.ai/api
 [Contribute]: https://github.com/curiosity-ai/catalyst/blob/master/CONTRIBUTING.md
 [Samples]: https://github.com/curiosity-ai/catalyst/tree/master/samples
+[Slack Channel]: https://forms.gle/QABRQnWwLE5ix5De8
