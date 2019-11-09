@@ -93,7 +93,7 @@ namespace Catalyst
 
                 foreach (var process in Processes)
                 {
-                    var dataProperty = model.GetType().GetProperty(nameof(Spotter.Data)); //Uses spotter just to get the name of the .Data property from StorableObject<,> instead of hard-coding
+                    var dataProperty = process.GetType().GetProperty(nameof(Spotter.Data)); //Uses spotter just to get the name of the .Data property from StorableObject<,> instead of hard-coding
                     if (dataProperty is object)
                     {
                         var data = dataProperty.GetValue(process, null) as StorableObjectData;
