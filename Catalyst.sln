@@ -26,7 +26,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LanguageDetection", "sample
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextClassification", "samples\TextClassification\TextClassification.csproj", "{D7ACC2C9-C5EE-4807-8D48-C6A674B56C7D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LDA", "samples\LDA\LDA.csproj", "{16E57B2E-5A60-4D26-8CE8-A511C724EE41}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LDA", "samples\LDA\LDA.csproj", "{16E57B2E-5A60-4D26-8CE8-A511C724EE41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst.Tests", "tests\Catalyst.Tests\Catalyst.Tests.csproj", "{337E677F-9261-49C3-9D38-811555FF80FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +68,10 @@ Global
 		{16E57B2E-5A60-4D26-8CE8-A511C724EE41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16E57B2E-5A60-4D26-8CE8-A511C724EE41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16E57B2E-5A60-4D26-8CE8-A511C724EE41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{337E677F-9261-49C3-9D38-811555FF80FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{337E677F-9261-49C3-9D38-811555FF80FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{337E677F-9261-49C3-9D38-811555FF80FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{337E677F-9261-49C3-9D38-811555FF80FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,6 +82,7 @@ Global
 		{0B751ADF-3B70-4F1F-BD1D-945348A5C5AE} = {35ABD74D-8096-4B71-8FB4-320D1C0C51B0}
 		{D7ACC2C9-C5EE-4807-8D48-C6A674B56C7D} = {35ABD74D-8096-4B71-8FB4-320D1C0C51B0}
 		{16E57B2E-5A60-4D26-8CE8-A511C724EE41} = {35ABD74D-8096-4B71-8FB4-320D1C0C51B0}
+		{337E677F-9261-49C3-9D38-811555FF80FA} = {9873879B-0FE8-4FFF-A337-AE75F0B4FAB3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {53B493B7-329B-4286-97BE-D464877CF17D}
