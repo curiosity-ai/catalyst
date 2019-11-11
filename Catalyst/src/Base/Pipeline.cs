@@ -381,36 +381,35 @@ namespace Catalyst
 
         public static Pipeline For(Language language, bool sentenceDetector = true, bool tagger = true)
         {
-            var p = new Pipeline(language);
-            p.Add(new FastTokenizer(language));
-            if (sentenceDetector) { p.Add(SentenceDetector.FromStoreAsync(language, -1, "").WaitResult()); }
-            if (tagger) { p.Add(AveragePerceptronTagger.FromStoreAsync(language, -1, "").WaitResult()); }
-            return p;
+            return ForAsync(language, sentenceDetector, tagger).WaitResult();
         }
 
         public static async Task<Pipeline> ForAsync(Language language, bool sentenceDetector = true, bool tagger = true)
         {
-            var p = new Pipeline(language);
-            p.Add(new FastTokenizer(language));
-            if (sentenceDetector) { p.Add(await SentenceDetector.FromStoreAsync(language, 0, "")); }
+            var p = await TokenizerForAsync(language);
             if (tagger) { p.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
             return p;
         }
 
-        public static async Task<Pipeline> For(IEnumerable<Language> languages, bool sentenceDetector = true, bool tagger = true)
+        public static async Task<Pipeline> ForManyAsync(IEnumerable<Language> languages, bool sentenceDetector = true, bool tagger = true)
         {
             var processes = new List<IProcess>();
             foreach (var language in languages)
             {
-                processes.Add(new FastTokenizer(language));
-                if (sentenceDetector) { processes.Add(await SentenceDetector.FromStoreAsync(language, -1, "")); }
+                var p = await TokenizerForAsync(language);
+                processes.AddRange(p.Processes);
                 if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, -1, "")); }
             }
             var p = new Pipeline(processes) { Language = Language.Any };
             return p;
         }
 
-        public static async Task<Pipeline> TokenizerFor(Language language)
+        public static Pipeline TokenizerFor(Language language)
+        {
+            return TokenizerForAsync(language).WaitResult();
+        }
+
+        public static async Task<Pipeline> TokenizerForAsync(Language language)
         {
             var p = new Pipeline() { Language = language };
             p.Add(new FastTokenizer(language));
@@ -443,19 +442,6 @@ namespace Catalyst
 
             return p;
         }
-
-        //TODO: FIX THIS TO HAVE SAME FALLBACK TO ENGLISH FOR SENTENCE DETECTOR
-        //public static async Task<Pipeline> TokenizerFor(IEnumerable<Language> languages)
-        //{
-        //    var processes = new List<IProcess>();
-        //    foreach (var language in languages)
-        //    {
-        //        processes.Add(new SimpleTokenizer(language));
-        //        processes.Add(await SentenceDetector.FromStoreAsync(language, 0, "").WaitResult());
-        //    }
-        //    var p = new Pipeline(processes) { Language = Language.Any};
-        //    return p;
-        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IDocument ProcessSingle(IDocument document)
