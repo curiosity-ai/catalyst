@@ -396,8 +396,8 @@ namespace Catalyst
             var processes = new List<IProcess>();
             foreach (var language in languages)
             {
-                var p = await TokenizerForAsync(language);
-                processes.AddRange(p.Processes);
+                var tmp = await TokenizerForAsync(language);
+                processes.AddRange(tmp.Processes);
                 if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, -1, "")); }
             }
             var p = new Pipeline(processes) { Language = Language.Any };
