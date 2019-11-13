@@ -4,7 +4,7 @@
 
 _**catalyst**_ is a C# Natural Language Processing library built for speed. Inspired by [spaCy's design](https://spacy.io/), it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.
 
-[![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)]
+[![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)](https://www.nuget.org/packages/Catalyst/)
 
 ## ⚡ Features
 - Fast, modern pure-C# NLP library, supporting [.NET standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
