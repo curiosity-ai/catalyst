@@ -324,6 +324,8 @@ namespace Catalyst
             }
         }
 
+        public async Task<Pipeline> AddAsync(Task<IProcess> modelLoadTask) => Add(await modelLoadTask);
+
         public Pipeline Add(IProcess process)
         {
             RWLock.EnterWriteLock();

@@ -143,82 +143,72 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Return the tokenized text. Entities will be returned as a single Tokens instance with the inner tokens as children. This method will always prefer to return the longest possible entity match.
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<IToken> GetTokenized()
         {
-            var tc = this.TokensCount;
-            for (int i = 0; i < tc; i++)
+            var tokensCount = TokensCount; //Cache the property to avoid fetching the value on every iteration
+            for (int i = 0; i < tokensCount; i++)
             {
-                var t = this[i];
+                var token = this[i];
 
-                var entityTypes = t.EntityTypes;
+                var entityTypes = token.EntityTypes;
                 if (entityTypes.Any())
                 {
                     bool foundEntity = false;
-                    foreach (var et in entityTypes.Where(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Single).OrderBy(et => (char)et.Tag).ThenBy(et => et.Type.StartsWith("_") ? 1 : -1)) //Sort entity types by Begin then Single, ignore rest
+                    foreach (var et in FilterAndOrderByBeginThenSingle(entityTypes))
                     {
                         if (et.Tag == EntityTag.Single)
                         {
                             foundEntity = true;
-                            yield return new Tokens(Parent, Index, new int[] { t.Index }, entityType: et) { Frequency = t.Frequency };
+                            yield return new Tokens(Parent, Index, new int[] { token.Index }, entityType: et) { Frequency = token.Frequency };
                             break;
                         }
                         else if (et.Tag == EntityTag.Begin)
                         {
-                            var tokens = new List<int>(3) { t.Index };
-                            bool foundEnd = false;
-                            for (int j = t.Index + 1; j < TokensCount; j++)
-                            {
-                                var other = this[j];
-                                var otherET = other.EntityTypes.Where(oet => (oet.Tag == EntityTag.Inside || oet.Tag == EntityTag.End) && (oet.Type == et.Type));
+                            var entityEnd = FindEntityEnd(tokensCount, token.Index, token.Frequency, entityTypes);
 
-                                if (otherET.Any()) //TODO: why not .Single()
-                                {
-                                    tokens.Add(other.Index);
-                                    if (otherET.First().Tag == EntityTag.End)
-                                    {
-                                        foundEnd = true;
-                                        i += j - t.Index;
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    break; // not the same type anymore
-                                }
-                            }
-
-                            if (foundEnd)
+                            if(entityEnd.index > token.Index)
                             {
-                                foundEntity = true;
-                                yield return new Tokens(Parent, Index, tokens.ToArray(), entityType: et) { Frequency = t.Frequency };
+                                i = entityEnd.index;
+                                yield return new Tokens(Parent, Index, Enumerable.Range(token.Index, entityEnd.index - token.Index + 1).ToArray(), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
                                 break;
                             }
                         }
                     }
                     if (!foundEntity)
                     {
-                        yield return t;
+                        yield return token;
                     }
                 }
                 else
                 {
-                    yield return t;
+                    yield return token;
                 }
             }
         }
 
-        public IEnumerable<ITokens> GetEntities(string filter = null)
+        /// <summary>
+        /// Return only tokens that have entities attached to them. This method will always prefer to return the longest possible entity match.
+        /// </summary>
+        /// <param name="filter">Optional function to decide which entities to return. Should return true if you want to return the entity, or false if you want to skip it.</param>
+        /// <returns></returns>
+        public IEnumerable<ITokens> GetEntities(Func<EntityType, bool> filter = null)
         {
             int tokensCount = TokensCount;
-            bool hasFilter = !string.IsNullOrWhiteSpace(filter);
-            foreach (var token in this)
+            bool hasFilter = filter is object;
+
+            for (int i = 0; i < tokensCount; i++)
             {
+                var token = this[i];
                 var entityTypes = token.EntityTypes;
                 if (entityTypes.Length > 0)
                 {
-                    foreach (var et in entityTypes.OrderBy(et => (char)et.Tag))
+                    foreach (var et in FilterAndOrderByBeginThenSingle(entityTypes))
                     {
-                        if (hasFilter && et.Type != filter)
+                        if (hasFilter && !filter(et))
                         {
                             continue; // Skip unwanted entities
                         }
@@ -229,36 +219,71 @@ namespace Catalyst
                         }
                         else if (et.Tag == EntityTag.Begin)
                         {
-                            var tokens = new List<int>(3) { token.Index };
-                            bool foundEnd = false;
-                            for (int j = token.Index + 1; j < tokensCount; j++)
-                            {
-                                var other = this[j];
-                                var otherET = other.EntityTypes.Where(oet => (oet.Tag == EntityTag.Inside || oet.Tag == EntityTag.End) & (oet.Type == et.Type));
+                            var entityEnd = FindEntityEnd(tokensCount, token.Index, token.Frequency, entityTypes);
 
-                                if (otherET.Any()) //TODO: why not .Single()
-                                {
-                                    tokens.Add(other.Index);
-                                    if (otherET.First().Tag == EntityTag.End)
-                                    {
-                                        foundEnd = true;
-                                        //Don't break, as there might be overlaping entities that will end after this token
-                                    }
-                                }
-                                else
-                                {
-                                    break; // not the same type anymore
-                                }
-                            }
-
-                            if (foundEnd)
+                            if (entityEnd.index > token.Index)
                             {
-                                yield return new Tokens(Parent, Index, tokens.ToArray(), entityType: et) { Frequency = token.Frequency };
+                                i = entityEnd.index;
+                                yield return new Tokens(Parent, Index, Enumerable.Range(token.Index, entityEnd.index - token.Index + 1).ToArray(), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
+                                break;
                             }
                         }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Attempts to find the end of an entity marked by an initial token with EntityType.Tag == EntityTag.Begin. 
+        /// Will return the first longest possible match for a given [Begin] token.
+        /// </summary>
+        private (int index, EntityType entityType, float lowestTokenFrequency) FindEntityEnd(int tokenCount, int currentIndex, float tokenFrequency, EntityType[] entityTypes)
+        {
+            EntityType longestEntityType = default;
+            int finalIndex = -1;
+            float finalFrequency = tokenFrequency;
+
+            foreach (var beginEntityType in entityTypes.Where(et => et.Tag == EntityTag.Begin))
+            {
+                int possibleFinal = -1;
+                float possibleFrequency = tokenFrequency;
+                bool foundEnd = false;
+
+                for (int j = currentIndex + 1; j < tokenCount; j++)
+                {
+                    var other = this[j];
+                    var otherET = other.EntityTypes.Where(oet => (oet.Tag == EntityTag.Inside || oet.Tag == EntityTag.End) && oet.Type == beginEntityType.Type);
+                    if (otherET.Any())
+                    {
+                        possibleFinal = j;
+                        possibleFrequency = Math.Min(possibleFrequency, other.Frequency);
+                        foundEnd |= otherET.Any(oet => oet.Tag == EntityTag.End);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (foundEnd)
+                {
+                    if (possibleFinal > finalIndex)
+                    {
+                        finalIndex = possibleFinal;
+                        finalFrequency = possibleFrequency;
+                        longestEntityType = beginEntityType;
+                    }
+                }
+            }
+
+            return (finalIndex, longestEntityType, finalFrequency);
+        }
+
+        private static IOrderedEnumerable<EntityType> FilterAndOrderByBeginThenSingle(EntityType[] entityTypes)
+        {
+            //This method ensures we first try to enumerate the longest entities (i.e. starting with Begin), followed by Single entities
+            //Note: Entities with name starting with _ are ordered last - this is a convention we depend on other Curiosity code-base, and need to keep here till we refactor that code
+            return entityTypes.Where(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Single).OrderBy(et => (char)et.Tag).ThenBy(et => et.Type.StartsWith("_") ? 1 : -1);
         }
 
         public Span<Token> ToTokenSpan()

@@ -61,12 +61,10 @@ namespace Catalyst.Models
                 hasReplacements |= (tokens[i].Replacement is null);
             }
 
-            //var tokens = SentenceDetectorTokenizer(document.Value).ToList();
-            var text = document.Value;
-
-            //TODO: FIX THIS NOT TO USE STRING; USE SPAN INSTEAD
+            var text = document.Value.AsSpan();
 
             const int padding = 2;
+
             var paddedTokens = new List<IToken>(tokens.Count + 2 * padding);
 
             paddedTokens.Add(SpecialToken.BeginToken);
@@ -90,8 +88,7 @@ namespace Catalyst.Models
             document.Clear();
 
             //Now split the original document at the right places
-            var separators = CharacterClasses.WhitespaceCharacters;
-
+            
             //If any sentence detected within the single span (i.e. ignoring the first and last tokens
             if (isSentenceEnd.AsSpan().Slice(padding + 1, tokens.Count - 1).IndexOf(true) >= 0)
             {
@@ -109,7 +106,7 @@ namespace Catalyst.Models
 
                         try
                         {
-                            if (!text.AsSpan().Slice(b, e - b + 1).IsNullOrWhiteSpace())
+                            if (!text.Slice(b, e - b + 1).IsNullOrWhiteSpace())
                             {
                                 var span = document.AddSpan(b, e);
                                 foreach (var t in tokens)
@@ -134,10 +131,9 @@ namespace Catalyst.Models
                     int b = offset;
                     int e = document.Length - 1;
                     while (char.IsWhiteSpace(text[b]) && b < e) { b++; }
-
                     while (char.IsWhiteSpace(text[e]) && e > b) { e--; }
 
-                    if (!text.AsSpan().Slice(b, e - b + 1).IsNullOrWhiteSpace())
+                    if (!text.Slice(b, e - b + 1).IsNullOrWhiteSpace())
                     {
                         var span = document.AddSpan(b, e);
                         foreach (var t in tokens)

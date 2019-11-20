@@ -27,7 +27,7 @@ namespace Catalyst
 
         void SetTokenTag(int v, PartOfSpeech tag);
 
-        IEnumerable<ITokens> GetEntities(string filter = "");
+        IEnumerable<ITokens> GetEntities(Func<EntityType, bool> filter = null);
 
         IEnumerable<IToken> GetTokenized();
 

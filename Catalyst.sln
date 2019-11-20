@@ -28,7 +28,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextClassification", "sampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LDA", "samples\LDA\LDA.csproj", "{16E57B2E-5A60-4D26-8CE8-A511C724EE41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catalyst.Tests", "tests\Catalyst.Tests\Catalyst.Tests.csproj", "{337E677F-9261-49C3-9D38-811555FF80FA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Tests", "tests\Catalyst.Tests\Catalyst.Tests.csproj", "{337E677F-9261-49C3-9D38-811555FF80FA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D367F80C-ECEA-44F8-81CD-D08BC05B3C37}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
