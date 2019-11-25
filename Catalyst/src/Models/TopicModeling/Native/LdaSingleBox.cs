@@ -8,7 +8,7 @@ namespace Catalyst.Models.Native
 
     /*  Code derived from original ML.NET implementaion at https://github.com/dotnet/machinelearning, 
      *  using LightLDA implementation from https://github.com/microsoft/LightLDA
-     *  Both licensed unde the MIT License (MIT)
+     *  Both licensed under the MIT License (MIT)
      *  LightLDA - Copyright (c) Microsoft Corporation
      *  ML.NET   - Copyright (c) 2018 .NET Foundation
      */

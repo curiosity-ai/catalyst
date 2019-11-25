@@ -64,6 +64,11 @@ namespace Catalyst.Models
         {
             var stopWords = new HashSet<uint>((stopwords ?? StopWords.Snowball.For(Language)).Select(s => Hash(s.AsSpan())));
 
+            if(Data.NumberOfTopics <=1)
+            {
+                throw new Exception($"Invalid number of topics ({nameof(Data)}.{nameof(Data.NumberOfTopics)}), must be > 1");
+            }
+
             var state = new LdaState(Data, threads);
 
             var (count, corpusSize) = InitializeVocabulary(documents, stopWords);
@@ -274,17 +279,17 @@ namespace Catalyst.Models
             internal LdaState(LDAModel model, int numberOfThreads) : this()
             {
                 _ldaTrainer = new LdaSingleBox(
-                    model.NumberOfTopics,
-                    model.VocabularyBuckets,
-                    model.AlphaSum,
-                    model.Beta,
-                    model.MaximumNumberOfIterations,
-                    model.LikelihoodInterval,
-                    numberOfThreads,
-                    model.SamplingStepCount,
-                    model.NumberOfSummaryTermsPerTopic,
-                    false,
-                    model.MaximumTokenCountPerDocument);
+                                  numTopic          : model.NumberOfTopics,
+                                  numVocab          : model.VocabularyBuckets,
+                                  alpha             : model.AlphaSum,
+                                  beta              : model.Beta,
+                                  numIter           : model.MaximumNumberOfIterations,
+                                  likelihoodInterval: model.LikelihoodInterval,
+                                  numThread         : numberOfThreads,
+                                  mhstep            : model.SamplingStepCount,
+                                  numSummaryTerms   : model.NumberOfSummaryTermsPerTopic,
+                                  denseOutput       : false,
+                                  maxDocToken       : model.MaximumTokenCountPerDocument);
             }
 
             internal void InitializePretrained(LDAModel model)
