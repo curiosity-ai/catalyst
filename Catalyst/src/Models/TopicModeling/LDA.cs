@@ -68,6 +68,11 @@ namespace Catalyst.Models
 
             var (count, corpusSize) = InitializeVocabulary(documents, stopWords);
 
+            if(count == 0 || corpusSize == 0)
+            {
+                throw new Exception("Empty corpus, nothing to train LDA model");
+            }
+
             var vocabulary = new ConcurrentDictionary<int, string>();
 
             state.AllocateDataMemory(count,corpusSize);
@@ -75,7 +80,6 @@ namespace Catalyst.Models
             foreach(var doc in documents)
             {
                 GetTokensAndFrequencies(doc, vocabulary, stopWords, out var tokenCount, out var tokenIndices, out var tokenFrequencies);
-
 
                 if (tokenCount >= Data.MinimumTokenCountPerDocument)
                 {
@@ -140,7 +144,7 @@ namespace Catalyst.Models
 
         private void GetTokensAndFrequencies(IDocument doc, ConcurrentDictionary<int, string> vocabulary, HashSet<uint> stopWords,  out int tokenCount, out int[] tokenIndices, out double[] tokenFrequencies)
         {
-            var tokens = doc.SelectMany(s => s).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).ToArray();
+            var tokens = doc.SelectMany(s => s.GetCapturedTokens()).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).ToArray();
             var groups = tokens.Select(tk => TokenToIndex(tk, vocabulary)).GroupBy(i => i).ToArray();
             tokenCount = groups.Length;
             tokenIndices = ArrayPool<int>.Shared.Rent(tokenCount);
@@ -158,7 +162,7 @@ namespace Catalyst.Models
             long corpusSize = 0;
             foreach(var doc in documents)
             {
-                var tokenCount = doc.SelectMany(s => s).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).Count();
+                var tokenCount = doc.SelectMany(s => s.GetCapturedTokens()).Where(t => ShouldKeepToken(stopWords, t)).Take(Data.MaximumTokenCountPerDocument).Count();
 
                 if(tokenCount >= Data.MinimumTokenCountPerDocument)
                 {
@@ -171,7 +175,7 @@ namespace Catalyst.Models
 
         private static bool ShouldKeepToken(HashSet<uint> stopWords, IToken tk)
         {
-            bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN);
+            bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN || tk.POS == PartOfSpeech.NONE); //If no POS tagging (i.e. POS == NONE), keep token
 
             //bool skipIfHasUpperCase = (!Data.IgnoreCase && !tk.ValueAsSpan.IsAllLowerCase());
 
