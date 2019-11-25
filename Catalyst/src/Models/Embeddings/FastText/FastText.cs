@@ -350,7 +350,7 @@ namespace Catalyst.Models
                 /*throw new Exception($"Document language '{doc.Language}'does not match model language '{Language}'");*/
             }
 
-            var tokens = doc.SelectMany(span => span.GetTokenized()).ToArray();
+            var tokens = doc.SelectMany(span => span.GetCapturedTokens()).ToArray();
 
             var tokenHashes = new List<uint>(tokens.Length);
 
@@ -588,12 +588,12 @@ namespace Catalyst.Models
             IEnumerable<IToken> tokens;
             if (maxTokens <= 0)
             {
-                tokens = doc.SelectMany(span => span.GetTokenized());
+                tokens = doc.SelectMany(span => span.GetCapturedTokens());
                 maxTokens = doc.TokensCount;
             }
             else
             {
-                tokens = doc.SelectMany(span => span.GetTokenized()).Take(maxTokens);
+                tokens = doc.SelectMany(span => span.GetCapturedTokens()).Take(maxTokens);
                 maxTokens = Math.Min(maxTokens, doc.TokensCount);
             }
 
@@ -647,7 +647,7 @@ namespace Catalyst.Models
             if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
             var state = GetPredictionState();
-            var tokens = doc.SelectMany(span => span.GetTokenized()).ToArray();
+            var tokens = doc.SelectMany(span => span.GetCapturedTokens()).ToArray();
 
             var tokenHashes = new List<uint>(tokens.Length);
             var tokenNGramsIndexes = new List<int>(tokens.Length);
@@ -1508,7 +1508,7 @@ namespace Catalyst.Models
 
                foreach (var span in doc)
                {
-                   var tokens = span.GetTokenized().ToArray();
+                   var tokens = span.GetCapturedTokens().ToArray();
 
                    for (int i = 0; i < tokens.Length; i++)
                    {

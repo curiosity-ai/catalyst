@@ -239,7 +239,7 @@ namespace Catalyst.Models
                         Interlocked.Add(ref tkCount, doc.TokensCount);
                         foreach (var span in doc)
                         {
-                            var tokens = span.GetTokenized().ToArray();
+                            var tokens = span.GetCapturedTokens().ToArray();
 
                             for (int i = 0; i < tokens.Length; i++)
                             {

@@ -160,7 +160,7 @@ namespace Catalyst.Models
 
                 foreach (var span in doc)
                 {
-                    var tokens = span.GetTokenized().ToArray();
+                    var tokens = span.GetCapturedTokens().ToArray();
                     var spanParse = new List<Base>();
                     for (int i = 0; i < tokens.Length; i++)
                     {
@@ -258,7 +258,7 @@ namespace Catalyst.Models
 
             foreach (var span in doc)
             {
-                foreach (var v in span.GetTokenized())
+                foreach (var v in span.GetCapturedTokens())
                 {
                     //if (ignorePattern is object && ignorePattern(tokens[i]))
                     //{

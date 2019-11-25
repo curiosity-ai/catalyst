@@ -29,7 +29,7 @@ namespace Catalyst
 
         IEnumerable<ITokens> GetEntities(Func<EntityType, bool> filter = null);
 
-        IEnumerable<IToken> GetTokenized();
+        IEnumerable<IToken> GetCapturedTokens();
 
         Span<Token> ToTokenSpan();
     }

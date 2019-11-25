@@ -147,7 +147,7 @@ namespace Catalyst
         /// Return the tokenized text. Entities will be returned as a single Tokens instance with the inner tokens as children. This method will always prefer to return the longest possible entity match.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<IToken> GetTokenized()
+        public IEnumerable<IToken> GetCapturedTokens()
         {
             var tokensCount = TokensCount; //Cache the property to avoid fetching the value on every iteration
             for (int i = 0; i < tokensCount; i++)
