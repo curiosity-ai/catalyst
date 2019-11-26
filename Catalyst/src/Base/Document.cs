@@ -32,6 +32,7 @@ namespace Catalyst
         [Key(8)] public Dictionary<long, Dictionary<string, string>> TokenMetadata { get; set; }
 
         [IgnoreMember] public int Length { get { return Value.Length; } }
+        [IgnoreMember] public bool IsParsed { get { return SpansCount > 0 && TokensCount  > 0; } }
 
         [JsonIgnore] [IgnoreMember] public int SpansCount { get { return SpanBounds.Count; } }
 

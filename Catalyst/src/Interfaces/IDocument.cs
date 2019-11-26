@@ -21,19 +21,13 @@ namespace Catalyst
         int SpansCount { get; }
         int TokensCount { get; }
         int EntitiesCount { get; }
-
+        bool IsParsed { get; }
         ISpan this[int key] { get; set; }
-
         ISpan AddSpan(int begin, int end);
-
         List<IToken> ToTokenList();
-
         void Clear();
-
         void RemoveOverlapingTokens();
-
         void WriteAsJson(IJsonWriter jw);
-
         string ToJson();
     }
 }
