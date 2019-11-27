@@ -173,6 +173,7 @@ namespace Catalyst
                             if(entityEnd.index > token.Index)
                             {
                                 i = entityEnd.index;
+                                foundEntity = true;
                                 yield return new Tokens(Parent, Index, Enumerable.Range(token.Index, entityEnd.index - token.Index + 1).ToArray(), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
                                 break;
                             }
