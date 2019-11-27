@@ -51,12 +51,14 @@ namespace Catalyst.Models
                 return; //Document has already been tokenized and passed to the sentence detection, so ignore the second call
             }
 
-            var tokens = document.Spans.First().Tokens.ToList();
+            var tokens = document.Spans.First().Tokens.ToArray();
+
+            if (tokens.Length == 0) { return; }
 
             bool hasReplacements = false;
             //NOTE: This loop is not used for anything here, but instead to force tokens to cache the replacement
             //      As they'll not be able to retrieve it later when re-added to the document.
-            for (int i = 0; i < tokens.Count; i++)
+            for (int i = 0; i < tokens.Length; i++)
             {
                 hasReplacements |= (tokens[i].Replacement is null);
             }
@@ -65,7 +67,7 @@ namespace Catalyst.Models
 
             const int padding = 2;
 
-            var paddedTokens = new List<IToken>(tokens.Count + 2 * padding);
+            var paddedTokens = new List<IToken>(tokens.Length + 2 * padding);
 
             paddedTokens.Add(SpecialToken.BeginToken);
             paddedTokens.Add(SpecialToken.BeginToken);
@@ -90,7 +92,7 @@ namespace Catalyst.Models
             //Now split the original document at the right places
             
             //If any sentence detected within the single span (i.e. ignoring the first and last tokens
-            if (isSentenceEnd.AsSpan().Slice(padding + 1, tokens.Count - 1).IndexOf(true) >= 0)
+            if (isSentenceEnd.AsSpan().Slice(padding + 1, tokens.Length - 1).IndexOf(true) >= 0)
             {
                 int offset = 0;
                 for (int i = padding; i < N - padding; i++)
@@ -120,7 +122,7 @@ namespace Catalyst.Models
                         }
                         catch (Exception)
                         {
-                            Logger.LogCritical("Failed to tokenize: b={b} e={e} l={l} offset={offset} tEnd={tEnd} i={i} tCount={tCount}", b, e, text.Length, offset, tokens[i - padding].End, i, tokens.Count);
+                            Logger.LogCritical("Failed to tokenize: b={b} e={e} l={l} offset={offset} tEnd={tEnd} i={i} tCount={tCount}", b, e, text.Length, offset, tokens[i - padding].End, i, tokens.Length);
                             throw;
                         }
                         offset = e + 1;

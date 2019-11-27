@@ -32,5 +32,16 @@ namespace Catalyst.Tests
                              string.Join(";", pipeline2.GetModelsDescriptions().Select(md => md.ToString())));
             }
         }
+
+        [Theory]
+        [InlineData("\u0001 \t\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\u0003\t\u0003\n\u000b\u0007\f\u0007\r\u000e\u0005\u000b\n\u000f\u0010\u0007\u0005\u0011\u0007\r\u0012\r\r\u0007\u0011\u0005\u000f\u0007\b\u0001\u0007 \u0013\u0014\b\u0015\u0007\u0016\u0017\u0018\u0007\u0016\u0019\u0007\r\u001a\u0007 \t\u0001 \u0002\u0003\u0004\u0005\u0006\u0007\b\t\t\n\u0006\u000b\u0001 \f\u0004\u000b\u000b\r\u000e\u0006\u0007\t\u000b\u000f\u0010\u000f \u0001 \t\u0001 \t\n")]
+        public async Task MessyUnicode(string text)
+        {
+            Storage.Current = new Catalyst.OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            var nlp = await Pipeline.ForAsync(Language.English);
+            var doc = new Document(text, Language.English);
+            nlp.ProcessSingle(doc);
+            Assert.True(doc.TokensCount == 0);
+        }
     }
 }

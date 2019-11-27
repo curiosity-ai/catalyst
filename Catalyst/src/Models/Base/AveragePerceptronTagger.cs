@@ -152,7 +152,8 @@ namespace Catalyst.Models
         public void Predict(IDocument document)
         {
             Span<float> ScoreBuffer = stackalloc float[N_POS];
-            Span<int> Features = stackalloc int[N_Features]; foreach (var span in document)
+            Span<int> Features = stackalloc int[N_Features];
+            foreach (var span in document)
             {
                 Predict(span, ScoreBuffer, Features);
             }
