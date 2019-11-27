@@ -58,6 +58,8 @@ namespace Catalyst.Models
 
         public int EntitiesCount => throw new NotImplementedException();
 
+        public bool IsParsed => throw new NotImplementedException();
+
         public ISpan AddSpan(int begin, int end)
         {
             throw new NotImplementedException();
