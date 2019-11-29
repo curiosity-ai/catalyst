@@ -82,13 +82,13 @@ namespace Catalyst
                 var infoEntry = zip.CreateEntry("info.bin");
                 using (var s = infoEntry.Open())
                 {
-                    MessagePack.LZ4MessagePackSerializer.Serialize(s, new StoredObjectInfo(typeof(Pipeline).FullName, Language, Version, Tag));
+                    MessagePack.MessagePackSerializer.Serialize(s, new StoredObjectInfo(typeof(Pipeline).FullName, Language, Version, Tag), MessagePack.MessagePackSerializerOptions.LZ4Standard);
                 }
 
                 var pipeEntry = zip.CreateEntry("pipeline.bin");
                 using(var s = pipeEntry.Open())
                 {
-                    MessagePack.LZ4MessagePackSerializer.Serialize(s, Data);
+                    MessagePack.MessagePackSerializer.Serialize(s, Data, MessagePack.MessagePackSerializerOptions.LZ4Standard);
                 }
 
                 foreach (var process in Processes)
@@ -105,7 +105,7 @@ namespace Catalyst
                             var entry = zip.CreateEntry(new StoredObjectInfo(process).ToString() + ".bin");
                             using (var s = entry.Open())
                             {
-                                MessagePack.LZ4MessagePackSerializer.Serialize(s, correctType);
+                                MessagePack.MessagePackSerializer.Serialize(s, correctType, MessagePack.MessagePackSerializerOptions.LZ4Standard);
                             }
                         }
                     }
@@ -121,7 +121,7 @@ namespace Catalyst
                 StoredObjectInfo info;
                 using (var s = infoEntry.Open())
                 {
-                    info = MessagePack.LZ4MessagePackSerializer.Deserialize<StoredObjectInfo>(s);
+                    info = MessagePack.MessagePackSerializer.Deserialize<StoredObjectInfo>(s, MessagePack.MessagePackSerializerOptions.LZ4Standard);
                 }
 
                 var pipeline = new Pipeline(info.Language, info.Version, info.Tag);
@@ -129,7 +129,7 @@ namespace Catalyst
                 var pipeEntry = zip.GetEntry("pipeline.bin");
                 using (var s = pipeEntry.Open())
                 {
-                    pipeline.Data = MessagePack.LZ4MessagePackSerializer.Deserialize<PipelineData>(s);
+                    pipeline.Data = MessagePack.MessagePackSerializer.Deserialize<PipelineData>(s, MessagePack.MessagePackSerializerOptions.LZ4Standard);
                 }
 
                 foreach(var process in pipeline.Data.Processes)
@@ -177,6 +177,7 @@ namespace Catalyst
                             {
                                 await s.CopyToAsync(ms);
                                 var bytes = ms.ToArray();
+
                                 var deserializer = SerializationHelper.CreateDeserializer(dataProperty.PropertyType);
                                 var modelData = deserializer.Invoke(bytes);
 

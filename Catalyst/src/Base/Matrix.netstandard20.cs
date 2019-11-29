@@ -1,6 +1,6 @@
 ﻿#if !NETCOREAPP3_0
 
-using MessagePack;
+using MessagePackCompat;
 using Mosaik.Core;
 using System;
 using System.Collections;

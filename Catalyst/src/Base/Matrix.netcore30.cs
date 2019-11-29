@@ -1,5 +1,5 @@
 ﻿#if NETCOREAPP3_0
-using MessagePack;
+using MessagePackCompat;
 using Mosaik.Core;
 using System;
 using System.Collections;
@@ -8,7 +8,6 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
 namespace Catalyst
 {
     // Cannot use [MessagePackObject] here, as it will limit the maximum size of the matrix - have to instead serialize manually to a stream
