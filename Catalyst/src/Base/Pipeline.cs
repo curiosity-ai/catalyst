@@ -390,7 +390,7 @@ namespace Catalyst
         public static async Task<Pipeline> ForAsync(Language language, bool sentenceDetector = true, bool tagger = true)
         {
             var p = await TokenizerForAsync(language);
-            if (tagger) { p.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
+            if (tagger && language != Language.Any && language != Language.Unknown) { p.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
             return p;
         }
 
