@@ -26,7 +26,7 @@ namespace Catalyst.Training
             Console.WriteLine($"Found these languages for training: {string.Join(", ", languages)}");
             foreach (var forceCase in new EnumCase[] { EnumCase.Original, EnumCase.ForceUpper, EnumCase.ForceLower }) //need tom fix the storage model first - maybe join all in one model
             {
-                ParallelAsync.ForEachAsync(languages, new ParallelOptions(), async lang =>
+                Parallel.ForEach(languages, new ParallelOptions(), lang =>
                 {
                     Language language;
                     try
@@ -52,7 +52,7 @@ namespace Catalyst.Training
 
                     Console.WriteLine($"Now training {lang} in mode {forceCase} using files {string.Join(", ", trainFilesPerLanguage[lang])}");
                     sentenceDetector.Train(trainDocuments);
-                    await sentenceDetector.StoreAsync();
+                    sentenceDetector.StoreAsync().Wait();
                 });
             }
         }
