@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO.Compression;
 using System.Reflection;
+using MessagePack;
 
 namespace Catalyst
 {
@@ -22,6 +23,7 @@ namespace Catalyst
 
     public class Pipeline : StorableObject<Pipeline, PipelineData>, ICanUpdateModel
     {
+        private static readonly MessagePackSerializerOptions LZ4Standard = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4Block);
         private List<IProcess> Processes { get; set; } = new List<IProcess>();
         private Dictionary<Language, Neuralyzer> Neuralyzers { get; set; } = new Dictionary<Language, Neuralyzer>();
 
@@ -82,13 +84,13 @@ namespace Catalyst
                 var infoEntry = zip.CreateEntry("info.bin");
                 using (var s = infoEntry.Open())
                 {
-                    MessagePack.MessagePackSerializer.Serialize(s, new StoredObjectInfo(typeof(Pipeline).FullName, Language, Version, Tag), MessagePack.MessagePackSerializerOptions.LZ4Standard);
+                    MessagePack.MessagePackSerializer.Serialize(s, new StoredObjectInfo(typeof(Pipeline).FullName, Language, Version, Tag), LZ4Standard);
                 }
 
                 var pipeEntry = zip.CreateEntry("pipeline.bin");
                 using(var s = pipeEntry.Open())
                 {
-                    MessagePack.MessagePackSerializer.Serialize(s, Data, MessagePack.MessagePackSerializerOptions.LZ4Standard);
+                    MessagePack.MessagePackSerializer.Serialize(s, Data, LZ4Standard);
                 }
 
                 foreach (var process in Processes)
@@ -105,7 +107,7 @@ namespace Catalyst
                             var entry = zip.CreateEntry(new StoredObjectInfo(process).ToString() + ".bin");
                             using (var s = entry.Open())
                             {
-                                MessagePack.MessagePackSerializer.Serialize(s, correctType, MessagePack.MessagePackSerializerOptions.LZ4Standard);
+                                MessagePack.MessagePackSerializer.Serialize(s, correctType, LZ4Standard);
                             }
                         }
                     }
@@ -121,7 +123,7 @@ namespace Catalyst
                 StoredObjectInfo info;
                 using (var s = infoEntry.Open())
                 {
-                    info = MessagePack.MessagePackSerializer.Deserialize<StoredObjectInfo>(s, MessagePack.MessagePackSerializerOptions.LZ4Standard);
+                    info = MessagePack.MessagePackSerializer.Deserialize<StoredObjectInfo>(s, LZ4Standard);
                 }
 
                 var pipeline = new Pipeline(info.Language, info.Version, info.Tag);
@@ -129,7 +131,7 @@ namespace Catalyst
                 var pipeEntry = zip.GetEntry("pipeline.bin");
                 using (var s = pipeEntry.Open())
                 {
-                    pipeline.Data = MessagePack.MessagePackSerializer.Deserialize<PipelineData>(s, MessagePack.MessagePackSerializerOptions.LZ4Standard);
+                    pipeline.Data = MessagePack.MessagePackSerializer.Deserialize<PipelineData>(s, LZ4Standard);
                 }
 
                 foreach(var process in pipeline.Data.Processes)
@@ -616,19 +618,21 @@ namespace Catalyst
             }
         }
 
-        public IEnumerable<(StoredObjectInfo Model, string[] EntityTypes)> GetPossibleEntityTypes()
+        public IReadOnlyList<(StoredObjectInfo Model, string[] EntityTypes)> GetPossibleEntityTypes()
         {
             RWLock.EnterReadLock();
             try
             {
+                var list = new List<(StoredObjectInfo Model, string[] EntityTypes)>();
                 foreach (var p in Processes)
                 {
                     if (p is IEntityRecognizer ire)
                     {
                         var md = new StoredObjectInfo(ire);
-                        yield return (md, ire.Produces());
+                        list.Add((md, ire.Produces()));
                     }
                 }
+                return list;
             }
             finally
             {
