@@ -374,7 +374,7 @@ namespace Catalyst
             RWLock.EnterWriteLock();
             try
             {
-                Data.Processes = newPipeline.Data.Processes;
+                Data.Processes = newPipeline.Data.Processes.ToList();
                 Processes = newPipeline.Processes.ToList();
                 Version = newPipeline.Version;
             }
