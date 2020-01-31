@@ -504,13 +504,64 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchLikeURL(ref Token token)
         {
-            return token.ValueAsSpan.IsLikeURLorEmail(); //TODO: Split these two in URL and Email
+            var span = token.ValueAsSpan;
+
+            bool isLike = span.IsLikeURLorEmail();
+            if(isLike)
+            {
+                if(span.IndexOf('@') > 0)
+                {
+                    if (span.IndexOf(':') > 0)
+                    {
+                        return true; //probably url with password
+                    }
+                    else
+                    {
+                        return false; //probably email
+                    }
+                }
+
+                int countSlashDot = 0;
+                int hasWWW  = span.IndexOf(new[] { 'w', 'w', 'w' }) > 0 ? 5 : 0;
+                int hasHTTP = span.IndexOf(new[] { 'h', 't', 't', 'p' }) > 0 ? 5 : 0;
+                int hasFTP  = span.IndexOf(new[] { 'f', 't', 'p' }) > 0 ? 5 : 0;
+
+                for (int i = 0; i < span.Length; i++)
+                {
+                    if (span[i] == '.') countSlashDot++;
+                    if (span[i] == ':') countSlashDot++;
+                    if (span[i] == '/') countSlashDot++;
+                }
+
+                return countSlashDot + hasWWW + hasHTTP + hasFTP > 5;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchLikeEmail(ref Token token)
         {
-            return token.ValueAsSpan.IsLikeURLorEmail();  //TODO: Split these two in URL and Email
+            bool isLike = token.ValueAsSpan.IsLikeURLorEmail();
+            if(isLike)
+            {
+
+                //TODO: refine these rules
+                int countAt = 0;
+                int countDot = 0;
+                for (int i = 0; i < token.ValueAsSpan.Length; i++)
+                {
+                    if (token.ValueAsSpan[i] == '@') countAt++;
+                    if (token.ValueAsSpan[i] == '.') countDot++;
+                }
+                return countAt == 1 && countDot > 1;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

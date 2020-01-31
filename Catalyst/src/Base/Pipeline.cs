@@ -98,8 +98,7 @@ namespace Catalyst
                     var dataProperty = process.GetType().GetProperty(nameof(Spotter.Data)); //Uses spotter just to get the name of the .Data property from StorableObject<,> instead of hard-coding
                     if (dataProperty is object)
                     {
-                        var data = dataProperty.GetValue(process, null) as StorableObjectData;
-                        if (data is object)
+                        if (dataProperty.GetValue(process, null) is StorableObjectData data)
                         {
                             var type = data.GetType();
                             var correctType = Convert.ChangeType(data, type);
