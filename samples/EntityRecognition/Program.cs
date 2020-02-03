@@ -30,6 +30,15 @@ namespace Catalyst.Samples.EntityRecognition
             var nlp = await Pipeline.ForAsync(Language.English);
             nlp.Add(await AveragePerceptronEntityRecognizer.FromStoreAsync(language: Language.English, version: Version.Latest, tag: "WikiNER"));
 
+            //Adds a custom pattern spotter for the pattern: single("is" / VERB) + multiple(NOUN/AUX/PROPN/AUX/DET/ADJ)
+            var isApattern = new PatternSpotter(Language.English, 0, "IsA", "IsA");
+
+            isApattern.NewPattern("Is+Noun", mp => mp.Add(new PatternUnit(P.Single().WithToken("is").WithPOS(PartOfSpeech.VERB)),
+                                                          new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN, PartOfSpeech.AUX, PartOfSpeech.DET, PartOfSpeech.ADJ))
+                                                         ));
+
+            nlp.Add(isApattern);
+
             //For processing a single document, you can call nlp.ProcessSingle
             var doc = new Document(Data.Sample_1, Language.English);
             nlp.ProcessSingle(doc);
@@ -40,6 +49,10 @@ namespace Catalyst.Samples.EntityRecognition
             //This will print all recognized entities. You can also see how the WikiNER model makes a mistake on recognizing Amazon as a location on Data.Sample_1
             PrintDocumentEntities(doc);
             foreach (var d in docs) { PrintDocumentEntities(d); }
+
+
+
+
 
             //For correcting Entity Recognition mistakes, you can use the Neuralyzer class. 
             //This class uses the Pattern Matching entity recognition class to perform "forget-entity" and "add-entity" 
