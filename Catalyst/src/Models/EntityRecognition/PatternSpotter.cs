@@ -214,24 +214,24 @@ namespace Catalyst.Models
     [MessagePackObject]
     public class PatternUnit
     {
-        [Key(0)] public PatternMatchingMode Mode;
-        [Key(1)] public bool Optional;
-        [Key(2)] public bool CaseSensitive;
-        [Key(3)] public PatternUnitType Type;
-        [Key(4)] public PartOfSpeech[] POS;
-        [Key(5)] public string Suffix;
-        [Key(6)] public string Prefix;
-        [Key(7)] public string Shape;
-        [Key(8)] public string Token;
-        [Key(9)] public HashSet<string> Set;
-        [Key(10)] public string EntityType;
-        [Key(11)] public HashSet<ulong> SetHashes;
-        [Key(12)] public ulong TokenHash;
-        [Key(13)] public PatternUnit LeftSide;
-        [Key(14)] public PatternUnit RightSide;
-        [Key(15)] public HashSet<char> ValidChars;
-        [Key(16)] public int MinLength;
-        [Key(17)] public int MaxLength;
+        [Key(0)] public PatternMatchingMode Mode { get; set; }
+        [Key(1)] public bool Optional { get; set; }
+        [Key(2)] public bool CaseSensitive { get; set; }
+        [Key(3)] public PatternUnitType Type { get; set; }
+        [Key(4)] public PartOfSpeech[] POS { get; set; }
+        [Key(5)] public string Suffix { get; set; }
+        [Key(6)] public string Prefix { get; set; }
+        [Key(7)] public string Shape { get; set; }
+        [Key(8)] public string Token { get; set; }
+        [Key(9)] public HashSet<string> Set { get; set; }
+        [Key(10)] public string EntityType { get; set; }
+        [Key(11)] public HashSet<ulong> SetHashes { get; set; }
+        [Key(12)] public ulong TokenHash { get; set; }
+        [Key(13)] public PatternUnit LeftSide { get; set; }
+        [Key(14)] public PatternUnit RightSide { get; set; }
+        [Key(15)] public HashSet<char> ValidChars { get; set; }
+        [Key(16)] public int MinLength { get; set; }
+        [Key(17)] public int MaxLength { get; set; }
 
         public PatternUnit(IPatternUnit prototype)
         {
