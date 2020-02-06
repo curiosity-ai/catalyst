@@ -38,8 +38,6 @@ namespace Catalyst
 
         public void DeleteEmptyDirectories(string path) => Disk.DeleteEmptyDirectories(path);
 
-        public (FileStream stream, string fileName) GetSharedTempStream(string path, long expectedLength = -1) => Disk.GetSharedTempStream(path, expectedLength);
-
         public FileStream GetTempStream() => Disk.GetTempStream();
 
         public IEnumerable<string> ListFiles(string path, string pattern, SearchOption searchOption) => Disk.ListFiles(path, pattern, searchOption);
