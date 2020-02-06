@@ -94,21 +94,9 @@ namespace Catalyst.Azure
             return Path.Combine(path, (string.IsNullOrWhiteSpace(tag) ? $"model-v{version:000000}.bin" : $"model-{tag}-v{version:000000}.bin") + (compressed ? "z" : ""));
         }
 
-        public (FileStream stream, string fileName) GetSharedTempStream(string path, long expectedLength = -1)
-        {
-            var fn = Path.Combine(TempPath, path.ToLowerInvariant().Hash128().ToString() + ".tmp");
-            if (File.Exists(fn) && new FileInfo(fn).Length == expectedLength) {
-                return (new FileStream(fn, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.RandomAccess), fn);
-            }
-            else {
-                return (new FileStream(fn, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, FileOptions.RandomAccess), fn);
-            }
-        }
-
         public FileStream GetTempStream()
         {
-            return new FileStream(Path.Combine(TempPath, Guid.NewGuid().ToString().Replace("-", "") + ".tmp"), 
-                    FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
+            return new FileStream(Path.Combine(TempPath, UID128.New().ToString()), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 30_000, FileOptions.DeleteOnClose);
         }
 
         public IEnumerable<string> ListFiles(string path, string pattern, SearchOption searchOption)
