@@ -50,6 +50,12 @@ namespace Catalyst.Models
                 var close = s.Slice(open).IndexOf('>');
                 if (close >= 1) return true;
             }
+
+			if(s.IndexOf("&nbsp;".AsSpan()) >= 0)
+			{
+				return true;
+			}
+
             return false;
         }
 
@@ -65,15 +71,15 @@ namespace Catalyst.Models
 
 			GetTextFromNodes(sb, htmlDoc.DocumentNode.ChildNodes);
 
-			var result = sb.ToString();
+			var result = HtmlEntity.DeEntitize(sb.ToString());
 
 			StringExtensions.StringBuilderPool.Return(sb);
 
 			return result;
 		}
 
-		private static readonly HashSet<string> linebreaks = new HashSet<string>(new[] { "p", "br", "table", "th", "tr" }, new LowerCaseComparer());
-		private static readonly HashSet<string> indentTag = new HashSet<string>(new []{ "ul", "li" }, new LowerCaseComparer());
+		private static readonly HashSet<string> LineBreaks = new HashSet<string>(new[] { "p", "br", "table", "th", "tr" }, new LowerCaseComparer());
+		private static readonly HashSet<string> IndentTags = new HashSet<string>(new []{ "ul", "li" }, new LowerCaseComparer());
 
 		private static void GetTextFromNodes(StringBuilder sb, HtmlNodeCollection nodes, int indent = 0)
 		{
@@ -87,7 +93,7 @@ namespace Catalyst.Models
 
 				if (node.HasChildNodes)
 				{
-					if (indentTag.Contains(node.Name))
+					if (IndentTags.Contains(node.Name))
 					{
 						GetTextFromNodes(sb, node.ChildNodes, indent + 1);
 					}
@@ -110,7 +116,7 @@ namespace Catalyst.Models
 					}
 				}
 
-				if (linebreaks.Contains(node.Name) && sb.Length > 0 && sb[sb.Length-1] != '\n')
+				if (LineBreaks.Contains(node.Name) && sb.Length > 0 && sb[sb.Length-1] != '\n')
 				{
 					sb.AppendLine();
 				}
