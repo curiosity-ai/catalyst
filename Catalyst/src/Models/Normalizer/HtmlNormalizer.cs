@@ -79,7 +79,8 @@ namespace Catalyst.Models
 		{
 			foreach (var node in nodes)
 			{
-				if (string.Equals(node.Name, "style", StringComparison.InvariantCultureIgnoreCase))
+				if (string.Equals(node.Name, "style", StringComparison.InvariantCultureIgnoreCase) 
+		         || string.Equals(node.Name, "script", StringComparison.InvariantCultureIgnoreCase))
 				{
 					continue;
 				}
