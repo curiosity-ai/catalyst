@@ -11,7 +11,17 @@ namespace Catalyst
     public static class StringExtensions
     {
 
-        public static ObjectPool<StringBuilder> StringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder(), 20, sb => sb.Clear());
+        public static ObjectPool<StringBuilder> StringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder(), 20, sb =>
+        {
+            if (sb.Length < 1_000_000)
+            {
+                sb.Length = 0; //Don't need to lose the the internal buffer for up to 1MB 
+            }
+            else
+            {
+                sb.Clear();
+            }
+        });
 
 
         public static string RemoveControlCharacters(this string text)
