@@ -201,7 +201,7 @@ namespace Catalyst.Models
                     //do nothing, will try a different name
                 }
             }
-            throw new FileNotFoundException();
+            throw new FileNotFoundException(nameof(FastTextData) + "-Matrix");
         }
 
         public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, VectorizerTrainingData previousTrainingCorpus = null)
