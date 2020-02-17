@@ -37,6 +37,7 @@ steps:
     command: 'pack'
     packagesToPack: '$(project)'
     versioningScheme: 'off'
+    configuration: 'Release'
     buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
