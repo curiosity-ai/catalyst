@@ -95,7 +95,7 @@ namespace Catalyst
             }
             else if (resp.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
-                throw new FileNotFoundException();
+                throw new FileNotFoundException(RepositoryAddress + $"models?modelType={objInfo.ModelType}&language={Languages.EnumToCode(objInfo.Language)}&version={objInfo.Version}&tag={objInfo.Tag ?? ""}&compress={compressed}");
             }
             else
             {
