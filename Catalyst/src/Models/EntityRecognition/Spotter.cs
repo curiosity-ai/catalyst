@@ -297,8 +297,7 @@ namespace Catalyst.Models
 
                         if (count % 1000 == 0)
                         {
-                            var mem = GC.GetTotalMemory(false);
-                            Logger.LogInformation("[MEM: {MEMORY} MB]  Training Word2Sense model - at {DOCCOUNT} documents, {TKCOUNT} tokens - elapsed {ELAPSED} seconds at {KTKS} kTk/s)", Math.Round(mem / 1048576.0, 2), docCount, tkCount, sw.Elapsed.TotalSeconds, (tkCount / sw.ElapsedMilliseconds));
+                            Logger.LogInformation("Training Word2Sense model - at {DOCCOUNT} documents, {TKCOUNT} tokens - elapsed {ELAPSED} seconds at {KTKS} kTk/s)", docCount, tkCount, sw.Elapsed.TotalSeconds, (tkCount / sw.ElapsedMilliseconds));
                         }
                     }
                     catch (Exception E)
