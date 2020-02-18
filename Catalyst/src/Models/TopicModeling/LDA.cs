@@ -1,23 +1,13 @@
-﻿using UID;
-using Microsoft.Extensions.Logging;
-using Mosaik.Core;
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Microsoft.ML.Data;
-using System.Globalization;
-using System.IO;
-using System.Threading;
-using Microsoft.ML.Runtime;
-using System.Security;
-using System.Runtime.InteropServices;
-using System.Collections.Immutable;
-using Catalyst.Models.Native;
-using System.Diagnostics;
-using System.Linq;
+﻿using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Catalyst.Models.Native;
+using Mosaik.Core;
+using UID;
 
 namespace Catalyst.Models
 {
@@ -62,27 +52,23 @@ namespace Catalyst.Models
 
         public void Train(IEnumerable<IDocument> documents, int threads, IEnumerable<string> stopwords = null)
         {
-            var stopWords = new HashSet<uint>((stopwords ?? StopWords.Snowball.For(Language)).Select(s => Hash(s.AsSpan())));
-
-            if(Data.NumberOfTopics <=1)
+            if (Data.NumberOfTopics <=1)
             {
-                throw new Exception($"Invalid number of topics ({nameof(Data)}.{nameof(Data.NumberOfTopics)}), must be > 1");
+                throw new ArgumentException($"Invalid number of topics ({nameof(Data)}.{nameof(Data.NumberOfTopics)}), must be > 1");
+            }
+
+            var stopWords = new HashSet<uint>((stopwords ?? StopWords.Snowball.For(Language)).Select(s => Hash(s.AsSpan())));
+            var (count, corpusSize) = InitializeVocabulary(documents, stopWords);
+            if ((count == 0) || (corpusSize == 0))
+            {
+                throw new EmptyCorpusException();
             }
 
             var state = new LdaState(Data, threads);
-
-            var (count, corpusSize) = InitializeVocabulary(documents, stopWords);
-
-            if(count == 0 || corpusSize == 0)
-            {
-                throw new Exception("Empty corpus, nothing to train LDA model");
-            }
+            state.AllocateDataMemory(count, corpusSize);
 
             var vocabulary = new ConcurrentDictionary<int, string>();
-
-            state.AllocateDataMemory(count,corpusSize);
-
-            foreach(var doc in documents)
+            foreach (var doc in documents)
             {
                 GetTokensAndFrequencies(doc, vocabulary, stopWords, out var tokenCount, out var tokenIndices, out var tokenFrequencies);
 
