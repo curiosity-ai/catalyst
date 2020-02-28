@@ -64,8 +64,7 @@ namespace Catalyst.Models
         private List<List<bool>> HS_Codes = new List<List<bool>>();
         private List<HSNode> HS_Tree = new List<HSNode>();
 
-        [ThreadStatic]
-        private static ThreadState PredictionMPS;
+        private ObjectPool<ThreadState> ThreadStatePool;
 
         public TrainingHistory TrainingHistory => Data.TrainingHistory;
 
@@ -118,16 +117,6 @@ namespace Catalyst.Models
 
             deleted |= await a.DeleteDataAsync();
             return deleted;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ThreadState GetPredictionState()
-        {
-            if (PredictionMPS is null)
-            {
-                PredictionMPS = new ThreadState(new Line[0], HiddenLength, OutputLength, GradientLength, -1, CancellationToken.None);
-            }
-            return PredictionMPS;
         }
 
         public bool TryGetTrainingData(out VectorizerTrainingData previousTrainingCorpus)
@@ -375,7 +364,7 @@ namespace Catalyst.Models
                 vector = default;
                 return false;
             }
-            var mps = GetPredictionState();
+            var mps = ThreadStatePool.Rent();
 
             for (int i = 0; i < tries; i++)
             {
@@ -399,6 +388,9 @@ namespace Catalyst.Models
             }
             SIMD.Multiply(averageVector, 1f / tries);
             vector = averageVector;
+
+            ThreadStatePool.Return(mps);
+
             return true;
         }
 
@@ -583,8 +575,8 @@ namespace Catalyst.Models
             if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
             if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
-            var state = GetPredictionState();
-
+            var state = ThreadStatePool.Rent();
+            
             IEnumerable<IToken> tokens;
             if (maxTokens <= 0)
             {
@@ -633,7 +625,9 @@ namespace Catalyst.Models
                 }
 
                 var index = state.Output.Argmax();
-                return (Data.Labels[index].Word, state.Output[index]);
+                var result = (Data.Labels[index].Word, state.Output[index]);
+                ThreadStatePool.Return(state);
+                return result;
             }
             else
             {
@@ -646,7 +640,7 @@ namespace Catalyst.Models
             if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
             if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
-            var state = GetPredictionState();
+            var state = ThreadStatePool.Rent();
             var tokens = doc.SelectMany(span => span.GetCapturedTokens()).ToArray();
 
             var tokenHashes = new List<uint>(tokens.Length);
@@ -687,6 +681,8 @@ namespace Catalyst.Models
             {
                 ans[Data.Labels[i].Word] = state.Output[i];
             }
+
+            ThreadStatePool.Return(state);
 
             return ans;
         }
@@ -1646,6 +1642,8 @@ namespace Catalyst.Models
 
                 m.SetOperations(usedBuckets);
             }
+
+             ThreadStatePool = new ObjectPool<ThreadState>(() => new ThreadState(new Line[0], HiddenLength, OutputLength, GradientLength, -1, CancellationToken.None), 2);
         }
 
         private List<uint> TranslateNgramHashesToIndexes(List<uint> hashes, Language language, bool create = true)
