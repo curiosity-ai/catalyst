@@ -471,6 +471,8 @@ namespace Catalyst.Models
                 if ((ix % kDecrStep) == (kDecrStep - 1))
                 {
                     state.Rate -= decrPerKSample;
+
+                    if (state.CancellationToken.IsCancellationRequested) return;
                 }
 
                 if (state.ThreadID == 0 && i % repInterval == 0 && state.Counts > 0)
@@ -483,61 +485,6 @@ namespace Catalyst.Models
                     state.TrainingHistory.Append(update);
                 }
             }
-
-            //long localTokenCount = 0;
-            //Stopwatch Watch = null;
-            //if (mps.ThreadID == 0) { Watch = Stopwatch.StartNew(); }
-            //float progress = 0f, lr = Data.LearningRate;
-
-            //float baseLR = Data.LearningRate / 200;
-
-            //float nextProgressReport = 0f;
-            //for (int epoch = 0; epoch < Data.Epoch; epoch++)
-            //{
-            //    if (mps.CancellationToken.IsCancellationRequested) { return; } //Cancelled the training, so return from the thread
-
-            //    for (int i = 0; i < mps.Corpus.Length; i++)
-            //    {
-            //        localTokenCount += mps.Corpus[i].EntryIndexes.Length;
-
-            //        switch (Data.Type)
-            //        {
-            //            case VectorModelType.CBow: { CBow(ref mps, ref mps.Corpus[i].EntryIndexes, lr); break; }
-            //            case VectorModelType.Skipgram: { Skipgram(ref mps, ref mps.Corpus[i].EntryIndexes, lr); break; }
-            //            case VectorModelType.Supervised: { Supervised(ref mps, ref mps.Corpus[i], lr); break; }
-            //            case VectorModelType.PVDM: { PVDM(ref mps, ref mps.Corpus[i], lr); break; }
-            //            case VectorModelType.PVDBow: { PVDBow(ref mps, ref mps.Corpus[i], lr); break; }
-            //        }
-
-            //        if (localTokenCount > Data.LearningRateUpdateRate)
-            //        {
-            //            progress = (float)(TokenCount) / (Data.Epoch * NumberOfTokens);
-
-            //            var x10 = (float)(TokenCount) / (10 * NumberOfTokens);
-
-            //            //lr = Data.LearningRate * (1.0f - progress);
-            //            //plot abs(cos(x))*0.98^x from x = [0,100]
-            //            //lr = (float)(baseLR + (Data.LearningRate - baseLR) * (0.5 + 0.5 * Math.Sin(100 * progress))); //Cyclic loss rate
-            //            lr = (float)(baseLR + (Data.LearningRate - baseLR) * Math.Abs(Math.Cos(200 * x10)) * Math.Pow(0.98, 100 * x10)); //Cyclic loss rate, scaled for 10 epoch
-
-            //            Interlocked.Add(ref TokenCount, localTokenCount);
-            //            Interlocked.Add(ref PartialTokenCount, localTokenCount);
-
-            //            localTokenCount = 0;
-
-            //            if (mps.ThreadID == 0 && progress > nextProgressReport)
-            //            {
-            //                nextProgressReport += 0.01f; //Report every 1%
-            //                var loss = mps.GetLoss();
-            //                var ws = (double)(Interlocked.Exchange(ref PartialTokenCount, 0)) / Watch.Elapsed.TotalSeconds;
-            //                Watch.Restart();
-            //                var wst = ws / Data.Threads;
-
-            //                Logger.LogInformation("At {PROGRESS}%, w/s/t: {WST}, w/s: {WS}, loss at epoch {EPOCH}/{MAXEPOCH}: {LOSS}", (int)(progress * 100f), (int)wst, (int)ws, epoch + 1, Data.Epoch, loss);
-            //            }
-            //        }
-            //    }
-            //}
         }
 
         private float TrainOneBatch(ThreadState state, List<ParseResults> batch_exs, int negSearchLimit, float rate0, bool trainWord)

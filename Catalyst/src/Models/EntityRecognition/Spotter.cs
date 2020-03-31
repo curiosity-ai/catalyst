@@ -360,7 +360,9 @@ namespace Catalyst.Models
             {
                 var w = word.Trim();
 
-                if (w.Contains(' '))
+                if (Data.IgnoreOnlyNumeric && int.TryParse(w, out _)) { return; } //Ignore pure numerical entries
+
+                if (w.IndexOfAny(CharacterClasses.WhitespaceCharacters) >= 0)
                 {
                     var parts = w.Split(CharacterClasses.WhitespaceCharacters, StringSplitOptions.RemoveEmptyEntries);
 

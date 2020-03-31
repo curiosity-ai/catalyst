@@ -700,7 +700,6 @@ namespace Catalyst.Models
             float nextProgressReport = 0f;
             for (int epoch = 0; epoch < Data.Epoch; epoch++)
             {
-                if (state.CancellationToken.IsCancellationRequested) { return; } //Cancelled the training, so return from the thread
 
                 for (int i = 0; i < state.Corpus.Length; i++)
                 {
@@ -717,6 +716,8 @@ namespace Catalyst.Models
 
                     if (localTokenCount > Data.LearningRateUpdateRate)
                     {
+                        if (state.CancellationToken.IsCancellationRequested) { return; } //Cancelled the training, so return from the thread
+
                         progress = (float)(TokenCount) / (Data.Epoch * NumberOfTokens);
 
                         var x10 = (float)(TokenCount) / (10 * NumberOfTokens);
@@ -733,6 +734,7 @@ namespace Catalyst.Models
 
                         if (state.ThreadID == 0 && progress > nextProgressReport)
                         {
+
                             nextProgressReport += 0.01f; //Report every 1%
                             var loss = state.GetLoss();
                             var ws = (double)(Interlocked.Exchange(ref PartialTokenCount, 0)) / sinceEpochWatch.Elapsed.TotalSeconds;
