@@ -1,10 +1,12 @@
+
+[![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)](https://www.nuget.org/packages/Catalyst/) [![Build Status](https://dev.azure.com/curiosity-ai/mosaik/_apis/build/status/catalyst?branchName=master)](https://dev.azure.com/curiosity-ai/mosaik/_build/latest?definitionId=10&branchName=master)
+
 <img src="https://raw.githubusercontent.com/curiosity-ai/catalyst/master/Catalyst/catalyst.png?token=ACDCOAYAIML2KGJTHTJP27C5KGCEC"/>
 
 <a href="https://curiosity.ai"><img src="https://curiosity.ai/assets/images/logos/curiosity.png" width="100" height="100" align="right" /></a>
 
 _**catalyst**_ is a C# Natural Language Processing library built for speed. Inspired by [spaCy's design](https://spacy.io/), it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.
 
-[![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)](https://www.nuget.org/packages/Catalyst/)
 
 ## ⚡ Features
 - Fast, modern pure-C# NLP library, supporting [.NET standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
