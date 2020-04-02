@@ -187,46 +187,41 @@ namespace Catalyst
             return new Span(this, SpanBounds.Count - 1);
         }
 
-        [JsonIgnore]
-        [IgnoreMember]
-        public string TokenizedValue
+        public string TokenizedValue(bool mergeEntities = false)
         {
-            get
+            var sb = new StringBuilder(Value.Length + TokensCount * 10 + 100);
+            for (int i = 0; i < SpanBounds.Count(); i++)
             {
-                var sb = new StringBuilder(Value.Length + TokensCount * 10 + 100);
-                for (int i = 0; i < SpanBounds.Count(); i++)
+                foreach (var token in this[i])
                 {
-                    foreach (var token in this[i])
+                    if (mergeEntities && token.EntityTypes.Any(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Inside))
                     {
-                        if (token.EntityTypes.Any(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Inside))
+                        bool isHyphen = token.ValueAsSpan.IsHyphen();
+                        bool isNormalToken = !isHyphen && !token.ValueAsSpan.IsSentencePunctuation();
+                        if (!isNormalToken)
                         {
-                            bool isHyphen = token.ValueAsSpan.IsHyphen();
-                            bool isNormalToken = !isHyphen && !token.ValueAsSpan.IsSentencePunctuation();
-                            if (!isNormalToken)
+                            if (sb[sb.Length - 1] == '_')
                             {
-                                if (sb[sb.Length - 1] == '_')
-                                {
-                                    sb.Length--; //if we have a punctuation or hyphen, and the previous token added a '_', remove it here
-                                }
+                                sb.Length--; //if we have a punctuation or hyphen, and the previous token added a '_', remove it here
                             }
-                            if (!isHyphen)
-                            {
-                                sb.Append(token.Value);
-                            }
-                            else
-                            {
-                                sb.Append("_");
-                            }
-                            if (isNormalToken) { sb.Append("_"); } //don't add _ when the token is already a hyphen
+                        }
+                        if (!isHyphen)
+                        {
+                            sb.Append(token.Value);
                         }
                         else
                         {
-                            sb.Append(token.Value).Append(" ");
+                            sb.Append("_");
                         }
+                        if (isNormalToken) { sb.Append("_"); } //don't add _ when the token is already a hyphen
+                    }
+                    else
+                    {
+                        sb.Append(token.Value).Append(" ");
                     }
                 }
-                return Regex.Replace(sb.ToString(), @"\s+", " ").TrimEnd(); //Remove the last space added during the loop
             }
+            return Regex.Replace(sb.ToString(), @"\s+", " ").TrimEnd(); //Remove the last space added during the loop
         }
 
         [JsonIgnore]
