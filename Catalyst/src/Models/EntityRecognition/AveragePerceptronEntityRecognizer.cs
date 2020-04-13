@@ -29,20 +29,7 @@ namespace Catalyst.Models
         public List<HashSet<int>> Gazeteers { get; set; }
         public string[] EntityTypes { get; set; }
 
-        #region IgnoreCaseFix
-
-        // This fixes the mistake made in the naming of this variable (invariant case != ignore case).
-        // As we cannot rename here (due to the serialization using keyAsPropertyName:true), we add a second property
-        // that refers to the same underlying variable. As MessagePack reads properties in the order of GetProperties,
-        // this ensures the new one (IgnoreCase) is set before the old one (InvariantCase), so we don't the stored value
-        private bool ignoreCase;
-
-        public bool IgnoreCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        [Obsolete("Wrong property name, use IgnoreCase instead", true)]
-        public bool InvariantCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        #endregion IgnoreCaseFix
+        public bool IgnoreCase { get; set; }
     }
 
     public class AveragePerceptronEntityRecognizer : StorableObject<AveragePerceptronEntityRecognizer, AveragePerceptronEntityRecognizerModel>, IEntityRecognizer, IProcess
@@ -67,7 +54,6 @@ namespace Catalyst.Models
             }
         }
 
-        //TODO: Add dictionary of gazeteers per entity type, and add a new feature per entity type refering to the token existing on each gazeteer
         public AveragePerceptronEntityRecognizer(Language language, int version, string tag, string[] entityTypes = null, bool ignoreCase = false) : this(language, version, tag)
         {
             if (entityTypes is object)
