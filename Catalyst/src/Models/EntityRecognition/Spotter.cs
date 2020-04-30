@@ -231,8 +231,7 @@ namespace Catalyst.Models
                 {
                     try
                     {
-                        var Previous = new ulong[ngrams];
-                        var Stack = new Queue<ulong>(ngrams);
+                        var stack = new Queue<ulong>(ngrams);
 
                         if (doc.TokensCount < ngrams) { return; } //Ignore too small documents
 
@@ -267,30 +266,30 @@ namespace Catalyst.Models
 
                                 if (skipThisToken)
                                 {
-                                    Stack.Clear();
+                                    stack.Clear();
                                     continue;
                                 }
 
                                 if (!trainingData.Words.ContainsKey(hash)) { trainingData.Words[hash] = Data.IgnoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
 
-                                Stack.Enqueue(hash);
-                                ulong combined = Stack.ElementAt(0);
+                                stack.Enqueue(hash);
+                                ulong combined = stack.ElementAt(0);
 
-                                for (int j = 1; j < Stack.Count; j++)
+                                for (int j = 1; j < stack.Count; j++)
                                 {
-                                    combined = HashCombine64(combined, Stack.ElementAt(j));
+                                    combined = HashCombine64(combined, stack.ElementAt(j));
                                     if (trainingData.HashCount.ContainsKey(combined))
                                     {
                                         trainingData.HashCount[combined]++;
                                     }
                                     else
                                     {
-                                        trainingData.Senses[combined] = Stack.Take(j + 1).ToArray();
+                                        trainingData.Senses[combined] = stack.Take(j + 1).ToArray();
                                         trainingData.HashCount[combined] = 1;
                                     }
                                 }
 
-                                if (Stack.Count > ngrams) { Stack.Dequeue(); }
+                                if (stack.Count > ngrams) { stack.Dequeue(); }
                             }
                         }
 
@@ -326,17 +325,17 @@ namespace Catalyst.Models
 
             foreach (var key in toKeep)
             {
-                var hashes = trainingData.Senses[key];
-                var count = trainingData.HashCount[key];
-
-                Data.Hashes.Add(key);
-                for (int i = 0; i < hashes.Length; i++)
+                if (trainingData.Senses.TryGetValue(key, out var hashes) && trainingData.HashCount.TryGetValue(key, out var count))
                 {
-                    if (Data.MultiGramHashes.Count <= i)
+                    Data.Hashes.Add(key);
+                    for (int i = 0; i < hashes.Length; i++)
                     {
-                        Data.MultiGramHashes.Add(new HashSet<ulong>());
+                        if (Data.MultiGramHashes.Count <= i)
+                        {
+                            Data.MultiGramHashes.Add(new HashSet<ulong>());
+                        }
+                        Data.MultiGramHashes[i].Add(hashes[i]);
                     }
-                    Data.MultiGramHashes[i].Add(hashes[i]);
                 }
             }
 

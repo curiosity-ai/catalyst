@@ -55,7 +55,7 @@ namespace Catalyst.Models
             foreach (var span in doc)
             {
                 var tokens = span.ToTokenSpan();
-                int N = tokens.Length - 2;
+                int N = tokens.Length - 3;
 
                 for (int i = 0; i < N; i++)
                 {

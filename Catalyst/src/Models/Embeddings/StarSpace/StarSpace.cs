@@ -443,6 +443,7 @@ namespace Catalyst.Models
                         }
                     }
                 }
+
                 if (Data.Type != ModelType.WordEmbeddings)
                 {
                     ParseResults ex = GetExample(state, i);
