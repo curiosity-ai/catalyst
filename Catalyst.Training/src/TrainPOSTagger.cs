@@ -487,7 +487,7 @@ namespace Catalyst.Training
                 }
                 else
                 {
-                    Logger.LogInformation("skipping document:\n" + doc.TokenizedValue + "\n");
+                    Logger.LogInformation("skipping document:\n" + doc.TokenizedValue(mergeEntities: false) + "\n");
                 }
             }
 

@@ -13,7 +13,7 @@ namespace Catalyst
         Language Language { get; set; }
         int Length { get; }
         string Value { get; set; }
-        string TokenizedValue { get; }
+        string TokenizedValue(bool mergeEntities = false);
         UID128 UID { get; set; }
         List<string> Labels { get; }
         Dictionary<string, string> Metadata { get; }

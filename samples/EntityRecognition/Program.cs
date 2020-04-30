@@ -19,8 +19,17 @@ namespace Catalyst.Samples.EntityRecognition
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
-            //This example uses the WikiNER model, trained on the data provided by the paper "Learning multilingual named entity recognition from Wikipedia", Artificial Intelligence 194 (DOI: 10.1016/j.artint.2012.03.006)
-            //The training data was sourced from the following repository: https://github.com/dice-group/FOX/tree/master/input/Wikiner
+            // Catalyst currently supports 3 different types of models for Named Entity Recognition (NER):
+            // - Gazetteer-like(i.e. [Spotter](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/Spotter.cs)) 
+            // - Regex-like(i.e. [PatternSpotter](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/PatternSpotter.cs))
+            // - Perceptron (i.e. [AveragePerceptronEntityRecognizer](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/AveragePerceptronEntityRecognizer.cs))
+
+
+
+            // For training an AveragePerceptronModel, check the source-code here: https://github.com/curiosity-ai/catalyst/blob/master/Catalyst.Training/src/TrainWikiNER.cs
+            // This example uses the pre-trained WikiNER model, trained on the data provided by the paper "Learning multilingual named entity recognition from Wikipedia", Artificial Intelligence 194 (DOI: 10.1016/j.artint.2012.03.006)
+            // The training data was sourced from the following repository: https://github.com/dice-group/FOX/tree/master/input/Wikiner
+
 
             //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
             Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
@@ -30,14 +39,22 @@ namespace Catalyst.Samples.EntityRecognition
             var nlp = await Pipeline.ForAsync(Language.English);
             nlp.Add(await AveragePerceptronEntityRecognizer.FromStoreAsync(language: Language.English, version: Version.Latest, tag: "WikiNER"));
 
+
+
+            //Another available model for NER is the PatternSpotter, which is the conceptual equivalent of a RegEx on raw text, but operating on the tokenized form off the text.
+
             //Adds a custom pattern spotter for the pattern: single("is" / VERB) + multiple(NOUN/AUX/PROPN/AUX/DET/ADJ)
-            var isApattern = new PatternSpotter(Language.English, 0, "IsA", "IsA");
+            var isApattern = new PatternSpotter(Language.English, 0, tag: "is-a-pattern", captureTag: "IsA");
 
             isApattern.NewPattern("Is+Noun", mp => mp.Add(new PatternUnit(P.Single().WithToken("is").WithPOS(PartOfSpeech.VERB)),
                                                           new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN, PartOfSpeech.AUX, PartOfSpeech.DET, PartOfSpeech.ADJ))
                                                          ));
 
             nlp.Add(isApattern);
+
+
+
+
 
             //For processing a single document, you can call nlp.ProcessSingle
             var doc = new Document(Data.Sample_1, Language.English);
@@ -72,11 +89,34 @@ namespace Catalyst.Samples.EntityRecognition
             var doc2 = new Document(Data.Sample_1, Language.English);
             nlp.ProcessSingle(doc2);
             PrintDocumentEntities(doc2);
+
+
+
+
+            //Another way to perform entity recognition is to use a gazeteer-like model. For example, here is one for capturing a set of programing languages
+            var spotter = new Spotter(Language.Any, 0, "programming", "ProgrammingLanguage");
+            spotter.Data.IgnoreCase = true; //In some cases, it might be better to set it to false, and only add upper/lower-case exceptions as required
+
+            spotter.AddEntry("C#");
+            spotter.AddEntry("Python");
+            spotter.AddEntry("Python 3"); //entries can have more than one word, and will be automatically tokenized on whitespace
+            spotter.AddEntry("C++");
+            spotter.AddEntry("Rust");
+            spotter.AddEntry("Java");
+
+            var nlp2 = Pipeline.TokenizerFor(Language.English);
+            nlp2.Add(spotter); //When adding a spotter model, the model propagates any exceptions on tokenization to the pipeline's tokenizer
+
+            var docAboutProgramming = new Document(Data.SampleProgramming, Language.English);
+
+            nlp.ProcessSingle(docAboutProgramming);
+
+            PrintDocumentEntities(docAboutProgramming);
         }
 
         private static void PrintDocumentEntities(IDocument doc)
         {
-            Console.WriteLine($"Input text:\n\t'{doc.Value}'\n\nTokenized Value:\n\t'{doc.TokenizedValue}'\n\nEntities: \n{string.Join("\n", doc.SelectMany(span => span.GetEntities()).Select(e => $"\t{e.Value} [{e.EntityType.Type}]"))}");
+            Console.WriteLine($"Input text:\n\t'{doc.Value}'\n\nTokenized Value:\n\t'{doc.TokenizedValue(mergeEntities: true)}'\n\nEntities: \n{string.Join("\n", doc.SelectMany(span => span.GetEntities()).Select(e => $"\t{e.Value} [{e.EntityType.Type}]"))}");
         }
 
         static IEnumerable<IDocument> MultipleDocuments()

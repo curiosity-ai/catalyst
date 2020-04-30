@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using UID;
 
 namespace Catalyst.Models
 {
@@ -18,21 +19,9 @@ namespace Catalyst.Models
         public string CaptureTag { get; set; }
         public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
         public bool IgnoreOnlyNumeric { get; set; }
+        public bool IgnoreCase { get; set; }
 
-        #region IgnoreCaseFix
-
-        // This fixes the mistake made in the naming of this variable (invariant case != ignore case).
-        // As we cannot rename here (due to the serialization using keyAsPropertyName:true), we add a second property
-        // that refers to the same underlying variable. As MessagePack reads properties in the order of GetProperties,
-        // this ensures the new one (IgnoreCase) is set before the old one (InvariantCase), so we don't the stored value
-        private bool ignoreCase;
-
-        public bool IgnoreCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        [Obsolete("Wrong property name, use IgnoreCase instead", true)]
-        public bool InvariantCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        #endregion IgnoreCaseFix
+        public HashSet<string> Gazeteer { get; set; } = new HashSet<string>();
     }
 
     public class Spotter : StorableObject<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
@@ -42,8 +31,6 @@ namespace Catalyst.Models
         public bool IgnoreCase { get { return Data.IgnoreCase; } set { Data.IgnoreCase = value; } }
 
         public const string Separator = "_";
-
-        public List<string> TempGazeteer = new List<string>();
 
         private Spotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
@@ -213,9 +200,15 @@ namespace Catalyst.Models
 
         public void TrainWord2Sense(IEnumerable<IDocument> documents, ParallelOptions parallelOptions, int ngrams = 3, double tooRare = 1E-5, double tooCommon = 0.1, Word2SenseTrainingData trainingData = null)
         {
-            if (trainingData == null)
+            var HashCount =  new ConcurrentDictionary<ulong, int>();
+            var Senses    =  new ConcurrentDictionary<ulong, ulong[]>();
+            var Words     =  new ConcurrentDictionary<ulong, string>();
+
+            if (trainingData is object)
             {
-                trainingData = new Word2SenseTrainingData();
+                HashCount = new ConcurrentDictionary<ulong, int>(trainingData.HashCount);
+                Senses = new ConcurrentDictionary<ulong, ulong[]>(trainingData.Senses);
+                Words = new ConcurrentDictionary<ulong, string>(trainingData.Words);
             }
 
             var stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => Data.IgnoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan())).ToArray());
@@ -317,11 +310,11 @@ namespace Catalyst.Models
 
             Logger.LogInformation("Finish parsing documents for Word2Sense model");
 
-            int thresholdRare = (int)Math.Floor(tooRare * docCount);
+            int thresholdRare   = (int)Math.Floor(tooRare * docCount);
             int thresholdCommon = (int)Math.Floor(tooCommon * docCount);
 
             var toKeep = trainingData.HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
-                                  .Select(kv => kv.Key).ToArray();
+                                                .Select(kv => kv.Key).ToArray();
 
             foreach (var key in toKeep)
             {
@@ -339,6 +332,18 @@ namespace Catalyst.Models
                 }
             }
 
+            if(trainingData is object)
+            {
+                trainingData.HashCount = new Dictionary<ulong, int>(HashCount);
+                trainingData.Senses = new Dictionary<ulong, ulong[]>(Senses);
+                trainingData.Words = new Dictionary<ulong, string>(Words);
+                
+                foreach(var word in trainingData.Words.Values)
+                {
+                    AddToGazeteer(word);
+                }
+            }
+
             Logger.LogInformation("Finish training Word2Sense model");
         }
 
@@ -353,45 +358,72 @@ namespace Catalyst.Models
             }
         }
 
+        private void AddToGazeteer(string word)
+        {
+            word = Data.IgnoreCase? word.ToLowerInvariant() : word;
+            Data.Gazeteer ??= new HashSet<string>();
+            Data.Gazeteer.Add(word);
+        }
+
+        public void AddEntry(string entry)
+        {
+            void AddSingleTokenConcept(ulong entryHash)
+            {
+                Data.Hashes.Add(entryHash);
+            }
+
+            if (string.IsNullOrWhiteSpace(entry)) { return; }
+
+
+            if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
+
+            var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 1)
+            {
+                AddToGazeteer(words[0]);
+
+                var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
+                AddSingleTokenConcept(hash);
+
+                if (!words[0].AsSpan().IsLetter())
+                {
+                    Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                }
+
+                return;
+            }
+
+            ulong combinedHash = 0;
+            for (int n = 0; n < words.Length; n++)
+            {
+                AddToGazeteer(words[n]);
+
+                var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[n].AsSpan()) : Spotter.Hash64(words[n].AsSpan());
+                if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
+                if (Data.MultiGramHashes.Count < n + 1)
+                {
+                    Data.MultiGramHashes.Add(new HashSet<ulong>());
+                }
+
+                if (!Data.MultiGramHashes[n].Contains(word_hash))
+                {
+                    Data.MultiGramHashes[n].Add(word_hash);
+                }
+
+                if (!words[n].AsSpan().IsLetter())
+                {
+                    Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                }
+            }
+
+            AddSingleTokenConcept(combinedHash);
+        }
+
         public void AppendList(IEnumerable<string> words)
         {
             foreach (var word in words)
             {
-                var w = word.Trim();
-
-                if (Data.IgnoreOnlyNumeric && int.TryParse(w, out _)) { return; } //Ignore pure numerical entries
-
-                if (w.IndexOfAny(CharacterClasses.WhitespaceCharacters) >= 0)
-                {
-                    var parts = w.Split(CharacterClasses.WhitespaceCharacters, StringSplitOptions.RemoveEmptyEntries);
-
-                    if (parts.Length < 2) { continue; }
-
-                    var hashes = new ulong[parts.Length];
-                    hashes[0] = Data.IgnoreCase ? IgnoreCaseHash64(parts[0].AsSpan()) : Hash64(parts[0].AsSpan());
-                    ulong combined = hashes[0];
-                    for (int i = 1; i < parts.Length; i++)
-                    {
-                        hashes[i] = Data.IgnoreCase ? IgnoreCaseHash64(parts[i].AsSpan()) : Hash64(parts[i].AsSpan());
-                        combined = HashCombine64(combined, hashes[i]);
-                    }
-
-                    Data.Hashes.Add(combined);
-
-                    for (int i = 0; i < hashes.Length; i++)
-                    {
-                        if (Data.MultiGramHashes.Count <= i)
-                        {
-                            Data.MultiGramHashes.Add(new HashSet<ulong>());
-                        }
-                        Data.MultiGramHashes[i].Add(hashes[i]);
-                    }
-                }
-                else
-                {
-                    var hash = Data.IgnoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan());
-                    Data.Hashes.Add(hash);
-                }
+                AddEntry(word);
             }
         }
     }
@@ -399,8 +431,8 @@ namespace Catalyst.Models
     [MessagePack.MessagePackObject(keyAsPropertyName: true)]
     public class Word2SenseTrainingData
     {
-        public ConcurrentDictionary<ulong, int> HashCount { get; set; } = new ConcurrentDictionary<ulong, int>();
-        public ConcurrentDictionary<ulong, ulong[]> Senses { get; set; } = new ConcurrentDictionary<ulong, ulong[]>();
-        public ConcurrentDictionary<ulong, string> Words { get; set; } = new ConcurrentDictionary<ulong, string>();
+        public Dictionary<ulong, int> HashCount { get; set; } = new Dictionary<ulong, int>();
+        public Dictionary<ulong, ulong[]> Senses { get; set; } = new Dictionary<ulong, ulong[]>();
+        public Dictionary<ulong, string> Words { get; set; } = new Dictionary<ulong, string>();
     }
 }

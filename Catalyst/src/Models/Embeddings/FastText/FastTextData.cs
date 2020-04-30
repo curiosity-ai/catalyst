@@ -32,20 +32,7 @@ namespace Catalyst.Models
         public FastText.LossType Loss;
         public QuantizationType VectorQuantization;
 
-        #region IgnoreCaseFix
-
-        // This fixes the mistake made in the naming of this variable (invariant case != ignore case).
-        // As we cannot rename here (due to the serialization using keyAsPropertyName:true), we add a second property
-        // that refers to the same underlying variable. As MessagePack reads properties in the order of GetProperties,
-        // this ensures the new one (IgnoreCase) is set before the old one (InvariantCase), so we don't the stored value
-        private bool ignoreCase = true;
-
-        public bool IgnoreCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        [Obsolete("Wrong property name, use IgnoreCase instead", true)]
-        public bool InvariantCase { get { return ignoreCase; } set { ignoreCase = value; } }
-
-        #endregion IgnoreCaseFix
+        public bool IgnoreCase { get; set; }
 
         public int EntryCount = 0;
         public int LabelCount = 0;
