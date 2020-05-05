@@ -1,4 +1,5 @@
-﻿using Mosaik.Core;
+﻿using Catalyst.Models;
+using Mosaik.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,24 +9,24 @@ namespace Catalyst
 {
     public class PatternUnitPrototype : IPatternUnit
     {
-        public PatternMatchingMode Mode;
-        public bool Optional;
-        public bool CaseSensitive;
-        public PatternUnitType Type;
-        public PartOfSpeech[] POS;
-        public string Suffix;
-        public string Prefix;
-        public string Shape;
-        public string Token;
-        public HashSet<string> Set;
-        public string EntityType;
-        public HashSet<ulong> SetHashes;
-        public ulong TokenHash;
-        public PatternUnitPrototype LeftSide;
-        public PatternUnitPrototype RightSide;
-        public HashSet<char> ValidChars;
-        public int MinLength;
-        public int MaxLength;
+        public PatternMatchingMode Mode { get; set; }
+        public bool Optional { get; set; }
+        public bool CaseSensitive { get; set; }
+        public PatternUnitType Type { get; set; }
+        public PartOfSpeech[] POS { get; set; }
+        public string Suffix { get; set; }
+        public string Prefix { get; set; }
+        public string Shape { get; set; }
+        public string Token { get; set; }
+        public HashSet<string> Set { get; set; }
+        public string EntityType { get; set; }
+        public HashSet<ulong> SetHashes { get; set; }
+        public ulong TokenHash { get; set; }
+        public PatternUnitPrototype LeftSide { get; set; }
+        public PatternUnitPrototype RightSide { get; set; }
+        public HashSet<char> ValidChars { get; set; }
+        public int MinLength { get; set; }
+        public int MaxLength { get; set; }
         public static IPatternUnit Single()           { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Single }; }
         public static IPatternUnit Multiple()         { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Multiple }; }
         public static IPatternUnit ShouldNotMatch()   { return new PatternUnitPrototype() { Mode = PatternMatchingMode.ShouldNotMatch }; }
@@ -134,7 +135,7 @@ namespace Catalyst
         public IPatternUnit WithShape(string shape)
         {
             Type |= PatternUnitType.Shape;
-            Shape = shape.AsSpan().Shape(false);
+            Shape = string.Join(",", shape.Split(PatternUnit.splitChar, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(false)));
             return this;
         }
 

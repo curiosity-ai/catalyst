@@ -233,6 +233,13 @@ namespace Catalyst.Models
         [Key(16)] public int MinLength { get; set; }
         [Key(17)] public int MaxLength { get; set; }
 
+        internal const char[] splitChar = new[] { ',' };
+
+        private readonly string[] _splitSuffix;
+        private readonly string[] _splitPrefix;
+        private readonly HashSet<string> _splitEntityType;
+        private readonly HashSet<string> _splitShape;
+
         public PatternUnit(IPatternUnit prototype)
         {
             var p = (PatternUnitPrototype)prototype;
@@ -254,6 +261,11 @@ namespace Catalyst.Models
             ValidChars = p.ValidChars;
             MinLength = p.MinLength;
             MaxLength = p.MaxLength;
+
+            _splitSuffix = Suffix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitPrefix = Prefix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape = Shape is object ? new HashSet<string>(Shape.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
         }
 
         public PatternUnit()
@@ -279,6 +291,11 @@ namespace Catalyst.Models
             TokenHash = tokenHash;
             LeftSide = leftSide;
             RightSide = rightSide;
+
+            _splitSuffix     = Suffix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitPrefix     = Prefix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape      = Shape is object ? new HashSet<string>(Shape.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
         }
 
         #region Match
@@ -298,33 +315,33 @@ namespace Catalyst.Models
             }
             else
             {
-                if (isMatch && (Type & PatternUnitType.Length) == PatternUnitType.Length) { isMatch &= MatchLength(ref token); }
-                if (isMatch && (Type & PatternUnitType.Token) == PatternUnitType.Token) { isMatch &= MatchToken(ref token); }
-                if (isMatch && (Type & PatternUnitType.Shape) == PatternUnitType.Shape) { isMatch &= MatchShape(ref token); }
-                if (isMatch && (Type & PatternUnitType.WithChars) == PatternUnitType.WithChars) { isMatch &= MatchWithChars(ref token); }
-                //if (isMatch && (Type & PatternUnitType.Script) == PatternUnitType.Script)                                 { isMatch &= MatchScript          (ref token); }
-                if (isMatch && (Type & PatternUnitType.POS) == PatternUnitType.POS) { isMatch &= MatchPOS(ref token); }
-                if (isMatch && (Type & PatternUnitType.MultiplePOS) == PatternUnitType.MultiplePOS) { isMatch &= MatchMultiplePOS(ref token); }
-                if (isMatch && (Type & PatternUnitType.Suffix) == PatternUnitType.Suffix) { isMatch &= MatchSuffix(ref token); }
-                if (isMatch && (Type & PatternUnitType.Prefix) == PatternUnitType.Prefix) { isMatch &= MatchPrefix(ref token); }
-                if (isMatch && (Type & PatternUnitType.Set) == PatternUnitType.Set) { isMatch &= MatchSet(ref token); }
-                if (isMatch && (Type & PatternUnitType.Entity) == PatternUnitType.Entity) { isMatch &= MatchEntity(ref token); }
-                if (isMatch && (Type & PatternUnitType.NotEntity) == PatternUnitType.NotEntity) { isMatch &= !MatchEntity(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsDigit) == PatternUnitType.IsDigit) { isMatch &= MatchIsDigit(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsNumeric) == PatternUnitType.IsNumeric) { isMatch &= MatchIsNumeric(ref token); }
-                if (isMatch && (Type & PatternUnitType.HasNumeric) == PatternUnitType.HasNumeric) { isMatch &= MatchHasNumeric(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsAlpha) == PatternUnitType.IsAlpha) { isMatch &= MatchIsAlpha(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsLetterOrDigit) == PatternUnitType.IsLetterOrDigit) { isMatch &= MatchIsLetterOrDigit(ref token); }
+                if (isMatch && (Type & PatternUnitType.Length) == PatternUnitType.Length)                                   { isMatch &= MatchLength(ref token); }
+                if (isMatch && (Type & PatternUnitType.Token) == PatternUnitType.Token)                                     { isMatch &= MatchToken(ref token); }
+                if (isMatch && (Type & PatternUnitType.Shape) == PatternUnitType.Shape)                                     { isMatch &= MatchShape(ref token); }
+                if (isMatch && (Type & PatternUnitType.WithChars) == PatternUnitType.WithChars)                             { isMatch &= MatchWithChars(ref token); }
+                //if (isMatch && (Type & PatternUnitType.Script) == PatternUnitType.Script)                                 { isMatch &= MatchScript(ref token); }
+                if (isMatch && (Type & PatternUnitType.POS) == PatternUnitType.POS)                                         { isMatch &= MatchPOS(ref token); }
+                if (isMatch && (Type & PatternUnitType.MultiplePOS) == PatternUnitType.MultiplePOS)                         { isMatch &= MatchMultiplePOS(ref token); }
+                if (isMatch && (Type & PatternUnitType.Suffix) == PatternUnitType.Suffix)                                   { isMatch &= MatchSuffix(ref token); }
+                if (isMatch && (Type & PatternUnitType.Prefix) == PatternUnitType.Prefix)                                   { isMatch &= MatchPrefix(ref token); }
+                if (isMatch && (Type & PatternUnitType.Set) == PatternUnitType.Set)                                         { isMatch &= MatchSet(ref token); }
+                if (isMatch && (Type & PatternUnitType.Entity) == PatternUnitType.Entity)                                   { isMatch &= MatchEntity(ref token); }
+                if (isMatch && (Type & PatternUnitType.NotEntity) == PatternUnitType.NotEntity)                             { isMatch &= !MatchEntity(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsDigit) == PatternUnitType.IsDigit)                                 { isMatch &= MatchIsDigit(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsNumeric) == PatternUnitType.IsNumeric)                             { isMatch &= MatchIsNumeric(ref token); }
+                if (isMatch && (Type & PatternUnitType.HasNumeric) == PatternUnitType.HasNumeric)                           { isMatch &= MatchHasNumeric(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsAlpha) == PatternUnitType.IsAlpha)                                 { isMatch &= MatchIsAlpha(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsLetterOrDigit) == PatternUnitType.IsLetterOrDigit)                 { isMatch &= MatchIsLetterOrDigit(ref token); }
                 //if (isMatch && (Type & PatternUnitType.IsLatin) == PatternUnitType.IsLatin)                               { isMatch &= MatchIsLatin         (ref token); }
-                if (isMatch && (Type & PatternUnitType.IsEmoji) == PatternUnitType.IsEmoji) { isMatch &= MatchIsEmoji(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsPunctuation) == PatternUnitType.IsPunctuation) { isMatch &= MatchIsPunctuation(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsLowerCase) == PatternUnitType.IsLowerCase) { isMatch &= MatchIsLowerCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsUpperCase) == PatternUnitType.IsUpperCase) { isMatch &= MatchIsUpperCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsTitleCase) == PatternUnitType.IsTitleCase) { isMatch &= MatchIsTitleCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.LikeURL) == PatternUnitType.LikeURL) { isMatch &= MatchLikeURL(ref token); }
-                if (isMatch && (Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail) { isMatch &= MatchLikeEmail(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis) { isMatch &= MatchIsOpeningParenthesis(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis) { isMatch &= MatchIsClosingParenthesis(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsEmoji) == PatternUnitType.IsEmoji)                                 { isMatch &= MatchIsEmoji(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsPunctuation) == PatternUnitType.IsPunctuation)                     { isMatch &= MatchIsPunctuation(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsLowerCase) == PatternUnitType.IsLowerCase)                         { isMatch &= MatchIsLowerCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsUpperCase) == PatternUnitType.IsUpperCase)                         { isMatch &= MatchIsUpperCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsTitleCase) == PatternUnitType.IsTitleCase)                         { isMatch &= MatchIsTitleCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.LikeURL) == PatternUnitType.LikeURL)                                 { isMatch &= MatchLikeURL(ref token); }
+                if (isMatch && (Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail)                             { isMatch &= MatchLikeEmail(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis)       { isMatch &= MatchIsOpeningParenthesis(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis)       { isMatch &= MatchIsClosingParenthesis(ref token); }
             }
 
             return Mode == PatternMatchingMode.ShouldNotMatch ? !isMatch : isMatch;
@@ -369,7 +386,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchShape(ref Token token)
         {
-            return token.ValueAsSpan.Shape(false) == Shape;
+            return _splitShape.Contains(token.ValueAsSpan.Shape(compact: false));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -397,13 +414,27 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchSuffix(ref Token token)
         {
-            return token.ValueAsSpan.EndsWith(Suffix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            foreach(var suffix in _splitSuffix)
+            {
+                if (token.ValueAsSpan.EndsWith(suffix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchPrefix(ref Token token)
         {
-            return token.ValueAsSpan.StartsWith(Prefix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            foreach (var prefix in _splitPrefix)
+            {
+                if (token.ValueAsSpan.StartsWith(prefix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -424,7 +455,7 @@ namespace Catalyst.Models
 
             foreach (var et in token.EntityTypes)
             {
-                if (et.Type == EntityType) { return true; }
+                if(_splitEntityType.Contains(et.Type)) { return true; }
             }
             return false;
         }
