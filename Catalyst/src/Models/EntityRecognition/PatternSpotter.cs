@@ -233,7 +233,7 @@ namespace Catalyst.Models
         [Key(16)] public int MinLength { get; set; }
         [Key(17)] public int MaxLength { get; set; }
 
-        internal const char[] splitChar = new[] { ',' };
+        internal readonly static char[] splitChar = new [] { ',' };
 
         private readonly string[] _splitSuffix;
         private readonly string[] _splitPrefix;
@@ -303,6 +303,7 @@ namespace Catalyst.Models
         public bool IsMatch(ref Token token)
         {
             bool isMatch = true;
+
             if (token.Length < 1) { return false; } //Empty tokens never match
 
             if (Mode == PatternMatchingMode.And)
