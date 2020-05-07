@@ -234,6 +234,7 @@ namespace Catalyst.Models
         [Key(17)] public int MaxLength { get; set; }
 
         internal readonly static char[] splitChar = new [] { ',' };
+        internal readonly static char[] splitCharWithWhitespaces = splitChar.Concat(CharacterClasses.WhitespaceCharacters).ToArray();
 
         private readonly string[] _splitSuffix;
         private readonly string[] _splitPrefix;
@@ -262,10 +263,10 @@ namespace Catalyst.Models
             MinLength = p.MinLength;
             MaxLength = p.MaxLength;
 
-            _splitSuffix = Suffix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitPrefix = Prefix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitSuffix = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitPrefix = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape = Shape is object ? new HashSet<string>(Shape.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape = Shape is object ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)) : null;
         }
 
         public PatternUnit()
@@ -292,10 +293,10 @@ namespace Catalyst.Models
             LeftSide = leftSide;
             RightSide = rightSide;
 
-            _splitSuffix     = Suffix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitPrefix     = Prefix?.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitSuffix     = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
+            _splitPrefix     = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape      = Shape is object ? new HashSet<string>(Shape.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape      = Shape is object ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)) : null;
         }
 
         #region Match
@@ -387,7 +388,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchShape(ref Token token)
         {
-            return _splitShape.Contains(token.ValueAsSpan.Shape(compact: false));
+            return _splitShape is object && _splitShape.Contains(token.ValueAsSpan.Shape(compact: false));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -415,6 +416,8 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchSuffix(ref Token token)
         {
+            if (_splitSuffix is null) return false;
+
             foreach(var suffix in _splitSuffix)
             {
                 if (token.ValueAsSpan.EndsWith(suffix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
@@ -428,6 +431,8 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchPrefix(ref Token token)
         {
+            if (_splitPrefix is null) return false;
+
             foreach (var prefix in _splitPrefix)
             {
                 if (token.ValueAsSpan.StartsWith(prefix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
@@ -452,7 +457,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchEntity(ref Token token)
         {
-            if (token.EntityTypes is null) { return false; }
+            if (token.EntityTypes is null || _splitEntityType is null) { return false; }
 
             foreach (var et in token.EntityTypes)
             {

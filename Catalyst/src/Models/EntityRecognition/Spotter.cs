@@ -263,7 +263,7 @@ namespace Catalyst.Models
                                     continue;
                                 }
 
-                                if (!trainingData.Words.ContainsKey(hash)) { trainingData.Words[hash] = Data.IgnoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
+                                if (!Words.ContainsKey(hash)) { Words[hash] = Data.IgnoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
 
                                 stack.Enqueue(hash);
                                 ulong combined = stack.ElementAt(0);
@@ -271,14 +271,14 @@ namespace Catalyst.Models
                                 for (int j = 1; j < stack.Count; j++)
                                 {
                                     combined = HashCombine64(combined, stack.ElementAt(j));
-                                    if (trainingData.HashCount.ContainsKey(combined))
+                                    if (HashCount.ContainsKey(combined))
                                     {
-                                        trainingData.HashCount[combined]++;
+                                        HashCount[combined]++;
                                     }
                                     else
                                     {
-                                        trainingData.Senses[combined] = stack.Take(j + 1).ToArray();
-                                        trainingData.HashCount[combined] = 1;
+                                        Senses[combined] = stack.Take(j + 1).ToArray();
+                                        HashCount[combined] = 1;
                                     }
                                 }
 
@@ -313,12 +313,12 @@ namespace Catalyst.Models
             int thresholdRare   = (int)Math.Floor(tooRare * docCount);
             int thresholdCommon = (int)Math.Floor(tooCommon * docCount);
 
-            var toKeep = trainingData.HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
+            var toKeep = HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
                                                 .Select(kv => kv.Key).ToArray();
 
             foreach (var key in toKeep)
             {
-                if (trainingData.Senses.TryGetValue(key, out var hashes) && trainingData.HashCount.TryGetValue(key, out var count))
+                if (Senses.TryGetValue(key, out var hashes) && HashCount.TryGetValue(key, out var count))
                 {
                     Data.Hashes.Add(key);
                     for (int i = 0; i < hashes.Length; i++)
