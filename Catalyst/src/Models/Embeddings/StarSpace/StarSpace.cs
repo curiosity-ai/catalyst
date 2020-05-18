@@ -237,6 +237,7 @@ namespace Catalyst.Models
                         mps.TrainingHistory = epoch == 0 ? trainingHistory : null;
                         var t = new Thread(() => ThreadTrain(mps));
                         t.Priority = Data.ThreadPriority;
+                        t.IsBackground = true; // 2020-05-12 DWR: Set to background so that if work is still going on on this thread when the host app is killed, the thread doesn't hold up the shutdown
                         t.Start();
                         return t;
                     }).ToArray();
