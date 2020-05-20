@@ -220,7 +220,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void AutoTuneTrain(IEnumerable<IDocument> trainDocuments, IEnumerable<IDocument> testDocuments, AutoTuneOptions options, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default)
+        public void AutoTuneTrain(IEnumerable<IDocument> trainDocuments, IEnumerable<IDocument> testDocuments, AutoTuneOptions options, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, CancellationToken cancellationTokenForAutoTune = default)
         {
             if (Data.Type != ModelType.Supervised) throw new Exception("Autotrain is only supported for supervised (i.e. classification) models. Set Data.Type = ModelType.Supervised before calling it.");
 
@@ -264,7 +264,7 @@ namespace Catalyst.Models
                             iterations++;
                             m.SetOperations(iterations).EmitPartial($"\n\n-------------------------\n\nMeasured F1= {currentBestF1}\nOverall best F1 = {overallBestF1}\n\n-------------------------\n\n");
                         }
-                    } while (autotune.Next());
+                    } while (autotune.Next(cancellationTokenForAutoTune));
                 }
             }
         }
@@ -1410,10 +1410,7 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        if(lbl.Value != Data.Entries[Data.EntryHashToIndex[hash]].Word)
-                        {
-                            Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value, Data.Entries[Data.EntryHashToIndex[hash]].Word);
-                        }
+                        Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value, Data.Entries[Data.EntryHashToIndex[hash]].Word);
                     }
                 }
             }
@@ -1961,9 +1958,9 @@ namespace Catalyst.Models
                 StoreBest();
             }
 
-            public bool Next()
+            public bool Next(CancellationToken cancellationToken)
             {
-                if(_stopWatch.ElapsedMilliseconds > _options.MaximumDuration.TotalMilliseconds || _trials > _options.MaximumTrials)
+                if(_stopWatch.ElapsedMilliseconds > _options.MaximumDuration.TotalMilliseconds || _trials > _options.MaximumTrials || cancellationToken.IsCancellationRequested)
                 {
                     GetBest();
                     return false;
