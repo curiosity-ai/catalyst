@@ -1385,7 +1385,10 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value.Value, Data.Labels[Data.LabelHashToIndex[lbl.Key]].Word);
+                        if(Data.Labels[Data.LabelHashToIndex[lbl.Key]].Word != lbl.Value.Value)
+                        {
+                            Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value.Value, Data.Labels[Data.LabelHashToIndex[lbl.Key]].Word);
+                        }
                     }
                 }
             }
@@ -1407,7 +1410,10 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value, Data.Entries[Data.EntryHashToIndex[hash]].Word);
+                        if(lbl.Value != Data.Entries[Data.EntryHashToIndex[hash]].Word)
+                        {
+                            Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value, Data.Entries[Data.EntryHashToIndex[hash]].Word);
+                        }
                     }
                 }
             }
