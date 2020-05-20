@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MessagePack;
@@ -164,6 +165,8 @@ namespace Catalyst.Models
             {
                 a.OutputLength = a.Data.EntryCount;
             }
+
+            a.NumberOfTokens = a.Data.EntryHashToIndex?.Count ?? 0;
             a.InitializeEntries();
             return a;
         }
@@ -217,11 +220,90 @@ namespace Catalyst.Models
             }
         }
 
+        public void AutoTuneTrain(IEnumerable<IDocument> trainDocuments, IEnumerable<IDocument> testDocuments, AutoTuneOptions options, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default)
+        {
+            if (Data.Type != ModelType.Supervised) throw new Exception("Autotrain is only supported for supervised (i.e. classification) models. Set Data.Type = ModelType.Supervised before calling it.");
+
+            InputData inputData;
+            CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
+            using (var scope = Logger.BeginScope($"Training Vectorizer '{Tag}' of type {Data.Type} from documents"))
+            {
+                using (var m = new Measure(Logger, "Document parsing", 1))
+                {
+                    inputData = ProcessDocuments(trainDocuments, ignorePattern, parallelOptions);
+                    m.SetOperations(inputData.docCount);
+                }
+
+                int iterations = 0;
+                using (var m = new Measure(Logger, "Autotunning model"))
+                {
+                    var autotune = new AutoTune(Data, options);
+                    float? overallBestF1 = null;
+
+                    do
+                    {
+                        autotune.ResetDataForTraining();
+                        m.EmitPartial(autotune.GetCurrent());
+                        using (var m2 = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
+                        {
+                            DoTraining(inputData, cancellationToken);
+                        }
+
+                        using (new Measure(Logger, "Computing test predictions"))
+                        {
+                            var predTest = testDocuments.AsParallel().Select(d => (Doc: d, Pred: Predict(d))).ToDictionary(d => d.Doc, d => d.Pred);
+                            var stats   = ComputeStats(predTest);
+                            var currentBestF1 = stats.Max(v => v.F1);
+
+                            if(overallBestF1 is null || overallBestF1 < currentBestF1)
+                            {
+                                overallBestF1 = currentBestF1;
+                                autotune.StoreBest();
+                            }
+
+                            iterations++;
+                            m.SetOperations(iterations).EmitPartial($"\n\n-------------------------\n\nMeasured F1= {currentBestF1}\nOverall best F1 = {overallBestF1}\n\n-------------------------\n\n");
+                        }
+                    } while (autotune.Next());
+                }
+            }
+        }
+
+        private static (float Cutoff, float Precision, float Recall, float F1)[] ComputeStats(Dictionary<IDocument, Dictionary<string, float>> predictions)
+        {
+            return Enumerable.Range(40, 20)
+                             .Select(i => i / 100f) //Cutoff range: 0.4f to 0.6f
+                             .Select(cutoff =>
+                                (Cutoff: cutoff,
+                                Predictions: predictions.Select(kv =>
+                                {
+                                    return (TruePositive: kv.Key.Labels.Count(lbl => kv.Value.TryGetValue(lbl, out var score) && score > cutoff),
+                                            FalsePositive: kv.Value.Count(pred => pred.Value > cutoff && !kv.Key.Labels.Contains(pred.Key)),
+                                            Count: kv.Key.Labels.Count);
+                                })
+                                     .ToArray()
+                                )
+                             )
+                             .Select(results =>
+                             {
+                                 var TP = (float)results.Predictions.Sum(r => r.TruePositive);
+                                 var FP = (float)results.Predictions.Sum(r => r.FalsePositive);
+                                 var precision = TP / (TP + FP);
+                                 var recall = TP / (results.Predictions.Sum(r => r.Count));
+                                 return (Cutoff: results.Cutoff, Precision: precision, Recall: recall, F1: 2 * (precision * recall) / (precision + recall));
+                             })
+                             .ToArray();
+        }
+
         public void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus = null)
         {
             // If there are no documents to process then we can't perform any training (maybe documents WERE provided to the Train method but they all had to be ignored for one reason or another - eg. wrong language)
             if (ID.docCount < 1)
                 return;
+
+            TokenCount = 0;
+            PartialTokenCount = 0;
+            NumberOfTokens = 0;
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -1302,7 +1384,7 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value.Value, Data.Entries[Data.EntryHashToIndex[lbl.Key]].Word);
+                        Logger.LogWarning("Hash colision between {ONE} and {TWO}", lbl.Value.Value, Data.Labels[Data.LabelHashToIndex[lbl.Key]].Word);
                     }
                 }
             }
@@ -1836,6 +1918,142 @@ namespace Catalyst.Models
             public ConcurrentDictionary<uint, SingleToken> uniqueIDs = new ConcurrentDictionary<uint, SingleToken>();
             public ConcurrentDictionary<uint, SingleToken> uniqueTokens = new ConcurrentDictionary<uint, SingleToken>();
             public int docCount;
+        }
+
+        public class AutoTuneOptions
+        {
+            public TimeSpan MaximumDuration { get; set; } = TimeSpan.FromMinutes(15);
+            public int MaximumTrials { get; set; } = int.MaxValue;
+
+            public bool UpdateEpoch         { get; set; } = true;
+            public bool UpdateLearningRate  { get; set; } = true;
+            public bool UpdateDimensions    { get; set; } = true;
+            public bool UpdateWordNgrams    { get; set; } = true;
+            public bool UpdateBuckets       { get; set; } = true;
+        }
+
+        private class AutoTune
+        {
+            private readonly FastTextData _dataHolder;
+            private readonly AutoTuneOptions _options;
+            private int _bestEpoch;
+            private float _bestLearningRate;
+            private int _bestDimensions;
+            private int _bestMaximumWordNgrams;
+            private uint _bestBuckets;
+            private Stopwatch _stopWatch;
+            private int _trials = 0;
+            private readonly StringBuilder _description; 
+
+            public AutoTune(FastTextData data, AutoTuneOptions options)
+            {
+                _dataHolder = data;
+                _options = options;
+                _stopWatch = Stopwatch.StartNew();
+                _description = new StringBuilder();
+                StoreBest();
+            }
+
+            public bool Next()
+            {
+                if(_stopWatch.ElapsedMilliseconds > _options.MaximumDuration.TotalMilliseconds || _trials > _options.MaximumTrials)
+                {
+                    GetBest();
+                    return false;
+                }
+
+                float t = (float)_stopWatch.ElapsedMilliseconds / (float)_options.MaximumDuration.TotalMilliseconds;
+
+                _description.Clear();
+                _description.Append("Autotunning at t = ").Append(t).AppendLine();
+                _description.Append("Training with values:").AppendLine();
+
+
+                if (_options.UpdateEpoch)
+                {
+                    _dataHolder.Epoch = (int)UpdateArgGauss(_bestEpoch, 5, 100, 2.8f, 2.5f, t, false);
+                    _description.Append("Epoch = ").Append(_dataHolder.Epoch).AppendLine();
+                }
+
+                if (_options.UpdateLearningRate)
+                {
+                    _dataHolder.LearningRate = UpdateArgGauss(_bestLearningRate, 0.01f, 1f, 1.9f, 1.0f, t, false);
+                    _description.Append("LearningRate = ").Append(_dataHolder.LearningRate).AppendLine();
+                }
+
+                if (_options.UpdateDimensions)
+                {
+                    _dataHolder.Dimensions = (int)UpdateArgGauss(_bestDimensions, 96, 512, 1.4f, 0.3f, t, false);
+                    _description.Append("Dimensions = ").Append(_dataHolder.Dimensions).AppendLine();
+                }
+
+                if (_options.UpdateWordNgrams)
+                {
+                    _dataHolder.MaximumWordNgrams = (int)UpdateArgGauss(_bestMaximumWordNgrams, 1, 5, 4.3f, 2.4f, t, true);
+                    _description.Append("MaximumWordNgrams = ").Append(_dataHolder.MaximumWordNgrams).AppendLine();
+                }
+
+                if (_options.UpdateBuckets)
+                {
+                    _dataHolder.Buckets = (uint)UpdateArgGauss(_bestBuckets, 100_000, 5_000_000, 2.0f, 1.5f, t, false);
+                    _description.Append("Buckets = ").Append(_dataHolder.Buckets).AppendLine();
+                }
+
+                _trials++;
+                return true;
+            }
+
+            public string GetCurrent()
+            {
+                return _description.ToString();
+            }
+
+            public void StoreBest()
+            {
+                _bestEpoch             = _dataHolder.Epoch;
+                _bestLearningRate      = _dataHolder.LearningRate;
+                _bestDimensions        = _dataHolder.Dimensions;
+                _bestMaximumWordNgrams = _dataHolder.MaximumWordNgrams;
+                _bestBuckets           = _dataHolder.Buckets;
+            }
+
+            public void GetBest()
+            {
+                _dataHolder.Epoch              =  _bestEpoch;
+                _dataHolder.LearningRate       =  _bestLearningRate;
+                _dataHolder.Dimensions         =  _bestDimensions;
+                _dataHolder.MaximumWordNgrams  =  _bestMaximumWordNgrams;
+                _dataHolder.Buckets            =  _bestBuckets;
+            }
+
+            public float UpdateArgGauss(float val, float min, float max, float startSigma, float endSigma, float t, bool linear)
+            {
+                return Math.Min(Math.Max(GetArgGauss(val, startSigma, endSigma, t, linear), min), max);
+            }
+
+            private float GetArgGauss(float val, float startSigma, float endSigma, float t, bool linear)
+            {
+                var stdDev = startSigma -((startSigma - endSigma) / 0.5) * Math.Min(0.5, Math.Max((t - 0.25), 0.0));
+                var mean = 0.0;
+                
+                var u1 = 1.0 - ThreadSafeRandom.NextDouble();
+                var u2 = 1.0 - ThreadSafeRandom.NextDouble();
+                var coeff = mean + stdDev * (Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                var updateCoeff = linear ? coeff : Math.Pow(2.0, coeff);
+                return (float)(linear ? (updateCoeff + val) : (updateCoeff * val));
+            }
+
+            internal void ResetDataForTraining()
+            {
+                _dataHolder.EntryCount = 0;
+                _dataHolder.LabelCount = 0;
+                _dataHolder.SubwordCount = 0;
+                _dataHolder.EntryHashToIndex = new Dictionary<uint, int>();
+                _dataHolder.Entries = new Dictionary<int, Entry>();
+                _dataHolder.SubwordHashToIndex = new Dictionary<uint, int>();
+                _dataHolder.LabelHashToIndex = new Dictionary<uint, int>();
+                _dataHolder.Labels = new Dictionary<int, Entry>();
+            }
         }
     }
 }

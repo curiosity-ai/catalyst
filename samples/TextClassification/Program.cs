@@ -47,6 +47,9 @@ namespace TextClassification
 
             fastText.Train(trainDocs);
 
+            //You can also auto-tune the model using the algorithm from https://ai.facebook.com/blog/fasttext-blog-post-open-source-in-brief/
+            fastText.AutoTuneTrain(trainDocs, testDocs, new FastText.AutoTuneOptions());
+
             //Compute predictions
             Dictionary<IDocument, Dictionary<string, float>> predTrain, predTest;
             using (new Measure(Logger, "Computing train-set predictions", trainDocs.Length))
