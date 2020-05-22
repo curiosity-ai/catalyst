@@ -1971,14 +1971,16 @@ namespace Catalyst.Models
                     return false;
                 }
 
-                float t = (float)_stopWatch.ElapsedMilliseconds / (float)_options.MaximumDuration.TotalMilliseconds;
+                float t1 = (float)_stopWatch.ElapsedMilliseconds / (float)_options.MaximumDuration.TotalMilliseconds;
+                float t2 = (float)_trials / (float)_options.MaximumTrials;
+                float t = Math.Max(t1, t2);
 
                 _description.Clear();
-                _description.Append("Autotunning at t = ").Append(t).AppendLine();
+                _description.Append("Autotunning model, at ").Append(Math.Round(100*t,1)).Append("%").AppendLine().AppendLine();
 
                 if (_bestMetric.HasValue)
                 {
-                    _description.Append("Current best metric = ").Append(_bestMetric).AppendLine();
+                    _description.Append("Best metric = ").Append(_bestMetric).AppendLine();
 
                     if (_options.UpdateEpoch)
                     {
@@ -1987,7 +1989,7 @@ namespace Catalyst.Models
 
                     if (_options.UpdateLearningRate)
                     {
-                        _description.Append("\tLearningRate = ").Append(_bestLearningRate).AppendLine();
+                        _description.Append("\tLearning Rate = ").Append(_bestLearningRate).AppendLine();
                     }
 
                     if (_options.UpdateDimensions)
@@ -1997,7 +1999,7 @@ namespace Catalyst.Models
 
                     if (_options.UpdateWordNgrams)
                     {
-                        _description.Append("\tMaximumWordNgrams = ").Append(_bestMaximumWordNgrams).AppendLine();
+                        _description.Append("\tMaximum Word Ngrams = ").Append(_bestMaximumWordNgrams).AppendLine();
                     }
 
                     if (_options.UpdateBuckets)
@@ -2008,7 +2010,7 @@ namespace Catalyst.Models
                 }
 
 
-                _description.Append("Next training with:").AppendLine();
+                _description.Append("Now training with:").AppendLine();
 
                 if (_options.UpdateEpoch)
                 {
@@ -2018,25 +2020,25 @@ namespace Catalyst.Models
 
                 if (_options.UpdateLearningRate)
                 {
-                    _dataHolder.LearningRate = UpdateArgGauss(_bestLearningRate, 0.01f, 1f, 1.9f, 1.0f, t, false);
-                    _description.Append("\tLearningRate = ").Append(_dataHolder.LearningRate).AppendLine();
+                    _dataHolder.LearningRate = (float)Math.Round(UpdateArgGauss(_bestLearningRate, 0.01f, 1f, 1.9f, 1.0f, t, false), 3);
+                    _description.Append("\tLearning Rate = ").Append(_dataHolder.LearningRate).AppendLine();
                 }
 
                 if (_options.UpdateDimensions)
                 {
-                    _dataHolder.Dimensions = (int)UpdateArgGauss(_bestDimensions, 96, 512, 1.4f, 0.3f, t, false);
+                    _dataHolder.Dimensions = (int)(Math.Ceiling(UpdateArgGauss(_bestDimensions, 96, 512, 1.4f, 0.3f, t, false) / 16) * 16);
                     _description.Append("\tDimensions = ").Append(_dataHolder.Dimensions).AppendLine();
                 }
 
                 if (_options.UpdateWordNgrams)
                 {
                     _dataHolder.MaximumWordNgrams = (int)UpdateArgGauss(_bestMaximumWordNgrams, 1, 5, 4.3f, 2.4f, t, true);
-                    _description.Append("\tMaximumWordNgrams = ").Append(_dataHolder.MaximumWordNgrams).AppendLine();
+                    _description.Append("\tMaximum Word Ngrams = ").Append(_dataHolder.MaximumWordNgrams).AppendLine();
                 }
 
                 if (_options.UpdateBuckets)
                 {
-                    _dataHolder.Buckets = (uint)UpdateArgGauss(_bestBuckets, 100_000, 5_000_000, 2.0f, 1.5f, t, false);
+                    _dataHolder.Buckets = (uint)(Math.Ceiling(UpdateArgGauss(_bestBuckets, 100_000, 5_000_000, 2.0f, 1.5f, t, false) / 10_000)* 10_000);
                     _description.Append("\tBuckets = ").Append(_dataHolder.Buckets).AppendLine();
                 }
 
