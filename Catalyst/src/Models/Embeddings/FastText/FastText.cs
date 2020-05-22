@@ -213,7 +213,7 @@ namespace Catalyst.Models
 
                 using (var m = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
                 {
-                    DoTraining(inputData, cancellationToken, previousTrainingCorpus, trainingStatus);
+                    BeginTraining(inputData, cancellationToken, previousTrainingCorpus, trainingStatus);
                 }
             }
         }
@@ -248,7 +248,7 @@ namespace Catalyst.Models
 
                         using (var m2 = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
                         {
-                            DoTraining(inputData, cancellationToken, null, trainingStatus);
+                            BeginTraining(inputData, cancellationToken, null, trainingStatus);
                         }
 
                         using (new Measure(Logger, "Computing test predictions"))
@@ -297,7 +297,9 @@ namespace Catalyst.Models
                              .ToArray();
         }
 
-        private void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus, Action<TrainingUpdate> trainingStatus)
+
+        //This is an internal method, but is exposed because it is used externally with a custom input data processing
+        public void BeginTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus, Action<TrainingUpdate> trainingStatus)
         {
             // If there are no documents to process then we can't perform any training (maybe documents WERE provided to the Train method but they all had to be ignored for one reason or another - eg. wrong language)
             if (ID.docCount < 1)
