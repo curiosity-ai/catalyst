@@ -27,8 +27,6 @@ namespace Catalyst.Models
 
         private SharedState Shared;
 
-        public event EventHandler<TrainingUpdate> TrainingStatus;
-
         private StarSpace(Language language, int version, string tag) : base(language, version, tag, compress: true)
         {
             _HashEOS_ = HashToken(_EOS_.AsSpan(), PartOfSpeech.NONE, Language.Any);
@@ -114,7 +112,7 @@ namespace Catalyst.Models
             return deleted;
         }
 
-        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default)
+        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, Action<TrainingUpdate> trainingStatus = null)
         {
             InputData inputData;
 
@@ -132,7 +130,7 @@ namespace Catalyst.Models
 
                 using (var m = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
                 {
-                    DoTraining(inputData, cancellationToken);
+                    DoTraining(inputData, cancellationToken, trainingStatus);
                 }
             }
         }
@@ -204,7 +202,7 @@ namespace Catalyst.Models
             return ID;
         }
 
-        public void DoTraining(InputData inputData, CancellationToken cancellationToken)
+        public void DoTraining(InputData inputData, CancellationToken cancellationToken, Action<TrainingUpdate> trainingStatus)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -235,7 +233,7 @@ namespace Catalyst.Models
                         mps.FinishRate = rate - decrPerEpoch;
                         mps.Epoch = epoch;
                         mps.TrainingHistory = epoch == 0 ? trainingHistory : null;
-                        var t = new Thread(() => ThreadTrain(mps));
+                        var t = new Thread(() => ThreadTrain(mps, trainingStatus));
                         t.Priority = Data.ThreadPriority;
                         t.IsBackground = true; // 2020-05-12 DWR: Set to background so that if work is still going on on this thread when the host app is killed, the thread doesn't hold up the shutdown
                         t.Start();
@@ -390,7 +388,7 @@ namespace Catalyst.Models
             }
         }
 
-        private void ThreadTrain(ThreadState state)
+        private void ThreadTrain(ThreadState state, Action<TrainingUpdate> trainingStatus)
         {
             // If we decrement after *every* sample, precision causes us to lose the update.
             int kDecrStep = 1000;
@@ -483,7 +481,7 @@ namespace Catalyst.Models
                     state.Measure.EmitPartial($"E:{state.Epoch} P:{100f * ((float)i / numSamples):n2}% L:{curLos:n8}");
 
                     var update = new TrainingUpdate().At(state.Epoch + ((float)i / numSamples), Data.Epoch, curLos).Processed(i, sw.Elapsed + elapsedTillNow);
-                    TrainingStatus?.Invoke(this, update);
+                    trainingStatus?.Invoke(update);
                     state.TrainingHistory.Append(update);
                 }
             }

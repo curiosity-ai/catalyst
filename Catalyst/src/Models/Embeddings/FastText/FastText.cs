@@ -69,8 +69,6 @@ namespace Catalyst.Models
 
         public TrainingHistory TrainingHistory => Data.TrainingHistory;
 
-        public event EventHandler<TrainingUpdate> TrainingStatus;
-
         public FastText(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
             //Has to be done here, after POSHashes is initialized
@@ -196,7 +194,7 @@ namespace Catalyst.Models
             throw new FileNotFoundException(nameof(FastTextData) + "-Matrix");
         }
 
-        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, VectorizerTrainingData previousTrainingCorpus = null)
+        public void Train(IEnumerable<IDocument> documents, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, VectorizerTrainingData previousTrainingCorpus = null, Action<TrainingUpdate> trainingStatus = null)
         {
             InputData inputData;
             CancellationToken cancellationToken = parallelOptions?.CancellationToken ?? default;
@@ -215,12 +213,12 @@ namespace Catalyst.Models
 
                 using (var m = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
                 {
-                    DoTraining(inputData, cancellationToken, previousTrainingCorpus);
+                    DoTraining(inputData, cancellationToken, previousTrainingCorpus, trainingStatus);
                 }
             }
         }
 
-        public void AutoTuneTrain(IEnumerable<IDocument> trainDocuments, IEnumerable<IDocument> testDocuments, AutoTuneOptions options, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, CancellationToken cancellationTokenForAutoTune = default)
+        public void AutoTuneTrain(IEnumerable<IDocument> trainDocuments, IEnumerable<IDocument> testDocuments, AutoTuneOptions options, Func<IToken, bool> ignorePattern = null, ParallelOptions parallelOptions = default, CancellationToken cancellationTokenForAutoTune = default, Action<TrainingUpdate> trainingStatus = null, Action<string> autoTuneStep = null)
         {
             if (Data.Type != ModelType.Supervised) throw new Exception("Autotrain is only supported for supervised (i.e. classification) models. Set Data.Type = ModelType.Supervised before calling it.");
 
@@ -243,10 +241,14 @@ namespace Catalyst.Models
                     do
                     {
                         autotune.ResetDataForTraining();
+                        
+                        autoTuneStep?.Invoke(autotune.GetCurrent());
+
                         m.EmitPartial(autotune.GetCurrent());
+
                         using (var m2 = new Measure(Logger, "Training vector model " + (Vector.IsHardwareAccelerated ? "using hardware acceleration [" + Vector<float>.Count + "]" : "without hardware acceleration"), inputData.docCount))
                         {
-                            DoTraining(inputData, cancellationToken);
+                            DoTraining(inputData, cancellationToken, null, trainingStatus);
                         }
 
                         using (new Measure(Logger, "Computing test predictions"))
@@ -258,7 +260,7 @@ namespace Catalyst.Models
                             if(overallBestF1 is null || overallBestF1 < currentBestF1)
                             {
                                 overallBestF1 = currentBestF1;
-                                autotune.StoreBest();
+                                autotune.StoreBest(overallBestF1);
                             }
 
                             iterations++;
@@ -295,7 +297,7 @@ namespace Catalyst.Models
                              .ToArray();
         }
 
-        public void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus = null)
+        private void DoTraining(InputData ID, CancellationToken cancellationToken, VectorizerTrainingData previousTrainingCorpus, Action<TrainingUpdate> trainingStatus)
         {
             // If there are no documents to process then we can't perform any training (maybe documents WERE provided to the Train method but they all had to be ignored for one reason or another - eg. wrong language)
             if (ID.docCount < 1)
@@ -324,7 +326,7 @@ namespace Catalyst.Models
             {
                 var threads = modelPrivateState.Select(mps =>
                                                             {
-                                                                var t = new Thread(() => ThreadTrain(mps));
+                                                                var t = new Thread(() => ThreadTrain(mps, trainingStatus));
                                                                 t.Priority = Data.ThreadPriority;
                                                                 t.IsBackground = true; // 2020-05-12 DWR: Set to background so that if work is still going on on this thread when the host app is killed, the thread doesn't hold up the shutdown
                                                                 t.Start();
@@ -770,7 +772,7 @@ namespace Catalyst.Models
             return ans;
         }
 
-        private void ThreadTrain(ThreadState state)
+        private void ThreadTrain(ThreadState state, Action<TrainingUpdate> trainingStatus)
         {
             long localTokenCount = 0;
             var sinceEpochWatch = Stopwatch.StartNew();
@@ -826,11 +828,11 @@ namespace Catalyst.Models
 
                             Logger.LogInformation("At {PROGRESS:n1}%, w/s/t: {WST:n0}, w/s: {WS:n0}, loss at epoch {EPOCH}/{MAXEPOCH}: {LOSS:n5}", (progress * 100), wst, ws, epoch + 1, Data.Epoch, loss);
 
-                            var update = new TrainingUpdate().At(progress, Data.Epoch, loss)
+                            var update = new TrainingUpdate().At(epoch, Data.Epoch, loss)
                                                              .Processed(Interlocked.Read(ref TokenCount), sinceBeginingWatch.Elapsed);
                             state.TrainingHistory.Append(update);
 
-                            TrainingStatus?.Invoke(this, update);
+                            trainingStatus?.Invoke(update);
                         }
                     }
                 }
@@ -1940,6 +1942,7 @@ namespace Catalyst.Models
         {
             private readonly FastTextData _dataHolder;
             private readonly AutoTuneOptions _options;
+            private float? _bestMetric;
             private int _bestEpoch;
             private float _bestLearningRate;
             private int _bestDimensions;
@@ -1955,7 +1958,7 @@ namespace Catalyst.Models
                 _options = options;
                 _stopWatch = Stopwatch.StartNew();
                 _description = new StringBuilder();
-                StoreBest();
+                StoreBest(null);
             }
 
             public bool Next(CancellationToken cancellationToken)
@@ -1970,37 +1973,69 @@ namespace Catalyst.Models
 
                 _description.Clear();
                 _description.Append("Autotunning at t = ").Append(t).AppendLine();
-                _description.Append("Training with values:").AppendLine();
 
+                if (_bestMetric.HasValue)
+                {
+                    _description.Append("Current best metric = ").Append(_bestMetric).AppendLine();
+
+                    if (_options.UpdateEpoch)
+                    {
+                        _description.Append("\tEpoch = ").Append(_bestEpoch).AppendLine();
+                    }
+
+                    if (_options.UpdateLearningRate)
+                    {
+                        _description.Append("\tLearningRate = ").Append(_bestLearningRate).AppendLine();
+                    }
+
+                    if (_options.UpdateDimensions)
+                    {
+                        _description.Append("\tDimensions = ").Append(_bestDimensions).AppendLine();
+                    }
+
+                    if (_options.UpdateWordNgrams)
+                    {
+                        _description.Append("\tMaximumWordNgrams = ").Append(_bestMaximumWordNgrams).AppendLine();
+                    }
+
+                    if (_options.UpdateBuckets)
+                    {
+                        _description.Append("\tBuckets = ").Append(_bestBuckets).AppendLine();
+                    }
+                    _description.AppendLine();
+                }
+
+
+                _description.Append("Next training with:").AppendLine();
 
                 if (_options.UpdateEpoch)
                 {
                     _dataHolder.Epoch = (int)UpdateArgGauss(_bestEpoch, 5, 100, 2.8f, 2.5f, t, false);
-                    _description.Append("Epoch = ").Append(_dataHolder.Epoch).AppendLine();
+                    _description.Append("\tEpoch = ").Append(_dataHolder.Epoch).AppendLine();
                 }
 
                 if (_options.UpdateLearningRate)
                 {
                     _dataHolder.LearningRate = UpdateArgGauss(_bestLearningRate, 0.01f, 1f, 1.9f, 1.0f, t, false);
-                    _description.Append("LearningRate = ").Append(_dataHolder.LearningRate).AppendLine();
+                    _description.Append("\tLearningRate = ").Append(_dataHolder.LearningRate).AppendLine();
                 }
 
                 if (_options.UpdateDimensions)
                 {
                     _dataHolder.Dimensions = (int)UpdateArgGauss(_bestDimensions, 96, 512, 1.4f, 0.3f, t, false);
-                    _description.Append("Dimensions = ").Append(_dataHolder.Dimensions).AppendLine();
+                    _description.Append("\tDimensions = ").Append(_dataHolder.Dimensions).AppendLine();
                 }
 
                 if (_options.UpdateWordNgrams)
                 {
                     _dataHolder.MaximumWordNgrams = (int)UpdateArgGauss(_bestMaximumWordNgrams, 1, 5, 4.3f, 2.4f, t, true);
-                    _description.Append("MaximumWordNgrams = ").Append(_dataHolder.MaximumWordNgrams).AppendLine();
+                    _description.Append("\tMaximumWordNgrams = ").Append(_dataHolder.MaximumWordNgrams).AppendLine();
                 }
 
                 if (_options.UpdateBuckets)
                 {
                     _dataHolder.Buckets = (uint)UpdateArgGauss(_bestBuckets, 100_000, 5_000_000, 2.0f, 1.5f, t, false);
-                    _description.Append("Buckets = ").Append(_dataHolder.Buckets).AppendLine();
+                    _description.Append("\tBuckets = ").Append(_dataHolder.Buckets).AppendLine();
                 }
 
                 _trials++;
@@ -2012,8 +2047,9 @@ namespace Catalyst.Models
                 return _description.ToString();
             }
 
-            public void StoreBest()
+            public void StoreBest(float? metric)
             {
+                _bestMetric            = metric;
                 _bestEpoch             = _dataHolder.Epoch;
                 _bestLearningRate      = _dataHolder.LearningRate;
                 _bestDimensions        = _dataHolder.Dimensions;
