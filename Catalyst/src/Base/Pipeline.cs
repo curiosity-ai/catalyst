@@ -390,7 +390,7 @@ namespace Catalyst
 
         public static async Task<Pipeline> ForAsync(Language language, bool sentenceDetector = true, bool tagger = true)
         {
-            var p = await TokenizerForAsync(language);
+            var p = await TokenizerForAsync(language, sentenceDetector);
             if (tagger && language != Language.Any && language != Language.Unknown) { p.Add(await AveragePerceptronTagger.FromStoreAsync(language, 0, "")); }
             return p;
         }
@@ -400,7 +400,7 @@ namespace Catalyst
             var processes = new List<IProcess>();
             foreach (var language in languages)
             {
-                var tmp = await TokenizerForAsync(language);
+                var tmp = await TokenizerForAsync(language, sentenceDetector);
                 processes.AddRange(tmp.Processes);
                 if (tagger) { processes.Add(await AveragePerceptronTagger.FromStoreAsync(language, -1, "")); }
             }
@@ -408,39 +408,42 @@ namespace Catalyst
             return p;
         }
 
-        public static Pipeline TokenizerFor(Language language)
+        public static Pipeline TokenizerFor(Language language, bool sentenceDetector = true)
         {
-            return TokenizerForAsync(language).WaitResult();
+            return TokenizerForAsync(language, sentenceDetector).WaitResult();
         }
 
-        public static async Task<Pipeline> TokenizerForAsync(Language language)
+        public static async Task<Pipeline> TokenizerForAsync(Language language, bool sentenceDetector = true)
         {
             var p = new Pipeline() { Language = language };
             p.Add(new FastTokenizer(language));
 
-            IProcess sd = null;
+            if (sentenceDetector)
+            {
+                IProcess sd = null;
 
-            try
-            {
-                //Uses english sentence detector as a default
-                sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, -1, "");
-                p.Add(sd);
-            }
-            catch
-            {
-                Logger.LogWarning("Could not find sentence detector model for language {LANGUAGE}. Falling back to english model", language);
-            }
-
-            if (sd is null)
-            {
                 try
                 {
-                    sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
+                    //Uses english sentence detector as a default
+                    sd = await SentenceDetector.FromStoreAsync((language == Language.Any) ? Language.English : language, -1, "");
                     p.Add(sd);
                 }
                 catch
                 {
-                    Logger.LogWarning("Could not find sentence detector model for language {LANGUAGE}. Continuing without one", Language.English);
+                    Logger.LogWarning("Could not find sentence detector model for language {LANGUAGE}. Falling back to english model", language);
+                }
+
+                if (sd is null)
+                {
+                    try
+                    {
+                        sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
+                        p.Add(sd);
+                    }
+                    catch
+                    {
+                        Logger.LogWarning("Could not find sentence detector model for language {LANGUAGE}. Continuing without one", Language.English);
+                    }
                 }
             }
 
