@@ -74,9 +74,11 @@ namespace Catalyst.Models
             int N = tokens.Length;
             bool foundAny = false;
 
+            var patterns = Data.Patterns; //copy local reference for the loop
+
             for (int i = 0; i < N; i++)
             {
-                foreach (var p in Data.Patterns)
+                foreach (var p in patterns)
                 {
                     if (p.IsMatch(tokens.Slice(i), out var consumedTokens))
                     {
@@ -148,7 +150,8 @@ namespace Catalyst.Models
 
         public void From(MatchingPattern mp)
         {
-            Patterns.AddRange(mp.Patterns);
+            //Creates new instances of all PatternUnits in the source MatchingPattern
+            Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => new PatternUnit(p.Mode, p.Optional, p.CaseSensitive, p.Type, p.POS, p.Suffix, p.Prefix, p.Shape, p.Token, p.Set, p.EntityType, p.SetHashes, p.TokenHash, p.LeftSide, p.RightSide)).ToArray()));
         }
 
         public bool IsMatch(Span<Token> tokens, out int consumedTokens)
@@ -284,7 +287,7 @@ namespace Catalyst.Models
             POS = pos;
             Suffix = suffix;
             Prefix = prefix;
-            Shape = shape?.AsSpan().Shape(false);
+            Shape = shape;
             Token = token;
             Set = set;
             EntityType = entityType;

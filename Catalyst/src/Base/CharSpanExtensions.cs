@@ -316,7 +316,7 @@ namespace Catalyst
 
         }
 
-        private static ConcurrentDictionary<int, string> ShapesCache = new ConcurrentDictionary<int, string>();
+        private static readonly ConcurrentDictionary<int, string> ShapesCache = new ConcurrentDictionary<int, string>();
 
         private static readonly int _H_Base   = "shape".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Digit  = "shape_digit".AsSpan().IgnoreCaseHash32();
@@ -374,6 +374,5 @@ namespace Catalyst
             }
             return shape;
         }
-
     }
 }
