@@ -151,7 +151,7 @@ namespace Catalyst.Models
         public void From(MatchingPattern mp)
         {
             //Creates new instances of all PatternUnits in the source MatchingPattern
-            Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => new PatternUnit(p.Mode, p.Optional, p.CaseSensitive, p.Type, p.POS, p.Suffix, p.Prefix, p.Shape, p.Token, p.Set, p.EntityType, p.LeftSide, p.RightSide)).ToArray()));
+            Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => p.Clone()).ToArray()));
         }
 
         public bool IsMatch(Span<Token> tokens, out int consumedTokens)
@@ -254,31 +254,55 @@ namespace Catalyst.Models
         private string entityType;
         private string[] set;
         private bool caseSensitive;
+        private PatternUnit p;
 
         public PatternUnit(IPatternUnit prototype)
         {
             var p = (PatternUnitPrototype)prototype;
-            Mode = p.Mode;
-            Optional = p.Optional;
+            Mode          = p.Mode;
+            Optional      = p.Optional;
             CaseSensitive = p.CaseSensitive;
-            Type = p.Type;
-            POS = p.POS;
-            Suffix = p.Suffix;
-            Prefix = p.Prefix;
-            Shape = p.Shape;
-            Token = p.Token;
-            Set = p.Set.ToArray();
-            EntityType = p.EntityType;
-            LeftSide = p.LeftSide is object ? new PatternUnit(p.LeftSide) : null;
-            RightSide = p.RightSide is object ? new PatternUnit(p.RightSide) : null;
-            ValidChars = p.ValidChars;
-            MinLength = p.MinLength;
-            MaxLength = p.MaxLength;
+            Type          = p.Type;
+            POS           = p.POS;
+            Suffix        = p.Suffix;
+            Prefix        = p.Prefix;
+            Shape         = p.Shape;
+            Token         = p.Token;
+            Set           = p.Set.ToArray();
+            EntityType    = p.EntityType;
+            LeftSide      = p.LeftSide is object ? new PatternUnit(p.LeftSide) : null;
+            RightSide     = p.RightSide is object ? new PatternUnit(p.RightSide) : null;
+            ValidChars    = p.ValidChars;
+            MinLength     = p.MinLength;
+            MaxLength     = p.MaxLength;
         }
 
         //Constructor for Json/MsgPack serialization
         public PatternUnit()
         {
+        }
+
+        public PatternUnit Clone()
+        {
+            return new PatternUnit()
+            {
+                Mode          = Mode,
+                Optional      = Optional,
+                CaseSensitive = CaseSensitive,
+                Type          = Type,
+                POS           = POS,
+                Suffix        = Suffix,
+                Prefix        = Prefix,
+                Shape         = Shape,
+                Token         = Token,
+                Set           = Set,
+                EntityType    = EntityType,
+                LeftSide      = LeftSide,
+                RightSide     = RightSide,
+                ValidChars    = ValidChars,
+                MinLength     = MinLength,
+                MaxLength     = MaxLength,
+            };
         }
 
         #region Match
