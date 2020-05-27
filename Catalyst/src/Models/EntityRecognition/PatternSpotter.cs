@@ -219,7 +219,7 @@ namespace Catalyst.Models
     {
         [Key(0)] public PatternMatchingMode Mode { get; set; }
         [Key(1)] public bool Optional { get; set; }
-        [Key(2)] public bool CaseSensitive { get; set; }
+        [Key(2)] public bool CaseSensitive { get => caseSensitive; set { caseSensitive = value; Set = set; } } //Reset Set so it recomputes the hashes based on the new case sensitivity
         [Key(3)] public PatternUnitType Type { get; set; }
         [Key(4)] public PartOfSpeech[] POS { get; set; }
         [Key(5)] public string Suffix { get => suffix; set { suffix = value; _splitSuffix = suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
@@ -253,6 +253,7 @@ namespace Catalyst.Models
         private string shape;
         private string entityType;
         private string[] set;
+        private bool caseSensitive;
 
         public PatternUnit(IPatternUnit prototype)
         {
@@ -275,28 +276,9 @@ namespace Catalyst.Models
             MaxLength = p.MaxLength;
         }
 
-        //Constructor for Json serialization
+        //Constructor for Json/MsgPack serialization
         public PatternUnit()
         {
-        }
-
-
-        [SerializationConstructor]
-        public PatternUnit(PatternMatchingMode mode, bool optional, bool caseSensitive, PatternUnitType type, PartOfSpeech[] pos, string suffix, string prefix, string shape, string token, string[] set, string entityType, PatternUnit leftSide, PatternUnit rightSide)
-        {
-            Mode = mode;
-            Optional = optional;
-            CaseSensitive = caseSensitive;
-            Type = type;
-            POS = pos;
-            Suffix = suffix;
-            Prefix = prefix;
-            Shape = shape;
-            Token = token;
-            Set = set;
-            EntityType = entityType;
-            LeftSide = leftSide;
-            RightSide = rightSide;
         }
 
         #region Match
