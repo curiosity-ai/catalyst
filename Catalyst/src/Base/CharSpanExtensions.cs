@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections.Concurrent;
 
 namespace Catalyst
 {
@@ -315,9 +316,7 @@ namespace Catalyst
 
         }
 
-
-        [ThreadStatic]
-        private static Dictionary<int, string> ShapesCache;
+        private static ConcurrentDictionary<int, string> ShapesCache = new ConcurrentDictionary<int, string>();
 
         private static readonly int _H_Base   = "shape".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Digit  = "shape_digit".AsSpan().IgnoreCaseHash32();
@@ -329,6 +328,8 @@ namespace Catalyst
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Shape(this ReadOnlySpan<char> token, bool compact)
         {
+            if (token.Length == 0) return "";
+
             int hash = _H_Base;
             int prevType = _H_Base;
             for (int i = 0; i < token.Length; i++)
@@ -348,14 +349,12 @@ namespace Catalyst
             }
 
 
-            if (ShapesCache is null) { ShapesCache = new Dictionary<int, string>(); }
-
             string shape;
 
             if(!ShapesCache.TryGetValue(hash, out shape))
             {
                 var sb = new StringBuilder(token.Length);
-                char prevchar = '\0', curchar = '\0';
+                char prevchar = '\0', curchar;
                 for (int i = 0; i < token.Length; i++)
                 {
                     if (char.IsLower(token[i]))             { curchar = 'x'; }

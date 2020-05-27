@@ -266,7 +266,7 @@ namespace Catalyst.Models
             _splitSuffix = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitPrefix = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape = Shape is object ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape = !string.IsNullOrWhiteSpace(Shape) ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null;
         }
 
         public PatternUnit()
@@ -296,7 +296,7 @@ namespace Catalyst.Models
             _splitSuffix     = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitPrefix     = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
             _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape      = Shape is object ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)) : null;
+            _splitShape      = !string.IsNullOrWhiteSpace(Shape) ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null;
         }
 
         #region Match
