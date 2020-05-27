@@ -151,7 +151,7 @@ namespace Catalyst.Models
         public void From(MatchingPattern mp)
         {
             //Creates new instances of all PatternUnits in the source MatchingPattern
-            Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => new PatternUnit(p.Mode, p.Optional, p.CaseSensitive, p.Type, p.POS, p.Suffix, p.Prefix, p.Shape, p.Token, p.Set, p.EntityType, p.SetHashes, p.TokenHash, p.LeftSide, p.RightSide)).ToArray()));
+            Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => new PatternUnit(p.Mode, p.Optional, p.CaseSensitive, p.Type, p.POS, p.Suffix, p.Prefix, p.Shape, p.Token, p.Set, p.EntityType, p.LeftSide, p.RightSide)).ToArray()));
         }
 
         public bool IsMatch(Span<Token> tokens, out int consumedTokens)
@@ -222,27 +222,37 @@ namespace Catalyst.Models
         [Key(2)] public bool CaseSensitive { get; set; }
         [Key(3)] public PatternUnitType Type { get; set; }
         [Key(4)] public PartOfSpeech[] POS { get; set; }
-        [Key(5)] public string Suffix { get; set; }
-        [Key(6)] public string Prefix { get; set; }
-        [Key(7)] public string Shape { get; set; }
+        [Key(5)] public string Suffix { get => suffix; set { suffix = value; _splitSuffix = suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
+        [Key(6)] public string Prefix { get => prefix; set { prefix = value; _splitPrefix = prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
+        [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null; } }
         [Key(8)] public string Token { get; set; }
-        [Key(9)] public HashSet<string> Set { get; set; }
-        [Key(10)] public string EntityType { get; set; }
-        [Key(11)] public HashSet<ulong> SetHashes { get; set; }
-        [Key(12)] public ulong TokenHash { get; set; }
+        [Key(9)] public string[] Set { get => set; set { set = value.Distinct().ToArray(); _setHashes = new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))); } }
+        [Key(10)] public string EntityType { get => entityType; set { entityType = value; _splitEntityType = entityType is object ? new HashSet<string>(entityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null; } }
+
+        //[Key(11)] removed
+
+        //[Key(12)] removed
+
         [Key(13)] public PatternUnit LeftSide { get; set; }
         [Key(14)] public PatternUnit RightSide { get; set; }
         [Key(15)] public HashSet<char> ValidChars { get; set; }
         [Key(16)] public int MinLength { get; set; }
         [Key(17)] public int MaxLength { get; set; }
 
-        internal readonly static char[] splitChar = new [] { ',' };
+        internal readonly static char[] splitChar = new[] { ',' };
         internal readonly static char[] splitCharWithWhitespaces = splitChar.Concat(CharacterClasses.WhitespaceCharacters).ToArray();
 
-        private readonly string[] _splitSuffix;
-        private readonly string[] _splitPrefix;
-        private readonly HashSet<string> _splitEntityType;
-        private readonly HashSet<string> _splitShape;
+        private string[] _splitSuffix;
+        private string[] _splitPrefix;
+        private HashSet<string> _splitEntityType;
+        private HashSet<string> _splitShape;
+        private HashSet<ulong> _setHashes;
+
+        private string suffix;
+        private string prefix;
+        private string shape;
+        private string entityType;
+        private string[] set;
 
         public PatternUnit(IPatternUnit prototype)
         {
@@ -256,29 +266,23 @@ namespace Catalyst.Models
             Prefix = p.Prefix;
             Shape = p.Shape;
             Token = p.Token;
-            Set = p.Set;
+            Set = p.Set.ToArray();
             EntityType = p.EntityType;
-            SetHashes = p.SetHashes ?? (p.Set is null ? null : new HashSet<ulong>(p.Set.Select(token => p.CaseSensitive ? PatternUnitPrototype.Hash64(token.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(token.AsSpan()))));
-            TokenHash = p.TokenHash;
             LeftSide = p.LeftSide is object ? new PatternUnit(p.LeftSide) : null;
             RightSide = p.RightSide is object ? new PatternUnit(p.RightSide) : null;
             ValidChars = p.ValidChars;
             MinLength = p.MinLength;
             MaxLength = p.MaxLength;
-
-            _splitSuffix = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitPrefix = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape = !string.IsNullOrWhiteSpace(Shape) ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null;
         }
 
+        //Constructor for Json serialization
         public PatternUnit()
         {
-            //Constructor for Json serialization
         }
 
+
         [SerializationConstructor]
-        public PatternUnit(PatternMatchingMode mode, bool optional, bool caseSensitive, PatternUnitType type, PartOfSpeech[] pos, string suffix, string prefix, string shape, string token, HashSet<string> set, string entityType, HashSet<ulong> setHashes, ulong tokenHash, PatternUnit leftSide, PatternUnit rightSide)
+        public PatternUnit(PatternMatchingMode mode, bool optional, bool caseSensitive, PatternUnitType type, PartOfSpeech[] pos, string suffix, string prefix, string shape, string token, string[] set, string entityType, PatternUnit leftSide, PatternUnit rightSide)
         {
             Mode = mode;
             Optional = optional;
@@ -291,15 +295,8 @@ namespace Catalyst.Models
             Token = token;
             Set = set;
             EntityType = entityType;
-            SetHashes = setHashes ?? (set is null ? null : new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))));
-            TokenHash = tokenHash;
             LeftSide = leftSide;
             RightSide = rightSide;
-
-            _splitSuffix     = Suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitPrefix     = Prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray();
-            _splitEntityType = EntityType is object ? new HashSet<string>(EntityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null;
-            _splitShape      = !string.IsNullOrWhiteSpace(Shape) ? new HashSet<string>(Shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null;
         }
 
         #region Match
@@ -320,33 +317,33 @@ namespace Catalyst.Models
             }
             else
             {
-                if (isMatch && (Type & PatternUnitType.Length) == PatternUnitType.Length)                                   { isMatch &= MatchLength(ref token); }
-                if (isMatch && (Type & PatternUnitType.Token) == PatternUnitType.Token)                                     { isMatch &= MatchToken(ref token); }
-                if (isMatch && (Type & PatternUnitType.Shape) == PatternUnitType.Shape)                                     { isMatch &= MatchShape(ref token); }
-                if (isMatch && (Type & PatternUnitType.WithChars) == PatternUnitType.WithChars)                             { isMatch &= MatchWithChars(ref token); }
+                if (isMatch && (Type & PatternUnitType.Length) == PatternUnitType.Length) { isMatch &= MatchLength(ref token); }
+                if (isMatch && (Type & PatternUnitType.Token) == PatternUnitType.Token) { isMatch &= MatchToken(ref token); }
+                if (isMatch && (Type & PatternUnitType.Shape) == PatternUnitType.Shape) { isMatch &= MatchShape(ref token); }
+                if (isMatch && (Type & PatternUnitType.WithChars) == PatternUnitType.WithChars) { isMatch &= MatchWithChars(ref token); }
                 //if (isMatch && (Type & PatternUnitType.Script) == PatternUnitType.Script)                                 { isMatch &= MatchScript(ref token); }
-                if (isMatch && (Type & PatternUnitType.POS) == PatternUnitType.POS)                                         { isMatch &= MatchPOS(ref token); }
-                if (isMatch && (Type & PatternUnitType.MultiplePOS) == PatternUnitType.MultiplePOS)                         { isMatch &= MatchMultiplePOS(ref token); }
-                if (isMatch && (Type & PatternUnitType.Suffix) == PatternUnitType.Suffix)                                   { isMatch &= MatchSuffix(ref token); }
-                if (isMatch && (Type & PatternUnitType.Prefix) == PatternUnitType.Prefix)                                   { isMatch &= MatchPrefix(ref token); }
-                if (isMatch && (Type & PatternUnitType.Set) == PatternUnitType.Set)                                         { isMatch &= MatchSet(ref token); }
-                if (isMatch && (Type & PatternUnitType.Entity) == PatternUnitType.Entity)                                   { isMatch &= MatchEntity(ref token); }
-                if (isMatch && (Type & PatternUnitType.NotEntity) == PatternUnitType.NotEntity)                             { isMatch &= !MatchEntity(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsDigit) == PatternUnitType.IsDigit)                                 { isMatch &= MatchIsDigit(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsNumeric) == PatternUnitType.IsNumeric)                             { isMatch &= MatchIsNumeric(ref token); }
-                if (isMatch && (Type & PatternUnitType.HasNumeric) == PatternUnitType.HasNumeric)                           { isMatch &= MatchHasNumeric(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsAlpha) == PatternUnitType.IsAlpha)                                 { isMatch &= MatchIsAlpha(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsLetterOrDigit) == PatternUnitType.IsLetterOrDigit)                 { isMatch &= MatchIsLetterOrDigit(ref token); }
+                if (isMatch && (Type & PatternUnitType.POS) == PatternUnitType.POS) { isMatch &= MatchPOS(ref token); }
+                if (isMatch && (Type & PatternUnitType.MultiplePOS) == PatternUnitType.MultiplePOS) { isMatch &= MatchMultiplePOS(ref token); }
+                if (isMatch && (Type & PatternUnitType.Suffix) == PatternUnitType.Suffix) { isMatch &= MatchSuffix(ref token); }
+                if (isMatch && (Type & PatternUnitType.Prefix) == PatternUnitType.Prefix) { isMatch &= MatchPrefix(ref token); }
+                if (isMatch && (Type & PatternUnitType.Set) == PatternUnitType.Set) { isMatch &= MatchSet(ref token); }
+                if (isMatch && (Type & PatternUnitType.Entity) == PatternUnitType.Entity) { isMatch &= MatchEntity(ref token); }
+                if (isMatch && (Type & PatternUnitType.NotEntity) == PatternUnitType.NotEntity) { isMatch &= !MatchEntity(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsDigit) == PatternUnitType.IsDigit) { isMatch &= MatchIsDigit(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsNumeric) == PatternUnitType.IsNumeric) { isMatch &= MatchIsNumeric(ref token); }
+                if (isMatch && (Type & PatternUnitType.HasNumeric) == PatternUnitType.HasNumeric) { isMatch &= MatchHasNumeric(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsAlpha) == PatternUnitType.IsAlpha) { isMatch &= MatchIsAlpha(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsLetterOrDigit) == PatternUnitType.IsLetterOrDigit) { isMatch &= MatchIsLetterOrDigit(ref token); }
                 //if (isMatch && (Type & PatternUnitType.IsLatin) == PatternUnitType.IsLatin)                               { isMatch &= MatchIsLatin         (ref token); }
-                if (isMatch && (Type & PatternUnitType.IsEmoji) == PatternUnitType.IsEmoji)                                 { isMatch &= MatchIsEmoji(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsPunctuation) == PatternUnitType.IsPunctuation)                     { isMatch &= MatchIsPunctuation(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsLowerCase) == PatternUnitType.IsLowerCase)                         { isMatch &= MatchIsLowerCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsUpperCase) == PatternUnitType.IsUpperCase)                         { isMatch &= MatchIsUpperCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsTitleCase) == PatternUnitType.IsTitleCase)                         { isMatch &= MatchIsTitleCase(ref token); }
-                if (isMatch && (Type & PatternUnitType.LikeURL) == PatternUnitType.LikeURL)                                 { isMatch &= MatchLikeURL(ref token); }
-                if (isMatch && (Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail)                             { isMatch &= MatchLikeEmail(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis)       { isMatch &= MatchIsOpeningParenthesis(ref token); }
-                if (isMatch && (Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis)       { isMatch &= MatchIsClosingParenthesis(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsEmoji) == PatternUnitType.IsEmoji) { isMatch &= MatchIsEmoji(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsPunctuation) == PatternUnitType.IsPunctuation) { isMatch &= MatchIsPunctuation(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsLowerCase) == PatternUnitType.IsLowerCase) { isMatch &= MatchIsLowerCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsUpperCase) == PatternUnitType.IsUpperCase) { isMatch &= MatchIsUpperCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsTitleCase) == PatternUnitType.IsTitleCase) { isMatch &= MatchIsTitleCase(ref token); }
+                if (isMatch && (Type & PatternUnitType.LikeURL) == PatternUnitType.LikeURL) { isMatch &= MatchLikeURL(ref token); }
+                if (isMatch && (Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail) { isMatch &= MatchLikeEmail(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis) { isMatch &= MatchIsOpeningParenthesis(ref token); }
+                if (isMatch && (Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis) { isMatch &= MatchIsClosingParenthesis(ref token); }
             }
 
             return Mode == PatternMatchingMode.ShouldNotMatch ? !isMatch : isMatch;
@@ -421,7 +418,7 @@ namespace Catalyst.Models
         {
             if (_splitSuffix is null) return false;
 
-            foreach(var suffix in _splitSuffix)
+            foreach (var suffix in _splitSuffix)
             {
                 if (token.ValueAsSpan.EndsWith(suffix.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -449,12 +446,7 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchSet(ref Token token)
         {
-            if (SetHashes is null)
-            {
-                //No need to lock here, as we would just replace one with another equal set if there is a colision
-                SetHashes = new HashSet<ulong>(Set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan())));
-            }
-            return SetHashes.Contains(GetTokenHash(ref token));
+            return _setHashes is object && _setHashes.Contains(GetTokenHash(ref token));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -464,7 +456,7 @@ namespace Catalyst.Models
 
             foreach (var et in token.EntityTypes)
             {
-                if(_splitEntityType.Contains(et.Type)) { return true; }
+                if (_splitEntityType.Contains(et.Type)) { return true; }
             }
             return false;
         }
@@ -547,9 +539,9 @@ namespace Catalyst.Models
             var span = token.ValueAsSpan;
 
             bool isLike = span.IsLikeURLorEmail();
-            if(isLike)
+            if (isLike)
             {
-                if(span.IndexOf('@') > 0)
+                if (span.IndexOf('@') > 0)
                 {
                     if (span.IndexOf(':') > 0)
                     {
@@ -562,9 +554,9 @@ namespace Catalyst.Models
                 }
 
                 int countSlashDot = 0;
-                int hasWWW  = span.IndexOf(new[] { 'w', 'w', 'w' }) > 0 ? 5 : 0;
+                int hasWWW = span.IndexOf(new[] { 'w', 'w', 'w' }) > 0 ? 5 : 0;
                 int hasHTTP = span.IndexOf(new[] { 'h', 't', 't', 'p' }) > 0 ? 5 : 0;
-                int hasFTP  = span.IndexOf(new[] { 'f', 't', 'p' }) > 0 ? 5 : 0;
+                int hasFTP = span.IndexOf(new[] { 'f', 't', 'p' }) > 0 ? 5 : 0;
 
                 for (int i = 0; i < span.Length; i++)
                 {
@@ -585,7 +577,7 @@ namespace Catalyst.Models
         private bool MatchLikeEmail(ref Token token)
         {
             bool isLike = token.ValueAsSpan.IsLikeURLorEmail();
-            if(isLike)
+            if (isLike)
             {
 
                 //TODO: refine these rules
