@@ -226,7 +226,7 @@ namespace Catalyst.Models
         [Key(6)] public string Prefix { get => prefix; set { prefix = value; _splitPrefix = prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
         [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null; } }
         [Key(8)] public string Token { get; set; }
-        [Key(9)] public string[] Set { get => set; set { set = value.Distinct().ToArray(); _setHashes = new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))); } }
+        [Key(9)] public string[] Set { get => set; set { set = value?.Distinct()?.ToArray(); _setHashes = set is object ? new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))) : null; } }
         [Key(10)] public string EntityType { get => entityType; set { entityType = value; _splitEntityType = entityType is object ? new HashSet<string>(entityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null; } }
 
         //[Key(11)] removed
@@ -268,7 +268,7 @@ namespace Catalyst.Models
             Prefix        = p.Prefix;
             Shape         = p.Shape;
             Token         = p.Token;
-            Set           = p.Set.ToArray();
+            Set           = p.Set?.ToArray() ?? Array.Empty<string>();
             EntityType    = p.EntityType;
             LeftSide      = p.LeftSide is object ? new PatternUnit(p.LeftSide) : null;
             RightSide     = p.RightSide is object ? new PatternUnit(p.RightSide) : null;
