@@ -73,11 +73,11 @@ namespace Catalyst.Models
 
         public void ImportSpecialCases(IProcess process)
         {
-            if (process is IHasSpecialCases)
+            if (process is IHasSpecialCases cases)
             {
                 lock (_lockSpecialCases)
                 {
-                    foreach (var sc in ((IHasSpecialCases)process).GetSpecialCases())
+                    foreach (var sc in cases.GetSpecialCases())
                     {
                         SpecialCases[sc.Key] = sc.Value;
                     }
