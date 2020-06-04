@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -659,28 +660,93 @@ namespace Catalyst.Models
 
         public (string label, float score) PredictMax(IDocument doc, int maxTokens = -1)
         {
-            if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
-            if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
+            try
+            {
 
-            var state = ThreadStatePool.Rent();
-            
-            IEnumerable<IToken> tokens;
-            if (maxTokens <= 0)
-            {
-                tokens = doc.SelectMany(span => span.GetCapturedTokens());
-                maxTokens = doc.TokensCount;
-            }
-            else
-            {
-                tokens = doc.SelectMany(span => span.GetCapturedTokens()).Take(maxTokens);
-                maxTokens = Math.Min(maxTokens, doc.TokensCount);
-            }
+                if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
+                if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
-            var tokenHashes = new List<uint>(maxTokens);
-            var tokenNGramsIndexes = new List<int>(maxTokens);
-            foreach (var tk in tokens)
+                var state = ThreadStatePool.Rent();
+
+                IEnumerable<IToken> tokens;
+                if (maxTokens <= 0)
+                {
+                    tokens = doc.SelectMany(span => span.GetCapturedTokens());
+                    maxTokens = doc.TokensCount;
+                }
+                else
+                {
+                    tokens = doc.SelectMany(span => span.GetCapturedTokens()).Take(maxTokens);
+                    maxTokens = Math.Min(maxTokens, doc.TokensCount);
+                }
+
+                var tokenHashes = new List<uint>(maxTokens);
+                var tokenNGramsIndexes = new List<int>(maxTokens);
+                foreach (var tk in tokens)
+                {
+                    if (tk.Value.Length > 0)
+                    {
+                        uint hash = HashToken(tk, Language);
+                        tokenHashes.Add(hash);
+                        var subwords = GetCharNgrams(tk.Value);
+                        subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
+                        if (subwords.Any())
+                        {
+                            tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
+                        }
+                    }
+                }
+
+                var entries = tokenHashes.Where(hash => Data.EntryHashToIndex.ContainsKey(hash))
+                                         .Select(hash => Data.EntryHashToIndex[hash]).ToArray();
+
+                var wordNgrams = GetWordNGrams(entries, create: false);
+                entries = entries.Concat(wordNgrams).Concat(tokenNGramsIndexes).ToArray();
+
+                if (entries.Length > 0)
+                {
+                    ComputeHidden(state, entries);
+
+                    switch (Data.Loss)
+                    {
+                        case LossType.SoftMax: ComputeOutputSoftmax(state); break;
+                        case LossType.NegativeSampling: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.OneVsAll: ComputeOutputBinaryLogistic(state); break;
+                    }
+
+                    var index = state.Output.Argmax();
+                    var result = (Data.Labels[index].Word, state.Output[index]);
+                    ThreadStatePool.Return(state);
+                    return result;
+                }
+                else
+                {
+                    return (null, float.NaN);
+                }
+            }
+            catch(Exception E)
             {
-                if (tk.Value.Length > 0)
+                Logger.LogError(E, "Failed to predict for document with length {LEN}", doc.Length);
+                return (null, float.NaN);
+            }
+        }
+
+        public Dictionary<string, float> Predict(IDocument doc)
+        {
+            var ans = new Dictionary<string, float>(OutputLength);
+
+            try
+            {
+                if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
+                if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
+
+                var state = ThreadStatePool.Rent();
+                var tokens = doc.SelectMany(span => span.GetCapturedTokens()).ToArray();
+
+                var tokenHashes = new List<uint>(tokens.Length);
+                var tokenNGramsIndexes = new List<int>(tokens.Length);
+                foreach (var tk in tokens)
                 {
                     uint hash = HashToken(tk, Language);
                     tokenHashes.Add(hash);
@@ -691,86 +757,38 @@ namespace Catalyst.Models
                         tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
                     }
                 }
-            }
 
-            var entries = tokenHashes.Where(hash => Data.EntryHashToIndex.ContainsKey(hash))
-                                     .Select(hash => Data.EntryHashToIndex[hash]).ToArray();
+                var entries = tokenHashes.Where(hash => Data.EntryHashToIndex.ContainsKey(hash))
+                                         .Select(hash => Data.EntryHashToIndex[hash]).ToArray();
 
-            var wordNgrams = GetWordNGrams(entries, create: false);
-            entries = entries.Concat(wordNgrams).Concat(tokenNGramsIndexes).ToArray();
+                var wordNgrams = GetWordNGrams(entries, create: false);
+                entries = entries.Concat(wordNgrams).Concat(tokenNGramsIndexes).ToArray();
 
-            if (entries.Length > 0)
-            {
-                ComputeHidden(state, entries);
-
-                switch (Data.Loss)
+                if (entries.Length > 0)
                 {
-                    case LossType.SoftMax            : ComputeOutputSoftmax(state);        break;
-                    case LossType.NegativeSampling   : ComputeOutputBinaryLogistic(state); break;
-                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
-                    case LossType.OneVsAll           : ComputeOutputBinaryLogistic(state); break;
+                    ComputeHidden(state, entries);
+                    switch (Data.Loss)
+                    {
+                        case LossType.SoftMax: ComputeOutputSoftmax(state); break;
+                        case LossType.NegativeSampling: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.OneVsAll: ComputeOutputBinaryLogistic(state); break;
+                    }
                 }
 
-                var index = state.Output.Argmax();
-                var result = (Data.Labels[index].Word, state.Output[index]);
+
+                for (int i = 0; i < state.Output.Length; i++)
+                {
+                    ans[Data.Labels[i].Word] = state.Output[i];
+                }
+
                 ThreadStatePool.Return(state);
-                return result;
+
             }
-            else
+            catch(Exception E)
             {
-                return (null, float.NaN);
+                Logger.LogError(E, "Failed to predict for document with length {LEN}", doc.Length);
             }
-        }
-
-        public Dictionary<string, float> Predict(IDocument doc)
-        {
-            if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
-            if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
-
-            var state = ThreadStatePool.Rent();
-            var tokens = doc.SelectMany(span => span.GetCapturedTokens()).ToArray();
-
-            var tokenHashes = new List<uint>(tokens.Length);
-            var tokenNGramsIndexes = new List<int>(tokens.Length);
-            foreach (var tk in tokens)
-            {
-                uint hash = HashToken(tk, Language);
-                tokenHashes.Add(hash);
-                var subwords = GetCharNgrams(tk.Value);
-                subwords = TranslateNgramHashesToIndexes(subwords, Language, create: false);
-                if (subwords.Any())
-                {
-                    tokenNGramsIndexes.AddRange(subwords.Select(h => (int)h));
-                }
-            }
-
-            var entries = tokenHashes.Where(hash => Data.EntryHashToIndex.ContainsKey(hash))
-                                     .Select(hash => Data.EntryHashToIndex[hash]).ToArray();
-
-            var wordNgrams = GetWordNGrams(entries, create: false);
-            entries = entries.Concat(wordNgrams).Concat(tokenNGramsIndexes).ToArray();
-
-            if (entries.Length > 0)
-            {
-                ComputeHidden(state, entries);
-                switch(Data.Loss)
-                {
-                    case LossType.SoftMax:             ComputeOutputSoftmax(state);        break;
-                    case LossType.NegativeSampling:    ComputeOutputBinaryLogistic(state); break;
-                    case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
-                    case LossType.OneVsAll:            ComputeOutputBinaryLogistic(state); break;
-                }
-            }
-
-            var ans = new Dictionary<string, float>(OutputLength);
-
-            for (int i = 0; i < state.Output.Length; i++)
-            {
-                ans[Data.Labels[i].Word] = state.Output[i];
-            }
-
-            ThreadStatePool.Return(state);
-
             return ans;
         }
 
