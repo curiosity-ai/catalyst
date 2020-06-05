@@ -25,7 +25,7 @@ namespace Catalyst.Models
 
     public class AbbreviationCapturer
     {
-        public int MinimumAbbreviationbLength = 2;
+        public int MinimumAbbreviationLength = 2;
         private readonly MatchingPattern _capturePattern = new MatchingPattern(new MatchingPatternPrototype(nameof(AbbreviationCapturer)).Add(PatternUnitPrototype.Single().IsOpeningParenthesis(),
                                                                                                                                               PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), 
                                                                                                                                               PatternUnitPrototype.Multiple(maxMatches: 5).IsLetterOrDigit()), 
@@ -76,7 +76,7 @@ namespace Catalyst.Models
 
                 for (int i = 0; i < N; i++)
                 {
-                    if (_capturePattern.IsMatch(tokens.Slice(i), out var consumedTokens))
+                    if (_capturePattern.IsMatch(tokens.Slice(i), out var consumedTokens) && consumedTokens > 2)
                     {
                         var slice = tokens.Slice(i + 1, consumedTokens - 2); //Skips opening and closing parenthesis
                         Token innerToken = slice[0];
@@ -105,7 +105,7 @@ namespace Catalyst.Models
 
                             var lettersToMatch = innerToken.ValueAsSpan.ToArray().Where(c => char.IsUpper(c)).ToArray();
 
-                            if (lettersToMatch.Length >= MinimumAbbreviationbLength && lettersToMatch.Length > (0.5 * innerToken.Length)) //Accept abbreviations with up to 50% lower-case letters, as long as they have enough upper-case letters
+                            if (lettersToMatch.Length >= MinimumAbbreviationLength && lettersToMatch.Length > (0.5 * innerToken.Length)) //Accept abbreviations with up to 50% lower-case letters, as long as they have enough upper-case letters
                             {
                                 var matchedLetters = new bool[lettersToMatch.Length];
 
@@ -113,7 +113,7 @@ namespace Catalyst.Models
                                 int min = i - 1 - maxTokensToTry;
                                 if (min < 0) { min = 0; }
 
-                                for (int j = i - 1; j > min; j--)
+                                for (int j = i; j > min; j--)
                                 {
                                     var cur = tokens[j].ValueAsSpan;
 
@@ -135,7 +135,7 @@ namespace Catalyst.Models
                                     {
                                         //Found all letters, so hopefully we have a match
                                         //Make sure now that the letters appear in sequence
-                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i - 1].End - tokens[j].Begin + 1);
+                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i].Begin - tokens[j].Begin + 1);
 
                                         if (AppearsIn(innerToken.ValueAsSpan, fullSpan) && !fullSpan.IsAllUpperCase())
                                         {
