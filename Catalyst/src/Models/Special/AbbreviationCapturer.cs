@@ -30,6 +30,9 @@ namespace Catalyst.Models
                                                                                                                                               PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), 
                                                                                                                                               PatternUnitPrototype.Multiple(maxMatches: 5).IsLetterOrDigit()), 
                                                                                                                                               PatternUnitPrototype.Single().IsClosingParenthesis()));
+        
+        private static ObjectPool<StringBuilder> _stringBuilders { get; } = new ObjectPool<StringBuilder>(() => new StringBuilder(), 50, sb => { sb.Clear(); if (sb.Capacity > 1_000_000) sb.Capacity = 0; });
+
 
         private static char[] Parenthesis = new[] { '(', ')', '[', ']', '{', '}' };
         private PatternUnit DiscardCommonWords;
@@ -208,7 +211,8 @@ namespace Catalyst.Models
 
         public static string GetStandardForm(ReadOnlySpan<char> fullSpan)
         {
-            var sb = new StringBuilder(fullSpan.Length);
+            var sb = _stringBuilders.Rent();
+
             bool lastWasSpace = true;
             for (int i = 0; i < fullSpan.Length; i++)
             {
@@ -235,7 +239,9 @@ namespace Catalyst.Models
                     sb.Append(fullSpan[i]); lastWasSpace = false;
                 }
             }
-            return sb.ToString();
+            var text = sb.ToString();
+            _stringBuilders.Return(sb);
+            return text;
         }
 
         public string[] GetContextForCandidate(Document doc, IToken innerToken)
