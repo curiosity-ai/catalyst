@@ -27,8 +27,9 @@ namespace Catalyst
         public HashSet<char> ValidChars { get; set; }
         public int MinLength { get; set; }
         public int MaxLength { get; set; }
+        public int MaxMatches { get; set; }
         public static IPatternUnit Single()           { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Single }; }
-        public static IPatternUnit Multiple()         { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Multiple }; }
+        public static IPatternUnit Multiple(int maxMatches = 10) { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Multiple, MaxMatches = maxMatches }; }
         public static IPatternUnit ShouldNotMatch()   { return new PatternUnitPrototype() { Mode = PatternMatchingMode.ShouldNotMatch }; }
         public static IPatternUnit SingleOptional()   { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Single, Optional = true }; }
         public static IPatternUnit MultipleOptional() { return new PatternUnitPrototype() { Mode = PatternMatchingMode.Multiple, Optional = true }; }

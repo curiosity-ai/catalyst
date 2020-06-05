@@ -162,15 +162,27 @@ namespace Catalyst.Models
                 var currentToken = 0;
                 for (int j = 0; j < Patterns[i].Length; j++)
                 {
-                    PatternUnit currentPattern = Patterns[i][j];
+                    var currentPattern = Patterns[i][j];
                     int ct = currentToken;
+                    
+                    int maxMatches = currentPattern.MaxMatches;
+                    
+                    if (maxMatches == 0) maxMatches = 10;
+
                     bool hasMatched = false;
 
-                    while (ct < tokens.Length && currentPattern.IsMatch(ref tokens[ct]))
+                    while (ct < tokens.Length && currentPattern.IsMatch(ref tokens[ct]) && maxMatches > 0)
                     {
                         ct++;
                         hasMatched = true;
-                        if (currentPattern.Mode == PatternMatchingMode.Single) { break; }
+                        if (currentPattern.Mode == PatternMatchingMode.Single) 
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            maxMatches--; //Limits the number of multiple matches
+                        }
                     }
 
                     if (hasMatched)
@@ -186,6 +198,7 @@ namespace Catalyst.Models
                         }
                     }
                 }
+
                 if (largestMatch < currentToken) { largestMatch = currentToken; }
             }
 
@@ -238,6 +251,7 @@ namespace Catalyst.Models
         [Key(15)] public HashSet<char> ValidChars { get; set; }
         [Key(16)] public int MinLength { get; set; }
         [Key(17)] public int MaxLength { get; set; }
+        [Key(18)] public int MaxMatches { get; set; }
 
         internal readonly static char[] splitChar = new[] { ',' };
         internal readonly static char[] splitCharWithWhitespaces = splitChar.Concat(CharacterClasses.WhitespaceCharacters).ToArray();
@@ -275,6 +289,7 @@ namespace Catalyst.Models
             ValidChars    = p.ValidChars;
             MinLength     = p.MinLength;
             MaxLength     = p.MaxLength;
+            MaxMatches    = p.MaxMatches;
         }
 
         //Constructor for Json/MsgPack serialization
@@ -302,6 +317,7 @@ namespace Catalyst.Models
                 ValidChars    = ValidChars,
                 MinLength     = MinLength,
                 MaxLength     = MaxLength,
+                MaxMatches    = MaxMatches
             };
         }
 

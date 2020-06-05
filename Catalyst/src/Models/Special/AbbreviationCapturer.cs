@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Collections.Specialized;
 
 namespace Catalyst.Models
 {
@@ -25,7 +26,10 @@ namespace Catalyst.Models
     public class AbbreviationCapturer
     {
         public int MinimumAbbreviationbLength = 2;
-        public MatchingPattern CapturePattern = new MatchingPattern(new MatchingPatternPrototype(nameof(AbbreviationCapturer)).Add(PatternUnitPrototype.Single().IsOpeningParenthesis(), PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), PatternUnitPrototype.Multiple().IsLetterOrDigit()), PatternUnitPrototype.Single().IsClosingParenthesis()));
+        private readonly MatchingPattern _capturePattern = new MatchingPattern(new MatchingPatternPrototype(nameof(AbbreviationCapturer)).Add(PatternUnitPrototype.Single().IsOpeningParenthesis(),
+                                                                                                                                              PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), 
+                                                                                                                                              PatternUnitPrototype.Multiple(maxMatches: 5).IsLetterOrDigit()), 
+                                                                                                                                              PatternUnitPrototype.Single().IsClosingParenthesis()));
 
         private static char[] Parenthesis = new[] { '(', ')', '[', ']', '{', '}' };
         private PatternUnit DiscardCommonWords;
@@ -52,6 +56,16 @@ namespace Catalyst.Models
             var found = new List<AbbreviationCandidate>();
             if (doc.Language != Language && doc.Language != Language.Any) { return found; }
 
+            int CountUpper(ReadOnlySpan<char> sp)
+            {
+                int count = 0;
+                foreach(var c in sp)
+                {
+                    if (char.IsUpper(c)) count++;
+                }
+                return count;
+            }
+
             foreach (var span in doc)
             {
                 var tokens = span.ToTokenSpan();
@@ -59,11 +73,25 @@ namespace Catalyst.Models
 
                 for (int i = 0; i < N; i++)
                 {
-                    if (CapturePattern.IsMatch(tokens.Slice(i), out var consumedTokens) && consumedTokens == 3)
+                    if (_capturePattern.IsMatch(tokens.Slice(i), out var consumedTokens))
                     {
-                        var innerToken = tokens.Slice(i + 1, consumedTokens - 2)[0]; //Skips opening and closing parenthesis
+                        var slice = tokens.Slice(i + 1, consumedTokens - 2); //Skips opening and closing parenthesis
+                        Token innerToken = slice[0];
+                        int countUpper = CountUpper(innerToken.ValueAsSpan);
+
+                        foreach(var it in slice.Slice(1))
+                        {
+                            var itC = CountUpper(it.ValueAsSpan);
+                            if (itC > countUpper )
+                            {
+                                innerToken = it;
+                                countUpper = itC;
+                            }
+                        }
 
                         bool shouldDiscard = false;
+                        
+                        shouldDiscard |= innerToken.Length > 100; //Too long
                         shouldDiscard |= DiscardOnlyLowerCase.IsMatch(ref innerToken); //All lower case
                         shouldDiscard |= DiscardCommonWords.IsMatch(ref innerToken);
                         shouldDiscard |= DiscardIsSymbol.IsMatch(ref innerToken);
