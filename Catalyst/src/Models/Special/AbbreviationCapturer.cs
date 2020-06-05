@@ -54,7 +54,7 @@ namespace Catalyst.Models
             Stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => w.AsSpan().IgnoreCaseHash64()).ToArray());
         }
 
-        public List<AbbreviationCandidate> ParseDocument(Document doc, Func<AbbreviationCandidate, bool> shouldSkip)
+        public List<AbbreviationCandidate> ParseDocument(Document doc, Func<AbbreviationCandidate, bool> shouldSkip = null)
         {
             var found = new List<AbbreviationCandidate>();
             if (doc.Language != Language && doc.Language != Language.Any) { return found; }
@@ -160,6 +160,7 @@ namespace Catalyst.Models
                                             }
 
                                             //Only add this as an abbreviation if the abbreviation contains all candidate description upper-case letters
+
                                             if (allUpper.Count == 0)
                                             {
                                                 var context = GetContextForCandidate(doc, innerToken);
@@ -171,7 +172,7 @@ namespace Catalyst.Models
                                                     Context = context
                                                 };
 
-                                                if (!shouldSkip(candidate))
+                                                if (shouldSkip is null || !shouldSkip(candidate))
                                                 {
                                                     found.Add(candidate);
                                                 }
