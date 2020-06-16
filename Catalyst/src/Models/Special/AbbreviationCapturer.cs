@@ -302,8 +302,8 @@ namespace Catalyst.Models
     [MessagePackObject(keyAsPropertyName: true)]
     public class AbbreviationCandidate
     {
-        public string Abbreviation;
-        public string Description;
-        public string[] Context;
+        public string Abbreviation { get; set; }
+        public string Description { get; set; }
+        public string[] Context { get; set; }
     }
 }
