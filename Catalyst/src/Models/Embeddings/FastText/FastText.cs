@@ -1798,7 +1798,15 @@ namespace Catalyst.Models
                 }
             }
             hashes = TranslateNgramHashesToIndexes(hashes, Language.Any, create);
-            return hashes.Select(h => (int)h).ToArray();
+            
+            //Need to cast back to int
+            var intHashes = new int[hashes.Count];
+            for (int i = 0; i < hashes.Count; i++)
+            {
+                intHashes[i] = (int)hashes[i];
+            }
+
+            return intHashes;
         }
 
         private void AppendWordNGrams(List<int> list, bool create)
