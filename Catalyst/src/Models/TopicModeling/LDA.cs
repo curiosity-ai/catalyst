@@ -166,13 +166,14 @@ namespace Catalyst.Models
 
         private static bool ShouldKeepToken(HashSet<uint> stopWords, IToken tk)
         {
-            bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN || tk.POS == PartOfSpeech.NONE); //If no POS tagging (i.e. POS == NONE), keep token
+            //We keep both NONE when there is no POS tagging on the document (i.e. POS == NONE) or the token represents a merged set of tokens (Tokens always return PartOfSpeech.X (i.e. from entities being captured) - see Tokens.cs
 
-            //bool skipIfHasUpperCase = (!Data.IgnoreCase && !tk.ValueAsSpan.IsAllLowerCase());
+            bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN || tk.POS == PartOfSpeech.NONE || tk.POS == PartOfSpeech.X);
 
             bool skipIfTooSmall = (tk.Length < 3);
 
-            bool skipIfNotAllLetterOrDigit = !(tk.ValueAsSpan.IsAllLetterOrDigit());
+            //We ignore skipping non-letter POS = X, as this is due to multiple entity tokens, and we would like to keep entities them for the LDA calculation (and they'll probably have whitespaces besides letters/digits)
+            bool skipIfNotAllLetterOrDigit = (tk.POS != PartOfSpeech.X) && !(tk.ValueAsSpan.IsAllLetterOrDigit());
 
             bool skipIfStopWord = stopWords.Contains(Hash(tk.ValueAsSpan));
 

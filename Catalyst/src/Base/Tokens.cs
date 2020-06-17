@@ -24,7 +24,8 @@ namespace Catalyst
                     return string.Empty;
                 }
 
-                var sb = new StringBuilder(Length + ChildrenIndexes.Length);
+                var sb = Pools.StringBuilder.Rent();
+
                 foreach (var token in Children)
                 {
                     bool isHyphen = token.ValueAsSpan.IsHyphen();
@@ -38,8 +39,14 @@ namespace Catalyst
                         sb.Append(token.Value).Append(' ');
                     }
                 }
+
                 if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
-                return sb.ToString();
+
+                var val = sb.ToString();
+                
+                if (sb.Length < 10000) Pools.StringBuilder.Return(sb);
+
+                return val;
             }
         }
 
