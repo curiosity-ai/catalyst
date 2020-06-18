@@ -25,17 +25,19 @@ namespace Catalyst.Models
 
             public ThreadState(Line[] corpus, int hlen, int olen, int glen, int thread, CancellationToken token)
             {
-                t_log = new float[Utils.LOG_TABLE_SIZE];
+                t_log     = new float[Utils.LOG_TABLE_SIZE];
                 t_sigmoid = new float[Utils.SIGMOID_TABLE_SIZE];
+                
+                Utils.init(ref t_log, ref t_sigmoid);
 
-                Loss = 0f;
-                NumberOfExamples = 1;
-                Corpus = corpus;
-                NegativePosition = 0;
-                Hidden = new float[hlen];
-                Output = new float[olen];
-                Gradient = new float[glen];
-                ThreadID = thread;
+                Loss              = 0f;
+                NumberOfExamples  = 1;
+                Corpus            = corpus;
+                NegativePosition  = 0;
+                Hidden            = new float[hlen];
+                Output            = new float[olen];
+                Gradient          = new float[glen];
+                ThreadID          = thread;
                 CancellationToken = token;
 
                 if (thread == 0)
@@ -46,14 +48,15 @@ namespace Catalyst.Models
                 {
                     TrainingHistory = null;
                 }
-
-                Utils.init(ref t_log, ref t_sigmoid);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Log(float x)
             {
-                if (x >= 0.99f) { return 0.0f; }
+                if (x >= 0.99f) 
+                { 
+                    return 0.0f; 
+                }
                 else
                 {
                     int i = (int)(x * Utils.LOG_TABLE_SIZEf);
@@ -64,8 +67,14 @@ namespace Catalyst.Models
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Sigmoid(float x)
             {
-                if (x <= -(Utils.MAX_SIGMOIDf - 0.1f)) { return 0.0f; }
-                else if (x >= (Utils.MAX_SIGMOIDf - 0.1f)) { return 1.0f; }
+                if (x <= -(Utils.MAX_SIGMOIDf - 0.1f)) 
+                { 
+                    return 0.0f; 
+                }
+                else if (x >= (Utils.MAX_SIGMOIDf - 0.1f)) 
+                {
+                    return 1.0f; 
+                }
                 else
                 {
                     int i = (int)((x + Utils.MAX_SIGMOIDf) * Utils.SIGMOID_TABLE_SIZEf / Utils.MAX_SIGMOIDf / 2.0f);

@@ -708,10 +708,10 @@ namespace Catalyst.Models
 
                     switch (Data.Loss)
                     {
-                        case LossType.SoftMax: ComputeOutputSoftmax(state); break;
-                        case LossType.NegativeSampling: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.SoftMax            : ComputeOutputSoftmax(state);        break;
+                        case LossType.NegativeSampling   : ComputeOutputBinaryLogistic(state); break;
                         case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
-                        case LossType.OneVsAll: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.OneVsAll           : ComputeOutputBinaryLogistic(state); break;
                     }
 
                     var index = state.Output.Argmax();
@@ -768,13 +768,12 @@ namespace Catalyst.Models
                     ComputeHidden(state, entries);
                     switch (Data.Loss)
                     {
-                        case LossType.SoftMax: ComputeOutputSoftmax(state); break;
-                        case LossType.NegativeSampling: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.SoftMax            : ComputeOutputSoftmax(state);        break;
+                        case LossType.NegativeSampling   : ComputeOutputBinaryLogistic(state); break;
                         case LossType.HierarchicalSoftMax: ComputeOutputBinaryLogistic(state); break;
-                        case LossType.OneVsAll: ComputeOutputBinaryLogistic(state); break;
+                        case LossType.OneVsAll           : ComputeOutputBinaryLogistic(state); break;
                     }
                 }
-
 
                 for (int i = 0; i < state.Output.Length; i++)
                 {
@@ -1231,7 +1230,7 @@ namespace Catalyst.Models
 
             float alpha = lr * ((label ? 1.0f : 0f) - score);
 
-            SIMD.MultiplyAndAdd(state.Gradient, Wo.GetRow(target), alpha);
+            SIMD.MultiplyAndAdd(state.Gradient, Wo.GetRow(target), alpha); //Don't use the quantized value on purpose here
 
             if (addToOutput)
             {
