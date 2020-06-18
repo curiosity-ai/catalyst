@@ -9,17 +9,17 @@ namespace Catalyst.Models
     {
         public class ThreadState //Per thread
         {
-            public int ThreadID;
+            public readonly int ThreadID;
             public long NumberOfExamples;
             public float Loss;
-            public float[] Hidden;
-            public float[] Output;
-            public float[] Gradient;
-            public float[] t_log;
-            public float[] t_sigmoid;
-            public Line[] Corpus;
-            public CancellationToken CancellationToken;
-            public TrainingHistory TrainingHistory;
+            public readonly float[] Hidden;
+            public readonly float[] Output;
+            public readonly float[] Gradient;
+            public readonly float[] t_log;
+            public readonly float[] t_sigmoid;
+            public readonly Line[] Corpus;
+            public readonly CancellationToken CancellationToken;
+            public readonly TrainingHistory TrainingHistory;
             public int NegativePosition;
 
 

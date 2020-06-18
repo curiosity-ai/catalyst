@@ -1298,8 +1298,8 @@ namespace Catalyst.Models
         private void ComputeOutputSoftmax(ThreadState state)
         {
             float z = 0.0f;
-            ref float[] hidden = ref state.Hidden;
-            ref float[] output = ref state.Output;
+            float[] hidden = state.Hidden;
+            float[] output = state.Output;
 
             for (int i = 0; i < output.Length; i++)
             {
@@ -1320,8 +1320,8 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ComputeOutputBinaryLogistic(ThreadState state)
         {
-            ref float[] hidden = ref state.Hidden;
-            ref float[] output = ref state.Output;
+            float[] hidden = state.Hidden;
+            float[] output = state.Output;
             for (int i = 0; i < output.Length; i++)
             {
                 output[i] = Wo.DotRow(hidden, i);
@@ -1991,7 +1991,9 @@ namespace Catalyst.Models
 
             public bool Next(CancellationToken cancellationToken)
             {
-                if(_stopWatch.ElapsedMilliseconds > _options.MaximumDuration.TotalMilliseconds || _trials > _options.MaximumTrials || cancellationToken.IsCancellationRequested)
+                _trials++;
+
+                if (_stopWatch.ElapsedMilliseconds >= _options.MaximumDuration.TotalMilliseconds || _trials >= _options.MaximumTrials || cancellationToken.IsCancellationRequested)
                 {
                     GetBest();
                     return false;
@@ -2068,7 +2070,6 @@ namespace Catalyst.Models
                     _description.Append("\tBuckets = ").Append(_dataHolder.Buckets).AppendLine();
                 }
 
-                _trials++;
                 return true;
             }
 
