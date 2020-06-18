@@ -1323,8 +1323,7 @@ namespace Catalyst.Models
             float[] output = state.Output;
             for (int i = 0; i < output.Length; i++)
             {
-                output[i] = Wo.DotRow(hidden, i);
-                output[i] = state.Sigmoid(output[i]);
+                output[i] = state.Sigmoid(Wo.DotRow(hidden, i));
             }
         }
 
