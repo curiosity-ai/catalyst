@@ -662,7 +662,6 @@ namespace Catalyst.Models
         {
             try
             {
-
                 if (Language != Language.Any && doc.Language != Language) { throw new Exception($"Document language ({doc.Language}) not the same as model language ({Language})"); }
                 if (Data.Type != ModelType.Supervised) { throw new Exception("Predict can only be called on Supervised models"); }
 
@@ -727,7 +726,7 @@ namespace Catalyst.Models
             }
             catch(Exception E)
             {
-                Logger.LogError(E, "Failed to predict for document with length {LEN}", doc.Length);
+                Logger.LogError(E, "Failed to predict for document with length {LEN}\n{STACK}", doc.Length, E.StackTrace);
                 return (null, float.NaN);
             }
         }
@@ -787,7 +786,7 @@ namespace Catalyst.Models
             }
             catch(Exception E)
             {
-                Logger.LogError(E, "Failed to predict for document with length {LEN}", doc.Length);
+                Logger.LogError(E, "Failed to predict for document with length {LEN}\n{STACK}", doc.Length, E.StackTrace);
             }
             return ans;
         }
