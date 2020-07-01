@@ -57,7 +57,7 @@ namespace Catalyst.Models
         public List<AbbreviationCandidate> ParseDocument(Document doc, Func<AbbreviationCandidate, bool> shouldSkip = null)
         {
             var found = new List<AbbreviationCandidate>();
-            if (doc.Language != Language && doc.Language != Language.Any) { return found; }
+            if (doc.Language != Language && doc.Language != Language.Any && Language != Language.Any) { return found; }
 
             int CountUpper(ReadOnlySpan<char> sp)
             {
