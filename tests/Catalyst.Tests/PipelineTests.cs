@@ -14,7 +14,7 @@ namespace Catalyst.Tests
         {
             Storage.Current = new Catalyst.OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
 
-            ObjectStore.OtherAssemblies.Add(typeof(Pipeline).Assembly);
+            ObjectStore.AddOtherAssembly(typeof(Pipeline).Assembly);
             var pipeline1 = await Pipeline.ForAsync(Language.English);
 
             pipeline1.Version = 123;
