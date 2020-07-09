@@ -56,5 +56,20 @@ namespace Catalyst.Tests
             Assert.DoesNotContain("<", doc.Value);
             Assert.DoesNotContain(">", doc.Value);
         }
+
+        [Theory]
+        [InlineData("this is an abbreviation test As Soon As Possible (ASAP) I hope this abbreviation was found")]
+        public async Task Abbreviations(string text)
+        {
+            Storage.Current = new Catalyst.OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            var nlp = await Pipeline.ForAsync(Language.English);
+            var doc = new Document(text, Language.English);
+            nlp.ProcessSingle(doc);
+
+            var abbCapturer = new Models.AbbreviationCapturer(Language.English);
+            var abbreviations = abbCapturer.ParseDocument(doc);
+            Assert.Equal(1, abbreviations.Count);
+            Assert.Equal(abbreviations.Single().Abbreviation, "ASAP");
+        }
     }
 }

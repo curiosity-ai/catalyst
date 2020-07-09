@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="0.0.9586" />
+    <PackageReference Include="Catalyst" Version="0.0.10020" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.5" />
   </ItemGroup>
 

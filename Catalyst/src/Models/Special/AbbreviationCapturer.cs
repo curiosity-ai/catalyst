@@ -135,7 +135,7 @@ namespace Catalyst.Models
                                     {
                                         //Found all letters, so hopefully we have a match
                                         //Make sure now that the letters appear in sequence
-                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i].Begin - tokens[j].Begin + 1);
+                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i].Begin - tokens[j].Begin);
 
                                         if (AppearsIn(innerToken.ValueAsSpan, fullSpan) && !fullSpan.IsAllUpperCase())
                                         {
@@ -145,13 +145,13 @@ namespace Catalyst.Models
                                         if (IsSubSequenceOf(lettersToMatch.AsSpan(), fullSpan))
                                         {
                                             var allUpper = fullSpan.ToArray().Where(c => char.IsUpper(c)).ToList();
-                                            var allUpperAbb = new HashSet<char>(lettersToMatch);
+                                            var allUpperAbb = new List<char>(lettersToMatch);
                                             while (allUpper.Count > 0 && allUpperAbb.Count > 0)
                                             {
                                                 var c = allUpper[0];
                                                 if (allUpperAbb.Remove(c))
                                                 {
-                                                    allUpper.RemoveAt(0);
+                                                    allUpper.Remove(c);
                                                 }
                                                 else
                                                 {
@@ -240,7 +240,7 @@ namespace Catalyst.Models
                     sb.Append(fullSpan[i]); lastWasSpace = false;
                 }
             }
-            var text = sb.ToString();
+            var text = sb.ToString().Trim();
             _stringBuilders.Return(sb);
             return text;
         }
