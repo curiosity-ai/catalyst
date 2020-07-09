@@ -74,7 +74,7 @@ namespace Catalyst.Models
                 var tokens = span.ToTokenSpan();
                 int N = tokens.Length - 3;
 
-                for (int i = 0; i < N; i++)
+                for (int i = 1; i < N; i++)
                 {
                     if (_capturePattern.IsMatch(tokens.Slice(i), out var consumedTokens) && consumedTokens > 2)
                     {
@@ -113,7 +113,7 @@ namespace Catalyst.Models
                                 int min = i - 1 - maxTokensToTry;
                                 if (min < 0) { min = 0; }
 
-                                for (int j = i; j > min; j--)
+                                for (int j = i - 1; j > min; j--) // starts from i - 1 as tokens[i] is the opening parenthesis we found above
                                 {
                                     var cur = tokens[j].ValueAsSpan;
 
