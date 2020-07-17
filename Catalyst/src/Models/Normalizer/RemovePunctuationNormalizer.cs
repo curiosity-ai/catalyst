@@ -56,5 +56,10 @@ namespace Catalyst.Models
                 }
             }
         }
+
+        public string Normalize(string text)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

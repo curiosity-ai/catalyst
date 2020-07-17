@@ -1,4 +1,5 @@
 ﻿using Mosaik.Core;
+using System;
 using System.Threading.Tasks;
 
 namespace Catalyst.Models
@@ -36,6 +37,11 @@ namespace Catalyst.Models
                     if (token.ValueAsSpan.IsNumeric()) { token.Replacement = ReplacementText; }
                 }
             }
+        }
+
+        public string Normalize(string text)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -39,9 +39,18 @@ namespace Catalyst.Models
             }
         }
 
-        private bool NeedNormalize(string content)
+		public string Normalize(string text)
+		{
+			if (NeedNormalize(text))
+			{
+				return GetTextFromHtml(text);
+			}
+			return text;
+		}
+
+		private static bool NeedNormalize(string content)
         {
-			//Super simple heuristic to detect if text contains any <> html tags
+			//Super simple heuristic to detect if text contains any <> html tags fast
             var s = content.AsSpan();
 
             var open = s.IndexOf('<');

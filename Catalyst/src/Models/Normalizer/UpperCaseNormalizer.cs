@@ -30,5 +30,10 @@ namespace Catalyst.Models
         {
             document.Value = document.Value.ToUpperInvariant();
         }
+
+        public string Normalize(string text)
+        {
+            return text.ToUpperInvariant();
+        }
     }
 }

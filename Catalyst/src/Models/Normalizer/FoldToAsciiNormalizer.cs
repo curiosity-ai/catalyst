@@ -1297,5 +1297,18 @@ namespace Catalyst.Models
 
             document.Value = sb.ToString();
         }
+
+        public string Normalize(string document)
+        {
+            var sb = new StringBuilder(document.Length);
+            for (int i = 0; i < document.Length; i++)
+            {
+                var c = document[i];
+                var n = ReplaceUnicodeChar(c);
+                sb.Append(n);
+            }
+
+            return sb.ToString();
+        }
     }
 }
