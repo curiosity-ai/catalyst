@@ -156,8 +156,6 @@ namespace Catalyst.Models
                         var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
                         if (Data.MultiGramHashes[n].Contains(nextHash))
                         {
-                            //txt += " " + next.Value;
-                            //var hashTxt = Hash64(txt);
                             hash = HashCombine64(hash, nextHash);
                             if (Data.Hashes.Contains(hash))
                             {
@@ -211,7 +209,10 @@ namespace Catalyst.Models
                 Words = new ConcurrentDictionary<ulong, string>(trainingData.Words);
             }
 
-            var stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => Data.IgnoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan())).ToArray());
+            bool ignoreCase = Data.IgnoreCase;
+            bool ignoreOnlyNumeric = Data.IgnoreOnlyNumeric;
+            var stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => ignoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan())).ToArray());
+            
 
             int docCount = 0, tkCount = 0;
 
@@ -237,11 +238,11 @@ namespace Catalyst.Models
                             {
                                 var tk = tokens[i];
 
-                                var hash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
+                                var hash = ignoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
                                 bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN);
 
-                                bool skipIfHasUpperCase = (!Data.IgnoreCase && !tk.ValueAsSpan.IsAllLowerCase());
+                                bool skipIfHasUpperCase = (!ignoreCase && !tk.ValueAsSpan.IsAllLowerCase());
 
                                 bool skipIfTooSmall = (tk.Length < 3);
 
@@ -254,8 +255,10 @@ namespace Catalyst.Models
                                                            tk.ValueAsSpan.IndexOfAny(new char[] { 't', 'h', 's', 't', 'r', 'd' }, 0) >= 0 &&
                                                            tk.ValueAsSpan.IndexOfAny(new char[] { 'a', 'b', 'c', 'e', 'f', 'g', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'u', 'v', 'w', 'x', 'y', 'z' }, 0) < 0);
 
+                                bool skipIfOnlyNumeric = ignoreOnlyNumeric ? tk.ValueAsSpan.IsLetter() : false;
+
                                 //Only filter for POS if language != any, as otherwise we won't have the POS information
-                                bool skipThisToken = (filterPartOfSpeech && Language != Language.Any) || skipIfHasUpperCase || skipIfTooSmall || skipIfNotAllLetterOrDigit || skipIfStopWordOrEntity || skipIfMaybeOrdinal;
+                                bool skipThisToken = (filterPartOfSpeech && Language != Language.Any) || skipIfHasUpperCase || skipIfTooSmall || skipIfNotAllLetterOrDigit || skipIfStopWordOrEntity || skipIfMaybeOrdinal || skipIfOnlyNumeric;
 
                                 if (skipThisToken)
                                 {
@@ -263,7 +266,7 @@ namespace Catalyst.Models
                                     continue;
                                 }
 
-                                if (!Words.ContainsKey(hash)) { Words[hash] = Data.IgnoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
+                                if (!Words.ContainsKey(hash)) { Words[hash] = ignoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
 
                                 stack.Enqueue(hash);
                                 ulong combined = stack.ElementAt(0);
