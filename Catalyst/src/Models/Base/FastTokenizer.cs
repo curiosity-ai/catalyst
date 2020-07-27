@@ -12,6 +12,7 @@ namespace Catalyst.Models
     [FormerName("Mosaik.NLU.Models", "SimpleTokenizer")]
     public class FastTokenizer : ITokenizer, IProcess
     {
+        public static bool DisableEmailOrURLCapture { get; set; } = false;
         public Language Language { get; set; }
         public string Type => typeof(FastTokenizer).FullName;
         public string Tag => "";
@@ -319,7 +320,7 @@ namespace Catalyst.Models
                 else
                 {
                     var tk = span.AddToken(spanBegin + b, spanBegin + e);
-                    if (sp.Reason == SplitPointReason.EmailOrUrl)
+                    if (sp.Reason == SplitPointReason.EmailOrUrl && !DisableEmailOrURLCapture)
                     {
                         tk.AddEntityType(new EntityType("EmailOrURL", EntityTag.Single));
                     }
