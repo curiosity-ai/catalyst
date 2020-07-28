@@ -9,14 +9,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-//using MessagePack;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 
 namespace Catalyst
 {
-
     [JsonObject]
     [MessagePackObject]
     public class Document : IDocument

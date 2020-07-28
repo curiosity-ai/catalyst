@@ -1,11 +1,7 @@
 ﻿using UID;
 using Mosaik.Core;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
-
-//using MessagePack;
 
 namespace Catalyst
 {
