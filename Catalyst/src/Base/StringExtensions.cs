@@ -5,12 +5,10 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-
 namespace Catalyst
 {
     public static class StringExtensions
     {
-
         public static ObjectPool<StringBuilder> StringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder(), 20, sb =>
         {
             if (sb.Length < 1_000_000)
@@ -23,7 +21,6 @@ namespace Catalyst
             }
         });
 
-
         public static string RemoveControlCharacters(this string text)
         {
             return text.AsSpan().RemoveControlCharacters();
@@ -31,7 +28,6 @@ namespace Catalyst
 
         public static string RemoveControlCharacters(this ReadOnlySpan<char> text)
         {
-            if (text == null) return null;
             StringBuilder newString = new StringBuilder();
             char ch;
             for (int i = 0; i < text.Length; i++)
@@ -62,7 +58,6 @@ namespace Catalyst
 
         public static string RemoveQuotesAndTrimWhiteSpace(this ReadOnlySpan<char> text)
         {
-            if (text == null) return null;
             StringBuilder newString = new StringBuilder();
             char ch; bool started = false;
             char last = '0';
