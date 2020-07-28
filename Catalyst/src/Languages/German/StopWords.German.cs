@@ -1,5 +1,4 @@
-﻿using Mosaik.Core;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Catalyst
 {

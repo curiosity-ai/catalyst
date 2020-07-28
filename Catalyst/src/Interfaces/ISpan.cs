@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 
-//using MessagePack;
-
 namespace Catalyst
 {
     public interface ISpan : IEnumerable<IToken>

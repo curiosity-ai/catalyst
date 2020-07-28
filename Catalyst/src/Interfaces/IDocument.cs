@@ -1,13 +1,11 @@
 ﻿using UID;
 using Mosaik.Core;
-using Newtonsoft.Json;
+using MessagePack;
 using System.Collections.Generic;
-
-//using MessagePack;
 
 namespace Catalyst
 {
-    [MessagePack.Union(0, typeof(Document))]
+    [Union(0, typeof(Document))]
     public interface IDocument : IEnumerable<ISpan>
     {
         Language Language { get; set; }

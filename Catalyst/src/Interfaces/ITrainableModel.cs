@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Catalyst
+﻿namespace Catalyst
 {
     public interface ITrainableModel
     {
