@@ -7,23 +7,23 @@ namespace Catalyst
     {
         public static partial class Spacy
         {
-            private static ReadOnlyHashSet<string> Empty = new ReadOnlyHashSet<string>(new HashSet<string>());
+            private static readonly ReadOnlyHashSet<string> Empty = new ReadOnlyHashSet<string>(new HashSet<string>());
 
-            //Stop-words used by Spacy: https://github.com/explosion/spaCy/tree/master/spacy/lang
+            // Stop-words used by Spacy: https://github.com/explosion/spaCy/tree/master/spacy/lang
 
             public static ReadOnlyHashSet<string> For(Language lang)
             {
-                switch (lang)
+                return lang switch
                 {
-                    case Language.Any:        return Empty;
-                    case Language.English:    return English;
-                    case Language.French:     return French;
-                    case Language.German:     return German;
-                    case Language.Italian:    return Italian;
-                    case Language.Spanish:    return Spanish;
-                    case Language.Portuguese: return Portuguese;
-                    default:                  return Empty;
-                }
+                    Language.Any        => Empty,
+                    Language.English    => English,
+                    Language.French     => French,
+                    Language.German     => German,
+                    Language.Italian    => Italian,
+                    Language.Spanish    => Spanish,
+                    Language.Portuguese => Portuguese,
+                    _                   => Empty
+                };
             }
         }
     }
