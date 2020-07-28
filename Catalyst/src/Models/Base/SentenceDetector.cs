@@ -20,7 +20,7 @@ namespace Catalyst.Models
     {
         private const int N_Tags = 2;
         private Dictionary<int, float[]> AverageWeights { get; set; }
-        private int[] HashLengths;
+        private readonly int[] HashLengths;
 
         public SentenceDetector(Language language, int version, string tag = "") : base(language, version, tag)
         {
@@ -35,7 +35,7 @@ namespace Catalyst.Models
             return a;
         }
 
-        private FastTokenizer Tokenizer;
+        private readonly FastTokenizer Tokenizer;
 
         public void Process(IDocument document)
         {

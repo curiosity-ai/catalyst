@@ -185,7 +185,7 @@ namespace Catalyst.Models
             return foundAny;
         }
 
-        private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
 
         public IEnumerable<KeyValuePair<int, TokenizationException>> GetSpecialCases()
         {

@@ -36,7 +36,7 @@ namespace Catalyst.Models
         private int N_Features = 21;
         private int N_Tags;
 
-        private int[] POShashes;
+        private readonly int[] POShashes;
 
         private ConcurrentDictionary<int, float[]> AverageWeights { get; set; }
 

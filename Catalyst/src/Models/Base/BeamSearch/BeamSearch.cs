@@ -6,13 +6,13 @@ namespace Catalyst.Models
 {
     public class BeamSearch<T> where T : ICloneable
     {
-        private int Beams;
+        private readonly int Beams;
 
         private List<BeamState<T>> States = new List<BeamState<T>>();
         private List<BeamCandidate<T>> Candidates = new List<BeamCandidate<T>>();
 
-        private Func<T, IList<BeamAction>> Generator;
-        private Action<T, int> Mover;
+        private readonly Func<T, IList<BeamAction>> Generator;
+        private readonly Action<T, int> Mover;
 
         public bool Finished;
         public int BadEpochs;

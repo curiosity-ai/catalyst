@@ -18,10 +18,10 @@ namespace Catalyst.Models
         public string Tag => "";
         public int Version => 0;
 
-        private static ILogger Logger = ApplicationLogging.CreateLogger<FastTokenizer>();
+        private static readonly ILogger Logger = ApplicationLogging.CreateLogger<FastTokenizer>();
 
-        private object _lockSpecialCases = new object();
-        private Dictionary<int, TokenizationException> SpecialCases;
+        private readonly object _lockSpecialCases = new object();
+        private readonly Dictionary<int, TokenizationException> SpecialCases;
 
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
         {

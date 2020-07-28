@@ -32,9 +32,9 @@ namespace Catalyst
         private int _end;
         private string _value;
         private string _replacement;
-        private Document Parent;
-        private int _index;
-        private int SpanIndex;
+        private readonly Document Parent;
+        private readonly int _index;
+        private readonly int SpanIndex;
         private bool _hasReplacement;
 
         public int Begin { get { if (_begin < 0) { _begin = Parent.TokensData[SpanIndex][_index].LowerBound; } return _begin; } set { throw new InvalidOperationException(); } }

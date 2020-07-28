@@ -17,7 +17,7 @@ namespace Catalyst.Models
 
     public class AveragePerceptronTagger : StorableObject<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
-        private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
+        private readonly int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
         private Dictionary<int, float[]> AverageWeights { get; set; }
 
@@ -262,8 +262,8 @@ namespace Catalyst.Models
             return best > 0 ? index : (int)PartOfSpeech.NONE;
         }
 
-        private int[] TagHashes;
-        private int[][] TagTagHashes;
+        private readonly int[] TagHashes;
+        private readonly int[][] TagTagHashes;
 
         private const int N_Features = 32 - 20 + 5 + 5;
         private static readonly int _HashBias              = GetHash("bias");

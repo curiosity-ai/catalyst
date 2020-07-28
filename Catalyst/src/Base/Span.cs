@@ -41,8 +41,8 @@ namespace Catalyst
         private int _begin;
         private int _end;
         private string _value;
-        private Document Parent;
-        private int Index;
+        private readonly Document Parent;
+        private readonly int Index;
 
         public int Begin { get { if (_begin < 0) { _begin = Parent.SpanBounds[Index][0]; } return _begin; } set { Parent.SpanBounds[Index][0] = value; _begin = value; } }
         public int End { get { if (_end < 0) { _end = Parent.SpanBounds[Index][1]; } return _end; } set { Parent.SpanBounds[Index][1] = value; _end = value; } }

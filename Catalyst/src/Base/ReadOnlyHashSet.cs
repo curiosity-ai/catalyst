@@ -5,7 +5,7 @@ namespace Catalyst
 {
     public class ReadOnlyHashSet<T> : IEnumerable<T>
     {
-        private HashSet<T> Set;
+        private readonly HashSet<T> Set;
 
         public ReadOnlyHashSet(HashSet<T> set)
         {

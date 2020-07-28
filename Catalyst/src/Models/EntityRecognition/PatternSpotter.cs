@@ -268,7 +268,7 @@ namespace Catalyst.Models
         private string entityType;
         private string[] set;
         private bool caseSensitive;
-        private PatternUnit p;
+        private readonly PatternUnit p;
 
         public PatternUnit(IPatternUnit prototype)
         {
