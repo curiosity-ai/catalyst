@@ -548,7 +548,7 @@ namespace Catalyst
             var enumerator = documents.GetEnumerator();
             var buffer = new List<IDocument>();
 
-            parallelOptions = parallelOptions ?? new ParallelOptions();
+            parallelOptions ??= new ParallelOptions();
 
             using (var m = new Measure(Logger, "Parsing documents", logOnlyDuration:true))
             {
