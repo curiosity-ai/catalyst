@@ -768,9 +768,9 @@ namespace Catalyst.Models
 
             public ISpan Span;
 
-            private static readonly string ROOT = "<ROOT>";
+            private const string ROOT = "<ROOT>";
             private static readonly int _HashRoot = ROOT.IgnoreCaseHash32();
-            private static readonly string EOS = "<EOS>";
+            private const string EOS = "<EOS>";
             private static readonly int _HashEOS = EOS.IgnoreCaseHash32();
 
             public Buffer(ISpan span, int n_features, int n_moves)
