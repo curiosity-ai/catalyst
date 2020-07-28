@@ -256,8 +256,7 @@ namespace Catalyst
         internal EntityType[] GetTokenEntityTypes(int tokenIndex, int spanIndex)
         {
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            List<EntityType> entityList;
-            if (EntityData is object && EntityData.TryGetValue(ix, out entityList))
+            if (EntityData is object && EntityData.TryGetValue(ix, out List<EntityType> entityList))
             {
                 return entityList.ToArray();
             }
@@ -272,8 +271,7 @@ namespace Catalyst
             if (EntityData is null) { EntityData = new Dictionary<long, List<EntityType>>(); }
 
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            List<EntityType> entityList;
-            if (!EntityData.TryGetValue(ix, out entityList))
+            if (!EntityData.TryGetValue(ix, out List<EntityType> entityList))
             {
                 entityList = new List<EntityType>();
                 EntityData.Add(ix, entityList);
@@ -285,8 +283,7 @@ namespace Catalyst
         {
             if (EntityData is null) { EntityData = new Dictionary<long, List<EntityType>>(); }
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            List<EntityType> entityList;
-            if (EntityData.TryGetValue(ix, out entityList))
+            if (EntityData.TryGetValue(ix, out List<EntityType>  entityList))
             {
                 entityList[entityIndex] = entityType;
             }
@@ -299,8 +296,7 @@ namespace Catalyst
         internal void RemoveEntityTypeFromToken(int tokenIndex, int spanIndex, int entityIndex)
         {
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            List<EntityType> entityList;
-            if (EntityData.TryGetValue(ix, out entityList))
+            if (EntityData.TryGetValue(ix, out List<EntityType> entityList))
             {
                 entityList.RemoveAt(entityIndex);
                 if (entityList.Count == 0) { EntityData.Remove(ix); }
@@ -315,8 +311,7 @@ namespace Catalyst
         {
             if (EntityData is null) { return; } //nothing to do
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            List<EntityType> entityList;
-            if (EntityData.TryGetValue(ix, out entityList))
+            if (EntityData.TryGetValue(ix, out List<EntityType> entityList))
             {
                 entityList.RemoveAll(et => et.Type == entityType);
                 if (entityList.Count == 0) { EntityData.Remove(ix); }
@@ -418,8 +413,7 @@ namespace Catalyst
             if (TokenMetadata is null) { TokenMetadata = new Dictionary<long, Dictionary<string, string>>(); }
 
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            Dictionary<string, string> dict;
-            if (TokenMetadata.TryGetValue(ix, out dict))
+            if (TokenMetadata.TryGetValue(ix, out Dictionary<string, string> dict))
             {
                 return dict;
             }
