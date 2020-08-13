@@ -46,6 +46,25 @@ namespace Catalyst
                 {
                     if (!CharacterClasses.ValidURLCharacters.Contains(candidate[i])) { return false; }
                 }
+                
+                if(candidate.IndexOf('@') < 0)
+                {
+                    //Special case for a common issue when tokenizing text in the form of:
+                    // see here:http://www.somevalidurl.com
+                    // where here: was being tokenized together with the actual URL
+
+                    var firstColon = candidate.IndexOf(':');
+                    if(firstColon >= 0)
+                    {
+                        var postColon = candidate.Slice(firstColon + 1);
+                        var secondColon = postColon.IndexOf(':');
+                        
+                        if(secondColon > 0  && secondColon < postColon.Length-2 && postColon[secondColon + 1] == '/' && postColon[secondColon + 2] == '/')
+                        {
+                            return false; 
+                        }
+                    }
+                }
             }
             return value;
         }
