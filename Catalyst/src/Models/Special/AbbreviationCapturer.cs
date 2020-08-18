@@ -172,10 +172,17 @@ namespace Catalyst.Models
                                                     Context = context
                                                 };
 
-                                                if (shouldSkip is null || !shouldSkip(candidate))
+
+                                                //Skip bad abbreviation captures of the form 'ABB ( ABB )', or when the description is too small
+                                                if (!(candidate.Description.AsSpan().IsAllUpperCase() || candidate.Description.Length < candidate.Abbreviation.Length + 5 || candidate.Abbreviation.Contains(candidate.Description)))
                                                 {
-                                                    found.Add(candidate);
+                                                    if (shouldSkip is null || !shouldSkip(candidate))
+                                                    {
+                                                        found.Add(candidate);
+                                                    }
                                                 }
+
+
                                             }
 
                                             break;
