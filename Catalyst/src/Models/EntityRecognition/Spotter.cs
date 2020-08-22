@@ -201,7 +201,7 @@ namespace Catalyst.Models
             var HashCount =  new ConcurrentDictionary<ulong, int>();
             var Senses    =  new ConcurrentDictionary<ulong, ulong[]>();
             var Words     =  new ConcurrentDictionary<ulong, string>();
-            long totalDocCount = 0;
+            long totalDocCount = 0, totalTokenCount = 0;
 
             if (trainingData is object)
             {
@@ -209,6 +209,7 @@ namespace Catalyst.Models
                 Senses = new ConcurrentDictionary<ulong, ulong[]>(trainingData.Senses);
                 Words = new ConcurrentDictionary<ulong, string>(trainingData.Words);
                 totalDocCount = trainingData.SeenDocuments;
+                totalTokenCount = trainingData.SeenTokens;
             }
 
             bool ignoreCase = Data.IgnoreCase;
@@ -316,9 +317,10 @@ namespace Catalyst.Models
             Logger.LogInformation("Finish parsing documents for Word2Sense model");
 
             totalDocCount += docCount;
+            totalTokenCount += tkCount;
 
-            int thresholdRare   = Math.Max(2, (int)Math.Floor(tooRare * totalDocCount));
-            int thresholdCommon = (int)Math.Floor(tooCommon * totalDocCount);
+            int thresholdRare   = Math.Max(2, (int)Math.Floor(tooRare * totalTokenCount));
+            int thresholdCommon = (int)Math.Floor(tooCommon * totalTokenCount);
 
             var toKeep = HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
                                                 .Select(kv => kv.Key).ToArray();
@@ -345,6 +347,7 @@ namespace Catalyst.Models
                 trainingData.Senses = new Dictionary<ulong, ulong[]>(Senses);
                 trainingData.Words = new Dictionary<ulong, string>(Words);
                 trainingData.SeenDocuments = totalDocCount;
+                trainingData.SeenTokens = totalTokenCount;
             }
 
             foreach (var word in Words.Values)
@@ -444,5 +447,6 @@ namespace Catalyst.Models
         public Dictionary<ulong, string> Words { get; set; } = new Dictionary<ulong, string>();
 
         public long SeenDocuments { get; set; } = 0;
+        public long SeenTokens { get; set; } = 0;
     }
 }
