@@ -201,12 +201,14 @@ namespace Catalyst.Models
             var HashCount =  new ConcurrentDictionary<ulong, int>();
             var Senses    =  new ConcurrentDictionary<ulong, ulong[]>();
             var Words     =  new ConcurrentDictionary<ulong, string>();
+            long totalDocCount = 0;
 
             if (trainingData is object)
             {
                 HashCount = new ConcurrentDictionary<ulong, int>(trainingData.HashCount);
                 Senses = new ConcurrentDictionary<ulong, ulong[]>(trainingData.Senses);
                 Words = new ConcurrentDictionary<ulong, string>(trainingData.Words);
+                totalDocCount = trainingData.SeenDocuments;
             }
 
             bool ignoreCase = Data.IgnoreCase;
@@ -313,8 +315,10 @@ namespace Catalyst.Models
 
             Logger.LogInformation("Finish parsing documents for Word2Sense model");
 
-            int thresholdRare   = (int)Math.Floor(tooRare * docCount);
-            int thresholdCommon = (int)Math.Floor(tooCommon * docCount);
+            totalDocCount += docCount;
+
+            int thresholdRare   = Math.Max(2, (int)Math.Floor(tooRare * totalDocCount));
+            int thresholdCommon = (int)Math.Floor(tooCommon * totalDocCount);
 
             var toKeep = HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
                                                 .Select(kv => kv.Key).ToArray();
@@ -340,11 +344,12 @@ namespace Catalyst.Models
                 trainingData.HashCount = new Dictionary<ulong, int>(HashCount);
                 trainingData.Senses = new Dictionary<ulong, ulong[]>(Senses);
                 trainingData.Words = new Dictionary<ulong, string>(Words);
-                
-                foreach(var word in trainingData.Words.Values)
-                {
-                    AddToGazeteer(word);
-                }
+                trainingData.SeenDocuments = totalDocCount;
+            }
+
+            foreach (var word in Words.Values)
+            {
+                AddToGazeteer(word);
             }
 
             Logger.LogInformation("Finish training Word2Sense model");
@@ -437,5 +442,7 @@ namespace Catalyst.Models
         public Dictionary<ulong, int> HashCount { get; set; } = new Dictionary<ulong, int>();
         public Dictionary<ulong, ulong[]> Senses { get; set; } = new Dictionary<ulong, ulong[]>();
         public Dictionary<ulong, string> Words { get; set; } = new Dictionary<ulong, string>();
+
+        public long SeenDocuments { get; set; } = 0;
     }
 }
