@@ -385,11 +385,13 @@ namespace Catalyst.Models
                     {
                         for (int j = i + 1; j < span.TokensCount; j++)
                         {
-                            var other_tag = Data.IndexToEntityTag[tags[i]];
+                            if (tags[j] == IndexTagOutside) break;
+                            
+                            var other_tag = Data.IndexToEntityTag[tags[j]];
 
-                            if (other_tag != EntityTag.Inside || other_tag != EntityTag.End) { break; }
+                            if (other_tag != EntityTag.Inside && other_tag != EntityTag.End) { break; }
 
-                            var other_type = Data.IndexToEntityType[tags[i]];
+                            var other_type = Data.IndexToEntityType[tags[j]];
 
                             if (other_type != type) { break; }
 
