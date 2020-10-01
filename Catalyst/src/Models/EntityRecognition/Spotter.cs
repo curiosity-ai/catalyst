@@ -235,17 +235,21 @@ namespace Catalyst.Models
                             for (int i = 0; i < tokens.Length; i++)
                             {
                                 var tk = tokens[i];
-                                var shape = tk.ValueAsSpan.Shape(compact: false);
 
-                                shapes.AddOrUpdate(shape, 1, (k, v) => v + 1);
-                                shapeExamples.AddOrUpdate(shape, (k) => new[] { tk.Value }, (k, v) => 
+                                if (!(tk is Tokens))
                                 {
-                                    if(v.Length < 50)
+                                    var shape = tk.ValueAsSpan.Shape(compact: false);
+                                    shapes.AddOrUpdate(shape, 1, (k, v) => v + 1);
+
+                                    shapeExamples.AddOrUpdate(shape, (k) => new[] { tk.Value }, (k, v) =>
                                     {
-                                        v = v.Concat(new[] { tk.Value }).Distinct().ToArray();
-                                    }
-                                    return v;
-                                });
+                                        if (v.Length < 50)
+                                        {
+                                            v = v.Concat(new[] { tk.Value }).Distinct().ToArray();
+                                        }
+                                        return v;
+                                    });
+                                }
 
                                 var hash = ignoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
