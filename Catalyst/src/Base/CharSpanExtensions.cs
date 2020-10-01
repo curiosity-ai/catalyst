@@ -342,10 +342,13 @@ namespace Catalyst
         private static readonly int _H_Lower  = "shape_lower".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Upper  = "shape_upper".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Punct  = "shape_puct".AsSpan().IgnoreCaseHash32();
+        private static readonly int _H_At     = "shape_@".AsSpan().IgnoreCaseHash32();
+        private static readonly int _H_Dash   = "shape_dash".AsSpan().IgnoreCaseHash32();
+        private static readonly int _H_Slash  = "shape_slash".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Symbol = "shape_symbol".AsSpan().IgnoreCaseHash32();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Shape(this ReadOnlySpan<char> token, bool compact)
+        public static string Shape(this ReadOnlySpan<char> token, bool compact = false)
         {
             if (token.Length == 0) return "";
 
@@ -354,19 +357,24 @@ namespace Catalyst
             for (int i = 0; i < token.Length; i++)
             {
                 int type;
-                if (char.IsLower(token[i])) { type = _H_Lower; }
-                else if (char.IsUpper(token[i])) { type = _H_Upper; }
-                else if (char.IsNumber(token[i])) { type = _H_Digit; }
-                else if (char.IsPunctuation(token[i])) { type = _H_Punct; }
+                char c = token[i];
+
+                if (c == '@')       { type = _H_At; }
+                else if (c == '/' || c == '\\') { type = _H_Slash; }
+                else if (CharacterClasses.HyphenCharacters.Contains(c))  { type = _H_Dash; }
+                else if (char.IsLower(c))       { type = _H_Lower; }
+                else if (char.IsUpper(c))       { type = _H_Upper; }
+                else if (char.IsNumber(c))      { type = _H_Digit; }
+                else if (char.IsPunctuation(c)) { type = _H_Punct; }
                 else { type = _H_Symbol; }
 
                 if (!compact || type != prevType)
                 {
                     hash = Hashes.CombineWeak(hash, type);
                 }
+
                 prevType = type;
             }
-
 
             string shape;
 
@@ -376,7 +384,11 @@ namespace Catalyst
                 char prevchar = '\0', curchar;
                 for (int i = 0; i < token.Length; i++)
                 {
-                    if (char.IsLower(token[i]))             { curchar = 'x'; }
+                    var c = token[i];
+                    if (c == '@')       { curchar = '@'; }
+                    else if (c == '/' || c == '\\') { curchar = '/'; }
+                    else if (CharacterClasses.HyphenCharacters.Contains(c))  { curchar = '-'; }
+                    else if (char.IsLower(token[i]))        { curchar = 'x'; }
                     else if (char.IsUpper(token[i]))        { curchar = 'X'; }
                     else if (char.IsNumber(token[i]))       { curchar = '9'; }
                     else if (char.IsPunctuation(token[i]))  { curchar = '.'; }
@@ -386,6 +398,7 @@ namespace Catalyst
                     {
                         sb.Append(curchar);
                     }
+
                     prevchar = curchar;
                 }
                 shape = sb.ToString();
