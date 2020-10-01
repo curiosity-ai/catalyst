@@ -198,24 +198,17 @@ namespace Catalyst.Models
 
         public void TrainWord2Sense(IEnumerable<IDocument> documents, ParallelOptions parallelOptions, int ngrams = 3, double tooRare = 1E-5, double tooCommon = 0.1, Word2SenseTrainingData trainingData = null)
         {
-            var HashCount =  new ConcurrentDictionary<ulong, int>();
-            var Senses    =  new ConcurrentDictionary<ulong, ulong[]>();
-            var Words     =  new ConcurrentDictionary<ulong, string>();
-            long totalDocCount = 0, totalTokenCount = 0;
+            var hashCount          = new ConcurrentDictionary<ulong, int>(trainingData?.HashCount ?? new Dictionary<ulong, int>());
+            var senses             = new ConcurrentDictionary<ulong, ulong[]>(trainingData?.Senses ?? new Dictionary<ulong, ulong[]>());
+            var words              = new ConcurrentDictionary<ulong, string>(trainingData?.Words ?? new Dictionary<ulong, string>());
+            var shapes             = new ConcurrentDictionary<string, ulong>(trainingData?.Shapes ?? new Dictionary<string, ulong>());
 
-            if (trainingData is object)
-            {
-                HashCount = new ConcurrentDictionary<ulong, int>(trainingData.HashCount);
-                Senses = new ConcurrentDictionary<ulong, ulong[]>(trainingData.Senses);
-                Words = new ConcurrentDictionary<ulong, string>(trainingData.Words);
-                totalDocCount = trainingData.SeenDocuments;
-                totalTokenCount = trainingData.SeenTokens;
-            }
+            long totalDocCount     = trainingData?.SeenDocuments ?? 0;
+            long totalTokenCount   = trainingData?.SeenTokens ?? 0;
 
-            bool ignoreCase = Data.IgnoreCase;
+            bool ignoreCase        = Data.IgnoreCase;
             bool ignoreOnlyNumeric = Data.IgnoreOnlyNumeric;
-            var stopwords = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => ignoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan())).ToArray());
-            
+            var stopwords          = new HashSet<ulong>(StopWords.Spacy.For(Language).Select(w => ignoreCase ? IgnoreCaseHash64(w.AsSpan()) : Hash64(w.AsSpan())).ToArray());
 
             int docCount = 0, tkCount = 0;
 
@@ -240,6 +233,10 @@ namespace Catalyst.Models
                             for (int i = 0; i < tokens.Length; i++)
                             {
                                 var tk = tokens[i];
+
+                                var shape = tk.ValueAsSpan.Shape(compact: false);
+
+                                shapes.AddOrUpdate(shape, 1, (k, v) => v + 1);
 
                                 var hash = ignoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
@@ -269,7 +266,7 @@ namespace Catalyst.Models
                                     continue;
                                 }
 
-                                if (!Words.ContainsKey(hash)) { Words[hash] = ignoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
+                                if (!words.ContainsKey(hash)) { words[hash] = ignoreCase ? tk.Value.ToLowerInvariant() : tk.Value; }
 
                                 stack.Enqueue(hash);
                                 ulong combined = stack.ElementAt(0);
@@ -277,14 +274,14 @@ namespace Catalyst.Models
                                 for (int j = 1; j < stack.Count; j++)
                                 {
                                     combined = HashCombine64(combined, stack.ElementAt(j));
-                                    if (HashCount.ContainsKey(combined))
+                                    if (hashCount.ContainsKey(combined))
                                     {
-                                        HashCount[combined]++;
+                                        hashCount[combined]++;
                                     }
                                     else
                                     {
-                                        Senses[combined] = stack.Take(j + 1).ToArray();
-                                        HashCount[combined] = 1;
+                                        senses[combined] = stack.Take(j + 1).ToArray();
+                                        hashCount[combined] = 1;
                                     }
                                 }
 
@@ -322,12 +319,12 @@ namespace Catalyst.Models
             int thresholdRare   = Math.Max(2, (int)Math.Floor(tooRare * totalTokenCount));
             int thresholdCommon = (int)Math.Floor(tooCommon * totalTokenCount);
 
-            var toKeep = HashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
+            var toKeep = hashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
                                                 .Select(kv => kv.Key).ToArray();
 
             foreach (var key in toKeep)
             {
-                if (Senses.TryGetValue(key, out var hashes) && HashCount.TryGetValue(key, out var count))
+                if (senses.TryGetValue(key, out var hashes) && hashCount.TryGetValue(key, out var count))
                 {
                     Data.Hashes.Add(key);
                     for (int i = 0; i < hashes.Length; i++)
@@ -343,14 +340,15 @@ namespace Catalyst.Models
 
             if(trainingData is object)
             {
-                trainingData.HashCount = new Dictionary<ulong, int>(HashCount);
-                trainingData.Senses = new Dictionary<ulong, ulong[]>(Senses);
-                trainingData.Words = new Dictionary<ulong, string>(Words);
+                trainingData.HashCount = new Dictionary<ulong, int>(hashCount);
+                trainingData.Senses = new Dictionary<ulong, ulong[]>(senses);
+                trainingData.Words = new Dictionary<ulong, string>(words);
                 trainingData.SeenDocuments = totalDocCount;
                 trainingData.SeenTokens = totalTokenCount;
+                trainingData.Shapes = new Dictionary<string, ulong>(shapes);
             }
 
-            foreach (var word in Words.Values)
+            foreach (var word in words.Values)
             {
                 AddToGazeteer(word);
             }
@@ -445,6 +443,7 @@ namespace Catalyst.Models
         public Dictionary<ulong, int> HashCount { get; set; } = new Dictionary<ulong, int>();
         public Dictionary<ulong, ulong[]> Senses { get; set; } = new Dictionary<ulong, ulong[]>();
         public Dictionary<ulong, string> Words { get; set; } = new Dictionary<ulong, string>();
+        public Dictionary<string, ulong> Shapes { get; set; } = new Dictionary<string, ulong>();
 
         public long SeenDocuments { get; set; } = 0;
         public long SeenTokens { get; set; } = 0;
