@@ -198,10 +198,11 @@ namespace Catalyst.Models
 
         public void TrainWord2Sense(IEnumerable<IDocument> documents, ParallelOptions parallelOptions, int ngrams = 3, double tooRare = 1E-5, double tooCommon = 0.1, Word2SenseTrainingData trainingData = null)
         {
-            var hashCount          = new ConcurrentDictionary<ulong, int>(trainingData?.HashCount ?? new Dictionary<ulong, int>());
-            var senses             = new ConcurrentDictionary<ulong, ulong[]>(trainingData?.Senses ?? new Dictionary<ulong, ulong[]>());
-            var words              = new ConcurrentDictionary<ulong, string>(trainingData?.Words ?? new Dictionary<ulong, string>());
-            var shapes             = new ConcurrentDictionary<string, ulong>(trainingData?.Shapes ?? new Dictionary<string, ulong>());
+            var hashCount          = new ConcurrentDictionary<ulong, int>(trainingData?.HashCount           ?? new Dictionary<ulong, int>());
+            var senses             = new ConcurrentDictionary<ulong, ulong[]>(trainingData?.Senses          ?? new Dictionary<ulong, ulong[]>());
+            var words              = new ConcurrentDictionary<ulong, string>(trainingData?.Words            ?? new Dictionary<ulong, string>());
+            var shapes             = new ConcurrentDictionary<string, ulong>(trainingData?.Shapes           ?? new Dictionary<string, ulong>());
+            var shapeExamples      = new ConcurrentDictionary<string, string[]>(trainingData?.ShapeExamples ?? new Dictionary<string, string[]>());
 
             long totalDocCount     = trainingData?.SeenDocuments ?? 0;
             long totalTokenCount   = trainingData?.SeenTokens ?? 0;
@@ -226,6 +227,7 @@ namespace Catalyst.Models
                         if (doc.TokensCount < ngrams) { return; } //Ignore too small documents
 
                         Interlocked.Add(ref tkCount, doc.TokensCount);
+                        
                         foreach (var span in doc)
                         {
                             var tokens = span.GetCapturedTokens().ToArray();
@@ -233,10 +235,17 @@ namespace Catalyst.Models
                             for (int i = 0; i < tokens.Length; i++)
                             {
                                 var tk = tokens[i];
-
                                 var shape = tk.ValueAsSpan.Shape(compact: false);
 
                                 shapes.AddOrUpdate(shape, 1, (k, v) => v + 1);
+                                shapeExamples.AddOrUpdate(shape, (k) => new[] { tk.Value }, (k, v) => 
+                                {
+                                    if(v.Length < 50)
+                                    {
+                                        v = v.Concat(new[] { tk.Value }).Distinct().ToArray();
+                                    }
+                                    return v;
+                                });
 
                                 var hash = ignoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
@@ -346,6 +355,7 @@ namespace Catalyst.Models
                 trainingData.SeenDocuments = totalDocCount;
                 trainingData.SeenTokens = totalTokenCount;
                 trainingData.Shapes = new Dictionary<string, ulong>(shapes);
+                trainingData.ShapeExamples = new Dictionary<string, string[]>(shapeExamples);
             }
 
             foreach (var word in words.Values)
@@ -444,7 +454,7 @@ namespace Catalyst.Models
         public Dictionary<ulong, ulong[]> Senses { get; set; } = new Dictionary<ulong, ulong[]>();
         public Dictionary<ulong, string> Words { get; set; } = new Dictionary<ulong, string>();
         public Dictionary<string, ulong> Shapes { get; set; } = new Dictionary<string, ulong>();
-
+        public Dictionary<string, string[]> ShapeExamples { get; set; } = new Dictionary<string, string[]>();
         public long SeenDocuments { get; set; } = 0;
         public long SeenTokens { get; set; } = 0;
     }
