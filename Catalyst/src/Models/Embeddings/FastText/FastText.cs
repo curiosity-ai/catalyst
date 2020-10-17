@@ -136,6 +136,22 @@ namespace Catalyst.Models
             }
         }
 
+        public void CompactSupervisedModel()
+        {
+            if (Data.Type == ModelType.Supervised)
+            {
+                if (Data.Entries is object)
+                {
+                    foreach (var key in Data.Entries.Keys)
+                    {
+                        var entry = Data.Entries[key];
+                        entry.Word = null;
+                        Data.Entries[key] = entry;
+                    }
+                }
+            }
+        }
+
         public new static async Task<FastText> FromStoreAsync(Language language, int version, string tag)
         {
             return await FromStoreAsync_Internal(language, version, tag);
