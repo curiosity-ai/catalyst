@@ -435,7 +435,7 @@ namespace Catalyst.Models
             {
                 _weights = new float[weights.Values.Sum(v => v.Length)];
                 _singleWeightLength = weights.First().Value.Length;
-
+                _positions = new Dictionary<int, int>(weights.Count);
                 var ws = _weights.AsSpan();
                 int curPos = 0;
                 foreach(var kv in weights)
