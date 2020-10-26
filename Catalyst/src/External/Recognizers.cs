@@ -34,6 +34,10 @@ namespace Catalyst.External
             return Task.FromResult(true);
         } // Needs to say it exists, otherwise when calling StoredObjectInfo.ExistsAsync(Language language, int version, string tag), it will fail to load this model
 
+        public static Task<DateTimeRecognizer> FromStoreAsync(Language language, int version, string tag)
+        {
+            return Task.FromResult(new DateTimeRecognizer(language));
+        }
 
         public bool RecognizeEntities(IDocument document)
         {
