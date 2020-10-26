@@ -2,6 +2,7 @@
 using Mosaik.Core;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Catalyst.External
 {
@@ -27,6 +28,12 @@ namespace Catalyst.External
         {
             return new[] { nameof(RecognizerTypes.DateTime) };
         }
+        
+        public static Task<bool> ExistsAsync(Language language, int version, string tag)
+        {
+            return Task.FromResult(true);
+        } // Needs to say it exists, otherwise when calling StoredObjectInfo.ExistsAsync(Language language, int version, string tag), it will fail to load this model
+
 
         public bool RecognizeEntities(IDocument document)
         {
