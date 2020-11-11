@@ -1,4 +1,5 @@
-﻿#if !NETCOREAPP3_0
+﻿#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
+#else
 
 using MessagePackCompat;
 using Mosaik.Core;

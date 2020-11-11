@@ -628,7 +628,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
         public void Quantize(Span<float> vector)
 #else
         public void Quantize(float[] vector)
@@ -1014,7 +1014,7 @@ namespace Catalyst.Models
                 Update(mps, bow_a, l.EntryIndexes[w], lr);
             }
         }
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
         private void PredictPVDM(Span<float> predictionVector, ThreadState mps, ref Line l, float lr)
 #else
         private void PredictPVDM(float[] predictionVector, ThreadState mps, ref Line l, float lr)
@@ -1085,7 +1085,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
         private void UpdatePredictionOnly(Span<float> predictionVector, ThreadState state, Span<int> input, int target, float lr)
 #else
         private void UpdatePredictionOnly(float[] predictionVector, ThreadState state, Span<int> input, int target, float lr)
@@ -1346,7 +1346,7 @@ namespace Catalyst.Models
         private void ComputeHidden(ThreadState state, Span<int> input)
         {
             float z = 1.0f / input.Length;
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
             Span<float> hidden = state.Hidden;
             hidden.Fill(0f);
 #else
@@ -1363,7 +1363,7 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
         private void ComputeHiddenForPrediction(Span<float> hidden, Span<int> input, Span<float> extraVector)
         {
             hidden.Fill(0f);
