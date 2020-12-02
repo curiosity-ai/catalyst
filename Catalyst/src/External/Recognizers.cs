@@ -1,5 +1,6 @@
 ﻿using Microsoft.Recognizers.Text;
 using Mosaik.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,10 +14,16 @@ namespace Catalyst.External
 
     public class DateTimeRecognizer : StorableObject<DateTimeRecognizer, DateTimeRecognizerModel>, IEntityRecognizer, IProcess
     {
+        private readonly string _culture;
+        private readonly Microsoft.Recognizers.Text.DateTime.DateTimeRecognizer _model;
+        private readonly Microsoft.Recognizers.Text.DateTime.DateTimeModel _dateTimeModel;
+
         public DateTimeRecognizer(Language language) : base(language, 0, "", false)
         {
-            var lang = Languages.EnumToCode(language);
-            Data.Culture = Culture.GetSupportedCultureCodes().Where(l => l.StartsWith(lang)).FirstOrDefault();
+            var lang       = Languages.EnumToCode(language);
+            _culture       = Culture.GetSupportedCultureCodes().Where(l => l.StartsWith(lang)).FirstOrDefault();
+            _model         = new Microsoft.Recognizers.Text.DateTime.DateTimeRecognizer(Microsoft.Recognizers.Text.DateTime.DateTimeOptions.None);
+            _dateTimeModel = _model.GetDateTimeModel(_culture);
         }
 
         public void Process(IDocument document)
@@ -41,7 +48,9 @@ namespace Catalyst.External
 
         public bool RecognizeEntities(IDocument document)
         {
-            var result = Microsoft.Recognizers.Text.DateTime.DateTimeRecognizer.RecognizeDateTime(document.Value, Data.Culture);
+
+            var result = _dateTimeModel.Parse(document.Value, DateTime.Now);
+
             bool found = result.Any();
             if (found)
             {
@@ -108,6 +117,5 @@ namespace Catalyst.External
 
     public class DateTimeRecognizerModel : StorableObjectData
     {
-        public string Culture { get; set; }
     }
 }
