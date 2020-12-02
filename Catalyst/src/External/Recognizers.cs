@@ -26,11 +26,11 @@ namespace Catalyst.External
 
     public class DateTimeRecognizer : StorableObject<DateTimeRecognizer, DateTimeRecognizerModel>, IEntityRecognizer, IProcess
     {
-        private readonly DateTimeModel _dateTimeModel;
+        private readonly Lazy<DateTimeModel> _dateTimeModel;
 
         public DateTimeRecognizer(Language language, bool useUsEnglishForEnglish = false) : base(language, 0, "", false)
         {
-            _dateTimeModel = GetModel(language, useUsEnglishForEnglish);
+            _dateTimeModel = new Lazy<DateTimeModel>(() => GetModel(language, useUsEnglishForEnglish));
         }
 
         private DateTimeModel GetModel(Language language, bool useUsEnglishForEnglish)
@@ -179,8 +179,7 @@ namespace Catalyst.External
 
         public bool RecognizeEntities(IDocument document)
         {
-
-            var result = _dateTimeModel.Parse(document.Value, DateTime.Now);
+            var result = _dateTimeModel.Value.Parse(document.Value, DateTime.Now);
 
             bool found = result.Any();
             if (found)
