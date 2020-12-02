@@ -20,8 +20,6 @@ namespace Catalyst.Models
         public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
-
-        public HashSet<string> Gazeteer { get; set; } = new HashSet<string>();
     }
 
     public class Spotter : StorableObject<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
@@ -362,11 +360,6 @@ namespace Catalyst.Models
                 trainingData.ShapeExamples = new Dictionary<string, string[]>(shapeExamples);
             }
 
-            foreach (var word in words.Values)
-            {
-                AddToGazeteer(word);
-            }
-
             Logger.LogInformation("Finish training Word2Sense model");
         }
 
@@ -379,13 +372,6 @@ namespace Catalyst.Models
                     yield return sc;
                 }
             }
-        }
-
-        private void AddToGazeteer(string word)
-        {
-            word = Data.IgnoreCase? word.ToLowerInvariant() : word;
-            Data.Gazeteer ??= new HashSet<string>();
-            Data.Gazeteer.Add(word);
         }
 
         public void AddEntry(string entry)
@@ -403,8 +389,6 @@ namespace Catalyst.Models
             var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (words.Length == 1)
             {
-                AddToGazeteer(words[0]);
-
                 var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
                 AddSingleTokenConcept(hash);
 
@@ -419,8 +403,6 @@ namespace Catalyst.Models
             ulong combinedHash = 0;
             for (int n = 0; n < words.Length; n++)
             {
-                AddToGazeteer(words[n]);
-
                 var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[n].AsSpan()) : Spotter.Hash64(words[n].AsSpan());
                 if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
                 if (Data.MultiGramHashes.Count < n + 1)
