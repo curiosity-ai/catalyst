@@ -25,7 +25,7 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.28" />
     <PackageReference Include="Microsoft.ML" Version="1.5.2" />
     <PackageReference Include="MessagePack" Version="2.2.60" />
-    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.4.2" />
+    <PackageReference Include="Compiled.Recognizers.Text.DateTime" Version="1.4.2.14324" />
     <PackageReference Include="Mosaik.Core" Version="0.0.13791" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
