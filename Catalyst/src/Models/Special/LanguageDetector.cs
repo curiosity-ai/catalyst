@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.IO.Compression;
 
 namespace Catalyst.Models
 {
@@ -37,7 +38,24 @@ namespace Catalyst.Models
         public new static async Task<LanguageDetector> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new LanguageDetector(version, tag);
-            await a.LoadDataAsync();
+
+            try
+            {
+                using var sr1 = typeof(LanguageDetector).Assembly.GetManifestResourceStream($"Catalyst.Resources.LanguageDetector.binz");
+                using var decompressed = Storage.Current.GetTempStream();
+                using (var ds = new DeflateStream(sr1, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    await ds.CopyToAsync(decompressed);
+                    decompressed.Seek(0, SeekOrigin.Begin);
+                    a.Data = MessagePack.MessagePackSerializer.Deserialize<LanguageDetectorModel>(decompressed, Pipeline.LZ4Standard);
+                    a.Version = 0;
+                }
+            }
+            catch
+            {
+                await a.LoadDataAsync();
+            }
+
             return a;
         }
 

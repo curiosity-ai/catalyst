@@ -23,7 +23,7 @@ namespace Catalyst
 
     public class Pipeline : StorableObject<Pipeline, PipelineData>, ICanUpdateModel
     {
-        private static readonly MessagePackSerializerOptions LZ4Standard = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4Block);
+        internal static readonly MessagePackSerializerOptions LZ4Standard = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4Block);
         private List<IProcess> Processes { get; set; } = new List<IProcess>();
         private Dictionary<Language, Neuralyzer> Neuralyzers { get; set; } = new Dictionary<Language, Neuralyzer>();
 
