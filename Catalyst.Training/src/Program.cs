@@ -39,30 +39,30 @@ namespace Catalyst.Training
                                 p.PriorityClass = ProcessPriorityClass.High;
                             }
 
-                            //if (!string.IsNullOrWhiteSpace(options.UniversalDependenciesPath))
-                            //{
-                            //    TrainSentenceDetector.Train(options.UniversalDependenciesPath);
-                            //    TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath);
-                            //}
+                            if (!string.IsNullOrWhiteSpace(options.UniversalDependenciesPath))
+                            {
+                                TrainSentenceDetector.Train(options.UniversalDependenciesPath);
+                                TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath);
+                            }
 
-                            //if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
-                            //{
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.English, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.French, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.German, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Spanish, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Italian, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Portuguese, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Russian, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Dutch, 0, "WikiNER");
-                            //    await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Polish, 0, "WikiNER");
-                            //}
+                            if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
+                            {
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.English, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.French, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.German, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Spanish, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Italian, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Portuguese, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Russian, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Dutch, 0, "WikiNER");
+                                await TrainWikiNER.TrainAsync(options.WikiNERPath, Language.Polish, 0, "WikiNER");
+                            }
 
-                            //if (!string.IsNullOrWhiteSpace(options.FastTextLanguageSentencesPath))
-                            //{
-                            //    TrainLanguageDetector.Train(options.FastTextLanguageSentencesPath);
-                            //    TrainLanguageDetector.Test(options.FastTextLanguageSentencesPath);
-                            //}
+                            if (!string.IsNullOrWhiteSpace(options.FastTextLanguageSentencesPath))
+                            {
+                                TrainLanguageDetector.Train(options.FastTextLanguageSentencesPath);
+                                TrainLanguageDetector.Test(options.FastTextLanguageSentencesPath);
+                            }
 
                             if (!string.IsNullOrWhiteSpace(options.LanguageJsonPath))
                             {
