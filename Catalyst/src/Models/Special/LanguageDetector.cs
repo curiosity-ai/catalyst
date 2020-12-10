@@ -370,6 +370,12 @@ namespace Catalyst.Models
 
             private ReadOnlySpan<char> Trim(Span<char> span)
             {
+                if (span.Length == 0) return span;
+                bool allSpace = true;
+                foreach(var c in span) { allSpace &= char.IsWhiteSpace(c); }
+                
+                if (allSpace) return ReadOnlySpan<char>.Empty;
+
                 var s = 0;
                 var e = span.Length-1;
                 for (int i = 0; i < span.Length; i++)
