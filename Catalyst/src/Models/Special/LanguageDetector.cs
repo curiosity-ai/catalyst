@@ -148,19 +148,28 @@ namespace Catalyst.Models
 
         #region Normalize text
 
+        private static readonly Regex RE_Numbers = new Regex(@"([\w+\-!?\\\/\(\)\[\]\{\},.:;]*\d[\w\d+\-!?\\\/\(\)\[\]\{\},.:;]+)", RegexOptions.Compiled);
         private static readonly Regex UrlRegex = new Regex("https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}", RegexOptions.Compiled);
         private static readonly Regex EmailRegex = new Regex("[-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}", RegexOptions.Compiled);
 
         private string NormalizeText(string text)
         {
+            text = NormalizeWhitespace(text);
+
             if (text.Length > MaxTextLength) { text = text.Substring(0, MaxTextLength); }
 
             text = RemoveAddresses(text);
+            text = RemoveNumbers(text);
             text = NormalizeAlphabet(text);
             text = NormalizeVietnamese(text);
             text = NormalizeWhitespace(text);
 
             return text;
+        }
+
+        private string RemoveNumbers(string text)
+        {
+            return RE_Numbers.Replace(text, " ");
         }
 
         private static string NormalizeAlphabet(string text)
@@ -205,18 +214,33 @@ namespace Catalyst.Models
 
         private static string NormalizeWhitespace(string text)
         {
-            StringBuilder sb = new StringBuilder(text.Length);
+            var sb = Pools.StringBuilder.Rent();
 
-            char? prev = null;
+            bool prevIsSpace = false;
 
             foreach (char c in text)
             {
-                if (c != ' ' || prev != ' ')
+                if(char.IsWhiteSpace(c))
+                {
+                    if(!prevIsSpace)
+                    {
+                        sb.Append(' ');
+                    }
+
+                    prevIsSpace = true;
+                }
+                else
+                {
                     sb.Append(c);
-                prev = c;
+                    prevIsSpace = false;
+                }
             }
 
-            return sb.ToString();
+            var final = sb.ToString();
+            
+            Pools.StringBuilder.Return(sb);
+
+            return final;
         }
 
         private static string RemoveAddresses(string text)
@@ -373,7 +397,6 @@ namespace Catalyst.Models
                 if (span.Length == 0) return span;
                 bool allSpace = true;
                 foreach(var c in span) { allSpace &= char.IsWhiteSpace(c); }
-                
                 if (allSpace) return ReadOnlySpan<char>.Empty;
 
                 var s = 0;
