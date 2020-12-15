@@ -8,16 +8,16 @@ trigger:
 - master
 
 pool:
-  vmImage: 'VS2017-Win2016'
+  vmImage: 'windows-latest'
 
 steps:
-- task: NuGetToolInstaller@0
+- task: NuGetToolInstaller@1
 
 - task: UseDotNet@2
   displayName: 'Use .NET Core sdk'
   inputs:
     packageType: sdk
-    version: 3.0.100
+    version: 5.0.100
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: DotNetCoreCLI@2

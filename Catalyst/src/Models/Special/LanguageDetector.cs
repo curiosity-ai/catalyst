@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.IO.Compression;
 
 namespace Catalyst.Models
 {
@@ -19,8 +20,8 @@ namespace Catalyst.Models
 
     public class LanguageDetector : StorableObject<LanguageDetector, LanguageDetectorModel>, IProcess
     {
+        private static ObjectPool<List<int>> _listPool = new ObjectPool<List<int>>(() => new List<int>(), Environment.ProcessorCount, l => l.Clear());
         public double Alpha { get; set; } = 0.5;
-        public int? RandomSeed { get; set; } = null;
         public int Trials { get; set; } = 7;
         public int NGramLength { get; set; } = 3;
         public int MaxTextLength { get; set; } = 10000;
@@ -37,7 +38,24 @@ namespace Catalyst.Models
         public new static async Task<LanguageDetector> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new LanguageDetector(version, tag);
-            await a.LoadDataAsync();
+
+            try
+            {
+                using var sr1 = typeof(LanguageDetector).Assembly.GetManifestResourceStream($"Catalyst.Resources.LanguageDetector.binz");
+                using var decompressed = new MemoryStream();
+                using (var ds = new DeflateStream(sr1, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    await ds.CopyToAsync(decompressed);
+                    decompressed.Seek(0, SeekOrigin.Begin);
+                    a.Data = MessagePack.MessagePackSerializer.Deserialize<LanguageDetectorModel>(decompressed, Pipeline.LZ4Standard);
+                    a.Version = 0;
+                }
+            }
+            catch
+            {
+                await a.LoadDataAsync();
+            }
+
             return a;
         }
 
@@ -53,55 +71,65 @@ namespace Catalyst.Models
 
         public Language Detect(string text)
         {
-            var language = DetectAll(text).FirstOrDefault();
-            return language is object ? language.Language : Language.Unknown;
+            var languages = DetectAll(text);
+            return languages.Count > 0 ? languages[0].Language : Language.Unknown;
         }
 
-        public IEnumerable<DetectedLanguage> DetectAll(string text)
+        public IList<DetectedLanguage> DetectAll(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) { return new DetectedLanguage[0]; }
+            if (string.IsNullOrWhiteSpace(text)) { return Array.Empty<DetectedLanguage>(); }
 
-            var ngrams = ExtractNGrams(NormalizeText(text.Substring(0, Math.Min(text.Length, 200))));
+            var ngrams = ExtractNGrams(NormalizeText(text));
 
-            if (ngrams.Count == 0) { return new DetectedLanguage[0]; }
-
-            var languageProbabilities = new double[Data.Languages.Count];
-
-            var random = RandomSeed is object ? new Random(RandomSeed.Value) : new Random();
-
-            for (int t = 0; t < Trials; t++)
+            try
             {
-                var probs = InitializeProbabilities();
-                double alpha = Alpha + random.NextDouble() * AlphaWidth;
+                if (ngrams.Count == 0) { return Array.Empty<DetectedLanguage>(); }
 
-                for (int i = 0; ; i++)
+                Span<double> languageProbabilities = Data.Languages.Count < 256 ? stackalloc double[Data.Languages.Count] : new double[Data.Languages.Count];
+
+                for (int t = 0; t < Trials; t++)
                 {
-                    int r = random.Next(ngrams.Count);
-                    UpdateProbabilities(probs, ngrams[r], alpha);
-                    if (i % 5 == 0 && (NormalizeProbabilities(probs) > ConvergenceThreshold || i >= MaxIterations)) { break; }
+                    var probs = InitializeProbabilities();
+                    
+                    double alpha = Alpha + ThreadSafeFastRandom.NextDouble() * AlphaWidth;
+
+                    for (int i = 0; ; i++)
+                    {
+                        int r = ThreadSafeFastRandom.Next(ngrams.Count);
+                        UpdateProbabilities(probs, ngrams[r], alpha);
+                        if (i % 5 == 0 && (NormalizeProbabilities(probs) > ConvergenceThreshold || i >= MaxIterations)) { break; }
+                    }
+
+                    for (int j = 0; j < languageProbabilities.Length; j++) { languageProbabilities[j] += probs[j] / Trials; }
                 }
 
-                for (int j = 0; j < languageProbabilities.Length; j++) { languageProbabilities[j] += probs[j] / Trials; }
+                return SortProbabilities(languageProbabilities);
             }
-
-            return SortProbabilities(languageProbabilities);
+            finally
+            {
+                _listPool.Return(ngrams);
+            }
         }
 
         private List<int> ExtractNGrams(string text)
         {
-            var hashes = new List<int>();
+            var hashes = _listPool.Rent();
             if (string.IsNullOrEmpty(text)) { return hashes; }
-            NGram ngram = new NGram();
+            
+            var ngram = new NGram();
+
             foreach (char c in text)
             {
                 ngram.Add(c);
+
                 for (int n = 1; n <= NGram.N_GRAM; n++)
                 {
-                    string w = ngram.Get(n);
+                    var w = ngram.Get(n);
 
-                    if (w is object)
+                    if (w.Length > 0)
                     {
                         int hash = GetHash(w);
+
                         if (Data.WordLanguageProbabilities.ContainsKey(hash))
                         {
                             hashes.Add(hash);
@@ -113,26 +141,35 @@ namespace Catalyst.Models
             return hashes;
         }
 
-        public static int GetHash(string feature)
+        private static int GetHash(ReadOnlySpan<char> lowerCaseFeaturesWithoutSpaces)
         {
-            return Hashes.CaseSensitiveHash32(feature.Trim().ToLowerInvariant()); //TODO: Use hash from fastText
+            return Hashes.CaseSensitiveHash32(lowerCaseFeaturesWithoutSpaces);
         }
 
         #region Normalize text
 
+        private static readonly Regex RE_Numbers = new Regex(@"([\w+\-!?\\\/\(\)\[\]\{\},.:;]*\d[\w\d+\-!?\\\/\(\)\[\]\{\},.:;]+)", RegexOptions.Compiled);
         private static readonly Regex UrlRegex = new Regex("https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}", RegexOptions.Compiled);
         private static readonly Regex EmailRegex = new Regex("[-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}", RegexOptions.Compiled);
 
         private string NormalizeText(string text)
         {
+            text = NormalizeWhitespace(text);
+
             if (text.Length > MaxTextLength) { text = text.Substring(0, MaxTextLength); }
 
             text = RemoveAddresses(text);
+            text = RemoveNumbers(text);
             text = NormalizeAlphabet(text);
             text = NormalizeVietnamese(text);
             text = NormalizeWhitespace(text);
 
             return text;
+        }
+
+        private string RemoveNumbers(string text)
+        {
+            return RE_Numbers.Replace(text, " ");
         }
 
         private static string NormalizeAlphabet(string text)
@@ -177,18 +214,33 @@ namespace Catalyst.Models
 
         private static string NormalizeWhitespace(string text)
         {
-            StringBuilder sb = new StringBuilder(text.Length);
+            var sb = Pools.StringBuilder.Rent();
 
-            char? prev = null;
+            bool prevIsSpace = false;
 
             foreach (char c in text)
             {
-                if (c != ' ' || prev != ' ')
+                if(char.IsWhiteSpace(c))
+                {
+                    if(!prevIsSpace)
+                    {
+                        sb.Append(' ');
+                    }
+
+                    prevIsSpace = true;
+                }
+                else
+                {
                     sb.Append(c);
-                prev = c;
+                    prevIsSpace = false;
+                }
             }
 
-            return sb.ToString();
+            var final = sb.ToString();
+            
+            Pools.StringBuilder.Return(sb);
+
+            return final;
         }
 
         private static string RemoveAddresses(string text)
@@ -237,7 +289,7 @@ namespace Catalyst.Models
             return maxp;
         }
 
-        private IEnumerable<DetectedLanguage> SortProbabilities(double[] probs)
+        private IList<DetectedLanguage> SortProbabilities(Span<double> probs)
         {
             List<DetectedLanguage> list = new List<DetectedLanguage>();
 
@@ -263,7 +315,7 @@ namespace Catalyst.Models
 
         #endregion Probabilities
 
-        public class DetectedLanguage
+        public struct DetectedLanguage
         {
             public Language Language { get; set; }
             public double Probability { get; set; }
@@ -273,30 +325,46 @@ namespace Catalyst.Models
         {
             public const int N_GRAM = 3;
 
-            private StringBuilder buffer = new StringBuilder(" ", N_GRAM);
+            private readonly char[] buffer;
+            private int length;
+
             private bool capital = false;
+
+            public NGram()
+            {
+                buffer = new char[N_GRAM];
+                buffer[0] = ' ';
+                length = 1;
+            }
 
             public void Add(char c)
             {
-                char lastChar = buffer[buffer.Length - 1];
+                char lastChar = buffer[length - 1];
 
                 if (lastChar == ' ')
                 {
-                    buffer = new StringBuilder(" ");
+                    buffer[0] = ' ';
+                    length = 1;
+
                     capital = false;
                     if (c == ' ') return;
                 }
-                else if (buffer.Length >= N_GRAM)
+                else if (length == N_GRAM)
                 {
-                    buffer.Remove(0, 1);
+                    buffer[0] = buffer[1];
+                    buffer[1] = buffer[2];
+                    length = 2;
                 }
 
-                buffer.Append(c);
+                buffer[length] = char.ToLowerInvariant(c);
+                length++;
 
                 if (char.IsUpper(c))
                 {
                     if (char.IsUpper(lastChar))
+                    {
                         capital = true;
+                    }
                 }
                 else
                 {
@@ -304,24 +372,60 @@ namespace Catalyst.Models
                 }
             }
 
-            public string Get(int n)
+            public ReadOnlySpan<char> Get(int n)
             {
-                if (capital)
-                    return null;
+                if (capital) return ReadOnlySpan<char>.Empty;
 
-                if (n < 1 || n > N_GRAM || buffer.Length < n)
-                    return null;
+                if (n < 1 || n > N_GRAM || length < n) return ReadOnlySpan<char>.Empty;
 
                 if (n == 1)
                 {
-                    char c = buffer[buffer.Length - 1];
-                    if (c == ' ') return null;
-                    return c.ToString();
+                    char c = buffer[length - 1];
+                    
+                    if (c == ' ') return ReadOnlySpan<char>.Empty;
+
+                    return Trim(buffer.AsSpan(length - 1, 1));
                 }
                 else
                 {
-                    return buffer.ToString(buffer.Length - n, n);
+                    return Trim(buffer.AsSpan(length - n, n));
                 }
+            }
+
+            private ReadOnlySpan<char> Trim(Span<char> span)
+            {
+                if (span.Length == 0) return span;
+                bool allSpace = true;
+                foreach(var c in span) { allSpace &= char.IsWhiteSpace(c); }
+                if (allSpace) return ReadOnlySpan<char>.Empty;
+
+                var s = 0;
+                var e = span.Length-1;
+                for (int i = 0; i < span.Length; i++)
+                {
+                    if (char.IsWhiteSpace(span[i]))
+                    {
+                        s = i;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                for (int i = span.Length-1; i > s; i--)
+                {
+                    if (char.IsWhiteSpace(span[i]))
+                    {
+                        e = i;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                return span.Slice(s, e + 1);
             }
         }
 
@@ -346,7 +450,7 @@ namespace Catalyst.Models
                 var jsonProfile = JsonConvert.DeserializeObject<JsonLanguageProfile>(json);
                 foreach (var word in jsonProfile.freq.Keys)
                 {
-                    int hash = GetHash(word);
+                    int hash = GetHash(word.ToLowerInvariant().Trim().AsSpan());
                     if (!ld.Data.WordLanguageProbabilities.ContainsKey(hash))
                     {
                         ld.Data.WordLanguageProbabilities[hash] = new Dictionary<Language, double>();

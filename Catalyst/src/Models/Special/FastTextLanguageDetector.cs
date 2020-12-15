@@ -75,6 +75,7 @@ namespace Catalyst.Models
             }
 
             a.Model = await FastText.FromStoreAsync_Internal(Language.Any, version, "language-detector");
+            a.Model?.CompactSupervisedModel();
 
             return a;
         }
@@ -158,6 +159,7 @@ namespace Catalyst.Models
 
         public override async Task StoreAsync()
         {
+            Model.CompactSupervisedModel();
             await Model.StoreAsync();
             await base.StoreAsync();
         }

@@ -16,11 +16,15 @@ namespace Catalyst.Models
         public Dictionary<int, int> TokenToSingleTag { get; set; } = new Dictionary<int, int>();
     }
 
+
+
     public class AveragePerceptronTagger : StorableObject<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
         private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
         private Dictionary<int, float[]> AverageWeights { get; set; }
+
+        private WeightsHolder _weightsHolder = null;
 
         public AveragePerceptronTagger(Language language, int version, string tag = "") : base(language, version, tag)
         {
@@ -41,7 +45,19 @@ namespace Catalyst.Models
         {
             var a = new AveragePerceptronTagger(language, version, tag);
             await a.LoadDataAsync();
+            a._weightsHolder = new WeightsHolder(a.Data.Weights);
+            a.Data.Weights = null;
             return a;
+        }
+
+        public override async Task StoreAsync()
+        {
+            if(_weightsHolder is object)
+            {
+                Data.Weights = _weightsHolder.GetOriginal();
+            }
+            await base.StoreAsync();
+            Data.Weights = null;
         }
 
         public void Train(IEnumerable<IDocument> documents, int trainingSteps)
@@ -232,32 +248,57 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int PredictTagFromFeatures(Span<int> features, Span<float> ScoreBuffer)
+        private int PredictTagFromFeatures(Span<int> features, Span<float> scoreBuffer)
         {
             bool first = true;
-            for (int i = 0; i < features.Length; i++)
+
+            if (_weightsHolder is object)
             {
-                if (Data.Weights.TryGetValue(features[i], out float[] weights))
+                for (int i = 0; i < features.Length; i++)
                 {
-                    if (first)
+                    if (_weightsHolder.TryGetValue(features[i], out var weights))
                     {
-                        weights.CopyTo(ScoreBuffer);
-                        first = false;
-                    }
-                    else
-                    {
-                        for (var j = 0; j < ScoreBuffer.Length; j++)
+                        if (first)
                         {
-                            ScoreBuffer[j] += weights[j];
+                            weights.CopyTo(scoreBuffer);
+                            first = false;
+                        }
+                        else
+                        {
+                            for (var j = 0; j < scoreBuffer.Length; j++)
+                            {
+                                scoreBuffer[j] += weights[j];
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < features.Length; i++)
+                {
+                    if (Data.Weights.TryGetValue(features[i], out float[] weights))
+                    {
+                        if (first)
+                        {
+                            weights.CopyTo(scoreBuffer);
+                            first = false;
+                        }
+                        else
+                        {
+                            for (var j = 0; j < scoreBuffer.Length; j++)
+                            {
+                                scoreBuffer[j] += weights[j];
+                            }
                         }
                     }
                 }
             }
 
-            var best = ScoreBuffer[0]; int index = 0;
-            for (int i = 1; i < ScoreBuffer.Length; i++)
+            var best = scoreBuffer[0]; int index = 0;
+            for (int i = 1; i < scoreBuffer.Length; i++)
             {
-                if (ScoreBuffer[i] > best) { best = ScoreBuffer[i]; index = i; }
+                if (scoreBuffer[i] > best) { best = scoreBuffer[i]; index = i; }
             }
 
             return best > 0 ? index : (int)PartOfSpeech.NONE;
@@ -381,6 +422,50 @@ namespace Catalyst.Models
         private static int HashCombine(long rhs, long lhs)
         {
             return Hashes.CombineWeak(rhs, lhs);
+        }
+
+
+        internal sealed class WeightsHolder
+        {
+            private readonly float[] _weights;
+            private readonly int _singleWeightLength;
+            private readonly Dictionary<int, int> _positions;
+
+            public WeightsHolder(Dictionary<int, float[]> weights)
+            {
+                _weights = new float[weights.Values.Sum(v => v.Length)];
+                _singleWeightLength = weights.First().Value.Length;
+                _positions = new Dictionary<int, int>(weights.Count);
+                var ws = _weights.AsSpan();
+                int curPos = 0;
+                foreach(var kv in weights)
+                {
+                    _positions.Add(kv.Key, curPos);
+                    kv.Value.AsSpan().CopyTo(ws.Slice(curPos));
+                    curPos += kv.Value.Length;
+                }
+            }
+
+            public bool TryGetValue(int index, out Span<float> weights)
+            {
+                if(_positions.TryGetValue(index, out var start))
+                {
+                    weights = _weights.AsSpan(start, _singleWeightLength);
+                    return true;
+                }
+                weights = default;
+                return false;
+            }
+
+            internal Dictionary<int, float[]> GetOriginal()
+            {
+                var dict = new Dictionary<int, float[]>();
+                foreach(var kv in _positions)
+                {
+                    dict[kv.Key] = _weights.AsSpan(kv.Value, _singleWeightLength).ToArray();
+                }
+                return dict;
+            }
         }
     }
 }
