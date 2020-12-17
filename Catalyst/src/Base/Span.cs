@@ -147,8 +147,10 @@ namespace Catalyst
         /// Return the tokenized text. Entities will be returned as a single Tokens instance with the inner tokens as children. This method will always prefer to return the longest possible entity match.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<IToken> GetCapturedTokens()
+        public IEnumerable<IToken> GetCapturedTokens(Func<IEnumerable<EntityType>, IEnumerable<EntityType>> entitySorter = null)
         {
+            entitySorter ??= PreferLongerEntities;
+
             var tokensCount = TokensCount; //Cache the property to avoid fetching the value on every iteration
             for (int i = 0; i < tokensCount; i++)
             {
@@ -158,7 +160,7 @@ namespace Catalyst
                 if (entityTypes.Any())
                 {
                     bool foundEntity = false;
-                    foreach (var et in FilterAndOrderByBeginThenSingle(entityTypes))
+                    foreach (var et in entitySorter(entityTypes.Where(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Single)))
                     {
                         if (et.Tag == EntityTag.Single)
                         {
@@ -207,7 +209,7 @@ namespace Catalyst
                 var entityTypes = token.EntityTypes;
                 if (entityTypes.Length > 0)
                 {
-                    foreach (var et in FilterAndOrderByBeginThenSingle(entityTypes))
+                    foreach (var et in PreferLongerEntities(entityTypes))
                     {
                         if (hasFilter && !filter(et))
                         {
@@ -280,11 +282,11 @@ namespace Catalyst
             return (finalIndex, longestEntityType, finalFrequency);
         }
 
-        private static IOrderedEnumerable<EntityType> FilterAndOrderByBeginThenSingle(EntityType[] entityTypes)
+        public static IOrderedEnumerable<EntityType> PreferLongerEntities(IEnumerable<EntityType> entityTypes)
         {
             //This method ensures we first try to enumerate the longest entities (i.e. starting with Begin), followed by Single entities
-            //Note: Entities with name starting with _ are ordered last - this is a convention we depend on other Curiosity code-base, and need to keep here till we refactor that code
-            return entityTypes.Where(et => et.Tag == EntityTag.Begin || et.Tag == EntityTag.Single).OrderBy(et => (char)et.Tag).ThenBy(et => et.Type.StartsWith("_") ? 1 : -1);
+
+            return entityTypes.OrderBy(et => (char)et.Tag);
         }
 
         public Span<Token> ToTokenSpan()

@@ -148,7 +148,7 @@ namespace Catalyst.Models
 
         #region Normalize text
 
-        private static readonly Regex RE_Numbers = new Regex(@"([\w+\-!?\\\/\(\)\[\]\{\},.:;]*\d[\w\d+\-!?\\\/\(\)\[\]\{\},.:;]+)", RegexOptions.Compiled);
+        private static readonly Regex RE_Numbers = new Regex(@"([\w+\-!?\\\/\(\)\[\]\{\},.:;=$%&]*\d[\w\d+\-!?\\\/\(\)\[\]\{\},.:;=$%&]+)", RegexOptions.Compiled);
         private static readonly Regex UrlRegex = new Regex("https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}", RegexOptions.Compiled);
         private static readonly Regex EmailRegex = new Regex("[-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}", RegexOptions.Compiled);
 
