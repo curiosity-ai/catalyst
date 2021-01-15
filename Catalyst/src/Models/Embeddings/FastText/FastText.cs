@@ -84,18 +84,20 @@ namespace Catalyst.Models
         public override async Task StoreAsync()
         {
             var wiStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wi");
-            var woStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wo");
 
             wiStream.SetLength(0);
-            woStream.SetLength(0);
 
             Wi.ToStream(wiStream, Data.VectorQuantization);
-            Wo.ToStream(woStream, Data.VectorQuantization);
-
+            wiStream.Flush();
             wiStream.Close();
+            
+
+            var woStream = await DataStore.OpenWriteAsync(Language, nameof(FastTextData) + "-Matrix", Version, Tag + "-wo");
+            woStream.SetLength(0);
+            Wo.ToStream(woStream, Data.VectorQuantization);
+            woStream.Flush();
             woStream.Close();
 
-            //Data.TranslateTable = TranslateTable;
             await base.StoreAsync();
         }
 
@@ -165,11 +167,11 @@ namespace Catalyst.Models
             (Stream wiStream, Stream woStream) = await a.GetMatrixStreamsAsync();
 
             a.Wi = Matrix.FromStream(wiStream, a.Data.VectorQuantization);
-            a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
             wiStream.Close();
-            woStream.Close();
 
-            //a.TranslateTable = a.Data.TranslateTable;
+            a.Wo = Matrix.FromStream(woStream, a.Data.VectorQuantization);
+            woStream.Close();
+            
             a.GradientLength = a.Data.Dimensions;
             a.HiddenLength = a.Data.Dimensions;
             if (a.Data.Type == ModelType.Supervised)

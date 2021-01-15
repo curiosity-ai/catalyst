@@ -116,9 +116,9 @@ namespace Catalyst
 
         public static Matrix FromStream(Stream stream, QuantizationType quantization)
         {
-            var Rows = MessagePackBinary.ReadInt32(stream);
+            var Rows    = MessagePackBinary.ReadInt32(stream);
             var Columns = MessagePackBinary.ReadInt32(stream);
-            var m = new Matrix(Rows, Columns);
+            var m       = new Matrix(Rows, Columns);
 
             switch (quantization)
             {
