@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst.Spacy" Version="0.0.14707" />
+    <PackageReference Include="Catalyst.Spacy" Version="*" />
   </ItemGroup>
+
+  <!--<ItemGroup>
+    <ProjectReference Include="..\Catalyst.Spacy\Catalyst.Spacy.csproj" />
+  </ItemGroup>-->
 
 </Project>
