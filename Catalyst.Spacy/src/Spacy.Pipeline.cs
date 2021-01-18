@@ -31,9 +31,10 @@ namespace Catalyst
                 }
             }
 
-            public void Process(IEnumerable<Document> documents)
+            public IEnumerable<Document> Process(IEnumerable<Document> documents)
             {
                 var batch = new List<Document>();
+
                 foreach(var doc in documents)
                 {
                     batch.Add(doc);
@@ -41,11 +42,20 @@ namespace Catalyst
                     if(batch.Count > 1000)
                     {
                         ProcessBatch(batch);
+                        foreach(var processed in batch)
+                        {
+                            yield return processed;
+                        }
                         batch.Clear();
                     }
                 }
 
                 ProcessBatch(batch);
+
+                foreach (var processed in batch)
+                {
+                    yield return processed;
+                }
 
                 void ProcessBatch(List<Document> docs)
                 {
@@ -73,7 +83,6 @@ namespace Catalyst
                     {
                         var tb = (int)s_token.idx;
                         var token = span.AddToken(tb, tb + (int)s_token.__len__() - 1);
-
 
                         token.POS = ConvertPOS((string)s_token.pos_);
                         token.DependencyType = (string)s_token.dep_;
