@@ -42,7 +42,7 @@ namespace Catalyst
         public static Regex RE_AllNumeric = new Regex(@"^[\-\+\p{Sc}]{0,3}[0-9.,]{1,}[\p{Sc}]{0,1}$", RegexOptions.Compiled);
         public static Regex RE_HasNumeric = new Regex(@"\d", RegexOptions.Compiled);
 
-        private static HashSet<T> ToHashSet<T>(this IEnumerable<T> input) => new HashSet<T>(input);
+        internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> input) => new HashSet<T>(input);
 
 
         public static readonly char[] WhitespaceCharacters  = new char[] { ' ', '\n', '\r', '\t', '\v', '\f' }.Union(Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => char.IsWhiteSpace(c))).ToArray(); //Optimization to have the simplest whitespace first, as this reduces the searchspace for the unusual chars quite a lot

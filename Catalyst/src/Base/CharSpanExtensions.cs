@@ -197,12 +197,24 @@ namespace Catalyst
 
         //TODO: Check what's the best option:https://mathiasbynens.be/demo/url-regex
         private static Regex RE_IsURL = new Regex(@"^(\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’])))$", RegexOptions.Compiled & RegexOptions.CultureInvariant & RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(10)); //Timeout in 10 millisecond!
+        private static readonly HashSet<char> IsURL_CannotEndWith = @"`!()[]{};:'"".,<>?«»“”‘’".ToHashSet();
+
         //private static Regex RE_IsEmail = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$", RegexOptions.Compiled & RegexOptions.CultureInvariant & RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(1));
 
         private static bool IsURLRegex(ReadOnlySpan<char> candidate)
         {
+            if (candidate.Length == 0) return false;
             try
             {
+                //The Regex we use for checking URLs has a catastrofic backtracking issue if 
+                //the string being tested ends with any of these characters: `!()[]{};:'"".,<>?«»“”‘’
+                //Therefore we test it early and bypass the regex test, as we know it will also not match
+
+                if (IsURL_CannotEndWith.Contains(candidate[candidate.Length - 1]))
+                {
+                    return false;
+                }
+                    
                 return RE_IsURL.IsMatch(candidate.ToString());
             }
             catch (RegexMatchTimeoutException ex)

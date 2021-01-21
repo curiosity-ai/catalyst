@@ -68,8 +68,18 @@ namespace Catalyst.Tests
 
             var abbCapturer = new Models.AbbreviationCapturer(Language.English);
             var abbreviations = abbCapturer.ParseDocument(doc);
-            Assert.Equal(1, abbreviations.Count);
-            Assert.Equal(abbreviations.Single().Abbreviation, "ASAP");
+            Assert.Single(abbreviations);
+            Assert.Equal("ASAP", abbreviations.Single().Abbreviation);
+        }
+
+        [Theory]
+        [InlineData("wiki-extract.txt")]
+        public async Task TokenizerDoesNotThrowTimeoutDueToMalformedURLs(string file)
+        {
+            Storage.Current = new Catalyst.OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            var nlp = await Pipeline.ForAsync(Language.English);
+            var doc = new Document(File.ReadAllText(file), Language.English);
+            nlp.ProcessSingle(doc);
         }
     }
 }
