@@ -451,7 +451,7 @@ namespace Catalyst
             }
         }
 
-        public IEnumerable<(string word, int lexId)> GetSynonyms(string word, int lexId = -1)
+        public IEnumerable<(string Word, int LexId)> GetSynonyms(string word, int lexId = -1)
         {
             ulong uniqueId = 0;
 
