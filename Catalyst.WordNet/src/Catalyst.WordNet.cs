@@ -181,15 +181,7 @@ namespace Catalyst
 
             static int GetInt(ReadOnlySpan<char> span)
             {
-                if(int.TryParse(span, NumberStyles.Number, CultureInfo.InvariantCulture.NumberFormat, out var result))
-                {
-                    return result;
-                }
-                else
-                {
-                    Console.WriteLine(new string(span));
-                    return -1;
-                }
+                return int.Parse(span, NumberStyles.Number, CultureInfo.InvariantCulture.NumberFormat);
             }
 
             static byte GetHex(ReadOnlySpan<char> span)
@@ -530,69 +522,89 @@ namespace Catalyst
             return WordsCache.Substring(start, len);
         }
 
-        public IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
-        {
-            ulong uniqueId = 0;
-
-            while (true)
+            public IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
             {
-                if (lexId < 0)
+                ulong uniqueId = 0;
+
+                while (true)
                 {
-                    ulong lexID = 0;
-                    bool foundAny = false;
-                    while (true)
+                    if (lexId < 0)
                     {
-                        var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, lexID, uniqueId);
+                        ulong lexID = 0;
+                        bool foundAny = false;
+                        while (true)
+                        {
+                            var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, lexID, uniqueId);
+
+                            if (HashToOffset.TryGetValue(wordHash, out var offset))
+                            {
+                                foundAny = true;
+                                var term = Terms[offset];
+
+                                var pointers = Pointers.AsSpan().Slice(term.PointersStart, term.PointersLength).ToArray();
+
+                                for (int i = 0; i < pointers.Length; i++)
+                                {
+                                    var p = pointers[i];
+                                    WordNetData otherData; 
+                                    switch(p.PartOfSpeech)
+                                    {
+                                        case PartOfSpeech.NOUN: otherData = WordNet.Nouns;break;
+                                        case PartOfSpeech.VERB: otherData = WordNet.Verbs; break;
+                                        case PartOfSpeech.ADJ: otherData = WordNet.Adjectives; break;
+                                        case PartOfSpeech.ADV: otherData = WordNet.Adverbs; break;
+                                        default: continue;
+                                    }
+                                    var otherTerm = otherData.Terms[p.Offset];
+                                    yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                }
+
+                                lexID++;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        if (!foundAny)
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, (ulong)lexId, uniqueId);
 
                         if (HashToOffset.TryGetValue(wordHash, out var offset))
                         {
-                            foundAny = true;
                             var term = Terms[offset];
 
                             var pointers = Pointers.AsSpan().Slice(term.PointersStart, term.PointersLength).ToArray();
-
                             for (int i = 0; i < pointers.Length; i++)
                             {
                                 var p = pointers[i];
-                                var otherTerm = Terms[p.Offset];
-                                yield return (GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                WordNetData otherData;
+                                switch (p.PartOfSpeech)
+                                {
+                                    case PartOfSpeech.NOUN: otherData = WordNet.Nouns; break;
+                                    case PartOfSpeech.VERB: otherData = WordNet.Verbs; break;
+                                    case PartOfSpeech.ADJ: otherData = WordNet.Adjectives; break;
+                                    case PartOfSpeech.ADV: otherData = WordNet.Adverbs; break;
+                                    default: continue;
+                                }
+                                var otherTerm = otherData.Terms[p.Offset];
+                                yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
                             }
-
-                            lexID++;
                         }
                         else
                         {
                             break;
                         }
                     }
-                    if (!foundAny) break;
+
+                    uniqueId++;
                 }
-                else
-                {
-                    var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, (ulong)lexId, uniqueId);
-
-                    if (HashToOffset.TryGetValue(wordHash, out var offset))
-                    {
-                        var term = Terms[offset];
-
-                        var pointers = Pointers.AsSpan().Slice(term.PointersStart, term.PointersLength).ToArray();
-
-                        for (int i = 0; i < pointers.Length; i++)
-                        {
-                            var p = pointers[i];
-                            var otherTerm = Terms[p.Offset];
-                            yield return (GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                uniqueId++;
             }
         }
-    }
     }
 }
