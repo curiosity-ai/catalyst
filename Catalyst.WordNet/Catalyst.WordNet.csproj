@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <Platforms>AnyCPU</Platforms>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Curiosity GmbH</Authors>
+    <Copyright>(c) Copyright 2021 Curiosity GmbH - all right reserved</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageId>Catalyst.WordNet</PackageId>
+    <Description>WordNet extension data for Catalyst</Description>
+    <PackageTags>Natural Language Processing, NLP, Spacy, WordNet, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
+    <PackageIcon>catalyst-logo.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\WNdb30\data.adj" />
+    <None Remove="Resources\WNdb30\data.adv" />
+    <None Remove="Resources\WNdb30\data.noun" />
+    <None Remove="Resources\WNdb30\data.verb" />
+    <None Remove="Resources\WNdb30\index.adj" />
+    <None Remove="Resources\WNdb30\index.adv" />
+    <None Remove="Resources\WNdb30\index.noun" />
+    <None Remove="Resources\WNdb30\index.sense" />
+    <None Remove="Resources\WNdb30\index.verb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\WNdb30\data.adj" />
+    <EmbeddedResource Include="Resources\WNdb30\data.adv" />
+    <EmbeddedResource Include="Resources\WNdb30\data.noun" />
+    <EmbeddedResource Include="Resources\WNdb30\data.verb" />
+    <EmbeddedResource Include="Resources\WNdb30\index.adj" />
+    <EmbeddedResource Include="Resources\WNdb30\index.adv" />
+    <EmbeddedResource Include="Resources\WNdb30\index.noun" />
+    <EmbeddedResource Include="Resources\WNdb30\index.sense" />
+    <EmbeddedResource Include="Resources\WNdb30\index.verb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Catalyst" Version="0.0.14707" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="catalyst-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\WNdb30\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

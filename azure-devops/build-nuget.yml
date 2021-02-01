@@ -2,6 +2,7 @@ variables:
   solution: '**/*.sln'
   project:  './Catalyst/Catalyst.csproj'
   projectSpacy:  './Catalyst.Spacy/Catalyst.Spacy.csproj'
+  projectWordNet:  './Catalyst.WordNet/Catalyst.WordNet.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
@@ -41,6 +42,12 @@ steps:
 
 - task: DotNetCoreCLI@2
   inputs:
+    command: 'build'
+    projects: '$(projectWordNet)'
+    arguments: '-c $(buildConfiguration) /p:Version=0.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+
+- task: DotNetCoreCLI@2
+  inputs:
     command: 'pack'
     packagesToPack: '$(project)'
     versioningScheme: 'off'
@@ -53,6 +60,16 @@ steps:
   inputs:
     command: 'pack'
     packagesToPack: '$(projectSpacy)'
+    versioningScheme: 'off'
+    configuration: 'Release'
+    buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    verbosityPack: 'Diagnostic'
+    nobuild: true
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'pack'
+    packagesToPack: '$(projectWordNet)'
     versioningScheme: 'off'
     configuration: 'Release'
     buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
