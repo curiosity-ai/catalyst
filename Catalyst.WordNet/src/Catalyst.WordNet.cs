@@ -450,6 +450,15 @@ namespace Catalyst
             OtherWordsCache = otherWordsCache;
             HashToOffset = offsetMap;
         }
+
+        public IEnumerable<(string Word, int LexId, PartOfSpeech PartOfSpeech)> GetAll()
+        {
+            foreach (var term in Terms.Values)
+            {
+                yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID, term.PartOfSpeech);
+            }
+        }
+
         public IEnumerable<(string word, int lexId)> GetSynonyms(string word, int lexId = -1)
         {
             ulong uniqueId = 0;
