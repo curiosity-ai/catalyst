@@ -7,7 +7,7 @@ using UID;
 
 namespace Catalyst
 {
-    public sealed class WordNet
+    public static class WordNet
     {
         static WordNet()
         {
@@ -15,23 +15,12 @@ namespace Catalyst
             Nouns      = ParseWordNet(GetResource("data.noun"));
             Verbs      = ParseWordNet(GetResource("data.verb"));
             Adverbs    = ParseWordNet(GetResource("data.adv"), isAdverb: true);
-
-            //var indexVerb  = ParseWordNet(GetResource("index.verb"));
-            //var indexAdj   = ParseWordNet(GetResource("index.adj")); 
-            //var indexAdv   = ParseWordNet(GetResource("index.adv")); 
-            //var indexNoun  = ParseWordNet(GetResource("index.noun"));
-            //var indexSense = GetResource("index.sense"); //sense_key  synset_offset  sense_number  tag_cnt
         }
 
         public static  WordNetData Nouns { get; }
         public static  WordNetData Verbs { get; }
         public static  WordNetData Adjectives { get; }
-        public static WordNetData Adverbs { get; }
-
-        public static void Load()
-        {
-
-        }
+        public static  WordNetData Adverbs { get; }
 
         private static string GetResource(string fileName)
         {
@@ -399,14 +388,6 @@ namespace Catalyst
             DerivedFromAdjective,
         } 
 
-        internal struct WN_Sense
-        {
-            public string Sense;
-            public string Offset;
-            public string Number;
-            public string Tag;
-        }
-
         public struct WordNetTerm
         {
             public WordNetTerm(int termOffset, int lexID, int termLexFileNumber, PartOfSpeech termSynsetType, int termWordStart, int termWordLength, int termWordStart_Others, int termWordStart_Count, int termPointersStart, int termPointersLength)
@@ -452,9 +433,8 @@ namespace Catalyst
             public byte Source { get; }
             public byte Target { get; }
         }
-    }
 
-    public class WordNetData
+        public class WordNetData
     {
         private readonly Dictionary<int, WordNet.WordNetTerm> Terms;
         private readonly string WordsCache;
@@ -604,5 +584,6 @@ namespace Catalyst
                 uniqueId++;
             }
         }
+    }
     }
 }
