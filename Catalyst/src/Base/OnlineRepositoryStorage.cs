@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 
 namespace Catalyst
 {
     public class OnlineRepositoryStorage : IStorage
     {
+        private static ILogger Logger = ApplicationLogging.CreateLogger<OnlineRepositoryStorage>();
         internal IStorage Disk { get; }
 
         internal static HttpClient Client;
@@ -62,6 +64,7 @@ namespace Catalyst
                 var (objInfo, compressed) = MapPathToObjectInfo[path];
                 if(await ExistsOnlineAsync(objInfo, compressed))
                 {
+                    Logger.LogInformation($"Downloading model {objInfo.ModelType} {objInfo.Language} v{objInfo.Version} from online repository, please wait...");
                     using (var f = await DownloadFileAsync(objInfo, compressed))
                     using (var target = await Disk.OpenLockedStreamAsync(path, FileAccess.Write))
                     {
@@ -69,6 +72,7 @@ namespace Catalyst
                         await target.FlushAsync();
                         target.Close();
                     }
+                    Logger.LogInformation($"Downloaded file {objInfo.ModelType} {objInfo.Language} v{objInfo.Version} from online repository!");
                     return await Disk.OpenLockedStreamAsync(path, access);
                 }
                 else

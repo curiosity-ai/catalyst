@@ -144,7 +144,7 @@ namespace Catalyst.Models
             {
                 if (Data.Entries is object)
                 {
-                    foreach (var key in Data.Entries.Keys)
+                    foreach (var key in Data.Entries.Keys.ToArray())
                     {
                         var entry = Data.Entries[key];
                         entry.Word = null;
