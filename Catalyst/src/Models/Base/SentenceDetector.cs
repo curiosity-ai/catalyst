@@ -16,7 +16,7 @@ namespace Catalyst.Models
         public Dictionary<int, float[]> Weights { get; set; }
     }
 
-    public class SentenceDetector : StorableObject<SentenceDetector, SentenceDetectorModel>, ISentenceDetector, IProcess
+    public class SentenceDetector : StorableObjectV2<SentenceDetector, SentenceDetectorModel>, ISentenceDetector, IProcess
     {
         private const int N_Tags = 2;
         private Dictionary<int, float[]> AverageWeights { get; set; }

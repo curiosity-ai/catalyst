@@ -4,7 +4,6 @@
     <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
     <Platforms>AnyCPU</Platforms>
     <LangVersion>latest</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -15,33 +14,31 @@
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageId>Catalyst</PackageId>
+    <PackageId>Catalyst.Models.English</PackageId>
     <Description>Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
-    <PackageTags>Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
+    <PackageTags>English, Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
     <PackageIcon>catalyst-logo.png</PackageIcon>
   </PropertyGroup>
 
+
   <ItemGroup>
-    <None Remove="Resources\LanguageDetector.binz" />
-    <EmbeddedResource Include="Resources\LanguageDetector.binz" />
+    <None Remove="Resources\en_lemma_lookup.binz" />
+    <EmbeddedResource Include="Resources\en_lemma_lookup.binz" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.32" />
-    <PackageReference Include="Microsoft.ML" Version="1.5.5" />
-    <PackageReference Include="MessagePack" Version="2.2.85" />
-    <PackageReference Include="Compiled.Recognizers.Text.DateTime" Version="1.4.2.14324" />
-    <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
-    <PackageReference Include="System.Memory" Version="4.5.4" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="catalyst-logo.png">
+    <None Include="../../Catalyst/catalyst-logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Catalyst\Catalyst.csproj" />
+  </ItemGroup>
+
 </Project>

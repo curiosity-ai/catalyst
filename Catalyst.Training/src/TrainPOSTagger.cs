@@ -18,7 +18,7 @@ namespace Catalyst.Training
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<TrainPOSTagger>();
 
-        public static void Train(string udSource, string ontonotesSource)
+        public static async Task Train(string udSource, string ontonotesSource, string languagesDirectory)
         {
             var trainFiles = Directory.GetFiles(udSource, "*-train.conllu", SearchOption.AllDirectories);
             var testFiles  = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
@@ -33,25 +33,31 @@ namespace Catalyst.Training
             }
 
             var trainFilesPerLanguage = trainFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
-            var testFilesPerLanguage = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
-            var languages = trainFilesPerLanguage.Keys.ToList();
-
-            Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages)}");
-
-            int N_training = 5;
-
-            Parallel.ForEach(languages, lang =>
+            var testFilesPerLanguage  = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
+            
+            var languages = new List<(Language language, string lang)>();
+            
+            foreach(var lang in trainFilesPerLanguage.Keys)
             {
-                Language language;
                 try
                 {
-                    language = Languages.CodeToEnum(lang);
+                    var language = Languages.CodeToEnum(lang);
+                    languages.Add((language, lang));
                 }
                 catch
                 {
                     Logger.LogWarning($"Unknown language {lang}");
                     return;
                 }
+            }
+
+            Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages.Select(l => l.language))}");
+
+            int N_training = Environment.ProcessorCount;
+
+            Parallel.ForEach(languages, v =>
+            {
+                var (language, lang) = (v.language, v.lang);
 
                 var arcNames = new HashSet<string>();
 
@@ -142,19 +148,28 @@ namespace Catalyst.Training
                 }
             });
 
-            foreach (var lang in languages)
+            //Prepare models for new nuget-based distribution
+            foreach (var (language, lang) in languages)
             {
-                Language language;
-                try
+                var resDir = Path.Combine(languagesDirectory, language.ToString(), "Resources");
+                Directory.CreateDirectory(resDir);
+                var tagger = await AveragePerceptronTagger.FromStoreAsync(language, 0, "");
+
+                using (var f = File.OpenWrite(Path.Combine(resDir, "tagger.bin")))
                 {
-                    language = Languages.CodeToEnum(lang);
-                }
-                catch
-                {
-                    Logger.LogInformation($"Unknown language {lang}");
-                    return;
+                    await tagger.StoreAsync(f);
                 }
 
+                var parser = await AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "");
+
+                using (var f = File.OpenWrite(Path.Combine(resDir, "parser.bin")))
+                {
+                    await parser.StoreAsync(f);
+                }
+            }
+
+            foreach (var (language, lang) in languages)
+            {
                 var arcNames = new HashSet<string>();
 
                 var trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
@@ -167,22 +182,22 @@ namespace Catalyst.Training
                     trainDocuments.AddRange(ontonotesDocuments);
                 }
 
-                var Tagger = AveragePerceptronTagger.FromStoreAsync(language, 0, "").WaitResult();
+                var tagger = await AveragePerceptronTagger.FromStoreAsync(language, 0, "");
                 Logger.LogInformation($"\n{lang} - TAGGER / TRAIN");
-                TestTagger(trainDocuments, Tagger);
+                TestTagger(trainDocuments, tagger);
 
                 Logger.LogInformation($"\n{lang} - TAGGER / TEST");
-                TestTagger(testDocuments, Tagger);
+                TestTagger(testDocuments, tagger);
 
                 trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
                 testDocuments  = ReadCorpus(testFilesPerLanguage[lang],  arcNames, language);
 
-                var Parser = AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "").WaitResult();
+                var parser = await AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "");
                 Logger.LogInformation($"\n{lang} - PARSER / TRAIN");
-                TestParser(trainDocuments, Parser);
+                TestParser(trainDocuments, parser);
 
                 Logger.LogInformation($"\n{lang} - PARSER / TEST");
-                TestParser(testDocuments, Parser);
+                TestParser(testDocuments, parser);
             }
         }
 

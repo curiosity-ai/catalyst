@@ -30,9 +30,7 @@ namespace Catalyst.Models
                                                                                                                                               PatternUnitPrototype.And(PatternUnitPrototype.ShouldNotMatch().IsOpeningParenthesis(), 
                                                                                                                                               PatternUnitPrototype.Multiple(maxMatches: 5).IsLetterOrDigit()), 
                                                                                                                                               PatternUnitPrototype.Single().IsClosingParenthesis()));
-        
-        private static ObjectPool<StringBuilder> _stringBuilders { get; } = new ObjectPool<StringBuilder>(() => new StringBuilder(), 50, sb => { sb.Clear(); if (sb.Capacity > 1_000_000) sb.Capacity = 0; });
-
+        private static ObjectPool<StringBuilder> _stringBuilders { get; } = new ObjectPool<StringBuilder>(() => new StringBuilder(), Environment.ProcessorCount, sb => { sb.Clear(); if (sb.Capacity > 1_000_000) sb.Capacity = 0; });
 
         private static char[] Parenthesis = new[] { '(', ')', '[', ']', '{', '}' };
         private PatternUnit DiscardCommonWords;

@@ -22,7 +22,7 @@ namespace Catalyst.Models
         public Dictionary<int, string> Index2Label { get; set; }
     }
 
-    public class AveragePerceptronDependencyParser : StorableObject<AveragePerceptronDependencyParser, AveragePerceptronDependencyParserModel>, IProcess
+    public class AveragePerceptronDependencyParser : StorableObjectV2<AveragePerceptronDependencyParser, AveragePerceptronDependencyParserModel>, IProcess
     {
         private const int N_ACTIONS = 3;
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Catalyst.Models
 {
@@ -18,7 +19,7 @@ namespace Catalyst.Models
 
 
 
-    public class AveragePerceptronTagger : StorableObject<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
+    public class AveragePerceptronTagger : StorableObjectV2<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
         private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
@@ -48,6 +49,23 @@ namespace Catalyst.Models
             a._weightsHolder = new WeightsHolder(a.Data.Weights);
             a.Data.Weights = null;
             return a;
+        }
+
+        public override async Task LoadAsync(Stream stream)
+        {
+            await base.LoadAsync(stream);
+            _weightsHolder = new WeightsHolder(Data.Weights);
+            Data.Weights = null;
+        }
+
+        public override async Task StoreAsync(Stream stream)
+        {
+            if (_weightsHolder is object)
+            {
+                Data.Weights = _weightsHolder.GetOriginal();
+            }
+            await base.StoreAsync(stream);
+            Data.Weights = null;
         }
 
         public override async Task StoreAsync()

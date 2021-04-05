@@ -14,7 +14,7 @@ namespace Catalyst.Models
         public List<MatchingPattern> Patterns { get; set; } = new List<MatchingPattern>();
     }
 
-    public class PatternSpotter : StorableObject<PatternSpotter, PatternSpotterModel>, IEntityRecognizer, IProcess
+    public class PatternSpotter : StorableObjectV2<PatternSpotter, PatternSpotterModel>, IEntityRecognizer, IProcess
     {
         private PatternSpotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {

@@ -41,8 +41,8 @@ namespace Catalyst.Training
 
                             if (!string.IsNullOrWhiteSpace(options.UniversalDependenciesPath))
                             {
-                                TrainSentenceDetector.Train(options.UniversalDependenciesPath);
-                                TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath);
+                                await TrainSentenceDetector.Train(options.UniversalDependenciesPath, options.LanguagesDirectory);
+                                await TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath, languagesDirectory:options.LanguagesDirectory);
                             }
 
                             if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
@@ -67,6 +67,11 @@ namespace Catalyst.Training
                             if (!string.IsNullOrWhiteSpace(options.LanguageJsonPath))
                             {
                                 TrainLanguageDetector.CreateLanguageDetector(options.LanguageJsonPath);
+                            }
+
+                            if(!string.IsNullOrWhiteSpace(options.SpacyLookupsData))
+                            {
+                                await PrepareSpacyLookups.RunAsync(options.SpacyLookupsData);
                             }
 
                         },
