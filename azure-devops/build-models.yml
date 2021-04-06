@@ -5,7 +5,12 @@ variables:
   buildConfiguration: 'Release'
 
 trigger:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - Languages/*
 
 pool:
   vmImage: 'windows-latest'
@@ -24,18 +29,20 @@ steps:
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: DotNetCoreCLI@2
+  displayName: 'restore nuget'
   inputs:
     command: 'restore'
     projects: '$(projects)'
-    displayName: 'restore nuget'
 
 - task: DotNetCoreCLI@2
+  displayName: 'build projects'
   inputs:
     command: 'build'
     projects: '$(projects)'
     arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
+  displayName: 'pack projects'
   inputs:
     command: 'pack'
     packagesToPack: '$(projects)'
@@ -46,9 +53,9 @@ steps:
     nobuild: true
 
 - task: NuGetCommand@2
+  displayName: 'push nuget'
   inputs:
     command: 'push'
     packagesToPush: '**/*.nupkg'
-    displayName: 'push nuget'
     nuGetFeedType: 'external'
     publishFeedCredentials: 'nuget-curiosity'
