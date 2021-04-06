@@ -83,6 +83,25 @@ namespace Catalyst.Models
             return hashedValue;
         }
 
+        public ReadOnlySpan<char> Get(IToken token)
+        {
+            var hash = Hash(token.ValueAsSpan);
+
+            if(Entries.TryGetValue(hash, out var entry))
+            {
+                return Cache.AsSpan().Slice((int)entry.Begin, entry.Length);
+            }
+            
+            var invHash = InvariantHash(token.ValueAsSpan);
+            
+            if(invHash != hash && Entries.TryGetValue(invHash, out entry))
+            {
+                return Cache.AsSpan().Slice((int)entry.Begin, entry.Length);
+            }
+
+            return token.ValueAsSpan;
+        }
+
         public async Task SerializeAsync(Stream stream)
         {
             await MessagePackSerializer.SerializeAsync(stream, this, LZ4Standard);

@@ -9,7 +9,7 @@ namespace Catalyst
 {
     public static class ResourceLoader
     {
-        private static Stream OpenResource(Assembly assembly, string resourceFile)
+        public static Stream OpenResource(Assembly assembly, string resourceFile)
         {
             return assembly.GetManifestResourceStream($"{assembly.GetName().Name}.Resources.{resourceFile}");
         }
