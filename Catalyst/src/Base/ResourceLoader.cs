@@ -11,7 +11,7 @@ namespace Catalyst
     {
         private static Stream OpenResource(Assembly assembly, string resourceFile)
         {
-            return assembly.GetManifestResourceStream($"{assembly.FullName}.Resources.{resourceFile}");
+            return assembly.GetManifestResourceStream($"{assembly.GetName().Name}.Resources.{resourceFile}");
         }
 
         public static async Task<T> LoadAsync<T>(Assembly assembly, string resourceFile, Func<Stream, Task<T>> loader)
