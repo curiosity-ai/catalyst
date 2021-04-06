@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
+    
     <PackageReference Include="Catalyst" Version="0.0.16590" />
   </ItemGroup>
 </Project>
