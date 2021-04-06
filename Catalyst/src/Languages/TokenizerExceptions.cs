@@ -9,9 +9,9 @@ namespace Catalyst
 {
     public static partial class TokenizerExceptions
     {
-        private static ConcurrentDictionary<Language, Dictionary<int, TokenizationException>> _perLanguage = new ConcurrentDictionary<Language, Dictionary<int, TokenizationException>>();
-        public static void Register(Language language, Dictionary<int, TokenizationException> exceptionsDictionary) => _perLanguage[language] = exceptionsDictionary;
-        public static Dictionary<int, TokenizationException> Get(Language language) => _perLanguage.TryGetValue(language, out var exceptions) ? exceptions : new Dictionary<int, TokenizationException>();
+        private static ConcurrentDictionary<Language, Lazy<Dictionary<int, TokenizationException>>> _perLanguage = new ConcurrentDictionary<Language, Lazy<Dictionary<int, TokenizationException>>>();
+        public static void Register(Language language, Lazy<Dictionary<int, TokenizationException>> exceptionsDictionary) => _perLanguage[language] = exceptionsDictionary;
+        public static Dictionary<int, TokenizationException> Get(Language language) => _perLanguage.TryGetValue(language, out var exceptions) ? exceptions.Value : new Dictionary<int, TokenizationException>();
 
         public static Dictionary<int, TokenizationException> CreateBaseExceptions()
         {
