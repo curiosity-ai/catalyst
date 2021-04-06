@@ -1,4 +1,4 @@
-﻿using Mosaik.Core;
+using Mosaik.Core;
 using System;
 using System.Collections.Concurrent;
 
