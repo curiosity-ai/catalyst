@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst.Spacy" Version="0.0.15118" />
+    <PackageReference Include="Catalyst.Spacy" Version="0.0.16396" />
   </ItemGroup>
 
   <!--<ItemGroup>

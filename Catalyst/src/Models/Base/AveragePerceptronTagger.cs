@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.IO;
+using Microsoft.Extensions.Logging;
 
 namespace Catalyst.Models
 {
@@ -18,7 +20,7 @@ namespace Catalyst.Models
 
 
 
-    public class AveragePerceptronTagger : StorableObject<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
+    public class AveragePerceptronTagger : StorableObjectV2<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
         private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
@@ -48,6 +50,23 @@ namespace Catalyst.Models
             a._weightsHolder = new WeightsHolder(a.Data.Weights);
             a.Data.Weights = null;
             return a;
+        }
+
+        public override async Task LoadAsync(Stream stream)
+        {
+            await base.LoadAsync(stream);
+            _weightsHolder = new WeightsHolder(Data.Weights);
+            Data.Weights = null;
+        }
+
+        public override async Task StoreAsync(Stream stream)
+        {
+            if (_weightsHolder is object)
+            {
+                Data.Weights = _weightsHolder.GetOriginal();
+            }
+            await base.StoreAsync(stream);
+            Data.Weights = null;
         }
 
         public override async Task StoreAsync()
@@ -94,7 +113,7 @@ namespace Catalyst.Models
                 precision = (double)TP / (TP + FP);
                 recall = (double)TP / (TP + FN);
 
-                Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps}: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * total / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"Training {Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps}: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * total / sw.ElapsedMilliseconds, 0) } tokens/second");
 
                 UpdateAverages();
             }

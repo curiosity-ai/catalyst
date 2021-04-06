@@ -1,0 +1,40 @@
+
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Platforms>AnyCPU</Platforms>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Curiosity GmbH</Authors>
+    <Copyright>(c) Copyright 2021 Curiosity GmbH - all right reserved</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageId>Catalyst.Models.Lithuanian</PackageId>
+    <Description>This package contains the default Lithuanian models for Catalyst. Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy"s design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
+    <PackageTags>Lithuanian, Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
+    <PackageIcon>catalyst-logo.png</PackageIcon>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <None Remove="Resources\*.bin" />
+    <EmbeddedResource Include="Resources\*.bin" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../Catalyst/catalyst-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
+    <PackageReference Include="Catalyst" Version="0.0.16396" />
+  </ItemGroup>
+</Project>

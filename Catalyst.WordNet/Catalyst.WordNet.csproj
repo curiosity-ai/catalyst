@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Platforms>AnyCPU</Platforms>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -45,7 +45,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="0.0.14707" />
+    <PackageReference Include="Catalyst" Version="0.0.16396" />
   </ItemGroup>
 
   <ItemGroup>

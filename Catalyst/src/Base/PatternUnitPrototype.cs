@@ -59,7 +59,6 @@ namespace Catalyst
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong IgnoreCaseHash64(ReadOnlySpan<char> key)
         {
-
             ulong hashedValue = 3074457345618258791ul;
             for (int i = 0; i < key.Length; i++)
             {

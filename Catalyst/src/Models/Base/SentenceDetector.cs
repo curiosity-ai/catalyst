@@ -16,7 +16,7 @@ namespace Catalyst.Models
         public Dictionary<int, float[]> Weights { get; set; }
     }
 
-    public class SentenceDetector : StorableObject<SentenceDetector, SentenceDetectorModel>, ISentenceDetector, IProcess
+    public class SentenceDetector : StorableObjectV2<SentenceDetector, SentenceDetectorModel>, ISentenceDetector, IProcess
     {
         private const int N_Tags = 2;
         private Dictionary<int, float[]> AverageWeights { get; set; }
@@ -171,7 +171,7 @@ namespace Catalyst.Models
             return Tokenizer.Parse(input);
         }
 
-        public void Train(List<List<SentenceDetectorToken>> sentences, int trainingSteps = 20)
+        public double Train(List<List<SentenceDetectorToken>> sentences, int trainingSteps = 20)
         {
             Data = new SentenceDetectorModel();
             Data.Weights = new Dictionary<int, float[]>();
@@ -179,6 +179,8 @@ namespace Catalyst.Models
 
             var sw = new System.Diagnostics.Stopwatch();
             var rng = new Random();
+            
+            double precision = 0;
 
             for (int step = 0; step < trainingSteps; step++)
             {
@@ -226,8 +228,10 @@ namespace Catalyst.Models
 
                     totalTokens += tokens.Count;
                 }
+
+                precision = correct / total;
                 sw.Stop();
-                Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps}: {Math.Round(100 * correct / total, 2)}% at a rate of {Math.Round(1000 * totalTokens / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps}: {Math.Round(100 * correct / total, 2)}% at a rate of {Math.Round(1000 * totalTokens / sw.ElapsedMilliseconds, 0) } tokens/second");
                 sw.Restart();
 
                 UpdateAverages();
@@ -236,6 +240,7 @@ namespace Catalyst.Models
             UpdateAverages(final: true, trainingSteps: trainingSteps);
 
             FinishTraining();
+            return precision * 100;
         }
 
         private void FinishTraining()

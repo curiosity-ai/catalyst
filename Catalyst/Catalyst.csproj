@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
     <Platforms>AnyCPU</Platforms>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,11 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.28" />
-    <PackageReference Include="Microsoft.ML" Version="1.5.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.32" />
+    <PackageReference Include="Microsoft.ML" Version="1.5.5" />
     <PackageReference Include="MessagePack" Version="2.2.85" />
     <PackageReference Include="Compiled.Recognizers.Text.DateTime" Version="1.4.2.14324" />
-    <PackageReference Include="Mosaik.Core" Version="0.0.14450" />
+    <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />

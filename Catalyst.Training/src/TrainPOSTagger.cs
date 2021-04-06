@@ -17,8 +17,7 @@ namespace Catalyst.Training
     public class TrainPOSTagger
     {
         private static ILogger Logger = ApplicationLogging.CreateLogger<TrainPOSTagger>();
-
-        public static void Train(string udSource, string ontonotesSource)
+        public static async Task Train(string udSource, string ontonotesSource, string languagesDirectory)
         {
             var trainFiles = Directory.GetFiles(udSource, "*-train.conllu", SearchOption.AllDirectories);
             var testFiles  = Directory.GetFiles(udSource, "*-dev.conllu", SearchOption.AllDirectories);
@@ -33,58 +32,71 @@ namespace Catalyst.Training
             }
 
             var trainFilesPerLanguage = trainFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
-            var testFilesPerLanguage = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
-            var languages = trainFilesPerLanguage.Keys.ToList();
-
-            Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages)}");
-
-            int N_training = 5;
-
-            Parallel.ForEach(languages, lang =>
+            var testFilesPerLanguage  = testFiles.Select(f => new { lang = Path.GetFileNameWithoutExtension(f).Replace("_", "-").Split(new char[] { '-' }).First(), file = f }).GroupBy(f => f.lang).ToDictionary(g => g.Key, g => g.Select(f => f.file).ToList());
+            
+            var languages = new List<(Language language, string lang)>();
+            
+            foreach(var lang in trainFilesPerLanguage.Keys.Intersect(testFilesPerLanguage.Keys))
             {
-                Language language;
                 try
                 {
-                    language = Languages.CodeToEnum(lang);
+                    var language = Languages.CodeToEnum(lang);
+                    languages.Add((language, lang));
                 }
                 catch
                 {
                     Logger.LogWarning($"Unknown language {lang}");
-                    return;
                 }
+            }
+
+            Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages.Select(l => l.language))}");
+
+            int attempts = 5;
+
+            await Task.WhenAll(languages.Select(async v =>
+            {
+                await Task.Yield();
+
+                var (language, lang) = (v.language, v.lang);
 
                 var arcNames = new HashSet<string>();
 
                 if (trainFilesPerLanguage.TryGetValue(lang, out var langTrainFiles) && testFilesPerLanguage.TryGetValue(lang, out var langTestFiles))
                 {
-                    var trainDocuments = ReadCorpus(langTrainFiles, arcNames, language);
-                    var testDocuments  = ReadCorpus(langTestFiles, arcNames, language);
+                    var trainDocuments = await ReadCorpusAsync(langTrainFiles, arcNames, language);
+                    var testDocuments  = await ReadCorpusAsync(langTestFiles, arcNames, language);
 
                     if (language == Language.English)
                     {
                         //Merge with Ontonotes 5.0 corpus
-                        trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
+                        trainDocuments.AddRange(await ReadCorpusAsync(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
                     }
 
                     double bestScore = double.MinValue;
 
-                    for (int i = 0; i < N_training; i++)
+                    for (int i = 0; i < attempts; i++)
                     {
-                        var Tagger = new AveragePerceptronTagger(language, 0);
-                        Tagger.Train(trainDocuments.AsEnumerable(), (int)(5 + ThreadSafeRandom.Next(15)));
-                        var scoreTrain = TestTagger(trainDocuments, Tagger);
-                        var scoreTest = TestTagger(testDocuments, Tagger);
+                        var tagger = new AveragePerceptronTagger(language, 0);
+                        tagger.Train(trainDocuments.AsEnumerable(), (int)(5 + ThreadSafeRandom.Next(15)));
+                        var scoreTrain = TestTagger(trainDocuments, tagger);
+                        var scoreTest  = TestTagger(testDocuments, tagger);
                         if (scoreTest > bestScore)
                         {
                             Logger.LogInformation($"\n>>>>> {lang}: NEW POS BEST: {scoreTest:0.0}%");
-                            try
+                            await tagger.StoreAsync();
+
+                            if (scoreTest > 80)
                             {
-                                Tagger.StoreAsync().Wait();
+                                //Prepare models for new nuget-based distribution
+                                var resDir = Path.Combine(languagesDirectory, language.ToString(), "Resources");
+                                Directory.CreateDirectory(resDir);
+                                using (var f = File.OpenWrite(Path.Combine(resDir, "tagger.bin")))
+                                {
+                                    await tagger.StoreAsync(f);
+                                }
+                                await File.WriteAllTextAsync(Path.Combine(resDir, "tagger.score"), $"{scoreTest:0.0}%");
                             }
-                            catch (Exception E)
-                            {
-                                Logger.LogError(E, $"\n>>>>> {lang}: Failed to store model");
-                            } 
+
                             bestScore = scoreTest;
                         }
                         else
@@ -95,94 +107,88 @@ namespace Catalyst.Training
 
 
                     bestScore = double.MinValue;
-                    for (int i = 0; i < N_training; i++)
+                    for (int i = 0; i < attempts; i++)
                     {
-                        var Parser = new AveragePerceptronDependencyParser(language, 0/*, arcNames.ToList()*/);
+                        var parser = new AveragePerceptronDependencyParser(language, 0/*, arcNames.ToList()*/);
                         try
                         {
-                            Parser.Train(trainDocuments.AsEnumerable(), (int)(5 + ThreadSafeRandom.Next(10)), (float)(1D - ThreadSafeRandom.NextDouble() * ThreadSafeRandom.NextDouble()));
+                            parser.Train(trainDocuments.AsEnumerable(), (int)(5 + ThreadSafeRandom.Next(10)), (float)(1D - ThreadSafeRandom.NextDouble() * ThreadSafeRandom.NextDouble()));
                         }
                         catch (Exception E)
                         {
-                            Logger.LogInformation("FAIL: " + E.Message);
+                            Logger.LogError("FAIL", E);
                             continue;
                         }
 
-                        trainDocuments = ReadCorpus(langTrainFiles, arcNames, language);
-                        testDocuments  = ReadCorpus(langTestFiles,  arcNames, language);
+                        trainDocuments = await ReadCorpusAsync(langTrainFiles, arcNames, language);
+                        testDocuments  = await ReadCorpusAsync(langTestFiles,  arcNames, language);
 
                         if (language == Language.English)
                         {
                             //Merge with Ontonotes 5.0 corpus
-                            trainDocuments.AddRange(ReadCorpus(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
+                            trainDocuments.AddRange(await ReadCorpusAsync(trainFilesOntonotesEnglish, arcNames, language, isOntoNotes: true));
                         }
 
-                        var scoreTrain = TestParser(trainDocuments, Parser);
-                        var scoreTest = TestParser(testDocuments, Parser);
+                        var scoreTrain = TestParser(trainDocuments, parser);
+                        var scoreTest = TestParser(testDocuments, parser);
 
                         if (scoreTest > bestScore)
                         {
                             Logger.LogInformation($"\n>>>>> {lang}: NEW DEP BEST: {scoreTest:0.0}%");
-                            try
+
+                            if (scoreTest > 80)
                             {
-                                Parser.StoreAsync().Wait();
+                                //Prepare models for new nuget-based distribution
+                                var resDir = Path.Combine(languagesDirectory, language.ToString(), "Resources");
+                                Directory.CreateDirectory(resDir);
+                                using (var f = File.OpenWrite(Path.Combine(resDir, "parser.bin")))
+                                {
+                                    await parser.StoreAsync(f);
+                                }
+                                await File.WriteAllTextAsync(Path.Combine(resDir, "parser.score"), $"{scoreTest:0.0}%");
                             }
-                            catch (Exception E)
-                            {
-                                Logger.LogError(E, $"\n>>>>> {lang}: Failed to store model");
-                            }
+
                             bestScore = scoreTest;
                         }
                         else
                         {
                             Logger.LogInformation($"\n>>>>> {lang}: DEP BEST IS STILL : {bestScore:0.0}%");
                         }
-                        Parser = null;
+                        parser = null;
                     }
                 }
-            });
+            }));
 
-            foreach (var lang in languages)
+            foreach (var (language, lang) in languages)
             {
-                Language language;
-                try
-                {
-                    language = Languages.CodeToEnum(lang);
-                }
-                catch
-                {
-                    Logger.LogInformation($"Unknown language {lang}");
-                    return;
-                }
-
                 var arcNames = new HashSet<string>();
 
-                var trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
-                var testDocuments  = ReadCorpus(testFilesPerLanguage[lang],  arcNames, language);
+                var trainDocuments = await ReadCorpusAsync(trainFilesPerLanguage[lang], arcNames, language);
+                var testDocuments  = await ReadCorpusAsync(testFilesPerLanguage[lang],  arcNames, language);
 
                 if (language == Language.English)
                 {
                     //Merge with Ontonotes 5.0 corpus
-                    var ontonotesDocuments = ReadCorpus(trainFilesOntonotesEnglish,  arcNames, language, isOntoNotes: true);
+                    var ontonotesDocuments = await ReadCorpusAsync(trainFilesOntonotesEnglish,  arcNames, language, isOntoNotes: true);
                     trainDocuments.AddRange(ontonotesDocuments);
                 }
 
-                var Tagger = AveragePerceptronTagger.FromStoreAsync(language, 0, "").WaitResult();
+                var tagger = await AveragePerceptronTagger.FromStoreAsync(language, 0, "");
                 Logger.LogInformation($"\n{lang} - TAGGER / TRAIN");
-                TestTagger(trainDocuments, Tagger);
+                TestTagger(trainDocuments, tagger);
 
                 Logger.LogInformation($"\n{lang} - TAGGER / TEST");
-                TestTagger(testDocuments, Tagger);
+                TestTagger(testDocuments, tagger);
 
-                trainDocuments = ReadCorpus(trainFilesPerLanguage[lang], arcNames, language);
-                testDocuments  = ReadCorpus(testFilesPerLanguage[lang],  arcNames, language);
+                trainDocuments = await ReadCorpusAsync(trainFilesPerLanguage[lang], arcNames, language);
+                testDocuments  = await ReadCorpusAsync(testFilesPerLanguage[lang],  arcNames, language);
 
-                var Parser = AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "").WaitResult();
+                var parser = await AveragePerceptronDependencyParser.FromStoreAsync(language, 0, "");
                 Logger.LogInformation($"\n{lang} - PARSER / TRAIN");
-                TestParser(trainDocuments, Parser);
+                TestParser(trainDocuments, parser);
 
                 Logger.LogInformation($"\n{lang} - PARSER / TEST");
-                TestParser(testDocuments, Parser);
+                TestParser(testDocuments, parser);
             }
         }
 
@@ -301,7 +307,7 @@ namespace Catalyst.Training
             return 100D * correct / total;
         }
 
-        private static List<IDocument> ReadCorpus(List<string> trainDocuments, HashSet<string> arcNames, Language language, bool isOntoNotes = false)
+        private static async Task<List<IDocument>> ReadCorpusAsync(List<string> trainDocuments, HashSet<string> arcNames, Language language, bool isOntoNotes = false)
         {
             if(trainDocuments is null)
             {
@@ -315,11 +321,11 @@ namespace Catalyst.Training
                 {
                     allLines.Add("# newdoc"); //Force doc splits
                     allLines.Add("# sent_id"); //Force doc splits
-                    allLines.AddRange(File.ReadAllLines(f).Select(l => string.IsNullOrWhiteSpace(l) ? "# sent_id" : l));
+                    allLines.AddRange((await File.ReadAllLinesAsync(f)).Select(l => string.IsNullOrWhiteSpace(l) ? "# sent_id" : l));
                 }
                 else
                 {
-                    allLines.AddRange(File.ReadAllLines(f).Where(l => !string.IsNullOrWhiteSpace(l)));
+                    allLines.AddRange((await File.ReadAllLinesAsync(f)).Where(l => !string.IsNullOrWhiteSpace(l)));
                 }
             }
 

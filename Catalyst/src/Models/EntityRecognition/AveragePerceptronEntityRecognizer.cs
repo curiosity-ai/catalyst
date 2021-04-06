@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace Catalyst.Models
 {
@@ -32,7 +33,7 @@ namespace Catalyst.Models
         public bool IgnoreCase { get; set; }
     }
 
-    public class AveragePerceptronEntityRecognizer : StorableObject<AveragePerceptronEntityRecognizer, AveragePerceptronEntityRecognizerModel>, IEntityRecognizer, IProcess
+    public class AveragePerceptronEntityRecognizer : StorableObjectV2<AveragePerceptronEntityRecognizer, AveragePerceptronEntityRecognizerModel>, IEntityRecognizer, IProcess
     {
         private int N_Features = 21;
         private int N_Tags;
@@ -122,6 +123,14 @@ namespace Catalyst.Models
             a.N_Features += 3 * a.Data.Gazeteers.Count;
             return a;
         }
+
+        public override async Task LoadAsync(Stream stream)
+        {
+            await base.LoadAsync(stream);
+            N_Tags = Data.Tags.Length;
+            N_Features += 3 * Data.Gazeteers.Count;
+        }
+
 
         public string SingleOrOutside(IList<EntityType> types)
         {
@@ -600,5 +609,6 @@ namespace Catalyst.Models
         {
             return Data.IgnoreCase ? feature.IgnoreCaseHash32() : feature.CaseSensitiveHash32();
         }
+
     }
 }

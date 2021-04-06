@@ -22,7 +22,7 @@ namespace Catalyst.Models
         public bool IgnoreCase { get; set; }
     }
 
-    public class Spotter : StorableObject<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
+    public class Spotter : StorableObjectV2<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
     {
         public string CaptureTag => Data.CaptureTag;
 
