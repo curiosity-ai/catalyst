@@ -18,7 +18,7 @@ namespace Catalyst
                 {
                     if (SpanishExceptions is null)
                     {
-                        SpanishExceptions = BaseExceptions();
+                        SpanishExceptions = CreateBaseExceptions();
 
                         Create(SpanishExceptions, "", "pal|pala", "para el|para la");
                         Create(SpanishExceptions, "", "aprox.|dna.|esq.|pág.|p.ej.|Ud.|Vd.|Uds.|Vds.", "aproximadamente|docena|esquina|página|por ejemplo|usted|usted|ustedes|ustedes");

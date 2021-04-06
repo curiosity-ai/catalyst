@@ -36,7 +36,7 @@ namespace Catalyst.Models
         public FastTokenizer(Language language)
         {
             Language = language;
-            SpecialCases = TokenizerExceptions.GetExceptions(Language);
+            SpecialCases = TokenizerExceptions.Get(Language);
         }
 
         public void Process(IDocument document)

@@ -18,7 +18,7 @@ namespace Catalyst
                 {
                     if (EnglishExceptions is null)
                     {
-                        EnglishExceptions = BaseExceptions();
+                        EnglishExceptions = CreateBaseExceptions();
 
                         Create(EnglishExceptions, "i", "'m|'ma", "am|am going to");
                         Create(EnglishExceptions, "", "'m|'ma|n't|'s", "am|am going to|not|'s");

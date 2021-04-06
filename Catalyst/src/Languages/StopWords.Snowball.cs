@@ -1,4 +1,5 @@
 ﻿using Mosaik.Core;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Catalyst
@@ -40,20 +41,10 @@ namespace Catalyst
 
             private static ReadOnlyHashSet<string> Empty = new ReadOnlyHashSet<string>(new HashSet<string>());
 
-            public static ReadOnlyHashSet<string> For(Language lang)
-            {
-                switch (lang)
-                {
-                    case Language.Any:        return Empty;
-                    case Language.English:    return English;
-                    case Language.French:     return French;
-                    case Language.German:     return German;
-                    case Language.Italian:    return Italian;
-                    case Language.Spanish:    return Spanish;
-                    case Language.Portuguese: return Portuguese;
-                    default:                  return Empty;
-                }
-            }
+            private static ConcurrentDictionary<Language, ReadOnlyHashSet<string>> _perLanguage = new ConcurrentDictionary<Language, ReadOnlyHashSet<string>>();
+            public static void Register(Language language, ReadOnlyHashSet<string> stopWords) => _perLanguage[language] = stopWords;
+            public static ReadOnlyHashSet<string> For(Language lang) => _perLanguage.TryGetValue(lang, out var set) ? set : Empty;
+
         }
     }
 }

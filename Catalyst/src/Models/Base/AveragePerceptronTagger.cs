@@ -64,9 +64,13 @@ namespace Catalyst.Models
             if (_weightsHolder is object)
             {
                 Data.Weights = _weightsHolder.GetOriginal();
+                await base.StoreAsync(stream);
+                Data.Weights = null;
             }
-            await base.StoreAsync(stream);
-            Data.Weights = null;
+            else
+            {
+                await base.StoreAsync(stream);
+            }
         }
 
         public override async Task StoreAsync()
@@ -74,9 +78,13 @@ namespace Catalyst.Models
             if(_weightsHolder is object)
             {
                 Data.Weights = _weightsHolder.GetOriginal();
+                await base.StoreAsync();
+                Data.Weights = null;
             }
-            await base.StoreAsync();
-            Data.Weights = null;
+            else
+            {
+                await base.StoreAsync();
+            }
         }
 
         public void Train(IEnumerable<IDocument> documents, int trainingSteps)
@@ -113,7 +121,7 @@ namespace Catalyst.Models
                 precision = (double)TP / (TP + FP);
                 recall = (double)TP / (TP + FN);
 
-                Logger.LogInformation($"Training {Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps}: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * total / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"Training {Language} Step {step + 1}/{trainingSteps}: F1={100 * 2 * (precision * recall) / (precision + recall):0.00}% P={100 * precision:0.00}% R={100 * recall:0.00}% at a rate of {Math.Round(1000 * total / sw.ElapsedMilliseconds, 0) } tokens/second");
 
                 UpdateAverages();
             }

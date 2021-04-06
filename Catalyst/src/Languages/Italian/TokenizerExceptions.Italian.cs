@@ -18,7 +18,7 @@ namespace Catalyst
                 {
                     if (ItalianExceptions is null)
                     {
-                        ItalianExceptions = BaseExceptions();
+                        ItalianExceptions = CreateBaseExceptions();
 
                         Create(ItalianExceptions, "", "po'", "poco");
                     }
