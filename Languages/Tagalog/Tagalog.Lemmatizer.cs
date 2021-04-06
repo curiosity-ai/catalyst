@@ -14,7 +14,7 @@ namespace Catalyst.Models
 
             public string GetLemma(IToken token)
             {
-                return token.Value;
+                return new string(GetLemmaAsSpan(token));
             }
 
             public ReadOnlySpan<char> GetLemmaAsSpan(IToken token)

@@ -13,6 +13,9 @@ namespace Catalyst.Models
             internal static Dictionary<int, TokenizationException> Get()
             {
                 var exceptions = Catalyst.TokenizerExceptions.CreateBaseExceptions();
+                
+                Catalyst.TokenizerExceptions.Create(exceptions, "", "Adm.|Dr.|e.g.|E.g.|E.G.|Gen.|Gov.|i.e.|I.e.|I.E.|Jr.|Ltd.|p.m.|Ph.D.|Rep.|Rev.|Sen.|Sr.|Sra.|vs.|tel.|pág.|pag.", "Adm.|Dr.|e.g.|E.g.|E.G.|Gen.|Gov.|i.e.|I.e.|I.E.|Jr.|Ltd.|p.m.|Ph.D.|Rep.|Rev.|Sen.|Sr.|Sra.|vs.|tel.|pág.|pag.");
+
                 return exceptions;
             }
         }
