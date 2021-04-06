@@ -18,7 +18,7 @@ namespace Catalyst
                 {
                     if (FrenchExceptions is null)
                     {
-                        FrenchExceptions = BaseExceptions();
+                        FrenchExceptions = CreateBaseExceptions();
                         Create(FrenchExceptions, "", BaseFrenchExceptions, BaseFrenchExceptions);
 
                         Create(FrenchExceptions, "", "aujourd'hui|Aujourd'hui", "aujourd'hui|Aujourd'hui");

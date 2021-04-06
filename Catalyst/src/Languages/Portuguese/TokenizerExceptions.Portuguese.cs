@@ -18,7 +18,7 @@ namespace Catalyst
                 {
                     if (PortugueseExceptions is null)
                     {
-                        PortugueseExceptions = BaseExceptions();
+                        PortugueseExceptions = CreateBaseExceptions();
 
                         Create(PortugueseExceptions, "", "Adm.|Dr.|e.g.|E.g.|E.G.|Gen.|Gov.|i.e.|I.e.|I.E.|Jr.|Ltd.|p.m.|Ph.D.|Rep.|Rev.|Sen.|Sr.|Sra.|vs.|tel.|pág.|pag.", "Adm.|Dr.|e.g.|E.g.|E.G.|Gen.|Gov.|i.e.|I.e.|I.E.|Jr.|Ltd.|p.m.|Ph.D.|Rep.|Rev.|Sen.|Sr.|Sra.|vs.|tel.|pág.|pag.");
                     }

@@ -13,6 +13,9 @@ pool:
   vmImage: 'windows-latest'
 
 steps:
+- checkout: self
+  lfs: false #for this build we don't need LFS support
+
 - task: NuGetToolInstaller@1
 
 - task: UseDotNet@2
