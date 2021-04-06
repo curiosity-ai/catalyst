@@ -593,13 +593,13 @@ namespace Catalyst.Models
         public int GetWordIndex(string word)
         {
             var pos = GetMostProbablePOSforWord(word);
-            var hash = HashToken(new SingleToken(word, pos, 0, 0, Language), Language);
+            var hash = HashToken(new SingleToken(word, pos, 0, 0, Language, word), Language);
             return Data.EntryHashToIndex.ContainsKey(hash) ? Data.EntryHashToIndex[hash] : -1;
         }
 
         public int GetWordIndex(string word, Language language, PartOfSpeech pos)
         {
-            var hash = HashToken(new SingleToken(word, pos, 0, 0, language), language);
+            var hash = HashToken(new SingleToken(word, pos, 0, 0, language, word), language);
             return Data.EntryHashToIndex.ContainsKey(hash) ? Data.EntryHashToIndex[hash] : -1;
         }
 

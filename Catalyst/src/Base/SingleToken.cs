@@ -17,6 +17,7 @@ namespace Catalyst
         [Key(5)] public int Length => Value.Length;
         [Key(6)] public PartOfSpeech POS { get; set; }
         [Key(7)] public Language Language { get; set; }
+        [Key(8)] public string Lemma { get; set; }
 
         [IgnoreMember] public int Begin { get; set; }
         [IgnoreMember] public int End { get; set; }
@@ -27,6 +28,7 @@ namespace Catalyst
         [IgnoreMember] public int Head { get; set; }
         [IgnoreMember] public string DependencyType { get; set; }
         [IgnoreMember] public float Frequency { get; set; }
+        [IgnoreMember] public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
         public SingleToken(IToken source, Language language)
         {
@@ -48,13 +50,14 @@ namespace Catalyst
             Language = language;
         }
 
-        public SingleToken(string value, PartOfSpeech pos, int hash, int ignoreCaseHash, Language language)
+        public SingleToken(string value, PartOfSpeech pos, int hash, int ignoreCaseHash, Language language, string lemma)
         {
             Value = value;
             Hash = hash;
             IgnoreCaseHash = ignoreCaseHash;
             POS = pos;
             Language = language;
+            Lemma = lemma;
         }
 
         public void AddEntityType(EntityType entityType) => throw new NotImplementedException();

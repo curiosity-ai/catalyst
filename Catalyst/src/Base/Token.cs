@@ -77,6 +77,10 @@ namespace Catalyst
 
         public float Frequency { get { return Parent.GetTokenFrequency(SpanIndex, _index); } set { Parent.SetTokenFrequency(SpanIndex, _index, value); } }
 
+        public string Lemma => LemmatizerStore.Get(Parent.Language).GetLemma(this);
+
+        public ReadOnlySpan<char> LemmaAsSpan => LemmatizerStore.Get(Parent.Language).GetLemmaAsSpan(this);
+
         public override string ToString()
         {
             return $"[{Begin}->{End}]" + Value;
@@ -126,6 +130,10 @@ namespace Catalyst
         public string DependencyType { get { return ""; } set { } }
 
         public float Frequency { get { return 0; } set { return; } }
+
+        public string Lemma => Value;
+
+        public ReadOnlySpan<char> LemmaAsSpan => ValueAsSpan;
 
         public void AddEntityType(EntityType entityType) => throw new NotImplementedException();
 

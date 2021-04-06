@@ -32,11 +32,11 @@ namespace Catalyst
                     if (isHyphen)
                     {
                         if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
-                        sb.Append(token.Value);
+                        sb.Append(token.ValueAsSpan);
                     }
                     else
                     {
-                        sb.Append(token.Value).Append(' ');
+                        sb.Append(token.ValueAsSpan).Append(' ');
                     }
                 }
 
@@ -74,7 +74,7 @@ namespace Catalyst
                     h = Hashes.CombineWeak(h, c.IgnoreCaseHash);
                 }
 
-                if (EntityType is object)
+                if (EntityType.Type is object)
                 {
                     h = Hashes.CombineWeak(h, EntityType.Type.CaseSensitiveHash32());
                 }
@@ -120,6 +120,43 @@ namespace Catalyst
 
         public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public string Lemma
+        {
+            get
+            {
+                if ((Length + ChildrenIndexes.Length) < 1)
+                {
+                    return string.Empty;
+                }
+
+                var sb = Pools.StringBuilder.Rent();
+
+                foreach (var token in Children)
+                {
+                    bool isHyphen = token.LemmaAsSpan.IsHyphen();
+                    if (isHyphen)
+                    {
+                        if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
+                        sb.Append(token.LemmaAsSpan);
+                    }
+                    else
+                    {
+                        sb.Append(token.LemmaAsSpan).Append(' ');
+                    }
+                }
+
+                if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
+
+                var val = sb.ToString();
+
+                if (sb.Length < 10000) Pools.StringBuilder.Return(sb);
+
+                return val;
+            }
+        }
+
+        public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
         public Tokens(Document parent, int spanIndex, int[] children, EntityType entityType = default(EntityType))
         {

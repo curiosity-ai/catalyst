@@ -11,6 +11,8 @@ namespace Catalyst
         int Index { get; }
         string Value { get; }
         ReadOnlySpan<char> ValueAsSpan { get; }
+        string Lemma { get; }
+        ReadOnlySpan<char> LemmaAsSpan { get; }
         string Replacement { get; set; }
         int Hash { get; set; }
         int IgnoreCaseHash { get; set; }

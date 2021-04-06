@@ -453,6 +453,9 @@ namespace Catalyst.Models
             public string Value { get; set; }
 
             public ReadOnlySpan<char> ValueAsSpan => Value.AsSpan();
+            public string Lemma { get; set; }
+
+            public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
             public string Replacement { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public int Hash { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
