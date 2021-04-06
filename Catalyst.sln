@@ -160,6 +160,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.Vietnamese"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.Wolof", "Languages\Wolof\Catalyst.Models.Wolof.csproj", "{D6C5654D-918A-48C8-83DD-BBB27ED4A058}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.Church_Slavic_Slavonic_Old_Bulgarian", "Languages\Church_Slavic_Slavonic_Old_Bulgarian\Catalyst.Models.Church_Slavic_Slavonic_Old_Bulgarian.csproj", "{65A65686-BE93-44F8-9938-3B37BEDA02D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -446,6 +448,10 @@ Global
 		{D6C5654D-918A-48C8-83DD-BBB27ED4A058}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6C5654D-918A-48C8-83DD-BBB27ED4A058}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6C5654D-918A-48C8-83DD-BBB27ED4A058}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65A65686-BE93-44F8-9938-3B37BEDA02D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65A65686-BE93-44F8-9938-3B37BEDA02D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65A65686-BE93-44F8-9938-3B37BEDA02D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65A65686-BE93-44F8-9938-3B37BEDA02D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -514,6 +520,7 @@ Global
 		{00A6A85B-AC80-42F9-B930-6CC2E4F1A45F} = {5B930C6F-3DD9-4DCD-A622-D554B7BE754E}
 		{F828EA98-FA76-4D25-BB33-F5CBA5F795AD} = {5B930C6F-3DD9-4DCD-A622-D554B7BE754E}
 		{D6C5654D-918A-48C8-83DD-BBB27ED4A058} = {5B930C6F-3DD9-4DCD-A622-D554B7BE754E}
+		{65A65686-BE93-44F8-9938-3B37BEDA02D6} = {5B930C6F-3DD9-4DCD-A622-D554B7BE754E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {53B493B7-329B-4286-97BE-D464877CF17D}

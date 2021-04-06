@@ -12,7 +12,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageId>Catalyst.Models.Church_Slavic_Slavonic_Old_Bulgarian</PackageId>
     <Description>This package contains the default Church_Slavic_Slavonic_Old_Bulgarian models for Catalyst. Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy"s design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
@@ -35,6 +35,6 @@
 
   <ItemGroup>
     <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
-    <PackageReference Include="Catalyst" Version="0.0.16396" />
+    <PackageReference Include="Catalyst" Version="0.0.16590" />
   </ItemGroup>
 </Project>
