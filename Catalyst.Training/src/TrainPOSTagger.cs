@@ -109,7 +109,6 @@ namespace Catalyst.Training
                                 Logger.LogInformation($"\n>>>>> {language}: POS BEST IS STILL : {bestScore:0.0}%");
                             }
                         });
-
                     }
 
 

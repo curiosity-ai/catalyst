@@ -23,7 +23,7 @@ namespace Catalyst.Training
                         .MapResult(
                         async options =>
                         {
-                            if (string.IsNullOrWhiteSpace(options.Token))
+                            if (true || string.IsNullOrWhiteSpace(options.Token))
                             {
                                 Storage.Current = new DiskStorage(options.DiskStoragePath);
                             }
@@ -54,6 +54,7 @@ namespace Catalyst.Training
                                 //await TrainSentenceDetector.Train(options.UniversalDependenciesPath, options.LanguagesDirectory);
                                 await TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath, languagesDirectory: options.LanguagesDirectory);
                             }
+                            return;
 
                             if (!string.IsNullOrWhiteSpace(options.WikiNERPath))
                             {

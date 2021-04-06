@@ -12,15 +12,11 @@ namespace Catalyst.Models
         {
             public Language Language => Language.English;
 
-            public string GetLemma(IToken token)
-            {
-                return new string(GetLemmaAsSpan(token));
-            }
-
-            public ReadOnlySpan<char> GetLemmaAsSpan(IToken token)
-            {
-                return token.ValueAsSpan;
-            }
+            private static Lazy<Lookups> _lookup = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "en_lemma_lookup.bin")).WaitResult());
+            
+            public string GetLemma(IToken token) => new string(GetLemmaAsSpan(token));
+            
+            public ReadOnlySpan<char> GetLemmaAsSpan(IToken token) => _lookup.Value.Get(token);
 
             public bool IsBaseForm(IToken token)
             {

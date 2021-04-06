@@ -16,6 +16,11 @@ namespace Catalyst.Samples.EntityRecognition
     {
         private static async Task Main()
         {
+            //Initialize the English built-in models
+            Catalyst.Models.English.Register();
+            
+            //Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
@@ -23,6 +28,22 @@ namespace Catalyst.Samples.EntityRecognition
             // - Gazetteer-like(i.e. [Spotter](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/Spotter.cs)) 
             // - Regex-like(i.e. [PatternSpotter](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/PatternSpotter.cs))
             // - Perceptron (i.e. [AveragePerceptronEntityRecognizer](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/AveragePerceptronEntityRecognizer.cs))
+
+
+
+            //var s = typeof(Catalyst.Models.English).Assembly.GetManifestResourceStream($"{typeof(Catalyst.Models.English).Assembly.GetName().Name}.Resources.sentence-detector.bin");
+            //foreach(var name in typeof(Catalyst.Models.English).Assembly.GetManifestResourceNames())
+            //{
+            //    Console.WriteLine(name);
+            //}
+
+            var sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
+
+            var a = new AveragePerceptronTagger(Language.English, 0, "");
+            await a.LoadDataAsync();
+
+
+            var p = await AveragePerceptronTagger.FromStoreAsync(Language.English, -1, "");
 
             await DemonstrateAveragePerceptronEntityRecognizerAndPatternSpotter();
             DemonstrateSpotter();
@@ -35,7 +56,6 @@ namespace Catalyst.Samples.EntityRecognition
             // The training data was sourced from the following repository: https://github.com/dice-group/FOX/tree/master/input/Wikiner
 
             //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
-            Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
 
             //Create a new pipeline for the english language, and add the WikiNER model to it
             Console.WriteLine("Loading models... This might take a bit longer the first time you run this sample, as the models have to be downloaded from the online repository");
