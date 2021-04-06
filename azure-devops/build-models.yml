@@ -1,6 +1,6 @@
 variables:
   solution: '**/*.sln'
-  projects:  './Languages/**/*.csproj'
+  projects:  '**/Languages/**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
@@ -11,6 +11,7 @@ trigger:
   paths:
     include:
     - Languages/*
+    - azure-devops/build-models.yml
 
 pool:
   vmImage: 'windows-latest'
