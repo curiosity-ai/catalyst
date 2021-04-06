@@ -7,7 +7,13 @@ variables:
   buildConfiguration: 'Release'
 
 trigger:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - Languages/*
+    - azure-devops/build-models.yml
 
 pool:
   vmImage: 'windows-latest'
