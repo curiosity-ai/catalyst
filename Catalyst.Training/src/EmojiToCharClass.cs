@@ -20,7 +20,7 @@ namespace Catalyst.Training
             int k = 0;
             foreach (var emoji in Emoji.All)
             {
-                var chars = emoji.Sequence.AsUtf16;
+                var chars = emoji.Sequence.AsUtf16();
                 //Console.WriteLine(emoji.ToString() + "\t" + string.Join("\t", chars.Select(c => c.ToString())));
 
                 k = 0;

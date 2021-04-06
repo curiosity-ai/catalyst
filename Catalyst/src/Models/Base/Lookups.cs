@@ -26,7 +26,7 @@ namespace Catalyst.Models
         [Key(2)] public string Cache { get; set; }
         [Key(3)] public Dictionary<ulong, Entry> Entries { get; set; }
 
-        [MessagePackObject]        
+        [MessagePackObject]
         public struct Entry
         {
             public Entry(byte length, uint begin)
@@ -35,8 +35,30 @@ namespace Catalyst.Models
                 Begin = begin;
             }
 
+            public Entry(float probabilityLog10, uint cluster)
+            {
+                Length = (byte)(-probabilityLog10 * 10);
+                Begin = cluster;
+            }
+
             [Key(0)] public byte Length { get; set; }
             [Key(1)] public uint Begin { get; set; }
+
+            [IgnoreMember]
+            public float Probability
+            {
+                get
+                {
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
+
+                    return MathF.Pow(10f, -(Length / 10f));
+#else
+                    return (float)Math.Pow(10, -(Length / 10f));
+#endif
+                }
+            }
+
+            [IgnoreMember] public uint Cluster => Begin;
         }
 
         public static ulong Hash(ReadOnlySpan<char> key)

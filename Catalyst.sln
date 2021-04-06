@@ -45,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.WordNet.Test", "Ca
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Languages", "Languages", "{5B930C6F-3DD9-4DCD-A622-D554B7BE754E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Languages.English", "Languages\English\Catalyst.Languages.English.csproj", "{D6E4E3F0-EB39-43FD-9B1F-0FD9CDFD8C63}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.English", "Languages\English\Catalyst.Models.English.csproj", "{D6E4E3F0-EB39-43FD-9B1F-0FD9CDFD8C63}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

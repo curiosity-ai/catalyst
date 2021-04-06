@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
 
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Platforms>AnyCPU</Platforms>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -14,16 +14,16 @@
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageId>Catalyst.Models.English</PackageId>
-    <Description>Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy's design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
-    <PackageTags>English, Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
+    <PackageId>Catalyst.Models.Slovenian</PackageId>
+    <Description>This package contains the default Slovenian models for Catalyst. Catalyst is a Natural Language Processing library built from scratch for speed. Inspired by spaCy"s design, it brings pre-trained models, out-of-the box support for training word and document embeddings, and flexible entity recognition models.</Description>
+    <PackageTags>Slovenian, Natural Language Processing, NLP, Spacy, Machine Learning, ML, Embeddings, Data Science, Big Data, Artificial Intelligence, AI, NLP Library, Neural Networks, Deep Learning</PackageTags>
     <PackageIcon>catalyst-logo.png</PackageIcon>
   </PropertyGroup>
 
 
   <ItemGroup>
-    <None Remove="Resources\en_lemma_lookup.binz" />
-    <EmbeddedResource Include="Resources\en_lemma_lookup.binz" />
+    <None Remove="Resources\*.bin" />
+    <EmbeddedResource Include="Resources\*.bin" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,10 +35,6 @@
 
   <ItemGroup>
     <PackageReference Include="Mosaik.Core" Version="0.0.16583" />
+    <PackageReference Include="Catalyst" Version="0.0.16396" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Catalyst\Catalyst.csproj" />
-  </ItemGroup>
-
 </Project>

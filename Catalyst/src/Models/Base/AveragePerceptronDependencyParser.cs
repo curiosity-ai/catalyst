@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace Catalyst.Models
 {
@@ -70,8 +71,6 @@ namespace Catalyst.Models
 
             int nThreads = Environment.ProcessorCount;
 
-            Console.WriteLine($"Runnning training with {nThreads} threads");
-
             int groupSize = (int)(spanBuffers.Count / nThreads);
             float factor = 1f;
             for (int step = 0; step < trainingSteps; step++)
@@ -114,7 +113,7 @@ namespace Catalyst.Models
                 for (int i = 0; i < nThreads; i++) { threads[i].Join(); }
                 sw.Stop();
 
-                Console.WriteLine($"{Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} f=[{factor:0.00}]: {Math.Round(100D * correct / total, 2)}% @ {Math.Round(1000D * total / sw.ElapsedMilliseconds, 0) } tokens/second");
+                Logger.LogInformation($"Training: {Languages.EnumToCode(Language)} Step {step + 1}/{trainingSteps} f=[{factor:0.00}]: {Math.Round(100D * correct / total, 2)}% @ {Math.Round(1000D * total / sw.ElapsedMilliseconds, 0) } tokens/second");
                 UpdateAverages(epoch: step, final: (step == trainingSteps - 1));
                 factor *= learningRate;
             }

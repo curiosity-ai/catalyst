@@ -37,12 +37,10 @@ namespace Catalyst.Training
                 catch
                 {
                     Logger.LogWarning($"Unknown language {lang}");
-                    return;
                 }
             }
 
             Logger.LogInformation($"Found these languages for training: {string.Join(", ", languages.Select(l => l.language))}");
-
 
             foreach (var forceCase in new [] { EnumCase.Original, EnumCase.ForceUpper, EnumCase.ForceLower })
             {
@@ -64,19 +62,23 @@ namespace Catalyst.Training
                     //}
 
                     Logger.LogInformation($"Now training {lang} in mode {forceCase} using files {string.Join(", ", trainFilesPerLanguage[lang])}");
-                    sentenceDetector.Train(trainDocuments);
+                    var scoreTest = sentenceDetector.Train(trainDocuments);
                     Logger.LogInformation($"Finished training {lang} in mode {forceCase}");
                     await sentenceDetector.StoreAsync();
 
-                    //Prepare models for new nuget-based distribution
-
-                    var resDir = Path.Combine(languagesDirectory, language.ToString(), "Resources");
-                    
-                    Directory.CreateDirectory(resDir);
-
-                    using (var f = File.OpenWrite(Path.Combine(resDir, "tagger.bin")))
+                    if (scoreTest > 90)
                     {
-                        await sentenceDetector.StoreAsync(f);
+                        //Prepare models for new nuget-based distribution
+                        var resDir = Path.Combine(languagesDirectory, language.ToString(), "Resources");
+
+                        Directory.CreateDirectory(resDir);
+
+                        using (var f = File.OpenWrite(Path.Combine(resDir, $"sentence-detector{(string.IsNullOrEmpty(modelTag) ? "" : "-" + modelTag)}.bin")))
+                        {
+                            await sentenceDetector.StoreAsync(f);
+                        }
+                        await File.WriteAllTextAsync(Path.Combine(resDir, $"sentence-detector{(string.IsNullOrEmpty(modelTag) ? "" : "-" + modelTag)}.score"), $"{scoreTest:0.0}%");
+
                     }
                 }).ToArray());
             }
