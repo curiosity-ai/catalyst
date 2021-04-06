@@ -35,19 +35,19 @@ steps:
   inputs:
     command: 'build'
     projects: '$(project)'
-    arguments: '-c $(buildConfiguration) /p:Version=0.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'build'
     projects: '$(projectSpacy)'
-    arguments: '-c $(buildConfiguration) /p:Version=0.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'build'
     projects: '$(projectWordNet)'
-    arguments: '-c $(buildConfiguration) /p:Version=0.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
@@ -55,7 +55,7 @@ steps:
     packagesToPack: '$(project)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 
@@ -65,7 +65,7 @@ steps:
     packagesToPack: '$(projectSpacy)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 
@@ -75,7 +75,7 @@ steps:
     packagesToPack: '$(projectWordNet)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="0.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 

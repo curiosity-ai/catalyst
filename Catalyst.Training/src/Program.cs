@@ -34,6 +34,8 @@ namespace Catalyst.Training
                             }
 
                             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+                            ThreadPool.SetMinThreads(Environment.ProcessorCount*2, Environment.ProcessorCount*2);
+                            ThreadPool.SetMaxThreads(Environment.ProcessorCount*20, Environment.ProcessorCount*20);
 
                             using (var p = Process.GetCurrentProcess())
                             {
@@ -45,11 +47,9 @@ namespace Catalyst.Training
                                 await PrepareSpacyLookups.RunAsync(options.SpacyLookupsData, options.LanguagesDirectory);
                             }
 
-                            return;
-
                             if (!string.IsNullOrWhiteSpace(options.UniversalDependenciesPath))
                             {
-                                await TrainSentenceDetector.Train(options.UniversalDependenciesPath, options.LanguagesDirectory);
+                                //await TrainSentenceDetector.Train(options.UniversalDependenciesPath, options.LanguagesDirectory);
                                 await TrainPOSTagger.Train(udSource: options.UniversalDependenciesPath, ontonotesSource: options.OntonotesPath, languagesDirectory: options.LanguagesDirectory);
                             }
 
@@ -91,11 +91,15 @@ namespace Catalyst.Training
                 var dirInfo = new DirectoryInfo(dir);
                 if(Enum.TryParse<Language>(dirInfo.Name, out var lang))
                 {
-                    var projectFile = $"Catalyst.Models.{lang}.csproj";
-                    var projectDir = Path.Combine(dir, projectFile);
-                    if (!File.Exists(projectDir))
+                    var projectFile    = Path.Combine(dir, $"Catalyst.Models.{lang}.csproj");
+                    var langFile       = Path.Combine(dir, $"{lang}.cs");
+                    var lemmatizerFile = Path.Combine(dir, $"{lang}.Lemmatizer.cs");
+                    var stopwordsFile  = Path.Combine(dir, $"{lang}.StopWords.cs");
+                    var exceptionsFile = Path.Combine(dir, $"{lang}.TokenizerExceptions.cs");
+
+                    if (!File.Exists(projectFile))
                     {
-                        await File.WriteAllTextAsync(projectDir,
+                        await File.WriteAllTextAsync(projectFile,
 @"
 <Project Sdk='Microsoft.NET.Sdk'>
   <PropertyGroup>
@@ -136,6 +140,124 @@ namespace Catalyst.Training
     <PackageReference Include='Catalyst' Version='0.0.16396' />
   </ItemGroup>
 </Project>
+".Replace("'", "\"").Replace("English", lang.ToString()));
+                    }
+
+                    if(!File.Exists(langFile))
+                    {
+                        await File.WriteAllTextAsync(langFile,
+@"
+using System;
+using System.Collections.Generic;
+using Catalyst;
+using Mosaik.Core;
+
+namespace Catalyst.Models
+{
+    public static partial class English
+    {
+        public static void Register()
+        {
+            ObjectStore.OverrideModel(new AveragePerceptronTagger(Language.English, 0).GetStoredObjectInfo(),                                                                             async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'tagger.bin',                  async (s) => { var a = new AveragePerceptronTagger(Language.English, 0, '');                                                                          await a.LoadAsync(s); return a; }));
+            ObjectStore.OverrideModel(new AveragePerceptronDependencyParser(Language.English, 0).GetStoredObjectInfo(),                                                                   async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'parser.bin',                  async (s) => { var a = new AveragePerceptronDependencyParser(Language.English, 0, '');                                                                await a.LoadAsync(s); return a; }));
+            ObjectStore.OverrideModel(new SentenceDetector(Language.English, 0).GetStoredObjectInfo(),                                                                                    async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'sentence-detector.bin',       async (s) => { var a = new SentenceDetector(Language.English, 0, '');                                                                                 await a.LoadAsync(s); return a; }));
+            ObjectStore.OverrideModel(new SentenceDetector(Language.English, 0, 'lower').GetStoredObjectInfo(),                                                                           async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'sentence-detector-lower.bin', async (s) => { var a = new SentenceDetector(Language.English, 0, '');                                                                                 await a.LoadAsync(s); return a; }));
+            ObjectStore.OverrideModel(new SentenceDetector(Language.English, 0, 'upper').GetStoredObjectInfo(),                                                                           async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'sentence-detector-upper.bin', async (s) => { var a = new SentenceDetector(Language.English, 0, '');                                                                                 await a.LoadAsync(s); return a; }));
+            ObjectStore.OverrideModel(new AveragePerceptronEntityRecognizer(Language.English, 0, 'WikiNER', new string[] { 'Person', 'Organization', 'Location' }).GetStoredObjectInfo(), async () => await ResourceLoader.LoadAsync(typeof(English).Assembly, 'wikiner.bin',                 async (s) => { var a = new AveragePerceptronEntityRecognizer(Language.English, 0, 'WikiNER', new string[] { 'Person', 'Organization', 'Location' });  await a.LoadAsync(s); return a; }));
+
+            Catalyst.StopWords.Snowball.Register(Language.English, StopWords.Snowball);
+            Catalyst.StopWords.Spacy.Register(Language.English, StopWords.Spacy);
+            Catalyst.LemmatizerStore.Register(Language.English, new Lemmatizer());
+            Catalyst.TokenizerExceptions.Register(Language.English, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+        }
+    }
+}
+".Replace("'", "\"").Replace("English", lang.ToString()));
+                    }
+
+                    if (!File.Exists(lemmatizerFile))
+                    {
+                        await File.WriteAllTextAsync(lemmatizerFile,
+@"
+using System;
+using System.Collections.Generic;
+using Catalyst;
+using Mosaik.Core;
+
+namespace Catalyst.Models
+{
+    public static partial class English
+    {
+        internal sealed class Lemmatizer : ILemmatizer
+        {
+            public Language Language => Language.English;
+
+            public string GetLemma(IToken token)
+            {
+                return token.Value;
+            }
+
+            public ReadOnlySpan<char> GetLemmaAsSpan(IToken token)
+            {
+                return token.ValueAsSpan;
+            }
+
+            public bool IsBaseForm(IToken token)
+            {
+                return false;
+            }
+        }
+    }
+}
+".Replace("'", "\"").Replace("English", lang.ToString()));
+                    }
+
+                    if (true) //!File.Exists(stopwordsFile))
+                    {
+                        await File.WriteAllTextAsync(stopwordsFile,
+@"
+using System;
+using System.Collections.Generic;
+using Catalyst;
+using Mosaik.Core;
+
+namespace Catalyst.Models
+{
+    public static partial class English
+    {
+        public static class StopWords
+        {
+            public static ReadOnlyHashSet<string> Snowball = new ReadOnlyHashSet<string>(new HashSet<string>(new string[] { }));
+            public static ReadOnlyHashSet<string> Spacy    = new ReadOnlyHashSet<string>(new HashSet<string>(new string[] { }));
+        }
+    }
+}
+".Replace("'", "\"").Replace("English", lang.ToString()));
+                    }
+
+                    if (!File.Exists(exceptionsFile))
+                    {
+                        await File.WriteAllTextAsync(exceptionsFile,
+@"
+using System;
+using System.Collections.Generic;
+using Catalyst;
+using Mosaik.Core;
+
+namespace Catalyst.Models
+{
+    public static partial class English
+    {
+        internal sealed class TokenizerExceptions 
+        {
+            internal static Dictionary<int, TokenizationException> Get()
+            {
+                var exceptions = Catalyst.TokenizerExceptions.CreateBaseExceptions();
+                return exceptions;
+            }
+        }
+    }
+}
 ".Replace("'", "\"").Replace("English", lang.ToString()));
                     }
                 }
