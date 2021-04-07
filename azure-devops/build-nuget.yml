@@ -12,7 +12,11 @@ trigger:
     - master
   paths:
     exclude:
-    - Languages/*
+    - Languages
+    - samples
+    - Catalyst.Training
+    - Catalyst.WordNet.Test
+    - tests
     - azure-devops/build-models.yml
 
 pool:
