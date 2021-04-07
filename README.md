@@ -21,6 +21,7 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 - Language detection using [FastText](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/FastTextLanguageDetector.cs) or [cld3](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/LanguageDetector.cs)
 - Efficient binary serialization based on [MessagePack](https://github.com/neuecc/MessagePack-CSharp/)
 - Pre-built models for [language packages](https://www.nuget.org/packages?q=catalyst.models) ✨
+- Lemmatization ✨ (using lookup tables ported from [spaCy](https://github.com/explosion/spacy-lookups-data))
 
 
 ## New: Language Packages ✨
