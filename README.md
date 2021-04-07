@@ -20,6 +20,43 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 - Part-of-speech tagging
 - Language detection using [FastText](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/FastTextLanguageDetector.cs) or [cld3](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Special/LanguageDetector.cs)
 - Efficient binary serialization based on [MessagePack](https://github.com/neuecc/MessagePack-CSharp/)
+- Pre-built models for [language packages](https://www.nuget.org/packages?q=catalyst.models) ✨
+
+
+## New: Language Packages ✨
+We're migrating our model repository to use NuGet packages for all language-specific data and models. 
+
+You can find all  new language packages [here](https://www.nuget.org/packages?q=catalyst.models). 
+
+The new models are trained on the latest release of [Universal Dependencies v2.7](https://universaldependencies.org/).
+
+This is technically not a breaking change *yet*, but our online repository will be deprecated in the near future - so you should migrate to the new NuGet packages.
+
+When using the new model packages, you can usually remove this line from your code: `Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));`, or replace it with `Storage.Current = new DiskStorage("catalyst-models")` if you are storing your own models locally.
+
+We've also added the option to store and load models using streams:
+`````csharp
+// Creates and stores the model
+var isApattern = new PatternSpotter(Language.English, 0, tag: "is-a-pattern", captureTag: "IsA");
+isApattern.NewPattern(
+    "Is+Noun",
+    mp => mp.Add(
+        new PatternUnit(P.Single().WithToken("is").WithPOS(PartOfSpeech.VERB)),
+        new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN, PartOfSpeech.AUX, PartOfSpeech.DET, PartOfSpeech.ADJ))
+));
+using(var f = File.OpenWrite("my-pattern-spotter.bin"))
+{
+    await isApattern.StoreAsync(f);
+}
+
+// Load the model back from disk
+var isApattern2 = new PatternSpotter(Language.English, 0, tag: "is-a-pattern", captureTag: "IsA");
+
+using(var f = File.OpenRead("my-pattern-spotter.bin"))
+{
+    await isApattern2.LoadAsync(f);
+}
+`````
 
 
 ## ✨ Getting Started
@@ -75,17 +112,13 @@ For fast embedding search, we have also released a C# version of the ["Hierarchi
 
 
 
-## 📖 Documentation (coming soon)
+## 📖 Links
 
 | Documentation     |                                                           |
 | ----------------- | --------------------------------------------------------- |
-| [Getting Started] | How to use _**catalyst**_ and its features.               |
-| [API Reference]   | The detailed reference for _**catalyst**_'s API.          |
 | [Contribute]      | How to contribute to _**catalyst**_ codebase.             |
 | [Samples]         | Sample projects demonstrating _**catalyst**_ capabilities |
 | [![Gitter](https://badges.gitter.im/curiosityai/catalyst.svg)](https://gitter.im/curiosityai/catalyst?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)  | Join our gitter channel                                    |
 
-[Getting Started]: https://catalyst.curiosity.ai/getting-started
-[API Reference]: https://catalyst.curiosity.ai/api
 [Contribute]: https://github.com/curiosity-ai/catalyst/blob/master/CONTRIBUTING.md
 [Samples]: https://github.com/curiosity-ai/catalyst/tree/master/samples
