@@ -19,7 +19,8 @@ namespace Catalyst.Samples.EntityRecognition
             //Initialize the English built-in models
             Catalyst.Models.English.Register();
             
-            //Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            //This step is not necessary anymore as we are consuming the default English models from Nuget
+            //    Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
 
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
