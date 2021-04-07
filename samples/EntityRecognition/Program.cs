@@ -29,27 +29,12 @@ namespace Catalyst.Samples.EntityRecognition
             // - Regex-like(i.e. [PatternSpotter](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/PatternSpotter.cs))
             // - Perceptron (i.e. [AveragePerceptronEntityRecognizer](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/AveragePerceptronEntityRecognizer.cs))
 
+            SpotterSample();
 
-
-            //var s = typeof(Catalyst.Models.English).Assembly.GetManifestResourceStream($"{typeof(Catalyst.Models.English).Assembly.GetName().Name}.Resources.sentence-detector.bin");
-            //foreach(var name in typeof(Catalyst.Models.English).Assembly.GetManifestResourceNames())
-            //{
-            //    Console.WriteLine(name);
-            //}
-
-            var sd = await SentenceDetector.FromStoreAsync(Language.English, -1, "");
-
-            var a = new AveragePerceptronTagger(Language.English, 0, "");
-            await a.LoadDataAsync();
-
-
-            var p = await AveragePerceptronTagger.FromStoreAsync(Language.English, -1, "");
-
-            await DemonstrateAveragePerceptronEntityRecognizerAndPatternSpotter();
-            DemonstrateSpotter();
+            await AveragePerceptronEntityRecognizerAndPatternSpotterSample();
         }
 
-        private static async Task DemonstrateAveragePerceptronEntityRecognizerAndPatternSpotter()
+        private static async Task AveragePerceptronEntityRecognizerAndPatternSpotterSample()
         {
             // For training an AveragePerceptronModel, check the source-code here: https://github.com/curiosity-ai/catalyst/blob/master/Catalyst.Training/src/TrainWikiNER.cs
             // This example uses the pre-trained WikiNER model, trained on the data provided by the paper "Learning multilingual named entity recognition from Wikipedia", Artificial Intelligence 194 (DOI: 10.1016/j.artint.2012.03.006)
@@ -104,7 +89,7 @@ namespace Catalyst.Samples.EntityRecognition
             PrintDocumentEntities(doc2);
         }
 
-        private static void DemonstrateSpotter()
+        private static void SpotterSample()
         {
             //Another way to perform entity recognition is to use a gazeteer-like model. For example, here is one for capturing a set of programing languages
             var spotter = new Spotter(Language.Any, 0, "programming", "ProgrammingLanguage");

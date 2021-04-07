@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Extensions.Logging;
+using MessagePack;
 
 namespace Catalyst.Models
 {
@@ -16,17 +17,15 @@ namespace Catalyst.Models
     {
         public Dictionary<int, float[]> Weights { get; set; } = new Dictionary<int, float[]>();
         public Dictionary<int, int> TokenToSingleTag { get; set; } = new Dictionary<int, int>();
+
+        [IgnoreMember] internal AveragePerceptronTagger.WeightsHolder WeightsHolder { get; set; } = null;
     }
-
-
 
     public class AveragePerceptronTagger : StorableObjectV2<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
         private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
         private Dictionary<int, float[]> AverageWeights { get; set; }
-
-        private WeightsHolder _weightsHolder = null;
 
         public AveragePerceptronTagger(Language language, int version, string tag = "") : base(language, version, tag)
         {
@@ -47,7 +46,7 @@ namespace Catalyst.Models
         {
             var a = new AveragePerceptronTagger(language, version, tag);
             await a.LoadDataAsync();
-            a._weightsHolder = new WeightsHolder(a.Data.Weights);
+            a.Data.WeightsHolder ??= new WeightsHolder(a.Data.Weights);
             a.Data.Weights = null;
             return a;
         }
@@ -55,15 +54,15 @@ namespace Catalyst.Models
         public override async Task LoadAsync(Stream stream)
         {
             await base.LoadAsync(stream);
-            _weightsHolder = new WeightsHolder(Data.Weights);
+            Data.WeightsHolder ??= new WeightsHolder(Data.Weights);
             Data.Weights = null;
         }
 
         public override async Task StoreAsync(Stream stream)
         {
-            if (_weightsHolder is object)
+            if (Data.WeightsHolder is object)
             {
-                Data.Weights = _weightsHolder.GetOriginal();
+                Data.Weights = Data.WeightsHolder.GetOriginal();
                 await base.StoreAsync(stream);
                 Data.Weights = null;
             }
@@ -75,9 +74,9 @@ namespace Catalyst.Models
 
         public override async Task StoreAsync()
         {
-            if(_weightsHolder is object)
+            if(Data.WeightsHolder is object)
             {
-                Data.Weights = _weightsHolder.GetOriginal();
+                Data.Weights = Data.WeightsHolder.GetOriginal();
                 await base.StoreAsync();
                 Data.Weights = null;
             }
@@ -279,11 +278,11 @@ namespace Catalyst.Models
         {
             bool first = true;
 
-            if (_weightsHolder is object)
+            if (Data.WeightsHolder is object)
             {
                 for (int i = 0; i < features.Length; i++)
                 {
-                    if (_weightsHolder.TryGetValue(features[i], out var weights))
+                    if (Data.WeightsHolder.TryGetValue(features[i], out var weights))
                     {
                         if (first)
                         {
