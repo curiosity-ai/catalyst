@@ -221,19 +221,21 @@ namespace Catalyst.External
 
                             if (begin >= 0 && end >= 0)
                             {
-                                var list = r.Resolution.First().Value as List<Dictionary<string, string>>;
-                                var md = list.First();
-                                if (begin == end)
+                                if (r.Resolution?.FirstOrDefault().Value is List<Dictionary<string, string>> list)
                                 {
-                                    span[begin].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Single) { Metadata = md });
-                                }
-                                else
-                                {
-                                    span[begin].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Begin) { Metadata = md });
-                                    span[end].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.End));
-                                    for (int i = begin + 1; i < end; i++)
+                                    var md = list.First();
+                                    if (begin == end)
                                     {
-                                        span[i].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Inside));
+                                        span[begin].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Single) { Metadata = md });
+                                    }
+                                    else
+                                    {
+                                        span[begin].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Begin) { Metadata = md });
+                                        span[end].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.End));
+                                        for (int i = begin + 1; i < end; i++)
+                                        {
+                                            span[i].AddEntityType(new EntityType(nameof(RecognizerTypes.DateTime), EntityTag.Inside));
+                                        }
                                     }
                                 }
                             }
