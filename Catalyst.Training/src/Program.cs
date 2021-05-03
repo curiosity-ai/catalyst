@@ -44,10 +44,16 @@ namespace Catalyst.Training
 
                             await CreateProjectsIfNeeded(options.LanguagesDirectory);
 
+                            if (!string.IsNullOrWhiteSpace(options.HoldOffHungerData))
+                            {
+                                await PrepareBritishToAmericanSpellings.RunAsync(options.HoldOffHungerData, options.LanguagesDirectory);
+                            }
+
                             if (!string.IsNullOrWhiteSpace(options.SpacyLookupsData))
                             {
                                 await PrepareSpacyLookups.RunAsync(options.SpacyLookupsData, options.LanguagesDirectory);
                             }
+
 
                             if (!string.IsNullOrWhiteSpace(options.UniversalDependenciesPath))
                             {

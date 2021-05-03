@@ -29,6 +29,9 @@ namespace Catalyst.Training
 
         [Option("spacylookups", HelpText = "Path to the https://github.com/explosion/spacy-lookups-data repository root folder")]
         public string SpacyLookupsData { get; set; }
+        
+        [Option("holdoffhungerdata", HelpText = "Path to the https://github.com/HoldOffHunger/convert-british-to-american-spellings/ repository root folder")]
+        public string HoldOffHungerData { get; set; }
 
         [Option('t', "token", HelpText = "Upload token for online repository")]
         public string Token { get; set; }

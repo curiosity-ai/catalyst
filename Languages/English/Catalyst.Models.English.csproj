@@ -7,7 +7,7 @@
 
   <PropertyGroup>
     <Authors>Curiosity GmbH</Authors>
-    <Copyright>(c) Copyright 2021 Curiosity GmbH - all right reserved</Copyright>
+    <Copyright>(c) Copyright 2021 Curiosity GmbH - all right reserved, Copyright (c) 2019, HoldOffHunger (British to American lookup table data)</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>www.curiosity.ai</PackageProjectUrl>
     <RepositoryUrl>https://github.com/curiosity-ai/catalyst</RepositoryUrl>

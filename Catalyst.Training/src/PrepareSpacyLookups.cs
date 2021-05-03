@@ -19,10 +19,6 @@ namespace Catalyst.Training
             var rootLangFolder = Path.Combine(spacyLookupsData, @"spacy_lookups_data\data\");
             if (!Directory.Exists(rootLangFolder)) throw new Exception("data directory not found");
             
-            var lookupsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Lookups");
-            
-            Directory.CreateDirectory(lookupsFolder);
-
             //TODO Handle rules data
 
             var tasks = new List<Task>();
