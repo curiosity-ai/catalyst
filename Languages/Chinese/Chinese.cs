@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Chinese, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Chinese, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Chinese, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Chinese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Chinese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

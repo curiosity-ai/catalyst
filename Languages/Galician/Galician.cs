@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Galician, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Galician, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Galician, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Galician, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Galician, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

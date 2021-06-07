@@ -10,8 +10,8 @@ namespace Catalyst.Models
     {
         public static class Map
         {
-            private static Lazy<Lookups> _lookup_us2uk = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "en_us2uk.bin")).WaitResult());
-            private static Lazy<Lookups> _lookup_uk2us = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "en_uk2us.bin")).WaitResult());
+            private static Lazy<Lookups> _lookup_us2uk = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "en_us2uk.bin")).WaitResult(), isThreadSafe:true);
+            private static Lazy<Lookups> _lookup_uk2us = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "en_uk2us.bin")).WaitResult(), isThreadSafe: true);
 
             public static string ToAmerican(IToken token) => new string(ToAmericanAsSpan(token));
             public static string ToBritish(IToken token) => new string(ToBritishAsSpan(token));

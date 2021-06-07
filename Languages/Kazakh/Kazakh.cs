@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Kazakh, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Kazakh, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Kazakh, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Kazakh, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Kazakh, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

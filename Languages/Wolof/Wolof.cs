@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Wolof, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Wolof, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Wolof, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Wolof, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Wolof, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

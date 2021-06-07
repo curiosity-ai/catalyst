@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Persian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Persian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Persian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Persian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Persian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

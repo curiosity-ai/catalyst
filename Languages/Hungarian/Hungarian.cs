@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Hungarian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Hungarian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Hungarian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Hungarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Hungarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

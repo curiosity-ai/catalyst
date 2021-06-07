@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Hebrew, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Hebrew, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Hebrew, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Hebrew, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Hebrew, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Urdu, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Urdu, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Urdu, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Urdu, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Urdu, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

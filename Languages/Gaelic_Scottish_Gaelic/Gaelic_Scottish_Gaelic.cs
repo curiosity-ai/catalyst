@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Gaelic_Scottish_Gaelic, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Gaelic_Scottish_Gaelic, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Gaelic_Scottish_Gaelic, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Gaelic_Scottish_Gaelic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Gaelic_Scottish_Gaelic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

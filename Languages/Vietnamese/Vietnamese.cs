@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Vietnamese, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Vietnamese, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Vietnamese, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Vietnamese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Vietnamese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

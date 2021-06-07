@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Belarusian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Belarusian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Belarusian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Belarusian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Belarusian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

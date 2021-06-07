@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Croatian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Croatian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Croatian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Croatian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Croatian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

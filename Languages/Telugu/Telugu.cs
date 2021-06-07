@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Telugu, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Telugu, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Telugu, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Telugu, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Telugu, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

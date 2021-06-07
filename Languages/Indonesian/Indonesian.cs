@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Indonesian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Indonesian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Indonesian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Indonesian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Indonesian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

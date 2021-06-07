@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Czech, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Czech, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Czech, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Czech, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Czech, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

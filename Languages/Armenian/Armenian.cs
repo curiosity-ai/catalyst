@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Armenian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Armenian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Armenian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Armenian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Armenian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

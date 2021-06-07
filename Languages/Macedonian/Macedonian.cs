@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Macedonian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Macedonian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Macedonian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Macedonian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Macedonian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

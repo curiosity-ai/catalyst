@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Turkish, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Turkish, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Turkish, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Turkish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Turkish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Luxembourgish_Letzeburgesch, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Luxembourgish_Letzeburgesch, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Luxembourgish_Letzeburgesch, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Luxembourgish_Letzeburgesch, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Luxembourgish_Letzeburgesch, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

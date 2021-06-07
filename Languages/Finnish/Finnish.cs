@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Finnish, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Finnish, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Finnish, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Finnish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Finnish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

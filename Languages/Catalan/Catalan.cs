@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Catalan, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Catalan, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Catalan, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Catalan, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Catalan, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

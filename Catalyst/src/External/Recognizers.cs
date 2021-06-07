@@ -30,7 +30,7 @@ namespace Catalyst.External
 
         public DateTimeRecognizer(Language language, bool useUsEnglishForEnglish = false) : base(language, 0, "", false)
         {
-            _dateTimeModel = new Lazy<DateTimeModel>(() => GetModel(language, useUsEnglishForEnglish));
+            _dateTimeModel = new Lazy<DateTimeModel>(() => GetModel(language, useUsEnglishForEnglish), isThreadSafe: true);
         }
 
         private DateTimeModel GetModel(Language language, bool useUsEnglishForEnglish)

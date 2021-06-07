@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Swedish, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Swedish, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Swedish, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Swedish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Swedish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

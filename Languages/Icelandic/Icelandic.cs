@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Icelandic, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Icelandic, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Icelandic, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Icelandic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Icelandic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

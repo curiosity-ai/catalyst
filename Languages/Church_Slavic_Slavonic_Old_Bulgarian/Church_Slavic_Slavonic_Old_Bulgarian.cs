@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Church_Slavic_Slavonic_Old_Bulgarian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Church_Slavic_Slavonic_Old_Bulgarian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Church_Slavic_Slavonic_Old_Bulgarian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Church_Slavic_Slavonic_Old_Bulgarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Church_Slavic_Slavonic_Old_Bulgarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Danish, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Danish, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Danish, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Danish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Danish, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

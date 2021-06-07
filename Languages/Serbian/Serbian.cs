@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Serbian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Serbian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Serbian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Serbian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Serbian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

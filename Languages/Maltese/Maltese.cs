@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Maltese, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Maltese, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Maltese, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Maltese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Maltese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

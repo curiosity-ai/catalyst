@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.German, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.German, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.German, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.German, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.German, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

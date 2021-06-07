@@ -12,7 +12,7 @@ namespace Catalyst.Models
         {
             public Language Language => Language.French;
 
-            private static Lazy<Lookups> _lookup = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "fr_lemma_lookup.bin")).WaitResult());
+            private static Lazy<Lookups> _lookup = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "fr_lemma_lookup.bin")).WaitResult(), isThreadSafe:true);
 
             public string GetLemma(IToken token) => new string(GetLemmaAsSpan(token));
 

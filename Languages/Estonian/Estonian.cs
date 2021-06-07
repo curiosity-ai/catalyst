@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Estonian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Estonian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Estonian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Estonian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Estonian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

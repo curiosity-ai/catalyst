@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Faroese, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Faroese, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Faroese, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Faroese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Faroese, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

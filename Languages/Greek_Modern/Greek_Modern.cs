@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Greek_Modern, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Greek_Modern, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Greek_Modern, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Greek_Modern, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Greek_Modern, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

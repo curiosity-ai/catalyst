@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Bulgarian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Bulgarian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Bulgarian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Bulgarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Bulgarian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

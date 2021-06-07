@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Uighur, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Uighur, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Uighur, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Uighur, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Uighur, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

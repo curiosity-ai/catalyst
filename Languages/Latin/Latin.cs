@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Latin, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Latin, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Latin, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Latin, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Latin, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

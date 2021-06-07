@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Arabic, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Arabic, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Arabic, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Arabic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Arabic, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

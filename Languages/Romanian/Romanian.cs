@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Romanian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Romanian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Romanian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Romanian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Romanian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }

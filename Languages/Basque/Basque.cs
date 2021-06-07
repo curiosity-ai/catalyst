@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Basque, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Basque, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Basque, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Basque, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Basque, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe: true));
         }
     }
 }

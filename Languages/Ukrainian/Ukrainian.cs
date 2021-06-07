@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Ukrainian, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Ukrainian, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Ukrainian, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Ukrainian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get()));
+            Catalyst.TokenizerExceptions.Register(Language.Ukrainian, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
         }
     }
 }
