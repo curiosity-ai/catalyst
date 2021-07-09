@@ -20,8 +20,8 @@ namespace Catalyst.Models
 
         private static ILogger Logger = ApplicationLogging.CreateLogger<FastTokenizer>();
 
-        private object _lockSpecialCases = new object();
-        private Dictionary<int, TokenizationException> SpecialCases;
+        private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
+        private Dictionary<int, TokenizationException> _customSpecialCases;
 
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
         {
@@ -36,7 +36,7 @@ namespace Catalyst.Models
         public FastTokenizer(Language language)
         {
             Language = language;
-            SpecialCases = TokenizerExceptions.Get(Language);
+            _baseSpecialCases = TokenizerExceptions.Get(Language);
         }
 
         public void Process(IDocument document)
@@ -76,23 +76,26 @@ namespace Catalyst.Models
         {
             if (process is IHasSpecialCases cases)
             {
-                lock (_lockSpecialCases)
+                _customSpecialCases ??= new();
+                foreach (var sc in cases.GetSpecialCases())
                 {
-                    foreach (var sc in cases.GetSpecialCases())
-                    {
-                        SpecialCases[sc.Key] = sc.Value;
-                    }
+                    _customSpecialCases[sc.Key] = sc.Value;
                 }
             }
         }
 
         public void AddSpecialCase(string word, TokenizationException exception)
         {
-            SpecialCases[word.CaseSensitiveHash32()] = exception;
+            _customSpecialCases ??= new();
+            _customSpecialCases[word.CaseSensitiveHash32()] = exception;
         }
 
         public void Parse(ISpan span)
         {
+            var customSpecialCases = _customSpecialCases;
+            var baseSpecialCases = _baseSpecialCases;
+
+
             //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
             var separators = CharacterClasses.WhitespaceCharacters;
             var textSpan = span.ValueAsSpan;
@@ -165,7 +168,7 @@ namespace Catalyst.Models
                 while (!candidate.IsEmpty)
                 {
                     int hash = candidate.CaseSensitiveHash32();
-                    if (SpecialCases.ContainsKey(hash))
+                    if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) || baseSpecialCases.ContainsKey(hash))
                     {
                         splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Exception));
                         candidate = new ReadOnlySpan<char>();
@@ -244,7 +247,7 @@ namespace Catalyst.Models
                                         var rest = candidate.Slice(in_offset - offset + index);
                                         int hashRest = rest.CaseSensitiveHash32();
 
-                                        if (SpecialCases.ContainsKey(hashRest))
+                                        if (customSpecialCases.ContainsKey(hashRest))
                                         {
                                             in_offset = offset + index;
                                             break;
@@ -297,7 +300,7 @@ namespace Catalyst.Models
                     continue;
                 }
 
-                if (SpecialCases.TryGetValue(hash, out TokenizationException exp))
+                if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
                 {
                     if (exp.Replacements is null)
                     {
