@@ -247,7 +247,7 @@ namespace Catalyst.Models
                                         var rest = candidate.Slice(in_offset - offset + index);
                                         int hashRest = rest.CaseSensitiveHash32();
 
-                                        if (customSpecialCases.ContainsKey(hashRest))
+                                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) || baseSpecialCases.ContainsKey(hashRest))
                                         {
                                             in_offset = offset + index;
                                             break;
