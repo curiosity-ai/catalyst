@@ -49,7 +49,7 @@ namespace Catalyst.Models
             {
                 get
                 {
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
 
                     return MathF.Pow(10f, -(Length / 10f));
 #else

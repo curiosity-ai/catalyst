@@ -10,7 +10,7 @@ namespace Catalyst
         int Columns { get; }
 
         float this[int i, int j] { get; set; }
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
 
         void AddToRow(ReadOnlySpan<float> vec, int i, float a);
 

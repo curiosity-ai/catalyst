@@ -31,7 +31,7 @@
     <PackageReference Include="Microsoft.ML" Version="1.6.0" />
     <PackageReference Include="MessagePack" Version="2.3.75" />
     <PackageReference Include="Compiled.Recognizers.Text.DateTime" Version="1.4.2.18057" />
-    <PackageReference Include="Mosaik.Core" Version="0.0.21596" />
+    <PackageReference Include="Mosaik.Core" Version="0.0.21635" />
     <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
