@@ -17,10 +17,14 @@ namespace TextClassification
 
         static async Task Main(string[] args)
         {
+
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
-            //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
+            //Need to register the languages we want to use first
+            Catalyst.Models.English.Register();
+
+            //Configures the model storage to use the local folder ./catalyst-models/
             Storage.Current = new DiskStorage("catalyst-models");
 
 
@@ -48,18 +52,25 @@ namespace TextClassification
             fastText.Train(trainDocs);
 
             //You can also auto-tune the model using the algorithm from https://ai.facebook.com/blog/fasttext-blog-post-open-source-in-brief/
-            fastText.AutoTuneTrain(trainDocs, testDocs, new FastText.AutoTuneOptions());
+            fastText.AutoTuneTrain(trainDocs, testDocs, new FastText.AutoTuneOptions() { MaximumTrials = 3 });
+
+            //This is how you serialize it to the local storage set above
+            await fastText.StoreAsync();
+
+            //And how to load it again from storage:
+            var loadedFastText = await FastText.FromStoreAsync(Language.English, 0, "Reuters-Classifier");
 
             //Compute predictions
             Dictionary<IDocument, Dictionary<string, float>> predTrain, predTest;
+
             using (new Measure(Logger, "Computing train-set predictions", trainDocs.Length))
             {
-                predTrain = trainDocs.AsParallel().Select(d => (Doc: d, Pred: fastText.Predict(d))).ToDictionary(d => d.Doc, d => d.Pred);
+                predTrain = trainDocs.AsParallel().Select(d => (Doc: d, Pred: loadedFastText.Predict(d))).ToDictionary(d => d.Doc, d => d.Pred);
             }
 
             using (new Measure(Logger, "Computing test set predictions", testDocs.Length))
             {
-                predTest = testDocs.AsParallel().Select(d => (Doc: d, Pred: fastText.Predict(d))).ToDictionary(d => d.Doc, d => d.Pred);
+                predTest = testDocs.AsParallel().Select(d => (Doc: d, Pred: loadedFastText.Predict(d))).ToDictionary(d => d.Doc, d => d.Pred);
             }
 
             var resultsTrain = ComputeStats(predTrain);

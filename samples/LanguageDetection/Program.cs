@@ -19,11 +19,14 @@ namespace Catalyst.Samples.LanguageDetection
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
+            //Need to register the languages we want to use first
+            Catalyst.Models.English.Register();
+
             //This example shows the two language detection models available on Catalyst. 
             //The first is derived from the Chrome former language detection code Compact Language Detector 2 (https://github.com/CLD2Owners/cld2)
             //and the newer model is derived from Facebook's FastText language detection dataset (see: https://fasttext.cc/blog/2017/10/02/blog-post.html)
 
-            //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
+            //Configures the model storage to use the local folder ./catalyst-models/
             Storage.Current = new DiskStorage("catalyst-models");
 
             var cld2LanguageDetector     = await LanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");

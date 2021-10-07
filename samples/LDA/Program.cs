@@ -15,10 +15,14 @@ namespace Catalyst.Samples
     {
         static async Task Main(string[] args)
         {
+
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
-            //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
+            //Need to register the languages we want to use first
+            Catalyst.Models.English.Register();
+
+            //Configures the model storage to use the local folder ./catalyst-models/
             Storage.Current = new DiskStorage("catalyst-models");
 
             //Download the Reuters corpus if necessary
