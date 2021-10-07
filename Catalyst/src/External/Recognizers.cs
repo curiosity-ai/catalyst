@@ -80,9 +80,10 @@ namespace Catalyst.External
         private static DateTimeModel GetChineseModel(DateTimeOptions options)
         {
             return new DateTimeModel(
-                    new FullDateTimeParser(
-                        new ChineseDateTimeParserConfiguration(new BaseDateTimeOptionsConfiguration(Culture.Chinese, options))),
-                    new ChineseMergedExtractorConfiguration(new BaseDateTimeOptionsConfiguration(Culture.Chinese, options)));
+                    new BaseCJKMergedDateTimeParser(
+                        new ChineseMergedParserConfiguration(new ChineseCommonDateTimeParserConfiguration(new BaseDateTimeOptionsConfiguration(Culture.Chinese, options)))),
+                    new BaseCJKMergedDateTimeExtractor(
+                        new ChineseMergedExtractorConfiguration(new BaseDateTimeOptionsConfiguration(Culture.Chinese, options))));
         }
 
         private static DateTimeModel GetSpanishModel(DateTimeOptions options)
@@ -167,12 +168,12 @@ namespace Catalyst.External
             return new[] { nameof(RecognizerTypes.DateTime) };
         }
 
-        public static Task<bool> ExistsAsync(Language language, int version, string tag)
+        public static new Task<bool> ExistsAsync(Language language, int version, string tag)
         {
             return Task.FromResult(true);
         } // Needs to say it exists, otherwise when calling StoredObjectInfo.ExistsAsync(Language language, int version, string tag), it will fail to load this model
 
-        public static Task<DateTimeRecognizer> FromStoreAsync(Language language, int version, string tag)
+        public static new Task<DateTimeRecognizer> FromStoreAsync(Language language, int version, string tag)
         {
             return Task.FromResult(new DateTimeRecognizer(language));
         }
