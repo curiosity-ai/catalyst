@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Catalyst\Catalyst.csproj" />
+    <ProjectReference Include="..\..\Languages\English\Catalyst.Models.English.csproj" />
   </ItemGroup>
 
 </Project>

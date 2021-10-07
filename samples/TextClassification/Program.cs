@@ -21,7 +21,7 @@ namespace TextClassification
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
             //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
-            Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            Storage.Current = new DiskStorage("catalyst-models");
 
 
             //Download the Reuters corpus if necessary

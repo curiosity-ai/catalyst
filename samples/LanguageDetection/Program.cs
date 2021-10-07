@@ -24,9 +24,8 @@ namespace Catalyst.Samples.LanguageDetection
             //and the newer model is derived from Facebook's FastText language detection dataset (see: https://fasttext.cc/blog/2017/10/02/blog-post.html)
 
             //Configures the model storage to use the online repository backed by the local folder ./catalyst-models/
-            Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));
+            Storage.Current = new DiskStorage("catalyst-models");
 
-            Console.WriteLine("Loading models... This might take a bit longer the first time you run this sample, as the models have to be downloaded from the online repository");
             var cld2LanguageDetector     = await LanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");
             var fastTextLanguageDetector = await FastTextLanguageDetector.FromStoreAsync(Language.Any, Version.Latest, "");
 
