@@ -454,29 +454,50 @@ namespace Catalyst.Models
         internal sealed class WeightsHolder
         {
             private readonly float[] _weights;
+            private float[] _zero;
             private readonly int _singleWeightLength;
             private readonly Dictionary<int, int> _positions;
+            private readonly int _maxIndex;
 
             public WeightsHolder(Dictionary<int, float[]> weights)
             {
-                _weights = new float[weights.Values.Sum(v => v.Length)];
+                _weights = new float[weights.Values.Sum(v => v.Count(f => f != 0f))];
                 _singleWeightLength = weights.First().Value.Length;
+                
                 _positions = new Dictionary<int, int>(weights.Count);
                 var ws = _weights.AsSpan();
                 int curPos = 0;
+                int maxIndex = 0;
                 foreach(var kv in weights)
                 {
-                    _positions.Add(kv.Key, curPos);
-                    kv.Value.AsSpan().CopyTo(ws.Slice(curPos));
-                    curPos += kv.Value.Length;
+                    if (kv.Value.Any(v => v != 0f))
+                    {
+                        _positions.Add(kv.Key, curPos);
+                        kv.Value.AsSpan().CopyTo(ws.Slice(curPos));
+                        curPos += kv.Value.Length;
+                    }
+                    maxIndex = Math.Max(kv.Key, maxIndex);
                 }
+                _maxIndex = maxIndex;
             }
 
-            public bool TryGetValue(int index, out Span<float> weights)
+            public bool TryGetValue(int index, out ReadOnlySpan<float> weights)
             {
                 if(_positions.TryGetValue(index, out var start))
                 {
                     weights = _weights.AsSpan(start, _singleWeightLength);
+                    return true;
+                }
+                else if(index <= _maxIndex)
+                {
+                    //Empty value
+                    if(_zero is null)
+                    {
+                        _zero = new float[_singleWeightLength];
+                    }
+
+                    weights = _zero;
+
                     return true;
                 }
                 weights = default;
@@ -486,10 +507,20 @@ namespace Catalyst.Models
             internal Dictionary<int, float[]> GetOriginal()
             {
                 var dict = new Dictionary<int, float[]>();
+
+                for(int i = 0; i <= _maxIndex; i++)
+                {
+                    if (!_positions.ContainsKey(i))
+                    {
+                        dict[i] = new float[_singleWeightLength];
+                    }
+                }
+
                 foreach(var kv in _positions)
                 {
                     dict[kv.Key] = _weights.AsSpan(kv.Value, _singleWeightLength).ToArray();
                 }
+
                 return dict;
             }
         }
