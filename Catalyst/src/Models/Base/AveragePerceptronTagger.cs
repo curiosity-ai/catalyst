@@ -461,8 +461,8 @@ namespace Catalyst.Models
 
             public WeightsHolder(Dictionary<int, float[]> weights)
             {
-                _weights = new float[weights.Values.Sum(v => v.Count(f => f != 0f))];
                 _singleWeightLength = weights.First().Value.Length;
+                _weights = new float[weights.Values.Sum(v => v.Any(f => f != 0f) ? _singleWeightLength : 0)];
                 
                 _positions = new Dictionary<int, int>(weights.Count);
                 var ws = _weights.AsSpan();
