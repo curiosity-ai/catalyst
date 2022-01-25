@@ -20,7 +20,7 @@ namespace Catalyst.Models
             Catalyst.StopWords.Snowball.Register(Language.Afrikaans, StopWords.Snowball);
             Catalyst.StopWords.Spacy.Register(Language.Afrikaans, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Afrikaans, new Lemmatizer());
-            Catalyst.TokenizerExceptions.Register(Language.Afrikaans, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe: true));
+            Catalyst.TokenizerExceptions.Register(Language.Afrikaans, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), System.Threading.LazyThreadSafetyMode.ExecutionAndPublication));
         }
     }
 }
