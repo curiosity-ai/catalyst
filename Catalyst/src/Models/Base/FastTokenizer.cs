@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Catalyst.Models
 {
@@ -22,6 +23,7 @@ namespace Catalyst.Models
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
+        private ReaderWriterLockSlim _lockSpecialCases = new();
 
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
         {
@@ -76,258 +78,283 @@ namespace Catalyst.Models
         {
             if (process is IHasSpecialCases cases)
             {
-                _customSpecialCases ??= new();
-                foreach (var sc in cases.GetSpecialCases())
+                _lockSpecialCases.EnterWriteLock();
+                try
                 {
-                    _customSpecialCases[sc.Key] = sc.Value;
+
+                    _customSpecialCases ??= new();
+                    foreach (var sc in cases.GetSpecialCases())
+                    {
+                        _customSpecialCases[sc.Key] = sc.Value;
+                    }
+                }
+                finally
+                {
+                    _lockSpecialCases.ExitWriteLock();
                 }
             }
         }
 
         public void AddSpecialCase(string word, TokenizationException exception)
         {
-            _customSpecialCases ??= new();
-            _customSpecialCases[word.CaseSensitiveHash32()] = exception;
+            _lockSpecialCases.EnterWriteLock();
+            try
+            {
+                _customSpecialCases ??= new();
+                _customSpecialCases[word.CaseSensitiveHash32()] = exception;
+            }
+            finally
+            {
+                _lockSpecialCases.ExitWriteLock();
+            }
         }
 
         public void Parse(ISpan span)
         {
-            var customSpecialCases = _customSpecialCases;
-            var baseSpecialCases = _baseSpecialCases;
-
-
-            //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
-            var separators = CharacterClasses.WhitespaceCharacters;
-            var textSpan = span.ValueAsSpan;
-
-            bool hasEmoji = false;
-
-            for (int i = 0; i < textSpan.Length - 1; i++)
+            _lockSpecialCases.EnterReadLock();
+            try
             {
-                if (textSpan.Slice(i).IsEmoji(out _))
-                {
-                    hasEmoji = true; break;
-                }
-            }
 
-            var splitPoints = new List<SplitPoint>(textSpan.Length / 4);
+                var customSpecialCases = _customSpecialCases;
+                var baseSpecialCases = _baseSpecialCases;
 
-            int offset = 0, sufix_offset = 0;
-            while (true)
-            {
-                if (splitPoints.Count > textSpan.Length)
-                {
-                    throw new InvalidOperationException(); //If we found more splitting points than actual characters on the span, we hit a bug in the tokenizer
-                }
+                //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
+                var separators = CharacterClasses.WhitespaceCharacters;
+                var textSpan = span.ValueAsSpan;
 
-                offset += sufix_offset;
-                sufix_offset = 0;
-                if (offset > textSpan.Length) { break; }
-                var splitPoint = textSpan.IndexOfAny(separators, offset);
-                ReadOnlySpan<char> candidate;
+                bool hasEmoji = false;
 
-                if (splitPoint == offset)
+                for (int i = 0; i < textSpan.Length - 1; i++)
                 {
-                    //Happens on sequential separators
-                    offset++; continue;
-                }
-
-                if (splitPoint < 0)
-                {
-                    candidate = textSpan.Slice(offset);
-                    splitPoint = offset + candidate.Length;
-                    if (candidate.Length == 0) { break; }
-                }
-                else
-                {
-                    candidate = textSpan.Slice(offset, splitPoint - offset);
-                }
-
-                //Special case to split also at emojis
-                if (hasEmoji)
-                {
-                    for (int i = 0; i < (candidate.Length - 1); i++)
+                    if (textSpan.Slice(i).IsEmoji(out _))
                     {
-                        if (candidate.Slice(i).IsEmoji(out var emojiLength))
-                        {
-                            if (i == 0)
-                            {
-                                splitPoint = offset + emojiLength - 1;
-                                candidate = candidate.Slice(0, emojiLength);
-                            }
-                            else
-                            {
-                                splitPoint = offset + i - 1;
-                                candidate = candidate.Slice(0, i);
-                            }
-                            break;
-                        }
+                        hasEmoji = true; break;
                     }
                 }
 
-                while (!candidate.IsEmpty)
+                var splitPoints = new List<SplitPoint>(textSpan.Length / 4);
+
+                int offset = 0, sufix_offset = 0;
+                while (true)
                 {
-                    int hash = candidate.CaseSensitiveHash32();
-                    if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) || baseSpecialCases.ContainsKey(hash))
+                    if (splitPoints.Count > textSpan.Length)
                     {
-                        splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Exception));
-                        candidate = new ReadOnlySpan<char>();
-                        offset = splitPoint + 1;
-                        continue;
+                        throw new InvalidOperationException(); //If we found more splitting points than actual characters on the span, we hit a bug in the tokenizer
                     }
-                    else if (candidate.IsLikeURLorEmail())
+
+                    offset += sufix_offset;
+                    sufix_offset = 0;
+                    if (offset > textSpan.Length) { break; }
+                    var splitPoint = textSpan.IndexOfAny(separators, offset);
+                    ReadOnlySpan<char> candidate;
+
+                    if (splitPoint == offset)
                     {
-                        splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.EmailOrUrl));
-                        candidate = new ReadOnlySpan<char>();
-                        offset = splitPoint + 1;
-                        continue;
+                        //Happens on sequential separators
+                        offset++; continue;
                     }
-                    else if (hasEmoji && candidate.IsEmoji(out var emojiLength))
+
+                    if (splitPoint < 0)
                     {
-                        splitPoints.Add(new SplitPoint(offset, offset + emojiLength - 1, SplitPointReason.Emoji));
-                        candidate = candidate.Slice(emojiLength);
-                        offset += emojiLength;
-                        continue;
+                        candidate = textSpan.Slice(offset);
+                        splitPoint = offset + candidate.Length;
+                        if (candidate.Length == 0) { break; }
                     }
                     else
                     {
-                        if (candidate.Length == 1)
+                        candidate = textSpan.Slice(offset, splitPoint - offset);
+                    }
+
+                    //Special case to split also at emojis
+                    if (hasEmoji)
+                    {
+                        for (int i = 0; i < (candidate.Length - 1); i++)
                         {
-                            splitPoints.Add(new SplitPoint(offset, offset, SplitPointReason.SingleChar));
+                            if (candidate.Slice(i).IsEmoji(out var emojiLength))
+                            {
+                                if (i == 0)
+                                {
+                                    splitPoint = offset + emojiLength - 1;
+                                    candidate = candidate.Slice(0, emojiLength);
+                                }
+                                else
+                                {
+                                    splitPoint = offset + i - 1;
+                                    candidate = candidate.Slice(0, i);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    while (!candidate.IsEmpty)
+                    {
+                        int hash = candidate.CaseSensitiveHash32();
+                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) || baseSpecialCases.ContainsKey(hash))
+                        {
+                            splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Exception));
                             candidate = new ReadOnlySpan<char>();
                             offset = splitPoint + 1;
                             continue;
                         }
-
-                        if (!candidate.IsAllLetterOrDigit())
+                        else if (candidate.IsLikeURLorEmail())
                         {
-                            if (candidate.IsSentencePunctuation() || candidate.IsHyphen() || candidate.IsSymbol())
+                            splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.EmailOrUrl));
+                            candidate = new ReadOnlySpan<char>();
+                            offset = splitPoint + 1;
+                            continue;
+                        }
+                        else if (hasEmoji && candidate.IsEmoji(out var emojiLength))
+                        {
+                            splitPoints.Add(new SplitPoint(offset, offset + emojiLength - 1, SplitPointReason.Emoji));
+                            candidate = candidate.Slice(emojiLength);
+                            offset += emojiLength;
+                            continue;
+                        }
+                        else
+                        {
+                            if (candidate.Length == 1)
                             {
-                                splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Punctuation));
+                                splitPoints.Add(new SplitPoint(offset, offset, SplitPointReason.SingleChar));
                                 candidate = new ReadOnlySpan<char>();
                                 offset = splitPoint + 1;
                                 continue;
                             }
 
-                            int prefixLocation = FindPrefix(candidate);
-                            if (prefixLocation >= 0)
+                            if (!candidate.IsAllLetterOrDigit())
                             {
-                                splitPoints.Add(new SplitPoint(offset + prefixLocation, offset + prefixLocation, SplitPointReason.Prefix));
-                                candidate = candidate.Slice(prefixLocation + 1);
-                                offset += prefixLocation + 1;
-                                continue;
-                            }
-
-                            var (sufixIndex, sufixLength) = FindSufix(candidate);
-
-                            if (sufixIndex > -1)
-                            {
-                                splitPoints.Add(new SplitPoint(offset + sufixIndex, offset + sufixIndex + sufixLength - 1, SplitPointReason.Sufix));
-                                candidate = candidate.Slice(0, sufixIndex);
-                                splitPoint = offset + sufixIndex;
-                                sufix_offset += sufixLength;
-                                continue;
-                            }
-
-                            var infixLocation = FindInfix(candidate);
-                            if (infixLocation.Count > 0)
-                            {
-                                int in_offset = offset;
-
-                                foreach (var (index, length) in infixLocation)
+                                if (candidate.IsSentencePunctuation() || candidate.IsHyphen() || candidate.IsSymbol())
                                 {
-                                    if ((offset + index - 1) >= in_offset)
-                                    {
-                                        splitPoints.Add(new SplitPoint(in_offset, offset + index - 1, SplitPointReason.Infix));
-                                    }
-
-                                    //Test if the remaining is not an exception first
-                                    if ((in_offset - offset + index) <= candidate.Length)
-                                    {
-                                        var rest = candidate.Slice(in_offset - offset + index);
-                                        int hashRest = rest.CaseSensitiveHash32();
-
-                                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) || baseSpecialCases.ContainsKey(hashRest))
-                                        {
-                                            in_offset = offset + index;
-                                            break;
-                                        }
-                                    }
-                                    in_offset = offset + index + length;
-                                    splitPoints.Add(new SplitPoint(offset + index, offset + index + length - 1, SplitPointReason.Infix));
+                                    splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Punctuation));
+                                    candidate = new ReadOnlySpan<char>();
+                                    offset = splitPoint + 1;
+                                    continue;
                                 }
 
-                                candidate = candidate.Slice(in_offset - offset);
+                                int prefixLocation = FindPrefix(candidate);
+                                if (prefixLocation >= 0)
+                                {
+                                    splitPoints.Add(new SplitPoint(offset + prefixLocation, offset + prefixLocation, SplitPointReason.Prefix));
+                                    candidate = candidate.Slice(prefixLocation + 1);
+                                    offset += prefixLocation + 1;
+                                    continue;
+                                }
 
-                                offset = in_offset;
-                                continue;
+                                var (sufixIndex, sufixLength) = FindSufix(candidate);
+
+                                if (sufixIndex > -1)
+                                {
+                                    splitPoints.Add(new SplitPoint(offset + sufixIndex, offset + sufixIndex + sufixLength - 1, SplitPointReason.Sufix));
+                                    candidate = candidate.Slice(0, sufixIndex);
+                                    splitPoint = offset + sufixIndex;
+                                    sufix_offset += sufixLength;
+                                    continue;
+                                }
+
+                                var infixLocation = FindInfix(candidate);
+                                if (infixLocation.Count > 0)
+                                {
+                                    int in_offset = offset;
+
+                                    foreach (var (index, length) in infixLocation)
+                                    {
+                                        if ((offset + index - 1) >= in_offset)
+                                        {
+                                            splitPoints.Add(new SplitPoint(in_offset, offset + index - 1, SplitPointReason.Infix));
+                                        }
+
+                                        //Test if the remaining is not an exception first
+                                        if ((in_offset - offset + index) <= candidate.Length)
+                                        {
+                                            var rest = candidate.Slice(in_offset - offset + index);
+                                            int hashRest = rest.CaseSensitiveHash32();
+
+                                            if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) || baseSpecialCases.ContainsKey(hashRest))
+                                            {
+                                                in_offset = offset + index;
+                                                break;
+                                            }
+                                        }
+                                        in_offset = offset + index + length;
+                                        splitPoints.Add(new SplitPoint(offset + index, offset + index + length - 1, SplitPointReason.Infix));
+                                    }
+
+                                    candidate = candidate.Slice(in_offset - offset);
+
+                                    offset = in_offset;
+                                    continue;
+                                }
                             }
                         }
+
+                        splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Normal));
+                        candidate = new ReadOnlySpan<char>();
+                        offset = splitPoint + 1;
+                    }
+                }
+
+                int spanBegin = span.Begin;
+                int pB = int.MinValue, pE = int.MinValue;
+                span.ReserveTokens(splitPoints.Count);
+                foreach (var sp in splitPoints.OrderBy(s => s.Begin).ThenBy(s => s.End))
+                {
+                    int b = sp.Begin;
+                    int e = sp.End;
+
+                    if (pB == b && pE == e) { continue; }
+                    pB = b; pE = e;
+
+                    if (b > e)
+                    {
+                        Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
+                        throw new InvalidOperationException();
                     }
 
-                    splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Normal));
-                    candidate = new ReadOnlySpan<char>();
-                    offset = splitPoint + 1;
-                }
-            }
+                    while (char.IsWhiteSpace(textSpan[b]) && b < e) { b++; }
 
-            int spanBegin = span.Begin;
-            int pB = int.MinValue, pE = int.MinValue;
-            span.ReserveTokens(splitPoints.Count);
-            foreach (var sp in splitPoints.OrderBy(s => s.Begin).ThenBy(s => s.End))
-            {
-                int b = sp.Begin;
-                int e = sp.End;
+                    while (char.IsWhiteSpace(textSpan[e]) && e > b) { e--; }
 
-                if (pB == b && pE == e) { continue; }
-                pB = b; pE = e;
+                    int hash = textSpan.Slice(b, e - b + 1).CaseSensitiveHash32();
 
-                if (b > e)
-                {
-                    Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
-                    throw new InvalidOperationException();
-                }
-
-                while (char.IsWhiteSpace(textSpan[b]) && b < e) { b++; }
-
-                while (char.IsWhiteSpace(textSpan[e]) && e > b) { e--; }
-
-                int hash = textSpan.Slice(b, e - b + 1).CaseSensitiveHash32();
-
-                if (e < b)
-                {
-                    Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
-                    continue;
-                }
-
-                if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
-                {
-                    if (exp.Replacements is null)
+                    if (e < b)
                     {
-                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                        Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
+                        continue;
+                    }
+
+                    if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
+                    {
+                        if (exp.Replacements is null)
+                        {
+                            var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                        }
+                        else
+                        {
+                            //TODO: Tokens begins and ends are being artificially placed here, check in the future how to better handle this
+                            int begin2 = spanBegin + b;
+                            for (int i = 0; i < exp.Replacements.Length; i++)
+                            {
+                                //Adds replacement tokens sequentially, consuming one char from the original document at a time, and
+                                //using the remaing chars in the last replacement token
+                                var tk = span.AddToken(begin2, ((i == exp.Replacements.Length - 1) ? (spanBegin + e) : begin2));
+                                tk.Replacement = exp.Replacements[i];
+                                begin2++;
+                            }
+                        }
                     }
                     else
                     {
-                        //TODO: Tokens begins and ends are being artificially placed here, check in the future how to better handle this
-                        int begin2 = spanBegin + b;
-                        for (int i = 0; i < exp.Replacements.Length; i++)
+                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                        if (sp.Reason == SplitPointReason.EmailOrUrl && !DisableEmailOrURLCapture)
                         {
-                            //Adds replacement tokens sequentially, consuming one char from the original document at a time, and
-                            //using the remaing chars in the last replacement token
-                            var tk = span.AddToken(begin2, ((i == exp.Replacements.Length - 1) ? (spanBegin + e) : begin2));
-                            tk.Replacement = exp.Replacements[i];
-                            begin2++;
+                            tk.AddEntityType(new EntityType("EmailOrURL", EntityTag.Single));
                         }
                     }
                 }
-                else
-                {
-                    var tk = span.AddToken(spanBegin + b, spanBegin + e);
-                    if (sp.Reason == SplitPointReason.EmailOrUrl && !DisableEmailOrURLCapture)
-                    {
-                        tk.AddEntityType(new EntityType("EmailOrURL", EntityTag.Single));
-                    }
-                }
+            }
+            finally
+            {
+                _lockSpecialCases.ExitReadLock();
             }
         }
 
