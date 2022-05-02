@@ -4,13 +4,19 @@
     <TargetFramework>net6.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="spam-extract.txt" />
     <None Remove="wiki-extract.txt" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="spam-extract.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="wiki-extract.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

@@ -58,7 +58,7 @@ namespace Catalyst
                     }
                     catch (FileNotFoundException)
                     {
-                        Logger.LogError($"Model not found on disk, ignoring: {md.ToString()}");
+                        Logger.LogWarning($"Model not found on disk, ignoring: {md}");
                         pipeline.Data.Processes.Remove(md);
                     }
                 }
@@ -482,7 +482,7 @@ namespace Catalyst
             return document;
         }
 
-        public IEnumerable<IDocument> ProcessSingleThread(IEnumerable<IDocument> documents)
+        public IEnumerable<IDocument> ProcessSingleThread(IEnumerable<IDocument> documents, bool throwOnError = false)
         {
             RWLock.EnterReadLock();
 
@@ -517,8 +517,14 @@ namespace Catalyst
                         }
                         catch (Exception E)
                         {
-                            Logger.LogError(E, "Error parsing document");
-                            d = null;
+                            if (throwOnError) 
+                            { 
+                                throw E; 
+                            } 
+                            else
+                            {
+                                d = null;
+                            }
                         }
 
                         if (d is object)

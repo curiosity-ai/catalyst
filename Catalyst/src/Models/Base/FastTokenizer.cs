@@ -1,5 +1,4 @@
 ﻿using UID;
-using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 using System;
 using System.Collections.Generic;
@@ -19,7 +18,6 @@ namespace Catalyst.Models
         public string Tag => "";
         public int Version => 0;
 
-        private static ILogger Logger = ApplicationLogging.CreateLogger<FastTokenizer>();
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
@@ -61,8 +59,8 @@ namespace Catalyst.Models
                 }
                 catch (InvalidOperationException ome)
                 {
-                    Logger.LogError(ome, "Error tokenizing document:\n'{TEXT}'", document.Value);
                     document.Clear();
+                    throw new TokenizationFailedException($"Error tokenizing document:\n'{document.Value}'", ome);
                 }
             }
         }
@@ -306,8 +304,7 @@ namespace Catalyst.Models
 
                     if (b > e)
                     {
-                        Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
-                        throw new InvalidOperationException();
+                        throw new InvalidOperationException($"Error processing text: '{span.Value}', found token with begin={b} and end={e}");
                     }
 
                     while (char.IsWhiteSpace(textSpan[b]) && b < e) { b++; }
@@ -318,7 +315,6 @@ namespace Catalyst.Models
 
                     if (e < b)
                     {
-                        Logger.LogError("Error processing text: '{DOC}', found token with begin={b} and end={e}", span.Value, b, e);
                         continue;
                     }
 

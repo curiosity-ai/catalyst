@@ -183,6 +183,7 @@ namespace Catalyst.External
             var result = _dateTimeModel.Value.Parse(document.Value, DateTime.Now);
 
             bool found = result.Any();
+
             if (found)
             {
                 foreach (var r in result)
