@@ -43,15 +43,15 @@ namespace Catalyst.External
 
             switch (language)
             {
-                case Language.English:    return new Lazy<DateTimeModel>(() =>GetEnglishModel(options, useUsEnglishForEnglish), System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Chinese:    return new Lazy<DateTimeModel>(() =>GetChineseModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Spanish:    return new Lazy<DateTimeModel>(() =>GetSpanishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.French:     return new Lazy<DateTimeModel>(() =>GetFrenchModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Portuguese: return new Lazy<DateTimeModel>(() =>GetPortugueseModel(options),                      System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.German:     return new Lazy<DateTimeModel>(() =>GetGermanModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Italian:    return new Lazy<DateTimeModel>(() =>GetItalianModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Turkish:    return new Lazy<DateTimeModel>(() =>GetTurkishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
-                case Language.Hindi:      return new Lazy<DateTimeModel>(() =>GetHindiModel(options),                           System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.English:    return new Lazy<DateTimeModel>(() => GetEnglishModel(options, useUsEnglishForEnglish), System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Chinese:    return new Lazy<DateTimeModel>(() => GetChineseModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Spanish:    return new Lazy<DateTimeModel>(() => GetSpanishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.French:     return new Lazy<DateTimeModel>(() => GetFrenchModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Portuguese: return new Lazy<DateTimeModel>(() => GetPortugueseModel(options),                      System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.German:     return new Lazy<DateTimeModel>(() => GetGermanModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Italian:    return new Lazy<DateTimeModel>(() => GetItalianModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Turkish:    return new Lazy<DateTimeModel>(() => GetTurkishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Hindi:      return new Lazy<DateTimeModel>(() => GetHindiModel(options),                           System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
                 case Language.Dutch:      return new Lazy<DateTimeModel>(() => GetDutchModel(options),                           System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
                 default: throw new Exception($"Language not supported: {language}");
             }
