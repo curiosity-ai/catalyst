@@ -1,0 +1,76 @@
+﻿Saga Update: Templates, Previews, Embedding Videos and Apps
+
+New Updates in Saga in April!
+
+Saga.so ( https://saga.so/?r=0 )
+
+Hey there!
+
+This week we are releasing a bunch of exciting features to help you improve your personal and work-related workflows.
+
+* With *page templates* , you can start a campaign, meeting, daily note, or project plan from a pre-defined template in one click.
+* We’re releasing two new block types – *link previews* and *embeds* – to help you get more context around your work.
+* *Link previews* now show up automatically when pasting a website URL to provide a catchy preview of the page with images and additional text.
+* With *embeds* , you can quickly add *videos* and more than *10 types* of online content directly into your Saga pages for your teammates to discover. Scroll down for more details and the full list of services that are supported.
+
+View the full release notes ( https://saga.so/updates/page-templates-link-previews-embeds ) and more feature demos on Twitter ( https://twitter.com/saga_HQ/status/1519305650781704192 ) !
+
+🔲 Start Faster with Templates
+
+Meeting notes, specs, plans, or even daily notes often contain the same structure. It’s now easier and faster to start from your own templates or use any of the predefined ones we’ve added to the templates gallery.
+
+To create a template or explore the templates gallery, hover over the New Page button in the left sidebar, click on the window icon and then select Explore Templates.
+
+You can turn any existing page into a template and pre-define its collections and page icon.
+
+Learn more ( https://saga.so/s/XqomEjs6c1AYVPDtH1P3/fc48ff2f-4097-40ef-bced-aa2674c7e793 ) about how to use templates in our Help Center.
+
+Open Saga ( https://saga.so )
+
+*🖼  Beautiful Links With More Context*
+
+With Link Previews, you can turn any website link into a beautiful-looking block inside your pages. This provides a richer context to your note and makes it easier to scan through.
+
+Simply paste a website URL in the editor and click on Add Preview from the dropdown menu. Saga will automatically pull additional information from that website including logo, image, title, subtitle, and add it to the page for you.
+
+Learn more ( https://saga.so/s/XqomEjs6c1AYVPDtH1P3/e3c9a7f8-dc27-4c49-a2bc-91cd0ecd9b2c ) about Link Previews.
+
+*🎥 Embed Videos*
+
+Add videos to your pages and watch them directly there. You can resize them and even watch them side by side with another page opened at the same time. To add a video embed, simply paste a video link inside the editor and click on *Add Embed* from the drop-down menu. Supported platforms include *YouTube* , *Vimeo* , and *DailyMotion*. We will be adding more supported services in the future.
+
+Learn more ( https://saga.so/s/XqomEjs6c1AYVPDtH1P3/bc7bfaaf-8608-4add-93a7-66b6c05cd3f6 ) about how to use video embeds.
+
+*🖥️ Bring Content From Other Apps*
+
+You can now embed content from other apps inside Saga! View your design files from Figma, play audio files from Soundcloud, add your Spotify playlist, or preview code snippets from Codesandbox without leaving your workspace.
+
+We are expanding the list of supported apps. Let us know if you’d like to embed other apps in your Saga pages by replying to this email.
+
+Learn more ( https://saga.so/s/XqomEjs6c1AYVPDtH1P3/7e71e8cd-6c8f-468b-a0a4-672a6d195c51 ) about embedding other applications.
+
+*⚡ Improvements*
+
+* Switching between workspaces is now instant.
+* Saga now works on mobile browsers on iOS and Android.
+* New text placeholders in empty lists, headings, and tasks.
+* The editor will now display the longest autolink if multiple autolinks are contained in the same text.
+* Removed the option to open the autocomplete menu by typing +.
+* Improved copy and paste from spreadsheets to Saga.
+
+Open Saga ( https://saga.so )
+
+*🔜  What’s Next?‍*
+
+*Collaboration*
+Many of you have helped us test and improve the collaborative version of Saga. Stay tuned – our next release will focus on bringing collaboration to everyone. You’ll soon be able to work with others in real-time, mention other team members, and receive automated notifications.
+
+As usual, ping us at support@saga.so ( support@saga.so?subject=&body= ) or reply to this email if you run into any issues or have any feedback.
+
+Thanks!
+– Filip & the Saga team
+
+Join our Slack Channel ( https://join.slack.com/t/sagacommunity/shared_invite/zt-13m3lrrdt-1x6~l6sLuR8CX~4c3fWwHA )
+Join our Discord Server ( https://discord.com/invite/cgz2mUEq7P )
+
+Unsubscribe ( http://url4953.saga.so/asm/unsubscribe/?user_id=18461292&data=e9TsVTicJXDAaQrnEEgMsd4S8tFidsKu0jg1UJIANRRDEuNEa7qeY627qFF2vFa5gj2Xyn0Mqx-qLKgSUbDWhvXA9cZqE3mq6Y-95WJ3KVAVEQiKJeKuNj1sCTWi5vmZn0_m24pePeVi6CV7_nxhEjKFdJbY4AX0MLapx1hRGFpCpKMbaPDoMRjFCCyQQEr3-RI0_EkiziWlhyt8nJBpMgdrytGjBFT89r7LArH9vlBAUyhQqnDU8FRzsnvE-SV37vN4XnPmg3JP_hkcm1ZAYW21cuOs-YAu0QPOIrGAuWq4kge-1_b28hIs3oyATDyA-r8zAS3ATqNwY0hgoIMB-jClHs-pJNseQrH89g0ruwW0jRA3Yn8rhmntT24lJ7mCwkeDaF7iYyvcBi2b2z-VjPZ6sUyQ4MKYbfr-OTfemi89ilXlbZCPvfciKRNtVnT6i3UhtOgLR6tKir40N_PKD3ug4jKoDOLsdRIjdL_j24pfaRM168f6ntkvbsfz_AwJzR1jfi2JwkzOgQEWpAu06yRqJ61PuMx5tIj14EKZEQO5TrZh4g4Uybic0B7MR9UgLdjgXTJ8Ms4XDo5mYZF5RKIif7Ls5VcHoBkZTmPoDbvDLKDokIeDrBopIjH67E6nJ36QEev1Bm-ic95paLNC14JYw8ZeQabFMrkb43IutVV3OJ6oBvHMsGcb1TN8IOMniHscUAucTS880k4RLZ1egQNCAa4p2l7xwTHzWA0ZUWgbnCIQSMKTvI79eBgUjp7cTA9qZo-a_pIFZEWMLj2P2F1rYI2vHrlaIcUJc_C_2gwZ_vjEKiUzR94COrQ_GqmOL_FsJKV3xssvHQvdYUnni16AvhPIHMXoddCgE3XHCq9fR6ovx1KIf4qBtONBJQMnMZDi551NjIONgLyX_Un0KQA3JuE_8PYbinGxUFxDxlMwNw0vvpCccy0la-aB4nWn4PI0SUNQTAziDQSnG7puPloirByN028ln36F43vNQIc2DdX5rIdUMbtLDP_agC5PyuNCK7DidSXCEilVzGxlZ9lO1DHBai4Q3nUnzxjcGd3SHFFvaAUcYHNejCq5iSV2clOiSnhZFWejEqznpQTNYQ== ) - Unsubscribe Preferences ( http://url4953.saga.so/asm/?user_id=18461292&data=YBZiTTnqsGl4jkoPP5uqMK6IMB9U5HhR-UwRtNcUNydwT3-Rwtg-CrsO88HW_s_op8oPZnHuqYKDa93valO7_yIG9OuMyYHQ1cJBIWchbC9k0poLj9IA7cuPJz4y8ygjHS_gMkeojGUt95noYqR8C6M9TlRzJh9PPJcJSlGdelCPdjkUoJo4PrJogM6p6TBYF3CM9oKjh336aNt8QeDLSNol9mTBZyr9TWE8PRbuQTfxRKTnwhXAgvude2G4qYNEc38ZCW4s3LuDInLspzqv4xfTRSjc0DNh6p7x3pkWNkLCZ21puyo4y0CS5Cq0BmgwCqQj3i0YlS82r-yH-vxVJj-Jiir9sYFeRotZJjT572OMA7NvTbru9PeQI5scdK1OrzoUnIX9vF4Z3Ex5iIs7NpqfHbcvp0uH1ui9_uqKYfp6tD_ewrar7vcZdL6W7kyxL0hZnHuM4pzhwT8t147AB3RB1D-n5CF_Z3WwHQUhuAKuElGNgZ-NKIKXfpyiIQvQiUq4N_cz4qtQAEr2Ha5U-TN8iQtD4wsoJSpv8yBggJnKAQQvkkrs4Zbml-zLE5EGrgkTBwcehoQNYLvKwGGlBpy9brmcJsIOMnQSrKJPqrcaihDZQndZK18ot0UII-sLVPgrtRbC-2K87_cIS0inY7Uk2yXheoJLIkaHXusfTYSn2320KptJWhDvRU4uwaPXBlo7CJmsLOV3_G7NlcsfMmYl0bO7Bvk99RanTz9uop7STilssIyEcYT9MiWx5ukiZSRoPpHOKG4A7GRCgIclrsPTwEfCGQAOMl_V1QdCZ-m6X7rl1f7JFahgEVB6cpMOZ2C6fxAcZj4ybvk7sVvU1wa7qWNnLczFYO5raFCOtwUQtt6MfORbvVwQSWA5lGC-FZzVyuTUorrm2rERrt0WArdUhHVAUADrwDbPWDiJqzm9AhLYL599dXWKzuS_hcM00MXnino5gJd_3OVyWtREF-mZglfYV7GTjnbLgtgTxpCOHWyzji2j8gWOjJiHBdPujIXv5RNulnyhKV_CoiJg81MwKRrABFhy0Zd9c7P11MDJJ6IbfyG6Jei9tV9wjNsD )
