@@ -131,6 +131,7 @@ namespace Catalyst.Models
                 }
 
                 var splitPoints = new List<SplitPoint>(textSpan.Length / 4);
+                var infixLocation = new List<(int index, int length)>();
 
                 int offset = 0, sufix_offset = 0;
                 while (true)
@@ -249,7 +250,7 @@ namespace Catalyst.Models
                                     continue;
                                 }
 
-                                var infixLocation = FindInfix(candidate);
+                                FindInfix(candidate, infixLocation);
                                 if (infixLocation.Count > 0)
                                 {
                                     int in_offset = offset;
@@ -468,17 +469,36 @@ namespace Catalyst.Models
             return -1;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static List<(int index, int length)> FindInfix(ReadOnlySpan<char> s)
+        private static InfixLocationSorter _infixLocationSorter = new();
+        private sealed class InfixLocationSorter : IComparer<(int index, int length)>
         {
-            return FindInfixNoOrder(s).OrderBy(k => k.index).ThenBy(k => k.length).ToList();
+            public int Compare((int index, int length) x, (int index, int length) y)
+            {
+                //.OrderBy(k => k.index).ThenBy(k => k.length).ToList();
+                var ix = x.index.CompareTo(y.index);
+                if(ix == 0)
+                {
+                    return x.length.CompareTo(y.length);
+                }
+                else
+                {
+                    return ix;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static List<(int index, int length)> FindInfixNoOrder(ReadOnlySpan<char> s)
+        private static void FindInfix(ReadOnlySpan<char> s, List<(int index, int length)> infixLocation)
+        {
+            infixLocation.Clear();
+            FindInfixNoOrder(s, infixLocation);
+            infixLocation.Sort(_infixLocationSorter);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void FindInfixNoOrder(ReadOnlySpan<char> s, List<(int index, int length)> infixLocation)
         {
             //Split any [...] inside a word
-            var found = new List<(int, int)>();
 
             int L1 = s.Length - 1;
             int index = 0;
@@ -493,7 +513,7 @@ namespace Catalyst.Models
                         while (i < (L1 - 1) && s[i + 1] == c) { i++; }
                         if (i <= L1 && char.IsLetterOrDigit(s[i + 1]))
                         {
-                            found.Add((index, i - index + 1));
+                            infixLocation.Add((index, i - index + 1));
                         }
                     }
                 }
@@ -502,11 +522,11 @@ namespace Catalyst.Models
                     //split any lower [.] Upper
                     if (char.IsLower(s[i - 1]) && char.IsUpper(s[i + 1]))
                     {
-                        found.Add((i, 1));
+                        infixLocation.Add((i, 1));
                     }
                     else if (!char.IsLetterOrDigit(s[i + 1])) //split any [.] [NOT LETTER NOR DIGIT]
                     {
-                        found.Add((i, 1));
+                        infixLocation.Add((i, 1));
                     }
                 }
                 else
@@ -526,16 +546,17 @@ namespace Catalyst.Models
                         //}
                         //else
                         //{
-                        found.Add((i, 1));
+                        infixLocation.Add((i, 1));
                         //}
                     }
                     else if (c > 256 && CharacterClasses.SymbolCharacters.Contains(c))
                     {
-                        found.Add((i, 1));
+                        infixLocation.Add((i, 1));
                     }
                 }
             }
-            return found;
         }
+
+
     }
 }
