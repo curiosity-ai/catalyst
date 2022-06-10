@@ -2,10 +2,10 @@
 using Mosaik.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace Catalyst.Models
 {
@@ -46,7 +46,7 @@ namespace Catalyst.Models
 
         public void Parse(IDocument document)
         {
-            if (!document.Spans.Any())
+            if (document.SpansCount == 0)
             {
                 document.AddSpan(0, document.Length - 1);
             }
@@ -295,7 +295,8 @@ namespace Catalyst.Models
                 int spanBegin = span.Begin;
                 int pB = int.MinValue, pE = int.MinValue;
                 span.ReserveTokens(splitPoints.Count);
-                foreach (var sp in splitPoints.OrderBy(s => s.Begin).ThenBy(s => s.End))
+                splitPoints.Sort(_splitPointSorter);
+                foreach (var sp in splitPoints)
                 {
                     int b = sp.Begin;
                     int e = sp.End;
@@ -476,9 +477,27 @@ namespace Catalyst.Models
             {
                 //.OrderBy(k => k.index).ThenBy(k => k.length).ToList();
                 var ix = x.index.CompareTo(y.index);
-                if(ix == 0)
+                if (ix == 0)
                 {
                     return x.length.CompareTo(y.length);
+                }
+                else
+                {
+                    return ix;
+                }
+            }
+        }
+
+        private static SplitPointSorter _splitPointSorter = new();
+        private sealed class SplitPointSorter : IComparer<SplitPoint>
+        {
+            public int Compare(SplitPoint x, SplitPoint y)
+            {
+                //.OrderBy(s => s.Begin).ThenBy(s => s.End)
+                var ix = x.Begin.CompareTo(y.Begin);
+                if (ix == 0)
+                {
+                    return x.End.CompareTo(y.End);
                 }
                 else
                 {
