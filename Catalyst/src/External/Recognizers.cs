@@ -30,10 +30,10 @@ namespace Catalyst.External
 
         public DateTimeRecognizer(Language language, bool useUsEnglishForEnglish = false) : base(language, 0, "", false)
         {
-            _dateTimeModel = new Lazy<DateTimeModel>(() => GetModel(language, useUsEnglishForEnglish), isThreadSafe: true);
+            _dateTimeModel = GetLazyModel(language, useUsEnglishForEnglish);
         }
 
-        private DateTimeModel GetModel(Language language, bool useUsEnglishForEnglish)
+        private Lazy<DateTimeModel> GetLazyModel(Language language, bool useUsEnglishForEnglish)
         {
             //  We use a similar logic to the official code, but instead of pre-allocating all languages, we only load the one we care for here
             // https://github.com/microsoft/Recognizers-Text/blob/ed73b6604ea7140799831f73d6e31f764629bafe/.NET/Microsoft.Recognizers.Text.DateTime/DateTimeRecognizer.cs#L50
@@ -43,16 +43,16 @@ namespace Catalyst.External
 
             switch (language)
             {
-                case Language.English:    return GetEnglishModel(options, useUsEnglishForEnglish);
-                case Language.Chinese:    return GetChineseModel(options);
-                case Language.Spanish:    return GetSpanishModel(options);
-                case Language.French:     return GetFrenchModel(options);
-                case Language.Portuguese: return GetPortugueseModel(options);
-                case Language.German:     return GetGermanModel(options);
-                case Language.Italian:    return GetItalianModel(options);
-                case Language.Turkish:    return GetTurkishModel(options);
-                case Language.Hindi:      return GetHindiModel(options);
-                case Language.Dutch:      return GetDutchModel(options);
+                case Language.English:    return new Lazy<DateTimeModel>(() => GetEnglishModel(options, useUsEnglishForEnglish), System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Chinese:    return new Lazy<DateTimeModel>(() => GetChineseModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Spanish:    return new Lazy<DateTimeModel>(() => GetSpanishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.French:     return new Lazy<DateTimeModel>(() => GetFrenchModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Portuguese: return new Lazy<DateTimeModel>(() => GetPortugueseModel(options),                      System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.German:     return new Lazy<DateTimeModel>(() => GetGermanModel(options),                          System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Italian:    return new Lazy<DateTimeModel>(() => GetItalianModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Turkish:    return new Lazy<DateTimeModel>(() => GetTurkishModel(options),                         System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Hindi:      return new Lazy<DateTimeModel>(() => GetHindiModel(options),                           System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
+                case Language.Dutch:      return new Lazy<DateTimeModel>(() => GetDutchModel(options),                           System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
                 default: throw new Exception($"Language not supported: {language}");
             }
         }
@@ -183,6 +183,7 @@ namespace Catalyst.External
             var result = _dateTimeModel.Value.Parse(document.Value, DateTime.Now);
 
             bool found = result.Any();
+
             if (found)
             {
                 foreach (var r in result)

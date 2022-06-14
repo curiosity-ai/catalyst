@@ -24,7 +24,7 @@ pool:
 
 steps:
 - checkout: self
-  lfs: false #for this build we don't need LFS support
+  lfs: true
 
 - task: NuGetToolInstaller@1
 
@@ -36,10 +36,11 @@ steps:
     includePreviewVersions: true
 
 - task: DotNetCoreCLI@2
+  displayName: 'restore nuget'
   inputs:
     command: 'restore'
     projects: '$(project)'
-    displayName: 'restore nuget'
+
 
 - task: DotNetCoreCLI@2
   inputs:
@@ -90,9 +91,9 @@ steps:
     nobuild: true
 
 - task: NuGetCommand@2
+  displayName: 'push nuget'
   inputs:
     command: 'push'
     packagesToPush: '**/*.nupkg'
-    displayName: 'push nuget'
     nuGetFeedType: 'external'
     publishFeedCredentials: 'nuget-curiosity'

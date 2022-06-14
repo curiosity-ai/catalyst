@@ -3,6 +3,7 @@ using Python.Deployment;
 using Python.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -103,13 +104,42 @@ namespace Catalyst
 
         private static string GetSpacyVersion()
         {
+            string version = null;
+
             using (Py.GIL())
             {
                 dynamic spacy = Py.Import("spacy");
-                Console.WriteLine("Spacy version: " + spacy.__version__);
 
-                return spacy.__version__;
+                version = spacy.__version__;
             }
+
+            if (!CompatibilityData["spacy"].TryGetValue(version, out _))
+            {
+                if (version.EndsWith(".0") && CompatibilityData["spacy"].TryGetValue(version.Substring(0, version.Length - ".0".Length), out _))
+                {
+                    version = version.Substring(0, version.Length - ".0".Length);
+                }
+                else
+                {
+                    var fixedVersion = CompatibilityData.Keys
+                                         .Where(k => k.StartsWith(version))
+                                         .Select((k) => (key: k, version: System.Version.TryParse(k, out var v) ? v : null))
+                                         .Where(k => k.version is object)
+                                         .OrderByDescending(k => k.version)
+                                         .Select(k => k.key)
+                                         .FirstOrDefault();
+
+                    if (fixedVersion is null)
+                    {
+                        throw new Exception($"Failed to read spacy version from compatibility data. Expected: {version}, available: {string.Join(", ", CompatibilityData.Keys)}");
+                    }
+                    version = fixedVersion;
+                }
+            }
+
+            Console.WriteLine("Spacy version: " + version);
+
+            return version;
         }
 
         private static void TestPythonVersion()
