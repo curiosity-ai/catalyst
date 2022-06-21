@@ -306,7 +306,11 @@ namespace Catalyst.Models
 
                     if (b > e)
                     {
+#if DEBUG
                         throw new InvalidOperationException($"Error processing text: '{span.Value}', found token with begin={b} and end={e}");
+#else
+                        continue; //Ignore this token
+#endif
                     }
 
                     while (char.IsWhiteSpace(textSpan[b]) && b < e) { b++; }
