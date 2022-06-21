@@ -13,6 +13,9 @@ namespace Catalyst.Models
     public class FastTokenizer : ITokenizer, IProcess
     {
         public static bool DisableEmailOrURLCapture { get; set; } = false;
+        
+        public static TimeSpan Timeout { get; set; } = TimeSpan.FromHours(1);
+
         public Language Language { get; set; }
         public string Type => typeof(FastTokenizer).FullName;
         public string Tag => "";
@@ -62,6 +65,11 @@ namespace Catalyst.Models
                     document.Clear();
                     throw new TokenizationFailedException($"Error tokenizing document:\n'{document.Value}'", ome);
                 }
+                catch (TaskCanceledException tce)
+                {
+                    document.Clear();
+                    throw new TokenizationFailedException($"Timeout tokenizing document:\n'{document.Value}'", tce);
+                }
             }
         }
 
@@ -109,6 +117,9 @@ namespace Catalyst.Models
 
         public void Parse(ISpan span)
         {
+            var sw = ValueStopwatch.StartNew();
+            var timeout = Timeout;
+
             _lockSpecialCases.EnterReadLock();
             try
             {
@@ -139,6 +150,11 @@ namespace Catalyst.Models
                     if (splitPoints.Count > textSpan.Length)
                     {
                         throw new InvalidOperationException(); //If we found more splitting points than actual characters on the span, we hit a bug in the tokenizer
+                    }
+
+                    if (sw.GetElapsedTime() > timeout)
+                    {
+                        throw new TaskCanceledException("Timeout while prsing document");
                     }
 
                     offset += sufix_offset;
@@ -298,10 +314,16 @@ namespace Catalyst.Models
                 splitPoints.Sort(_splitPointSorter);
                 foreach (var sp in splitPoints)
                 {
+                    if (sw.GetElapsedTime() > timeout)
+                    {
+                        throw new TaskCanceledException("Timeout while prsing document");
+                    }
+
                     int b = sp.Begin;
                     int e = sp.End;
 
                     if (pB == b && pE == e) { continue; }
+
                     pB = b; pE = e;
 
                     if (b > e)
