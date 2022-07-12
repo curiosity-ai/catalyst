@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Extensions.Logging;
 using MessagePack;
+using System.Threading;
 
 namespace Catalyst.Models
 {
@@ -186,7 +187,7 @@ namespace Catalyst.Models
             return (TP, FN, FP);
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Predict(document);
         }

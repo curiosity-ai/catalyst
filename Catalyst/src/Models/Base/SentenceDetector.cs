@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Catalyst.Models
 {
@@ -37,12 +38,12 @@ namespace Catalyst.Models
 
         private FastTokenizer Tokenizer;
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
-            Parse(document);
+            Parse(document, cancellationToken);
         }
 
-        public void Parse(IDocument document)
+        public void Parse(IDocument document, CancellationToken cancellationToken = default)
         {
             if (document.Length == 0) { return; }
 
@@ -85,6 +86,7 @@ namespace Catalyst.Models
                     var features = GetFeatures(paddedTokens, i);
                     isSentenceEnd[i] = PredictTagFromFeatures(features, Data.Weights);
                 }
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             document.Clear();
@@ -128,6 +130,7 @@ namespace Catalyst.Models
                         offset = e + 1;
                     }
                 }
+
                 if (offset <= document.Length - 1)
                 {
                     int b = offset;

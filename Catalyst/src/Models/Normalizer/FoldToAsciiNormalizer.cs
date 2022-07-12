@@ -4,6 +4,7 @@
 using Mosaik.Core;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Catalyst.Models
@@ -1280,7 +1281,7 @@ namespace Catalyst.Models
             return c.ToString();
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Normalize(document);
         }

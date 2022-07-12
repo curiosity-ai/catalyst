@@ -3,6 +3,7 @@ using Mosaik.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UID;
 
@@ -26,7 +27,7 @@ namespace Catalyst.Models
             return true;
         } // Needs to say it exists, otherwise when calling ModelDescription.ExistsAsync(Language language, int version, string tag), it will fail to load this model
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Normalize(document);
         }

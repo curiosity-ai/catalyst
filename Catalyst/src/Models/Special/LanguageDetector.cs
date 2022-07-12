@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.IO.Compression;
+using System.Threading;
 
 namespace Catalyst.Models
 {
@@ -59,7 +60,7 @@ namespace Catalyst.Models
             return a;
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Detect(document);
         }

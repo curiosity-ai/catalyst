@@ -1,6 +1,7 @@
 ﻿using Mosaik.Core;
 using System;
 using System.Linq;
+using System.Threading;
 
 namespace Catalyst.Models
 {
@@ -53,7 +54,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Parse(document);
         }

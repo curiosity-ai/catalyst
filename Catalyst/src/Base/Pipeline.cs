@@ -451,12 +451,12 @@ namespace Catalyst
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IDocument ProcessSingle(IDocument document)
+        public IDocument ProcessSingle(IDocument document, CancellationToken cancellationToken = default)
         {
             RWLock.EnterReadLock();
             try
             {
-                return ProcessSingleWithoutLocking(document);
+                return ProcessSingleWithoutLocking(document, cancellationToken);
             }
             finally
             {
@@ -465,7 +465,7 @@ namespace Catalyst
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private IDocument ProcessSingleWithoutLocking(IDocument document)
+        private IDocument ProcessSingleWithoutLocking(IDocument document, CancellationToken cancellationToken = default)
         {
             if (document.Length > 0)
             {
@@ -482,7 +482,7 @@ namespace Catalyst
             return document;
         }
 
-        public IEnumerable<IDocument> ProcessSingleThread(IEnumerable<IDocument> documents, bool throwOnError = false)
+        public IEnumerable<IDocument> ProcessSingleThread(IEnumerable<IDocument> documents, bool throwOnError = false, CancellationToken cancellationToken = default)
         {
             RWLock.EnterReadLock();
 
@@ -500,10 +500,12 @@ namespace Catalyst
                 {
                     foreach (var doc in block)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         IDocument d;
                         try
                         {
-                            d = ProcessSingleWithoutLocking(doc);
+                            d = ProcessSingleWithoutLocking(doc, cancellationToken);
 
                             Interlocked.Add(ref spansCount, doc.SpansCount);
                             Interlocked.Add(ref tokensCount, doc.TokensCount);
@@ -568,7 +570,7 @@ namespace Catalyst
                         RWLock.EnterReadLock(); //Acquire the read lock only for the duration of the processing, not during the yield return
                         try
                         {
-                            Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc));
+                            Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc, parallelOptions.CancellationToken));
                         }
                         finally
                         {
@@ -586,7 +588,7 @@ namespace Catalyst
                 try
                 {
                     //Process any remaining
-                    Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc));
+                    Parallel.ForEach(buffer, parallelOptions, (doc) => ProcessSingleWithoutLocking(doc, parallelOptions.CancellationToken));
                 }
                 finally
                 {

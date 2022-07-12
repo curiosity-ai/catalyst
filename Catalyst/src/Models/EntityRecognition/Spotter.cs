@@ -46,7 +46,7 @@ namespace Catalyst.Models
             return a;
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             RecognizeEntities(document);
         }

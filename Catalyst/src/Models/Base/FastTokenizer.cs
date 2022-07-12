@@ -21,7 +21,6 @@ namespace Catalyst.Models
         public string Tag => "";
         public int Version => 0;
 
-
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
         private ReaderWriterLockSlim _lockSpecialCases = new();
@@ -42,12 +41,12 @@ namespace Catalyst.Models
             _baseSpecialCases = TokenizerExceptions.Get(Language);
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
-            Parse(document);
+            Parse(document, cancellationToken);
         }
 
-        public void Parse(IDocument document)
+        public void Parse(IDocument document, CancellationToken cancellationToken = default)
         {
             if (document.SpansCount == 0)
             {
@@ -58,7 +57,7 @@ namespace Catalyst.Models
             {
                 try
                 {
-                    Parse(s);
+                    Parse(s, cancellationToken);
                 }
                 catch (InvalidOperationException ome)
                 {
@@ -73,10 +72,10 @@ namespace Catalyst.Models
             }
         }
 
-        public IEnumerable<IToken> Parse(string text)
+        public IEnumerable<IToken> Parse(string text, CancellationToken cancellationToken = default)
         {
             var tmpDoc = new Document(text);
-            Parse(tmpDoc);
+            Parse(tmpDoc, cancellationToken);
             return tmpDoc.Spans.First().Tokens;
         }
 
@@ -115,7 +114,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Parse(ISpan span)
+        public void Parse(ISpan span, CancellationToken cancellationToken = default)
         {
             var sw = ValueStopwatch.StartNew();
             var timeout = Timeout;
@@ -145,6 +144,7 @@ namespace Catalyst.Models
                 var infixLocation = new List<(int index, int length)>();
 
                 int offset = 0, sufix_offset = 0;
+                int checkEvery = 0;
                 while (true)
                 {
                     if (splitPoints.Count > textSpan.Length)
@@ -152,9 +152,13 @@ namespace Catalyst.Models
                         throw new InvalidOperationException(); //If we found more splitting points than actual characters on the span, we hit a bug in the tokenizer
                     }
 
-                    if (sw.GetElapsedTime() > timeout)
+                    if (checkEvery++ % 1024 == 0)
                     {
-                        throw new TaskCanceledException("Timeout while prsing document");
+                        if (timeout.Ticks > 0 && sw.GetElapsedTime() > timeout)
+                        {
+                            throw new TaskCanceledException("Timeout while parsing document");
+                        }
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
                     offset += sufix_offset;
@@ -314,9 +318,13 @@ namespace Catalyst.Models
                 splitPoints.Sort(_splitPointSorter);
                 foreach (var sp in splitPoints)
                 {
-                    if (sw.GetElapsedTime() > timeout)
+                    if (checkEvery++ % 1024 == 0)
                     {
-                        throw new TaskCanceledException("Timeout while prsing document");
+                        if (timeout.Ticks > 0 && sw.GetElapsedTime() > timeout)
+                        {
+                            throw new TaskCanceledException("Timeout while parsing document");
+                        }
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
 
                     int b = sp.Begin;

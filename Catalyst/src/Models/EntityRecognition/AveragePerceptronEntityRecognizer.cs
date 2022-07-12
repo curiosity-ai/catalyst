@@ -323,7 +323,7 @@ namespace Catalyst.Models
             return (TP, FN, FP);
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             RecognizeEntities(document);
         }

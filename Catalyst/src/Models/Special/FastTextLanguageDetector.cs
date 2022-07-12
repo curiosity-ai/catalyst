@@ -4,6 +4,7 @@ using Mosaik.Core;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Catalyst.Models
@@ -89,7 +90,7 @@ namespace Catalyst.Models
             return deleted;
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             if (document.Length == 0 || (document.Language != Language.Unknown && document.Language != Language.Any)) { return; } //Don't try to identify documents that already have their language set or is empty
 

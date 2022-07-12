@@ -715,7 +715,7 @@ namespace Catalyst.Models
             //}
         }
 
-        public void Process(IDocument document)
+        public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Predict(document);
         }
