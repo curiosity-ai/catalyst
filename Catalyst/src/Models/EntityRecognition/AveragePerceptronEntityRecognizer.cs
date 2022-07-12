@@ -285,23 +285,24 @@ namespace Catalyst.Models
             }
         }
 
-        public (int TP, int FN, int FP) TrainOnSentence(ISpan span, ref int[] spanTags, Span<float> ScoreBuffer, Span<int> features, bool updateModel = true)
+        public (int TP, int FN, int FP) TrainOnSentence(Span span, ref int[] spanTags, Span<float> ScoreBuffer, Span<int> features, bool updateModel = true)
         {
             //for training, we expect the tokens to have [BILOU]-[Type] entries as the only EntityType
-            IToken prev = SpecialToken.BeginToken; IToken prev2 = SpecialToken.BeginToken; IToken curr = SpecialToken.BeginToken; IToken next = SpecialToken.BeginToken; IToken next2 = SpecialToken.BeginToken;
+            Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = IndexTagOutside; int prev2Tag = IndexTagOutside; int currTag = IndexTagOutside;
 
             int i = 0, correct = 0;
 
             int TP = 0, FN = 0, FP = 0;
 
-            var en = span.GetEnumerator();
+            var en = span.GetStructEnumerator();
 
-            while (next != SpecialToken.EndToken)
+            while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = SpecialToken.EndToken; }
-                if (!(curr is SpecialToken))
+                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
+                
+                if (!curr.IsBeginToken && !curr.IsEndToken)
                 {
                     int tokenTag = spanTags[i];
 
@@ -346,7 +347,7 @@ namespace Catalyst.Models
             return result;
         }
 
-        public bool Predict(ISpan span)
+        public bool Predict(Span span)
         {
             Span<float> ScoreBuffer = stackalloc float[N_Tags];
             Span<int> Features = stackalloc int[N_Features];
@@ -354,23 +355,23 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Predict(ISpan span, Span<float> ScoreBuffer, Span<int> features)
+        public bool Predict(Span span, Span<float> ScoreBuffer, Span<int> features)
         {
-            IToken prev = SpecialToken.BeginToken; IToken prev2 = SpecialToken.BeginToken; IToken curr = SpecialToken.BeginToken; IToken next = SpecialToken.BeginToken; IToken next2 = SpecialToken.BeginToken;
+            Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = IndexTagOutside; int prev2Tag = IndexTagOutside; int currTag = IndexTagOutside;
             bool foundAny = false;
             int i = 0;
 
-            var en = span.GetEnumerator();
+            var en = span.GetStructEnumerator();
 
             var tags = new int[span.TokensCount];
 
-            while (next != SpecialToken.EndToken)
+            while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = SpecialToken.EndToken; }
+                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
 
-                if (curr != SpecialToken.BeginToken)
+                if (!curr.IsBeginToken)
                 {
                     GetFeatures(features, curr, prev, prev2, next, next2, prevTag, prev2Tag);
                     tags[i] = PredictTagFromFeatures(features, ScoreBuffer);

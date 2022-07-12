@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Languages\English\Catalyst.Models.English.csproj" />
+    <ProjectReference Include="..\..\Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj" />
   </ItemGroup>
 
 </Project>

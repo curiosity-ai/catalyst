@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace Catalyst
 {
-    public struct Span : ISpan
+    public struct Span : IEnumerable<IToken>
     {
         public Span(Document parent, int index)
         {
@@ -68,6 +68,36 @@ namespace Catalyst
             }
         }
 
+        internal IEnumerable<Token> TokensStructEnumerable
+        {
+            get
+            {
+                var sd = Parent.TokensData[Index];
+                int count = sd.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var td = sd[i];
+                    yield return new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
+                }
+            }
+        }
+
+        internal Token[] TokensStructArray
+        {
+            get
+            {
+                var sd = Parent.TokensData[Index];
+                int count = sd.Count;
+                var tokens = new Token[count];
+                for (int i = 0; i < count; i++)
+                {
+                    var td = sd[i];
+                    tokens[i] = new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
+                }
+                return tokens;
+            }
+        }
+
         public IToken AddToken(int begin, int end)
         {
             return Parent.AddToken(Index, begin, end);
@@ -92,6 +122,11 @@ namespace Catalyst
         public IEnumerator<IToken> GetEnumerator()
         {
             return Tokens.GetEnumerator();
+        }
+
+        internal IEnumerator<Token> GetStructEnumerator()
+        {
+            return TokensStructEnumerable.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

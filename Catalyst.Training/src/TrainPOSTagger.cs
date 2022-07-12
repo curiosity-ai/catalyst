@@ -375,7 +375,7 @@ namespace Catalyst.Training
                 var doc = new Document();
                 bool invalidDoc = false;
 
-                ISpan span = null;
+                Span span = null;
                 var sb = new StringBuilder();
                 foreach (var l in docline)
                 {

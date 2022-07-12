@@ -4,6 +4,6 @@
     {
         void Parse(IDocument document);
 
-        void Parse(ISpan span);
+        void Parse(Span span);
     }
 }

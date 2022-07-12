@@ -7,6 +7,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.InteropServices;
+
 
 namespace Catalyst.Models
 {
@@ -52,7 +54,16 @@ namespace Catalyst.Models
                 return; //Document has already been tokenized and passed to the sentence detection, so ignore the second call
             }
 
-            var tokens = document.Spans.First().Tokens.ToArray();
+            var tokens = document.Spans.First().TokensStructArray;
+
+            Span<int> tokensBegins = tokens.Length < 256 ? stackalloc int[tokens.Length] : new int[tokens.Length];
+            Span<int> tokensEnds = tokens.Length < 256 ? stackalloc int[tokens.Length] : new int[tokens.Length];
+
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                tokensBegins[i] = tokens[i].Begin;
+                tokensEnds[i] = tokens[i].End;
+            }
 
             if (tokens.Length == 0) { return; }
 
@@ -68,15 +79,21 @@ namespace Catalyst.Models
 
             const int padding = 2;
 
-            var paddedTokens = new List<IToken>(tokens.Length + 2 * padding);
+            int N = tokens.Length + 2 * padding;
 
-            paddedTokens.Add(SpecialToken.BeginToken);
-            paddedTokens.Add(SpecialToken.BeginToken);
-            paddedTokens.AddRange(tokens);
-            paddedTokens.Add(SpecialToken.EndToken);
-            paddedTokens.Add(SpecialToken.EndToken);
+            var paddedTokens = new Token[N];
 
-            int N = paddedTokens.Count;
+            paddedTokens[0] = Token.BeginToken;
+            paddedTokens[1] = Token.BeginToken;
+
+            for(int i = 0; i < tokens.Length; i++)
+            {
+                paddedTokens[i + 2] = tokens[i];
+            }
+
+            paddedTokens[paddedTokens.Length - 2] = Token.EndToken;
+            paddedTokens[paddedTokens.Length - 1] = Token.EndToken;
+
 
             var isSentenceEnd = new bool[N];
             for (int i = padding + 1; i < N - padding - 1; i++) //Skip BeginTokens and EndTokens, and first and last token of sentence
@@ -97,6 +114,7 @@ namespace Catalyst.Models
             if (isSentenceEnd.AsSpan().Slice(padding + 1, tokens.Length - 1).IndexOf(true) >= 0)
             {
                 int offset = 0;
+                int lastBegin = 0;
                 for (int i = padding; i < N - padding; i++)
                 {
                     if (isSentenceEnd[i])
@@ -113,11 +131,24 @@ namespace Catalyst.Models
                             if (!text.Slice(b, e - b + 1).IsNullOrWhiteSpace())
                             {
                                 var span = document.AddSpan(b, e);
-                                foreach (var t in tokens)
+                                var spanBegin = span.Begin;
+                                var spanEnd   = span.End;
+                                for (int itoken = lastBegin; itoken < tokens.Length; itoken++)
                                 {
-                                    if (t.Begin >= span.Begin && t.End <= span.End)
+                                    var tb = tokensBegins[itoken];
+                                    if (tb >= spanBegin)
                                     {
-                                        span.AddToken(t); //Re-add the tokens back in the document
+                                        var te = tokensEnds[itoken];
+                                        if (te <= spanEnd)
+                                        {
+                                            ref Token t = ref tokens[itoken];
+                                            span.AddToken(t); //Re-add the tokens back in the document
+                                            lastBegin = itoken;
+                                        }
+                                        else
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -206,7 +237,7 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        paddedTokens.Add(SpecialToken.BOS); paddedTokens.Add(SpecialToken.BOS);
+                        paddedTokens.Add(Token.BOS); paddedTokens.Add(Token.BOS);
                         isSentenceEnd.Add(false); isSentenceEnd.Add(false);
                     }
 
@@ -221,7 +252,7 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        paddedTokens.Add(SpecialToken.EOS); paddedTokens.Add(SpecialToken.EOS);
+                        paddedTokens.Add(Token.EOS); paddedTokens.Add(Token.EOS);
                         isSentenceEnd.Add(false); isSentenceEnd.Add(false);
                     }
 
@@ -276,8 +307,8 @@ namespace Catalyst.Models
             }
         }
 
-        private IToken[] TrainingTokenMemory = new IToken[0];
-        private bool[] TrainingGuessMemory = new bool[0];
+        private Token[] TrainingTokenMemory = null;
+        private bool[]  TrainingGuessMemory = null;
 
         public int TrainOnSentence(List<string> sentenceTokensWithPadding, List<bool> IsSentenceEnd, ref bool isFirst)
         {
@@ -285,15 +316,18 @@ namespace Catalyst.Models
             int N = sentenceTokensWithPadding.Count;
             const int padding = 2;
 
+            TrainingTokenMemory ??= new Token[0];
+            TrainingGuessMemory ??= new bool[0];
+
             while ((N + 2 * padding) > TrainingTokenMemory.Length)
             {
-                TrainingTokenMemory = new IToken[TrainingTokenMemory.Length * 2 + 100];
+                TrainingTokenMemory = new Token[TrainingTokenMemory.Length * 2 + 100];
                 TrainingGuessMemory = new bool[TrainingTokenMemory.Length];
             }
 
             for (int i = 0; i < N; i++)
             {
-                TrainingTokenMemory[i] = new FakeToken(sentenceTokensWithPadding[i]);
+                TrainingTokenMemory[i] = Token.Fake(sentenceTokensWithPadding[i]);
             }
 
             for (int i = padding; i < N - padding; i++) //Skip BeginTokens and EndTokens
@@ -391,13 +425,14 @@ namespace Catalyst.Models
         private readonly int _Hash_Im1Length = GetHash("Hash_Im1Length");
         private readonly int _Hash_Ip1Length = GetHash("Hash_Ip1Length");
 
-        public int[] GetFeatures(IList<IToken> tokens, int indexCurrent)
+#if NET5_0_OR_GREATER
+        internal int[] GetFeatures(Token[] tokens, int indexCurrent)
         {
-            var current = tokens[indexCurrent];
-            var prev2 = tokens[indexCurrent - 2];
-            var prev = tokens[indexCurrent - 1];
-            var next = tokens[indexCurrent + 1];
-            var next2 = tokens[indexCurrent + 2];
+            ref Token current = ref tokens[indexCurrent];
+            ref Token prev2   = ref tokens[indexCurrent - 2];
+            ref Token prev    = ref tokens[indexCurrent - 1];
+            ref Token next    = ref tokens[indexCurrent + 1];
+            ref Token next2   = ref tokens[indexCurrent + 2];
 
             //Features inspired by iSentenizer, but extended for better results (https://www.hindawi.com/journals/tswj/2014/196574/)
             var features = new int[27];
@@ -418,20 +453,65 @@ namespace Catalyst.Models
             features[13] = (current.ValueAsSpan.IsNumeric()) ? _Hash_True_IIsNumeric : _Hash_False_IIsNumeric;
             features[14] = (current.ValueAsSpan.HasNumeric()) ? _Hash_True_IHasNumeric : _Hash_False_IHasNumeric;
             features[15] = (current.ValueAsSpan.IsSentencePunctuation() && next.ValueAsSpan.IsOpenQuote()) ? _Hash_True_IsPunctIp1Quote : _Hash_False_IsPunctIp1Quote;
-            features[16] = (current.ValueAsSpan.IsSentencePunctuation() && current == prev) ? _Hash_True_IequalIm1 : _Hash_False_IequalIm1;
-            features[17] = (current.ValueAsSpan.IsSentencePunctuation() && current == prev2) ? _Hash_True_IequalIm2 : _Hash_False_IequalIm2;
-            features[18] = (current.ValueAsSpan.IsSentencePunctuation() && current == next) ? _Hash_True_IequalIp1 : _Hash_False_IequalIp1;
-            features[19] = (current.ValueAsSpan.IsSentencePunctuation() && current == next2) ? _Hash_True_IequalIp2 : _Hash_False_IequalIp2;
-            features[20] = (prev.Length == 0 && prev.Value == SpecialToken.BOS) ? _Hash_True_Im1IsBOS : _Hash_False_Im1IsBOS;
-            features[21] = (next.Length == 0 && next.Value == SpecialToken.BOS) ? _Hash_True_Im2IsBOS : _Hash_False_Im2IsBOS;
-            features[22] = (prev.Length == 0 && prev.Value == SpecialToken.EOS) ? _Hash_True_Ip1IsEOS : _Hash_False_Ip1IsEOS;
-            features[23] = (next.Length == 0 && next.Value == SpecialToken.EOS) ? _Hash_True_Ip2IsEOS : _Hash_False_Ip2IsEOS;
+            features[16] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == prev.Value) ? _Hash_True_IequalIm1 : _Hash_False_IequalIm1;
+            features[17] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == prev2.Value) ? _Hash_True_IequalIm2 : _Hash_False_IequalIm2;
+            features[18] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == next.Value) ? _Hash_True_IequalIp1 : _Hash_False_IequalIp1;
+            features[19] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == next2.Value) ? _Hash_True_IequalIp2 : _Hash_False_IequalIp2;
+            features[20] = (prev.Length == 0 && prev.Value == Token.BOS) ? _Hash_True_Im1IsBOS : _Hash_False_Im1IsBOS;
+            features[21] = (next.Length == 0 && next.Value == Token.BOS) ? _Hash_True_Im2IsBOS : _Hash_False_Im2IsBOS;
+            features[22] = (prev.Length == 0 && prev.Value == Token.EOS) ? _Hash_True_Ip1IsEOS : _Hash_False_Ip1IsEOS;
+            features[23] = (next.Length == 0 && next.Value == Token.EOS) ? _Hash_True_Ip2IsEOS : _Hash_False_Ip2IsEOS;
             features[24] = Hashes.CombineWeak(_Hash_FirstChar, current.Length > 0 ? current.ValueAsSpan.IgnoreCaseHash32(0, 0) : 0);
             features[25] = Hashes.CombineWeak(_Hash_Im1Length, HashLengths[Math.Min(99, prev.Length)]);
             features[26] = Hashes.CombineWeak(_Hash_Ip1Length, HashLengths[Math.Min(99, next.Length)]);
 
             return features;
         }
+
+#else
+
+        internal int[] GetFeatures(Token[] tokens, int indexCurrent)
+        {
+            Token current = tokens[indexCurrent];
+            Token prev2   = tokens[indexCurrent - 2];
+            Token prev    = tokens[indexCurrent - 1];
+            Token next    = tokens[indexCurrent + 1];
+            Token next2   = tokens[indexCurrent + 2];
+
+            //Features inspired by iSentenizer, but extended for better results (https://www.hindawi.com/journals/tswj/2014/196574/)
+            var features = new int[27];
+            features[0] = _Hash_Bias;// (GetHash(("bias")));
+
+            features[1] = (current.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunct : _Hash_False_IIsPunct;
+            features[2] = (prev.ValueAsSpan.IsCapitalized()) ? _Hash_True_Im1IsCap : _Hash_False_Im1IsCap;
+            features[3] = (next.ValueAsSpan.IsCapitalized()) ? _Hash_True_Ip1IsCap : _Hash_False_Ip1IsCap;
+            features[4] = (prev.ValueAsSpan.IsAllUpperCase()) ? _Hash_True_Im1Upp : _Hash_False_Im1Upp;
+            features[5] = (next.ValueAsSpan.IsAllUpperCase()) ? _Hash_True_Ip1Upp : _Hash_False_Ip1Upp;
+            features[6] = (prev.ValueAsSpan.IsAllLowerCase()) ? _Hash_True_Im1Low : _Hash_False_Im1Low;
+            features[7] = (next.ValueAsSpan.IsAllLowerCase()) ? _Hash_True_Ip1Low : _Hash_False_Ip1Low;
+            features[8] = (current.ValueAsSpan.IsSentencePunctuation() && next.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunctIp1IsPunct : _Hash_False_IIsPunctIp1IsPunct;
+            features[9] = (current.ValueAsSpan.IsSentencePunctuation() && prev.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunctIm1IsPunct : _Hash_False_IIsPunctIm1IsPunct;
+            features[10] = (current.ValueAsSpan.IsSentencePunctuation() && next2.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunctIp2IsPunct : _Hash_False_IIsPunctIp2IsPunct;
+            features[11] = (current.ValueAsSpan.IsSentencePunctuation() && prev2.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunctIm2IsPunct : _Hash_False_IIsPunctIm2IsPunct;
+            features[12] = (current.ValueAsSpan.IsCurrency()) ? _Hash_True_IIsCurrency : _Hash_False_IIsCurrency;
+            features[13] = (current.ValueAsSpan.IsNumeric()) ? _Hash_True_IIsNumeric : _Hash_False_IIsNumeric;
+            features[14] = (current.ValueAsSpan.HasNumeric()) ? _Hash_True_IHasNumeric : _Hash_False_IHasNumeric;
+            features[15] = (current.ValueAsSpan.IsSentencePunctuation() && next.ValueAsSpan.IsOpenQuote()) ? _Hash_True_IsPunctIp1Quote : _Hash_False_IsPunctIp1Quote;
+            features[16] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == prev.Value) ? _Hash_True_IequalIm1 : _Hash_False_IequalIm1;
+            features[17] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == prev2.Value) ? _Hash_True_IequalIm2 : _Hash_False_IequalIm2;
+            features[18] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == next.Value) ? _Hash_True_IequalIp1 : _Hash_False_IequalIp1;
+            features[19] = (current.ValueAsSpan.IsSentencePunctuation() && current.Value == next2.Value) ? _Hash_True_IequalIp2 : _Hash_False_IequalIp2;
+            features[20] = (prev.Length == 0 && prev.Value == Token.BOS) ? _Hash_True_Im1IsBOS : _Hash_False_Im1IsBOS;
+            features[21] = (next.Length == 0 && next.Value == Token.BOS) ? _Hash_True_Im2IsBOS : _Hash_False_Im2IsBOS;
+            features[22] = (prev.Length == 0 && prev.Value == Token.EOS) ? _Hash_True_Ip1IsEOS : _Hash_False_Ip1IsEOS;
+            features[23] = (next.Length == 0 && next.Value == Token.EOS) ? _Hash_True_Ip2IsEOS : _Hash_False_Ip2IsEOS;
+            features[24] = Hashes.CombineWeak(_Hash_FirstChar, current.Length > 0 ? current.ValueAsSpan.IgnoreCaseHash32(0, 0) : 0);
+            features[25] = Hashes.CombineWeak(_Hash_Im1Length, HashLengths[Math.Min(99, prev.Length)]);
+            features[26] = Hashes.CombineWeak(_Hash_Ip1Length, HashLengths[Math.Min(99, next.Length)]);
+
+            return features;
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHash(string feature)
@@ -441,9 +521,10 @@ namespace Catalyst.Models
 
         private struct FakeToken : IToken
         {
-            public FakeToken(string value) : this()
+            public FakeToken(string value)
             {
                 Value = value;
+                Lemma = null;
             }
 
             public int Begin { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

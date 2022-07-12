@@ -22,7 +22,7 @@ namespace Catalyst.Models
             IgnoreSpan = index;
         }
 
-        public ISpan this[int key] { get => Source[key]; set => throw new NotImplementedException(); }
+        public Span this[int key] { get => Source[key]; set => throw new NotImplementedException(); }
 
         public Language Language { get => Source.Language; set => throw new NotImplementedException(); }
 
@@ -38,7 +38,7 @@ namespace Catalyst.Models
 
         public Dictionary<string, string> Metadata => throw new NotImplementedException();
 
-        public IEnumerable<ISpan> Spans
+        public IEnumerable<Span> Spans
         {
             get
             {
@@ -60,7 +60,7 @@ namespace Catalyst.Models
 
         public bool IsParsed => throw new NotImplementedException();
 
-        public ISpan AddSpan(int begin, int end)
+        public Span AddSpan(int begin, int end)
         {
             throw new NotImplementedException();
         }
@@ -70,7 +70,7 @@ namespace Catalyst.Models
             throw new NotImplementedException();
         }
 
-        public IEnumerator<ISpan> GetEnumerator()
+        public IEnumerator<Span> GetEnumerator()
         {
             return Spans.GetEnumerator();
         }

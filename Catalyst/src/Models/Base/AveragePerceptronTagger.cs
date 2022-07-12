@@ -153,21 +153,21 @@ namespace Catalyst.Models
             }
         }
 
-        public (int TP, int FN, int FP) TrainOnSentence(ISpan span, Span<float> ScoreBuffer, Span<int> features)
+        public (int TP, int FN, int FP) TrainOnSentence(Span span, Span<float> ScoreBuffer, Span<int> features)
         {
-            IToken prev = SpecialToken.BeginToken; IToken prev2 = SpecialToken.BeginToken; IToken curr = SpecialToken.BeginToken; IToken next = SpecialToken.BeginToken; IToken next2 = SpecialToken.BeginToken;
+            Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = (int)PartOfSpeech.NONE; int prev2Tag = (int)PartOfSpeech.NONE; int currTag = (int)PartOfSpeech.NONE;
 
             int i = 0, correct = 0;
             int TP = 0, FN = 0, FP = 0;
 
-            var en = span.GetEnumerator();
+            var en = span.GetStructEnumerator();
 
-            while (next != SpecialToken.EndToken)
+            while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = SpecialToken.EndToken; }
-                if (curr != SpecialToken.BeginToken)
+                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
+                if (!curr.IsBeginToken)
                 {
                     int tokenTag = (int)curr.POS;
                     if (!Data.TokenToSingleTag.TryGetValue(curr.IgnoreCaseHash, out currTag))
@@ -202,7 +202,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Predict(ISpan span)
+        public void Predict(Span span)
         {
             Span<float> ScoreBuffer = stackalloc float[N_POS];
             Span<int> Features = stackalloc int[N_Features];
@@ -210,21 +210,21 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Predict(ISpan span, Span<float> ScoreBuffer, Span<int> features)
+        private void Predict(Span span, Span<float> ScoreBuffer, Span<int> features)
         {
-            IToken prev = SpecialToken.BeginToken; IToken prev2 = SpecialToken.BeginToken; IToken curr = SpecialToken.BeginToken; IToken next = SpecialToken.BeginToken; IToken next2 = SpecialToken.BeginToken;
+            Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = (int)PartOfSpeech.NONE; int prev2Tag = (int)PartOfSpeech.NONE; int currTag = (int)PartOfSpeech.NONE;
 
             int i = 0;
 
-            var en = span.GetEnumerator();
+            var en = span.GetStructEnumerator();
 
-            while (next != SpecialToken.EndToken)
+            while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = SpecialToken.EndToken; }
+                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
 
-                if (curr != SpecialToken.BeginToken)
+                if (!curr.IsBeginToken)
                 {
                     if (!Data.TokenToSingleTag.TryGetValue(curr.IgnoreCaseHash, out int tag))
                     {

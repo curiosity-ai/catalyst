@@ -6,7 +6,7 @@ namespace Catalyst
 {
     public static class SpanExtensions
     {
-        public static bool IsVerbRoot(this ISpan span)
+        public static bool IsVerbRoot(this Span span)
         {
             int[] heads = span.Select(tk => tk.Head).ToArray();
 
@@ -14,7 +14,7 @@ namespace Catalyst
             return (span[root].POS == PartOfSpeech.VERB);
         }
 
-        public static bool IsProjective(this ISpan span)
+        public static bool IsProjective(this Span span)
         {
             int[] heads = span.Select(tk => tk.Head).ToArray();
 

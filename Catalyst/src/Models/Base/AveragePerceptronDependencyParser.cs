@@ -728,7 +728,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Predict(ISpan span)
+        public void Predict(Span span)
         {
             var buffer = new Buffer(span, N_FEATURES, N_ACTIONS);
             Predict(ref buffer);
@@ -765,14 +765,14 @@ namespace Catalyst.Models
             public LightStack<int> Stack;
             public int CurrentIndex;
 
-            public ISpan Span;
+            public Span Span;
 
             private static readonly string ROOT = "<ROOT>";
             private static readonly int _HashRoot = ROOT.IgnoreCaseHash32();
             private static readonly string EOS = "<EOS>";
             private static readonly int _HashEOS = EOS.IgnoreCaseHash32();
 
-            public Buffer(ISpan span, int n_features, int n_moves)
+            public Buffer(Span span, int n_features, int n_moves)
             {
                 N = span.TokensCount + 2;
                 Span = span;

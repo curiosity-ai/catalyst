@@ -22,13 +22,13 @@ namespace Catalyst.Models
             {
                 document.AddSpan(0, document.Length - 1);
             }
-            foreach (ISpan s in document.Spans)
+            foreach (Span s in document.Spans)
             {
                 Parse(s);
             }
         }
 
-        public void Parse(ISpan span, CancellationToken cancellationToken = default)
+        public void Parse(Span span, CancellationToken cancellationToken = default)
         {
             var textSpan = span.ValueAsSpan;
             int spanBegin = span.Begin;

@@ -53,7 +53,7 @@ namespace Catalyst.Models
                 document.AddSpan(0, document.Length - 1);
             }
 
-            foreach (ISpan s in document.Spans)
+            foreach (Span s in document.Spans)
             {
                 try
                 {
@@ -114,7 +114,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Parse(ISpan span, CancellationToken cancellationToken = default)
+        public void Parse(Span span, CancellationToken cancellationToken = default)
         {
             var sw = ValueStopwatch.StartNew();
             var timeout = Timeout;

@@ -6,6 +6,6 @@ namespace Catalyst
     {
         void Parse(IDocument document, CancellationToken cancellationToken = default);
 
-        void Parse(ISpan span, CancellationToken cancellationToken = default);
+        void Parse(Span span, CancellationToken cancellationToken = default);
     }
 }

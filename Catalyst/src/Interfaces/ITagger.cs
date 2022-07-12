@@ -4,6 +4,6 @@
     {
         void Predict(IDocument document);
 
-        void Predict(ISpan span);
+        void Predict(Span span);
     }
 }

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Catalyst
 {
     [MessagePack.Union(0, typeof(Document))]
-    public interface IDocument : IEnumerable<ISpan>
+    public interface IDocument : IEnumerable<Span>
     {
         Language Language { get; set; }
         int Length { get; }
@@ -17,13 +17,13 @@ namespace Catalyst
         UID128 UID { get; set; }
         List<string> Labels { get; }
         Dictionary<string, string> Metadata { get; }
-        IEnumerable<ISpan> Spans { get; }
+        IEnumerable<Span> Spans { get; }
         int SpansCount { get; }
         int TokensCount { get; }
         int EntitiesCount { get; }
         bool IsParsed { get; }
-        ISpan this[int key] { get; set; }
-        ISpan AddSpan(int begin, int end);
+        Span this[int key] { get; set; }
+        Span AddSpan(int begin, int end);
         List<IToken> ToTokenList();
         void Clear();
         void RemoveOverlapingTokens();

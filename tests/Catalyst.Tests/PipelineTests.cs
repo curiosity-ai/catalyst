@@ -91,5 +91,15 @@ namespace Catalyst.Tests
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
         }
+
+        [Theory]
+        [InlineData("complex-extract.txt")]
+        public async Task TokenizerHandlesComplexFile(string file)
+        {
+            English.Register();
+            var nlp = await Pipeline.ForAsync(Language.English);
+            var doc = new Document(File.ReadAllText(file), Language.English);
+            nlp.ProcessSingle(doc);
+        }
     }
 }

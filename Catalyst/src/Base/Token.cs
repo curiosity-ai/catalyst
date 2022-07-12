@@ -1,6 +1,7 @@
 ﻿using UID;
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 //using MessagePack;
 
@@ -8,6 +9,32 @@ namespace Catalyst
 {
     public struct Token : IToken
     {
+        public static readonly string BOS = "<BOS>";
+        public static readonly string EOS = "<EOS>";
+        public static readonly string ROOT = "<ROOT>";
+        public static readonly string NULL = "<NULL>";
+
+        private Token(string value, PartOfSpeech tag)
+        {
+            _value = value;
+            _posOverride = tag;
+            _begin = -1;
+            _end = -1;
+            _replacement = value;
+            Parent = null;
+            _index = -1;
+            SpanIndex = -1;
+            _hasReplacement = true;
+        }
+
+        internal bool IsBeginToken => _posOverride.HasValue && _value == Token.BOS;
+        internal bool IsEndToken => _posOverride.HasValue && _value == Token.EOS;
+
+        public static readonly Token BeginToken = new Token(Token.BOS, PartOfSpeech.NONE);
+        public static readonly Token EndToken   = new Token(Token.EOS, PartOfSpeech.NONE);
+        public static readonly Token RootToken  = new Token(Token.ROOT, PartOfSpeech.NONE);
+        public static readonly Token NullToken  = new Token(Token.NULL, PartOfSpeech.NONE);
+
         public Token(Document parent, int index, int spanIndex, bool hasReplacement, int lowerBound, int upperBound)
         {
             Parent = parent;
@@ -26,6 +53,7 @@ namespace Catalyst
             _replacement = null;
             _hasReplacement = hasReplacement;
             _value = null;
+            _posOverride = null;
         }
 
         private int _begin;
@@ -36,6 +64,7 @@ namespace Catalyst
         private int _index;
         private int SpanIndex;
         private bool _hasReplacement;
+        private PartOfSpeech? _posOverride;
 
         public int Begin { get { if (_begin < 0) { _begin = Parent.TokensData[SpanIndex][_index].LowerBound; } return _begin; } set { throw new InvalidOperationException(); } }
 
@@ -53,7 +82,7 @@ namespace Catalyst
 
         public int IgnoreCaseHash { get { if (_hasReplacement) { return Replacement.IgnoreCaseHash32(); } return Parent.GetTokenIgnoreCaseHash(_index, SpanIndex); } set { throw new NotImplementedException(); } }
 
-        public PartOfSpeech POS { get { return Parent.GetTokenTag(_index, SpanIndex); } set { Parent.SetTokenTag(_index, SpanIndex, value); } }
+        public PartOfSpeech POS { get { return _posOverride ?? Parent.GetTokenTag(_index, SpanIndex); } set { if (_posOverride.HasValue) { throw new InvalidOperationException("Can't write when overloaded"); }  else { Parent.SetTokenTag(_index, SpanIndex, value); } } }
 
         public EntityType[] EntityTypes { get { return Parent.GetTokenEntityTypes(_index, SpanIndex); } }
 
@@ -85,64 +114,10 @@ namespace Catalyst
         {
             return $"[{Begin}->{End}]" + Value;
         }
-    }
 
-    public struct SpecialToken : IToken
-    {
-        public static readonly string BOS = "<BOS>";
-        public static readonly string EOS = "<EOS>";
-        public static readonly string ROOT = "<ROOT>";
-        public static readonly string NULL = "<NULL>";
-
-        public SpecialToken(string value, PartOfSpeech tag)
+        internal static Token Fake(string value)
         {
-            Value = value;
-            POS = tag;
+            return new Token(value, PartOfSpeech.X);
         }
-
-        public static IToken BeginToken { get; private set; } = new SpecialToken(SpecialToken.BOS, PartOfSpeech.NONE);
-        public static IToken EndToken { get; private set; } = new SpecialToken(SpecialToken.EOS, PartOfSpeech.NONE);
-        public static IToken RootToken { get; private set; } = new SpecialToken(SpecialToken.ROOT, PartOfSpeech.NONE);
-        public static IToken NullToken { get; private set; } = new SpecialToken(SpecialToken.NULL, PartOfSpeech.NONE);
-
-        public int Begin { get => -1; set => throw new NotImplementedException(); }
-        public int End { get => -1; set => throw new NotImplementedException(); }
-
-        public int Length => 0;
-        public int Index => -1;
-
-        public string Value { get; private set; }
-        public ReadOnlySpan<char> ValueAsSpan { get => Value.AsSpan(); }
-
-        public string Stem { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public int Hash { get => Value.CaseSensitiveHash32(); set => throw new NotImplementedException(); }
-        public int IgnoreCaseHash { get => Value.IgnoreCaseHash32(); set => throw new NotImplementedException(); }
-
-        public Dictionary<string, string> Metadata => throw new NotImplementedException();
-
-        public PartOfSpeech POS { get; set; }
-
-        public EntityType[] EntityTypes => throw new NotImplementedException();
-
-        public string Replacement { get => Value; set => throw new NotImplementedException(); }
-
-        public int Head { get { return -1; } set { } }
-        public string DependencyType { get { return ""; } set { } }
-
-        public float Frequency { get { return 0; } set { return; } }
-
-        public string Lemma => Value;
-
-        public ReadOnlySpan<char> LemmaAsSpan => ValueAsSpan;
-
-        public void AddEntityType(EntityType entityType) => throw new NotImplementedException();
-
-        public void RemoveEntityType(string entityType) => throw new NotImplementedException();
-
-        public void RemoveEntityType(int ix) => throw new NotImplementedException();
-
-        public void UpdateEntityType(int ix, ref EntityType entityType) => throw new NotImplementedException();
-
-        public void ClearEntities() => throw new NotImplementedException();
     }
 }

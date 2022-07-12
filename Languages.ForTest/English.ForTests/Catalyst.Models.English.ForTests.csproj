@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Platforms>AnyCPU</Platforms>
+    <LangVersion>latest</LangVersion>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\*.bin" />
+    <EmbeddedResource Include="Resources\*.bin" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Catalyst\Catalyst.csproj" />
+  </ItemGroup>
+</Project>
