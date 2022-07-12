@@ -16,7 +16,7 @@ namespace Catalyst.Models
         public string Tag => "";
         public int Version => 0;
 
-        public void Parse(IDocument document)
+        public void Parse(IDocument document, CancellationToken cancellationToken = default)
         {
             if (!document.Spans.Any())
             {
@@ -28,7 +28,7 @@ namespace Catalyst.Models
             }
         }
 
-        public void Parse(ISpan span)
+        public void Parse(ISpan span, CancellationToken cancellationToken = default)
         {
             var textSpan = span.ValueAsSpan;
             int spanBegin = span.Begin;
@@ -56,7 +56,7 @@ namespace Catalyst.Models
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
-            Parse(document);
+            Parse(document, cancellationToken);
         }
     }
 }
