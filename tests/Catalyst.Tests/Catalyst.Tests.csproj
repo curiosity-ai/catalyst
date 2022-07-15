@@ -10,11 +10,15 @@
 
   <ItemGroup>
     <None Remove="complex-extract.txt" />
+    <None Remove="json-extract.txt" />
     <None Remove="spam-extract.txt" />
     <None Remove="wiki-extract.txt" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="json-extract.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="complex-extract.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

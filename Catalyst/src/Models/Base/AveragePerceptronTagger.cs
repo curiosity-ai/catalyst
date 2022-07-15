@@ -189,15 +189,16 @@ namespace Catalyst.Models
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
-            Predict(document);
+            Predict(document, cancellationToken);
         }
 
-        public void Predict(IDocument document)
+        public void Predict(IDocument document, CancellationToken cancellationToken = default)
         {
             Span<float> ScoreBuffer = stackalloc float[N_POS];
             Span<int> Features = stackalloc int[N_Features];
             foreach (var span in document)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 Predict(span, ScoreBuffer, Features);
             }
         }

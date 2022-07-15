@@ -121,7 +121,7 @@ namespace Catalyst
 
         internal void ReserveTokens(int spanIndex, int expectedTokenCount)
         {
-            TokensData[spanIndex].Capacity = Math.Max(TokensData[spanIndex].Capacity, expectedTokenCount);
+            TokensData[spanIndex].Capacity = Math.Max(1, Math.Max(TokensData[spanIndex].Capacity, expectedTokenCount));
         }
 
         public List<IToken> ToTokenList()

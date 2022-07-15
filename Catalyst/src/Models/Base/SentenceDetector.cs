@@ -172,11 +172,24 @@ namespace Catalyst.Models
                     if (!text.Slice(b, e - b + 1).IsNullOrWhiteSpace())
                     {
                         var span = document.AddSpan(b, e);
-                        foreach (var t in tokens)
+                        var spanBegin = span.Begin;
+                        var spanEnd = span.End;
+                        for (int itoken = lastBegin; itoken < tokens.Length; itoken++)
                         {
-                            if (t.Begin >= span.Begin && t.End <= span.End)
+                            var tb = tokensBegins[itoken];
+                            if (tb >= spanBegin)
                             {
-                                span.AddToken(t);
+                                var te = tokensEnds[itoken];
+                                if (te <= spanEnd)
+                                {
+                                    ref Token t = ref tokens[itoken];
+                                    span.AddToken(t); //Re-add the tokens back in the document
+                                    lastBegin = itoken;
+                                }
+                                else
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -190,11 +203,23 @@ namespace Catalyst.Models
                 while (char.IsWhiteSpace(text[e]) && e > b) { e--; }
 
                 var span = document.AddSpan(b, e);
-                foreach (var t in tokens)
+                var spanBegin = span.Begin;
+                var spanEnd = span.End;
+                for (int itoken = 0; itoken < tokens.Length; itoken++)
                 {
-                    if (t.Begin >= span.Begin && t.End <= span.End)
+                    var tb = tokensBegins[itoken];
+                    if (tb >= spanBegin)
                     {
-                        span.AddToken(t); //Re-add the tokens back in the document
+                        var te = tokensEnds[itoken];
+                        if (te <= spanEnd)
+                        {
+                            ref Token t = ref tokens[itoken];
+                            span.AddToken(t); //Re-add the tokens back in the document
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
             }
