@@ -464,6 +464,7 @@ namespace Catalyst.Models
                 //          'TB T G M K % км км² км³ м м² м³ дм дм² дм³ см см² см³ мм мм² мм³ нм '
                 //          'кг г мг м/с км/ч кПа Па мбар Кб КБ кб Мб МБ мб Гб ГБ гб Тб ТБ тб')
             }
+
             if (CharacterClasses.PunctuationCharacters.Contains(f))
             {
                 //Remove the final punctuation symbol

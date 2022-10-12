@@ -338,7 +338,8 @@ namespace Catalyst
                 var normalizers       = Processes.Where(p => p is INormalizer).ToList();
                 var tokenizers        = Processes.Where(p => p is ITokenizer).ToList();
                 var sentenceDetectors = Processes.Where(p => p is ISentenceDetector).ToList();
-                var others            = Processes.Except(normalizers).Except(tokenizers).Except(sentenceDetectors).ToList();
+                var taggers           = Processes.Where(p => p is ITagger).ToList();
+                var others            = Processes.Except(normalizers).Except(taggers).Except(tokenizers).Except(sentenceDetectors).ToList();
 
                 if (process is INormalizer)
                 {
@@ -347,6 +348,10 @@ namespace Catalyst
                 else if (process is ITokenizer)
                 {
                     tokenizers.Add(process);
+                }
+                else if (process is ITagger)
+                {
+                    taggers.Add(process);
                 }
                 else if (process is ISentenceDetector)
                 {
@@ -357,7 +362,7 @@ namespace Catalyst
                     others.Add(process);
                 }
 
-                Processes = normalizers.Concat(tokenizers).Concat(sentenceDetectors).Concat(others).ToList();
+                Processes = normalizers.Concat(tokenizers).Concat(sentenceDetectors).Concat(taggers).Concat(others).ToList();
 
                 TryImportSpecialCases(process);
             }
