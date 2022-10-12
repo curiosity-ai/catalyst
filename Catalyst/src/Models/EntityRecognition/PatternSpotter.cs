@@ -158,12 +158,15 @@ namespace Catalyst.Models
         public bool IsMatch(Span<Token> tokens, out int consumedTokens)
         {
             int largestMatch = -1;
-            for (int i = 0; i < Patterns.Count; i++)
+            var patterns = Patterns;
+
+            for (int i = 0; i < patterns.Count; i++)
             {
                 var currentToken = 0;
-                for (int j = 0; j < Patterns[i].Length; j++)
+                var innerPattern = patterns[i];
+                for (int j = 0; j < innerPattern.Length; j++)
                 {
-                    var currentPattern = Patterns[i][j];
+                    var currentPattern = innerPattern[j];
                     int ct = currentToken;
                     
                     int maxMatches = currentPattern.MaxMatches;
