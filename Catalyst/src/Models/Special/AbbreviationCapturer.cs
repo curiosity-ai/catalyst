@@ -254,19 +254,21 @@ namespace Catalyst.Models
         {
             var context = new List<string>(); // We let duplicates happen here, as they contribute to show what are the most important words after
 
-            var b = innerToken.Begin - ContextWindow;
-            var e = innerToken.End + ContextWindow;
+            var contextWindowBegin = innerToken.Begin - ContextWindow;
+            var contextWindowEnd = innerToken.End + ContextWindow;
 
-            if (b < 0) { b = 0; }
-            if (e > doc.Length - 1) { e = doc.Length - 1; }
+            if (contextWindowBegin < 0) { contextWindowBegin = 0; }
+            if (contextWindowEnd > doc.Length - 1) { contextWindowEnd = doc.Length - 1; }
 
             foreach (var s in doc)
             {
-                if (s.Begin >= b && s.End < e)
+                bool overlap = s.Begin < contextWindowEnd && contextWindowBegin < s.End;
+
+                if (overlap)
                 {
                     foreach (var tk in s)
                     {
-                        if (tk.Begin >= b && tk.End < e)
+                        if (tk.Begin >= contextWindowBegin && tk.End < contextWindowEnd)
                         {
                             //Almost same filtering as Spotter
                             bool filterPartOfSpeech = !(tk.POS == PartOfSpeech.ADJ || tk.POS == PartOfSpeech.NOUN || tk.POS == PartOfSpeech.PROPN);
