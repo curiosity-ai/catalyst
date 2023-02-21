@@ -1,14 +1,17 @@
-﻿using Catalyst;
-using Catalyst.Models;
+﻿using Catalyst.Models;
+
+using Microsoft.Extensions.Logging;
+
 using Mosaik.Core;
+
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Linq;
-using Version = Mosaik.Core.Version;
-using P = Catalyst.PatternUnitPrototype;
 using System.Text;
-using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+
+using P = Catalyst.PatternUnitPrototype;
+using Version = Mosaik.Core.Version;
 
 namespace Catalyst.Samples.EntityRecognition
 {
@@ -18,7 +21,7 @@ namespace Catalyst.Samples.EntityRecognition
         {
             //Initialize the English built-in models
             Catalyst.Models.English.Register();
-            
+
             Console.OutputEncoding = Encoding.UTF8;
             ApplicationLogging.SetLoggerFactory(LoggerFactory.Create(lb => lb.AddConsole()));
 
