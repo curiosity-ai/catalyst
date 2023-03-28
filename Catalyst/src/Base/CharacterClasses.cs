@@ -45,7 +45,9 @@ namespace Catalyst
         internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> input) => new HashSet<T>(input);
 
 
-        public static readonly char[] WhitespaceCharacters  = new char[] { ' ', '\n', '\r', '\t', '\v', '\f' }.Union(Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => char.IsWhiteSpace(c))).ToArray(); //Optimization to have the simplest whitespace first, as this reduces the searchspace for the unusual chars quite a lot
+        public static readonly char[] WhitespaceCharacters             = new char[] { ' ', '\n', '\r', '\t', '\v', '\f' }.Union(Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => char.IsWhiteSpace(c))).ToArray(); //Optimization to have the simplest whitespace first, as this reduces the searchspace for the unusual chars quite a lot
+        public static readonly char[] WhitespacesAndBracketsCharacters = new char[] { ' ', '\n', '\r', '\t', '\v', '\f', '(', ')', '[', ']', '{', '}' }.Union(Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => char.IsWhiteSpace(c))).ToArray(); //Optimization to have the simplest whitespace first, as this reduces the searchspace for the unusual chars quite a lot
+
         public static readonly HashSet<char> NumericCharacters     = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }.ToHashSet();
         public static readonly HashSet<char> CurrencyCharacters    = Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => RE_Currency.IsMatch(c.ToString())).ToHashSet();
         public static readonly HashSet<char> SymbolCharacters      = Enumerable.Range(0, 0x10000).Select(i => ((char)i)).Where(c => RE_IsSymbol.IsMatch(c.ToString())).ToHashSet();

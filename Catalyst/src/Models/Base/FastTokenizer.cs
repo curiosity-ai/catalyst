@@ -127,7 +127,7 @@ namespace Catalyst.Models
                 var baseSpecialCases = _baseSpecialCases;
 
                 //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
-                var separators = CharacterClasses.WhitespaceCharacters;
+                var separators = CharacterClasses.WhitespacesAndBracketsCharacters;
                 var textSpan = span.ValueAsSpan;
 
                 bool hasEmoji = false;
