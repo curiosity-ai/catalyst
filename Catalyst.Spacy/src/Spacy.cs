@@ -1,6 +1,7 @@
 ﻿using Mosaik.Core;
 using Python.Deployment;
 using Python.Runtime;
+using Semver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,7 +99,7 @@ namespace Catalyst
         {
             var modelName = Shortcuts[lang == Language.Any ? "xx" : Languages.EnumToCode(lang)].Replace("_sm", "");
             var size = modelSize == ModelSize.Small ? "sm" : modelSize == ModelSize.Medium ? "md" : "lg";
-            modelName += $"_{ size}";
+            modelName += $"_{size}";
             return modelName;
         }
 
@@ -112,33 +113,38 @@ namespace Catalyst
 
                 version = spacy.__version__;
             }
+            SemVersion currentSpacyVersion = SemVersion.TryParse(version, SemVersionStyles.Any, out var a) ? a : null;
+            if (currentSpacyVersion == null)
+                throw new Exception($"Unable to parse the current spacy module version ({version}) into a proper semantic version.");
 
-            if (!CompatibilityData["spacy"].TryGetValue(version, out _))
+            // Attempt to find an exact match for the current version of spacy in the CompatibilityData
+            Console.WriteLine($"Current version of the spacy module: {currentSpacyVersion}");
+            Console.WriteLine($"Seaching compatibility data for version {currentSpacyVersion}");
+            if (!CompatibilityData["spacy"].ContainsKey(currentSpacyVersion.ToString()))
             {
-                if (version.EndsWith(".0") && CompatibilityData["spacy"].TryGetValue(version.Substring(0, version.Length - ".0".Length), out _))
-                {
-                    version = version.Substring(0, version.Length - ".0".Length);
-                }
-                else
-                {
-                    var fixedVersion = CompatibilityData.Keys
-                                         .Where(k => k.StartsWith(version))
-                                         .Select((k) => (key: k, version: System.Version.TryParse(k, out var v) ? v : null))
-                                         .Where(k => k.version is object)
-                                         .OrderByDescending(k => k.version)
-                                         .Select(k => k.key)
-                                         .FirstOrDefault();
+                Console.WriteLine("Exact match not found.  Searching for best possible match...");
 
-                    if (fixedVersion is null)
-                    {
-                        throw new Exception($"Failed to read spacy version from compatibility data. Expected: {version}, available: {string.Join(", ", CompatibilityData.Keys)}");
-                    }
-                    version = fixedVersion;
+                // Look for the most recent version that isn't greater than the current version
+                var fixedVersion = CompatibilityData["spacy"].Keys
+                                     .Select((k) => (key: k, semVer: SemVersion.TryParse(k, SemVersionStyles.Any, out var keyVersion) ? keyVersion : null))
+                                     .Where(k =>
+                                        k.semVer != null // Must be valid semantic version
+                                        && SemVersion.ComparePrecedence(currentSpacyVersion, k.semVer) >= 0  // Can't grab a newer release
+                                        && k.semVer.IsRelease)  // No prereleases 
+                                        // Could also force same major version by adding '&& currentSpacyVersion.Major == k.semVer.Major'
+                                        // if backward compatibility across major releases is an issue
+                                     .OrderByDescending(k => k.semVer)
+                                     .Select(k => k.key)
+                                     .FirstOrDefault();
+
+                if (fixedVersion is null)
+                {
+                    throw new Exception($"Failed to read spacy version from compatibility data. {Environment.NewLine}Expected: {version}{Environment.NewLine}available: {string.Join(", ", CompatibilityData["spacy"].Keys)}");
                 }
+                version = fixedVersion;
             }
 
             Console.WriteLine("Spacy version: " + version);
-
             return version;
         }
 
@@ -159,7 +165,7 @@ namespace Catalyst
                 {
                     if (!_disposed)
                     {
-                        foreach(var p in _pipelines.Values)
+                        foreach (var p in _pipelines.Values)
                         {
                             p.Dispose();
                         }
