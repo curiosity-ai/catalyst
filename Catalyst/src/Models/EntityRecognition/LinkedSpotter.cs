@@ -216,7 +216,7 @@ namespace Catalyst.Models
                 var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
                 AddSingleTokenConcept(hash);
 
-                if (!words[0].AsSpan().IsLetter())
+                if (!words[0].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
@@ -239,7 +239,7 @@ namespace Catalyst.Models
                     Data.MultiGramHashes[n].Add(word_hash);
                 }
 
-                if (!words[n].AsSpan().IsLetter())
+                if (!words[n].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
