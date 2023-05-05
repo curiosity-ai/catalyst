@@ -10,7 +10,7 @@ using System.Linq;
 namespace Catalyst.Models
 {
     [FormerName("Mosaik.NLU.Models", "SimpleTokenizer")]
-    public class FastTokenizer : ITokenizer, IProcess
+    public class FastTokenizer : ITokenizer, IProcess, ICanOptimizeMemory
     {
         public static bool DisableEmailOrURLCapture { get; set; } = false;
         
@@ -638,6 +638,10 @@ namespace Catalyst.Models
             }
         }
 
-
+        public void OptimizeMemory()
+        {
+            _customSimpleSpecialCases?.TrimExcess();
+            _customSpecialCases?.TrimExcess();
+        }
     }
 }
