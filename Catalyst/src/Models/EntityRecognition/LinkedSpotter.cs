@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -123,7 +124,9 @@ namespace Catalyst.Models
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
-            var tokens = ispan.ToTokenSpan();
+            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
+            var tokens = pooledTokens.AsSpan(0, actualLength);
+
             int N = tokens.Length;
             bool hasMultiGram = Data.MultiGramHashes.Any();
             bool foundAny = false;
@@ -188,6 +191,9 @@ namespace Catalyst.Models
                     tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Single, uid));
                 }
             }
+            
+            ArrayPool<Token>.Shared.Return(pooledTokens);
+
             return foundAny;
         }
 

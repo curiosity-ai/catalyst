@@ -1,6 +1,7 @@
 ﻿using Mosaik.Core;
 using Newtonsoft.Json;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -324,16 +325,21 @@ namespace Catalyst
             return entityTypes.OrderBy(et => (char)et.Tag);
         }
 
-        public Span<Token> ToTokenSpan()
+        public Token[] ToTokenSpanPolled(out int actualLength)
         {
             var tkc = TokensCount;
-            var tokens = new Token[tkc];
+            actualLength = tkc;
+            
+            var tokens = ArrayPool<Token>.Shared.Rent(tkc);
+            
             var sd = Parent.TokensData[Index];
+            
             for (int i = 0; i < tkc; i++)
             {
                 var td = sd[i];
                 tokens[i] = new Token(Parent, i, Index, td.Replacement is object, td.LowerBound, td.UpperBound);
             }
+
             return tokens;
         }
     }

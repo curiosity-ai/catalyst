@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers;
 
 namespace Catalyst.Models
 {
@@ -104,7 +105,9 @@ namespace Catalyst.Models
 
         private bool DoRecognizeEntities(Span ispan, bool stopOnFirstFound = false, List<UID128> removedEntityTargetUIDs = null)
         {
-            var tokens = ispan.ToTokenSpan();
+            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
+            var tokens = pooledTokens.AsSpan(0, actualLength);
+
             int N = tokens.Length;
             bool foundAny = false;
 
@@ -164,6 +167,8 @@ namespace Catalyst.Models
                     }
                 }
             }
+
+            ArrayPool<Token>.Shared.Return(pooledTokens);
 
             return foundAny;
         }

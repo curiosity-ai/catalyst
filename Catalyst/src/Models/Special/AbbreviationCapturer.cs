@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Collections.Specialized;
+using System.Buffers;
 
 namespace Catalyst.Models
 {
@@ -69,7 +70,9 @@ namespace Catalyst.Models
 
             foreach (var span in doc)
             {
-                var tokens = span.ToTokenSpan();
+                var pooledTokens = span.ToTokenSpanPolled(out var actualLength);
+                var tokens = pooledTokens.AsSpan(0, actualLength);
+
                 int N = tokens.Length - 3;
 
                 for (int i = 1; i < N; i++)
@@ -193,6 +196,8 @@ namespace Catalyst.Models
                         i += consumedTokens - 1; //-1 as we'll do an i++ imediatelly after
                     }
                 }
+
+                ArrayPool<Token>.Shared.Return(pooledTokens);
             }
             return found;
         }

@@ -1,6 +1,7 @@
 ﻿using MessagePack;
 using Mosaik.Core;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -71,7 +72,9 @@ namespace Catalyst.Models
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
-            var tokens = ispan.ToTokenSpan();
+            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
+            var tokens = pooledTokens.AsSpan(0, actualLength);
+
             int N = tokens.Length;
             bool foundAny = false;
 
@@ -103,6 +106,8 @@ namespace Catalyst.Models
                     }
                 }
             }
+
+            ArrayPool<Token>.Shared.Return(pooledTokens);
 
             return foundAny;
         }
