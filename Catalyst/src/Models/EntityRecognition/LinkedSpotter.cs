@@ -81,7 +81,7 @@ namespace Catalyst.Models
 
         public void OptimizeMemory()
         {
-            Data.TokenizerExceptionsSet.Clear();
+            Data.TokenizerExceptionsSet?.Clear();
             Data.TokenizerExceptionsSet = null;
         }
 
