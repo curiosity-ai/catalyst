@@ -373,6 +373,25 @@ namespace Catalyst
             return this;
         }
 
+        public void OptimizeMemory()
+        {
+            RWLock.EnterWriteLock();
+            try
+            {
+                foreach (var process in Processes)
+                {
+                    if (process is ICanOptimizeMemory canOptimizeProcess) 
+                    { 
+                        canOptimizeProcess.OptimizeMemory(); 
+                    }
+                }
+            }
+            finally
+            {
+                RWLock.ExitWriteLock();
+            }
+        }
+
         public void ReplaceWith(Pipeline newPipeline)
         {
             RWLock.EnterWriteLock();

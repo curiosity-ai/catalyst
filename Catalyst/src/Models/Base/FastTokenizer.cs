@@ -23,6 +23,7 @@ namespace Catalyst.Models
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
+        private HashSet<int> _customSimpleSpecialCases;
         private ReaderWriterLockSlim _lockSpecialCases = new();
 
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
@@ -98,6 +99,24 @@ namespace Catalyst.Models
                     _lockSpecialCases.ExitWriteLock();
                 }
             }
+
+            if (process is IHasSimpleSpecialCases simpleCases)
+            {
+                _lockSpecialCases.EnterWriteLock();
+                try
+                {
+
+                    _customSimpleSpecialCases ??= new();
+                    foreach (var sc in simpleCases.GetSimpleSpecialCases())
+                    {
+                        _customSimpleSpecialCases.Add(sc);
+                    }
+                }
+                finally
+                {
+                    _lockSpecialCases.ExitWriteLock();
+                }
+            }
         }
 
         public void AddSpecialCase(string word, TokenizationException exception)
@@ -122,8 +141,8 @@ namespace Catalyst.Models
             _lockSpecialCases.EnterReadLock();
             try
             {
-
                 var customSpecialCases = _customSpecialCases;
+                var customSimpleSpecialCases = _customSimpleSpecialCases;
                 var baseSpecialCases = _baseSpecialCases;
 
                 //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
@@ -209,7 +228,9 @@ namespace Catalyst.Models
                     while (!candidate.IsEmpty)
                     {
                         int hash = candidate.CaseSensitiveHash32();
-                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) || baseSpecialCases.ContainsKey(hash))
+                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) ||
+                            (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                            || baseSpecialCases.ContainsKey(hash))
                         {
                             splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Exception));
                             candidate = new ReadOnlySpan<char>();
@@ -288,7 +309,9 @@ namespace Catalyst.Models
                                             var rest = candidate.Slice(in_offset - offset + index);
                                             int hashRest = rest.CaseSensitiveHash32();
 
-                                            if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) || baseSpecialCases.ContainsKey(hashRest))
+                                            if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) ||
+                                                (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hashRest)) || 
+                                                baseSpecialCases.ContainsKey(hashRest))
                                             {
                                                 in_offset = offset + index;
                                                 break;
@@ -354,7 +377,11 @@ namespace Catalyst.Models
                         continue;
                     }
 
-                    if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
+                    if(customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                    {
+                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                    }
+                    else if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
                     {
                         if (exp.Replacements is null)
                         {

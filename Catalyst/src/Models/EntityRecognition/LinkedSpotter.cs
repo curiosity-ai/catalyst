@@ -17,12 +17,12 @@ namespace Catalyst.Models
         public Dictionary<ulong, UID128> Hashes { get; set; } = new Dictionary<ulong, UID128>();
         public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
         public string CaptureTag { get; set; }
-        public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
+        public HashSet<int> TokenizerExceptionsSet { get; set; } = new HashSet<int>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
     }
 
-    public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
+    public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
 
@@ -78,6 +78,12 @@ namespace Catalyst.Models
             return false;
         }
 
+        public void OptimizeMemory()
+        {
+            Data.TokenizerExceptionsSet.Clear();
+            Data.TokenizerExceptionsSet = null;
+        }
+
         public static ulong HashCombine64(ulong rhs, ulong lhs)
         {
             lhs ^= rhs + 0x9e3779b97f492000 + (lhs << 6) + (lhs >> 2);
@@ -112,7 +118,7 @@ namespace Catalyst.Models
         {
             Data.Hashes.Clear();
             Data.MultiGramHashes.Clear();
-            Data.TokenizerExceptions.Clear();
+            Data.TokenizerExceptionsSet.Clear();
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
@@ -187,11 +193,11 @@ namespace Catalyst.Models
 
         private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
 
-        public IEnumerable<KeyValuePair<int, TokenizationException>> GetSpecialCases()
+        public IEnumerable<int> GetSimpleSpecialCases()
         {
-            if (Data.TokenizerExceptions is object)
+            if (Data.TokenizerExceptionsSet is object)
             {
-                foreach (var sc in Data.TokenizerExceptions)
+                foreach (var sc in Data.TokenizerExceptionsSet)
                 {
                     yield return sc;
                 }
@@ -218,7 +224,7 @@ namespace Catalyst.Models
 
                 if (!words[0].AsSpan().IsAllLetterOrDigit())
                 {
-                    Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                    Data.TokenizerExceptionsSet.Add(words[0].CaseSensitiveHash32());
                 }
 
                 return;
@@ -241,7 +247,7 @@ namespace Catalyst.Models
 
                 if (!words[n].AsSpan().IsAllLetterOrDigit())
                 {
-                    Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                    Data.TokenizerExceptionsSet.Add(words[n].CaseSensitiveHash32());
                 }
             }
 
