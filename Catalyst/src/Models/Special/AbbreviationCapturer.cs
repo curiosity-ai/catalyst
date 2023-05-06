@@ -257,10 +257,10 @@ namespace Catalyst.Models
 
         public List<string> GetContextForCandidate(Document doc, IToken innerToken)
         {
-            var context = new List<string>(); // We let duplicates happen here, as they contribute to show what are the most important words after
+            var context = new List<string>(ContextWindow * 2); // We let duplicates happen here, as they contribute to show what are the most important words after
 
             var contextWindowBegin = innerToken.Begin - ContextWindow;
-            var contextWindowEnd = innerToken.End + ContextWindow;
+            var contextWindowEnd   = innerToken.End + ContextWindow;
 
             if (contextWindowBegin < 0) { contextWindowBegin = 0; }
             if (contextWindowEnd > doc.Length - 1) { contextWindowEnd = doc.Length - 1; }
@@ -271,7 +271,7 @@ namespace Catalyst.Models
 
                 if (overlap)
                 {
-                    foreach (var tk in s)
+                    foreach (var tk in s.TokensStructEnumerable)
                     {
                         if (tk.Begin >= contextWindowBegin && tk.End < contextWindowEnd)
                         {
