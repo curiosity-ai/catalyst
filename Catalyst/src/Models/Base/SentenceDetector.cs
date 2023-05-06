@@ -574,7 +574,7 @@ namespace Catalyst.Models
 
             public PartOfSpeech POS { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-            public EntityType[] EntityTypes => throw new NotImplementedException();
+            public IReadOnlyList<EntityType> EntityTypes => throw new NotImplementedException();
 
             public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

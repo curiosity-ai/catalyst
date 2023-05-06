@@ -13,7 +13,7 @@ namespace Catalyst
         [Key(1)] public int Hash { get; set; }
         [Key(2)] public int IgnoreCaseHash { get; set; }
         [Key(3)] public Dictionary<string, string> Metadata { get; set; }
-        [Key(4)] public EntityType[] EntityTypes { get; set; }
+        [Key(4)] public IReadOnlyList<EntityType> EntityTypes { get; set; }
         [Key(5)] public int Length => Value.Length;
         [Key(6)] public PartOfSpeech POS { get; set; }
         [Key(7)] public Language Language { get; set; }
