@@ -132,7 +132,7 @@ namespace Catalyst.Models
         }
 
 
-        public string SingleOrOutside(IReadOnlyList<EntityType> types)
+        public string SingleOrOutside(IList<EntityType> types)
         {
             EntityType tmp = types.Where(et => Data.EntityTypes.Any(t => t == et.Type)).FirstOrDefault();
 

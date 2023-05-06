@@ -1,5 +1,4 @@
 ﻿using Mosaik.Core;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,18 +63,8 @@ namespace Catalyst.Models
                 {
                     if (!prevH && currH && !nextH && !prevP && !nextP) // pattern: word <hyphen> word, where word != punctuation
                     {
-                        var entityTypes = prev.EntityTypes;
-                        int ix = -1;
-                        for (int i = 0; i < entityTypes.Count; i++)
-                        {
-                            if (entityTypes[i].Type == HyphenatedTag)
-                            {
-                                ix = i;
-                                break;
-                            }
-                        }
-
-                        if (ix >= 0)
+                        int ix = prev.EntityTypes.FindIndex(0, et => et.Type == HyphenatedTag);
+                        if (ix > -1)
                         {
                             var newET = new EntityType(HyphenatedTag, EntityTag.Inside);
                             prev.UpdateEntityType(ix, ref newET);

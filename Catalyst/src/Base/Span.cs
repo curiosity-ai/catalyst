@@ -243,7 +243,7 @@ namespace Catalyst
             {
                 var token = this[i];
                 var entityTypes = token.EntityTypes;
-                if (entityTypes.Count > 0)
+                if (entityTypes.Length > 0)
                 {
                     foreach (var et in PreferLongerEntities(entityTypes))
                     {
@@ -276,7 +276,7 @@ namespace Catalyst
         /// Attempts to find the end of an entity marked by an initial token with EntityType.Tag == EntityTag.Begin. 
         /// Will return the first longest possible match for a given [Begin] token.
         /// </summary>
-        private (int index, EntityType entityType, float lowestTokenFrequency) FindEntityEnd(int tokenCount, int currentIndex, float tokenFrequency, IReadOnlyList<EntityType> entityTypes)
+        private (int index, EntityType entityType, float lowestTokenFrequency) FindEntityEnd(int tokenCount, int currentIndex, float tokenFrequency, EntityType[] entityTypes)
         {
             EntityType longestEntityType = default;
             int finalIndex = -1;

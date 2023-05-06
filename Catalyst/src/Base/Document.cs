@@ -141,10 +141,9 @@ namespace Catalyst
 
         internal void SetTokenHead(int spanIndex, int tokenIndex, int head)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData [tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
             tmp.Head = head;
-            spanData[tokenIndex] = tmp;
+            TokensData[spanIndex][tokenIndex] = tmp;
         }
 
         internal string GetTokenDependencyType(int spanIndex, int tokenIndex)
@@ -154,10 +153,9 @@ namespace Catalyst
 
         internal void SetTokenDependencyType(int spanIndex, int tokenIndex, string type)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData[tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
             tmp.DependencyType = type;
-            spanData[tokenIndex] = tmp;
+            TokensData[spanIndex][tokenIndex] = tmp;
         }
 
         internal float GetTokenFrequency(int spanIndex, int tokenIndex)
@@ -257,13 +255,13 @@ namespace Catalyst
             return Value.AsSpan().Slice(span[0], span[1] - span[0] + 1);
         }
 
-        internal IReadOnlyList<EntityType> GetTokenEntityTypes(int tokenIndex, int spanIndex)
+        internal EntityType[] GetTokenEntityTypes(int tokenIndex, int spanIndex)
         {
             long ix = GetTokenIndex(spanIndex, tokenIndex);
             List<EntityType> entityList;
             if (EntityData is object && EntityData.TryGetValue(ix, out entityList))
             {
-                return entityList;
+                return entityList.ToArray();
             }
             else
             {
@@ -350,28 +348,25 @@ namespace Catalyst
 
         internal void SetTokenTag(int tokenIndex, int spanIndex, PartOfSpeech tag)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData[tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
             tmp.Tag = tag;
-            spanData[tokenIndex] = tmp;
+            TokensData[spanIndex][tokenIndex] = tmp;
         }
 
         internal int GetTokenHash(int tokenIndex, int spanIndex)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData[tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
 
-            if (tmp.Hash == 0) { tmp.Hash = GetTokenValueAsSpan(tokenIndex, spanIndex).CaseSensitiveHash32(); spanData[tokenIndex] = tmp; }
+            if (tmp.Hash == 0) { tmp.Hash = GetTokenValueAsSpan(tokenIndex, spanIndex).CaseSensitiveHash32(); TokensData[spanIndex][tokenIndex] = tmp; }
 
             return tmp.Hash;
         }
 
         internal int GetTokenIgnoreCaseHash(int tokenIndex, int spanIndex)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData[tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
 
-            if (tmp.IgnoreCaseHash == 0) { tmp.IgnoreCaseHash = GetTokenValueAsSpan(tokenIndex, spanIndex).IgnoreCaseHash32(); spanData[tokenIndex] = tmp; }
+            if (tmp.IgnoreCaseHash == 0) { tmp.IgnoreCaseHash = GetTokenValueAsSpan(tokenIndex, spanIndex).IgnoreCaseHash32(); TokensData[spanIndex][tokenIndex] = tmp; }
 
             return tmp.IgnoreCaseHash;
         }
@@ -396,10 +391,9 @@ namespace Catalyst
 
         internal void SetTokenReplacement(int tokenIndex, int spanIndex, string value)
         {
-            var spanData = TokensData[spanIndex];
-            var tmp = spanData[tokenIndex];
+            var tmp = TokensData[spanIndex][tokenIndex];
             tmp.Replacement = value;
-            spanData[tokenIndex] = tmp;
+            TokensData[spanIndex][tokenIndex] = tmp;
         }
 
         internal bool TokenHasReplacement(int tokenIndex, int spanIndex)

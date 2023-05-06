@@ -84,7 +84,7 @@ namespace Catalyst
 
         public PartOfSpeech POS { get { return _posOverride ?? Parent.GetTokenTag(_index, SpanIndex); } set { if (_posOverride.HasValue) { throw new InvalidOperationException("Can't write when overloaded"); }  else { Parent.SetTokenTag(_index, SpanIndex, value); } } }
 
-        public IReadOnlyList<EntityType> EntityTypes { get { return Parent.GetTokenEntityTypes(_index, SpanIndex); } }
+        public EntityType[] EntityTypes { get { return Parent.GetTokenEntityTypes(_index, SpanIndex); } }
 
         public void AddEntityType(EntityType entityType) => Parent.AddEntityTypeToToken(_index, SpanIndex, entityType);
 

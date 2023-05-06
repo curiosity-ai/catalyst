@@ -116,7 +116,7 @@ namespace Catalyst
 
         public PartOfSpeech POS { get => PartOfSpeech.X; set => throw new NotImplementedException(); }
 
-        public IReadOnlyList<EntityType> EntityTypes => new EntityType[] { EntityType };
+        public EntityType[] EntityTypes => new EntityType[] { EntityType };
 
         public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
