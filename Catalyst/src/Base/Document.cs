@@ -404,21 +404,24 @@ namespace Catalyst
 
         internal bool TokenHasReplacement(int tokenIndex, int spanIndex)
         {
-            return (TokensData[spanIndex][tokenIndex].Replacement is object);
+            return TokensData[spanIndex][tokenIndex].Replacement is object;
         }
 
         internal string GetTokenValue(int index, int spanIndex)
         {
-            int b = TokensData[spanIndex][index].LowerBound;
-            int e = TokensData[spanIndex][index].UpperBound;
+            var td = TokensData[spanIndex][index];
+
+            int b = td.LowerBound;
+            int e = td.UpperBound;
             return Value.Substring(b, e - b + 1);
         }
 
         internal ReadOnlySpan<char> GetTokenValueAsSpan(int index, int spanIndex)
         {
-            int b = TokensData[spanIndex][index].LowerBound;
-            int e = TokensData[spanIndex][index].UpperBound;
-            return Value.AsSpan().Slice(b, e - b + 1);
+            var td = TokensData[spanIndex][index];
+            int b = td.LowerBound;
+            int e = td.UpperBound;
+            return Value.AsSpan(b, e - b + 1);
         }
 
         internal Dictionary<string, string> GetTokenMetadata(int tokenIndex, int spanIndex)
@@ -426,8 +429,8 @@ namespace Catalyst
             if (TokenMetadata is null) { TokenMetadata = new Dictionary<long, Dictionary<string, string>>(); }
 
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            Dictionary<string, string> dict;
-            if (TokenMetadata.TryGetValue(ix, out dict))
+            
+            if (TokenMetadata.TryGetValue(ix, out var dict))
             {
                 return dict;
             }
