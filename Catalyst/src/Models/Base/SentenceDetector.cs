@@ -54,7 +54,7 @@ namespace Catalyst.Models
                 return; //Document has already been tokenized and passed to the sentence detection, so ignore the second call
             }
 
-            var rentedTokens = document.Spans.First().GetRentedTokensStructArray(out var actualLength);
+            var rentedTokens = document.Spans.First().ToTokenSpanPolled(out var actualLength);
             var tokens = rentedTokens.AsSpan(0, actualLength);
 
             if (tokens.Length == 0) 

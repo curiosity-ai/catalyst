@@ -146,8 +146,10 @@ namespace Catalyst.Models
                 var customSimpleSpecialCases = _customSimpleSpecialCases;
                 var baseSpecialCases = _baseSpecialCases;
 
-                //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
-                var separators = CharacterClasses.WhitespacesAndBracketsCharacters;
+                //TODO: Finish conversion to tokenize also on BracketsCharacters
+
+                //var separators = CharacterClasses.WhitespacesAndBracketsCharacters;
+                var separators = CharacterClasses.WhitespaceCharacters;
                 var textSpan = span.ValueAsSpan;
 
                 bool hasEmoji = false;
@@ -186,8 +188,30 @@ namespace Catalyst.Models
                     offset += sufix_offset;
                     sufix_offset = 0;
                     if (offset > textSpan.Length) { break; }
+                    
                     var splitPoint = textSpan.IndexOfAny(separators, offset);
+
                     ReadOnlySpan<char> candidate;
+
+                    //TODO: Finish conversion to tokenize also on BracketsCharacters
+                    //if (splitPoint >= 0)
+                    //{
+                    //    var c = textSpan[splitPoint];
+                    //    switch (c)
+                    //    {
+                    //        case '(':
+                    //        case ')':
+                    //        case '[':
+                    //        case ']':
+                    //        case '{':
+                    //        case '}':
+                    //        {
+                    //            AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint, SplitPointReason.Parenthesis);
+                    //            offset++; continue;
+                    //        }
+                    //    }
+                    //}
+
 
                     if (splitPoint == offset)
                     {
@@ -580,7 +604,7 @@ namespace Catalyst.Models
             }
         }
 
-        private static SplitPointSorter _splitPointSorter = new();
+        private static readonly SplitPointSorter _splitPointSorter = new();
         private sealed class SplitPointSorter : IComparer<SplitPoint>
         {
             public int Compare(SplitPoint x, SplitPoint y)

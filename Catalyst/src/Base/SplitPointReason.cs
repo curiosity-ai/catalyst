@@ -10,6 +10,7 @@
         EmailOrUrl,
         Exception,
         Punctuation,
-        Emoji
+        Emoji,
+        Parenthesis
     }
 }
