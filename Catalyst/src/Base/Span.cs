@@ -83,20 +83,18 @@ namespace Catalyst
             }
         }
 
-        internal Token[] TokensStructArray
+        internal Token[] GetRentedTokensStructArray(out int actualLength)
         {
-            get
+            var sd = Parent.TokensData[Index];
+            int count = sd.Count;
+            var tokens = ArrayPool<Token>.Shared.Rent(count);
+            for (int i = 0; i < count; i++)
             {
-                var sd = Parent.TokensData[Index];
-                int count = sd.Count;
-                var tokens = new Token[count];
-                for (int i = 0; i < count; i++)
-                {
-                    var td = sd[i];
-                    tokens[i] = new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
-                }
-                return tokens;
+                var td = sd[i];
+                tokens[i] = new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
             }
+            actualLength = count;
+            return tokens;
         }
 
         public IToken AddToken(int begin, int end)

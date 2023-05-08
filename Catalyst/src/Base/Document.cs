@@ -112,9 +112,10 @@ namespace Catalyst
             {
                 throw new InvalidOperationException();
             }
+
             int index = TokensData[spanIndex].Count;
 
-            TokensData[spanIndex].Add(new TokenData(new int[] { begin, end }));
+            TokensData[spanIndex].Add(new TokenData(begin, end));
 
             return new Token(this, index, spanIndex, hasReplacement: false, begin, end);
         }
