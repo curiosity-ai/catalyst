@@ -112,17 +112,18 @@ namespace Catalyst
             {
                 throw new InvalidOperationException();
             }
+            var sd = TokensData[spanIndex];
+            int index = sd.Count;
 
-            int index = TokensData[spanIndex].Count;
-
-            TokensData[spanIndex].Add(new TokenData(begin, end));
+            sd.Add(new TokenData(begin, end));
 
             return new Token(this, index, spanIndex, hasReplacement: false, begin, end);
         }
 
         internal void ReserveTokens(int spanIndex, int expectedTokenCount)
         {
-            TokensData[spanIndex].Capacity = Math.Max(1, Math.Max(TokensData[spanIndex].Capacity, expectedTokenCount));
+            var sd = TokensData[spanIndex];
+            sd.Capacity = Math.Max(1, Math.Max(sd.Capacity, expectedTokenCount));
         }
 
         public List<IToken> ToTokenList()
