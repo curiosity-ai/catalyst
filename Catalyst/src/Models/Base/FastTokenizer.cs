@@ -369,7 +369,10 @@ namespace Catalyst.Models
 
 #if NET5_0_OR_GREATER
                 var sortedSplitPoints = splitPoints.AsSpan(0, splitPointsCount);
-                System.MemoryExtensions.Sort(sortedSplitPoints , _splitPointSorter);
+                if(splitPointsCount > 0)
+                {
+                    System.MemoryExtensions.Sort(sortedSplitPoints , _splitPointSorter);
+                }
 #else
                 var sortedSplitPoints = new List<SplitPoint>(splitPointsCount);
                 foreach(var sp in splitPoints.AsSpan(0, splitPointsCount))
@@ -464,7 +467,14 @@ namespace Catalyst.Models
         {
             if (splitPoints.Length == splitPointsCount)
             {
-                Array.Resize(ref splitPoints, 2 * splitPoints.Length);
+                if(splitPoints.Length == 0) 
+                {
+                    Array.Resize(ref splitPoints, 4);
+                }
+                else
+                {
+                    Array.Resize(ref splitPoints, 2 * splitPoints.Length);
+                }
             }
             
             splitPoints[splitPointsCount] = new SplitPoint(start, end, reason);
