@@ -162,7 +162,8 @@ namespace Catalyst.Models
                     }
                 }
 
-                var splitPoints = ArrayPool<SplitPoint>.Shared.Rent(textSpan.Length / 4);
+                var rentedSplitPoints = ArrayPool<SplitPoint>.Shared.Rent(textSpan.Length / 4);
+                var splitPoints = rentedSplitPoints;
 
                 var splitPointsCount = 0;
                 var infixLocation = new List<(int index, int length)>();
@@ -451,7 +452,7 @@ namespace Catalyst.Models
                     }
                 }
                 
-                ArrayPool<SplitPoint>.Shared.Return(splitPoints);
+                ArrayPool<SplitPoint>.Shared.Return(rentedSplitPoints);
             }
             finally
             {
