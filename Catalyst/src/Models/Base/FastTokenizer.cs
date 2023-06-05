@@ -459,14 +459,16 @@ namespace Catalyst.Models
                 }
                 else if (s.Length > 2)
                 {
-                    int c = 0, u = 0, l = 0; // Count the number of dots and upper case
+                    int c = 0, u = 0, l = 0, n = 0; // Count the number of dots, upper case and numbers
                     for (int i = 0; i < s.Length; i++)
                     {
                         if (s[i] == '.') c++;
                         else if (char.IsUpper(s[i])) u++;
                         else if (char.IsLower(s[i])) l++;
+                        else if (char.IsDigit(s[i])) n++;
                     }
                     if (u == 1 && c == 1 && l < 3) { return (-1, 0); } // Handles abbreviations on the form of Ul. or Ull.
+                    if (n > u)     { return (s.Length - 1, 1); }
                     if (u > c + 1) { return (s.Length - 1, 1); }
                 }
             }
