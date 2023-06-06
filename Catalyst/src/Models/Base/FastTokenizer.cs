@@ -532,7 +532,7 @@ namespace Catalyst.Models
                         else if (char.IsLower(s[i])) l++;
                         else if (char.IsDigit(s[i])) n++;
                     }
-                    if (u == 1 && c == 1 && l < 3) { return (-1, 0); } // Handles abbreviations on the form of Ul. or Ull.
+                    if (u == 1 && c == 1 && l < 3 && n == 0) { return (-1, 0); } // Handles abbreviations on the form of Ul. or Ull.
                     if (n > u)     { return (s.Length - 1, 1); }
                     if (u > c + 1) { return (s.Length - 1, 1); }
                 }
