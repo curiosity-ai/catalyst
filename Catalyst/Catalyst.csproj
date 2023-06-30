@@ -27,10 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.43" />
-    <PackageReference Include="Microsoft.ML" Version="1.7.1" />
-    <PackageReference Include="MessagePack" Version="2.4.35" />
-    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.4" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.48" />
+    <PackageReference Include="Microsoft.ML" Version="2.0.1" />
+    <PackageReference Include="MessagePack" Version="2.5.124" />
+    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.8" />
     <PackageReference Include="Mosaik.Core" Version="0.0.23249" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
