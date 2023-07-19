@@ -1,6 +1,7 @@
 ﻿using Mosaik.Core;
 using Newtonsoft.Json;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,22 +80,6 @@ namespace Catalyst
                     var td = sd[i];
                     yield return new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
                 }
-            }
-        }
-
-        internal Token[] TokensStructArray
-        {
-            get
-            {
-                var sd = Parent.TokensData[Index];
-                int count = sd.Count;
-                var tokens = new Token[count];
-                for (int i = 0; i < count; i++)
-                {
-                    var td = sd[i];
-                    tokens[i] = new Token(Parent, i, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
-                }
-                return tokens;
             }
         }
 
@@ -242,7 +227,7 @@ namespace Catalyst
             {
                 var token = this[i];
                 var entityTypes = token.EntityTypes;
-                if (entityTypes.Length > 0)
+                if (entityTypes.Count > 0)
                 {
                     foreach (var et in PreferLongerEntities(entityTypes))
                     {
@@ -275,7 +260,7 @@ namespace Catalyst
         /// Attempts to find the end of an entity marked by an initial token with EntityType.Tag == EntityTag.Begin. 
         /// Will return the first longest possible match for a given [Begin] token.
         /// </summary>
-        private (int index, EntityType entityType, float lowestTokenFrequency) FindEntityEnd(int tokenCount, int currentIndex, float tokenFrequency, EntityType[] entityTypes)
+        private (int index, EntityType entityType, float lowestTokenFrequency) FindEntityEnd(int tokenCount, int currentIndex, float tokenFrequency, IReadOnlyList<EntityType> entityTypes)
         {
             EntityType longestEntityType = default;
             int finalIndex = -1;
@@ -324,16 +309,21 @@ namespace Catalyst
             return entityTypes.OrderBy(et => (char)et.Tag);
         }
 
-        public Span<Token> ToTokenSpan()
+        public Token[] ToTokenSpanPolled(out int actualLength)
         {
             var tkc = TokensCount;
-            var tokens = new Token[tkc];
+            actualLength = tkc;
+            
+            var tokens = ArrayPool<Token>.Shared.Rent(tkc);
+            
             var sd = Parent.TokensData[Index];
+            
             for (int i = 0; i < tkc; i++)
             {
                 var td = sd[i];
                 tokens[i] = new Token(Parent, i, Index, td.Replacement is object, td.LowerBound, td.UpperBound);
             }
+
             return tokens;
         }
     }

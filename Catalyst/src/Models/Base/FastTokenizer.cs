@@ -6,11 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Buffers;
 
 namespace Catalyst.Models
 {
     [FormerName("Mosaik.NLU.Models", "SimpleTokenizer")]
-    public class FastTokenizer : ITokenizer, IProcess
+    public class FastTokenizer : ITokenizer, IProcess, ICanOptimizeMemory
     {
         public static bool DisableEmailOrURLCapture { get; set; } = false;
         
@@ -23,6 +24,7 @@ namespace Catalyst.Models
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
+        private HashSet<int> _customSimpleSpecialCases;
         private ReaderWriterLockSlim _lockSpecialCases = new();
 
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
@@ -98,6 +100,24 @@ namespace Catalyst.Models
                     _lockSpecialCases.ExitWriteLock();
                 }
             }
+
+            if (process is IHasSimpleSpecialCases simpleCases)
+            {
+                _lockSpecialCases.EnterWriteLock();
+                try
+                {
+
+                    _customSimpleSpecialCases ??= new();
+                    foreach (var sc in simpleCases.GetSimpleSpecialCases())
+                    {
+                        _customSimpleSpecialCases.Add(sc);
+                    }
+                }
+                finally
+                {
+                    _lockSpecialCases.ExitWriteLock();
+                }
+            }
         }
 
         public void AddSpecialCase(string word, TokenizationException exception)
@@ -122,12 +142,14 @@ namespace Catalyst.Models
             _lockSpecialCases.EnterReadLock();
             try
             {
-
                 var customSpecialCases = _customSpecialCases;
+                var customSimpleSpecialCases = _customSimpleSpecialCases;
                 var baseSpecialCases = _baseSpecialCases;
 
-                //TODO: store if a splitpoint is special case, do not try to fetch hash if not!
-                var separators = CharacterClasses.WhitespacesAndBracketsCharacters;
+                //TODO: Finish conversion to tokenize also on BracketsCharacters
+
+                //var separators = CharacterClasses.WhitespacesAndBracketsCharacters;
+                var separators = CharacterClasses.WhitespaceCharacters;
                 var textSpan = span.ValueAsSpan;
 
                 bool hasEmoji = false;
@@ -140,14 +162,17 @@ namespace Catalyst.Models
                     }
                 }
 
-                var splitPoints = new List<SplitPoint>(textSpan.Length / 4);
+                var rentedSplitPoints = ArrayPool<SplitPoint>.Shared.Rent(textSpan.Length / 4);
+                var splitPoints = rentedSplitPoints;
+
+                var splitPointsCount = 0;
                 var infixLocation = new List<(int index, int length)>();
 
                 int offset = 0, sufix_offset = 0;
                 int checkEvery = 0;
                 while (true)
                 {
-                    if (splitPoints.Count > textSpan.Length)
+                    if (splitPointsCount > textSpan.Length)
                     {
                         throw new InvalidOperationException(); //If we found more splitting points than actual characters on the span, we hit a bug in the tokenizer
                     }
@@ -164,8 +189,30 @@ namespace Catalyst.Models
                     offset += sufix_offset;
                     sufix_offset = 0;
                     if (offset > textSpan.Length) { break; }
+                    
                     var splitPoint = textSpan.IndexOfAny(separators, offset);
+
                     ReadOnlySpan<char> candidate;
+
+                    //TODO: Finish conversion to tokenize also on BracketsCharacters
+                    //if (splitPoint >= 0)
+                    //{
+                    //    var c = textSpan[splitPoint];
+                    //    switch (c)
+                    //    {
+                    //        case '(':
+                    //        case ')':
+                    //        case '[':
+                    //        case ']':
+                    //        case '{':
+                    //        case '}':
+                    //        {
+                    //            AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint, SplitPointReason.Parenthesis);
+                    //            offset++; continue;
+                    //        }
+                    //    }
+                    //}
+
 
                     if (splitPoint == offset)
                     {
@@ -209,23 +256,25 @@ namespace Catalyst.Models
                     while (!candidate.IsEmpty)
                     {
                         int hash = candidate.CaseSensitiveHash32();
-                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) || baseSpecialCases.ContainsKey(hash))
+                        if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) ||
+                            (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                            || baseSpecialCases.ContainsKey(hash))
                         {
-                            splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Exception));
+                            AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint - 1, SplitPointReason.Exception);
                             candidate = new ReadOnlySpan<char>();
                             offset = splitPoint + 1;
                             continue;
                         }
                         else if (candidate.IsLikeURLorEmail())
                         {
-                            splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.EmailOrUrl));
+                            AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint - 1, SplitPointReason.EmailOrUrl);
                             candidate = new ReadOnlySpan<char>();
                             offset = splitPoint + 1;
                             continue;
                         }
                         else if (hasEmoji && candidate.IsEmoji(out var emojiLength))
                         {
-                            splitPoints.Add(new SplitPoint(offset, offset + emojiLength - 1, SplitPointReason.Emoji));
+                            AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, offset + emojiLength - 1, SplitPointReason.Emoji);
                             candidate = candidate.Slice(emojiLength);
                             offset += emojiLength;
                             continue;
@@ -234,7 +283,7 @@ namespace Catalyst.Models
                         {
                             if (candidate.Length == 1)
                             {
-                                splitPoints.Add(new SplitPoint(offset, offset, SplitPointReason.SingleChar));
+                                AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, offset, SplitPointReason.SingleChar);
                                 candidate = new ReadOnlySpan<char>();
                                 offset = splitPoint + 1;
                                 continue;
@@ -244,7 +293,7 @@ namespace Catalyst.Models
                             {
                                 if (candidate.IsSentencePunctuation() || candidate.IsHyphen() || candidate.IsSymbol())
                                 {
-                                    splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Punctuation));
+                                    AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint - 1, SplitPointReason.Punctuation);
                                     candidate = new ReadOnlySpan<char>();
                                     offset = splitPoint + 1;
                                     continue;
@@ -253,7 +302,7 @@ namespace Catalyst.Models
                                 int prefixLocation = FindPrefix(candidate);
                                 if (prefixLocation >= 0)
                                 {
-                                    splitPoints.Add(new SplitPoint(offset + prefixLocation, offset + prefixLocation, SplitPointReason.Prefix));
+                                    AddSplitPoint(ref splitPoints, ref splitPointsCount, offset + prefixLocation, offset + prefixLocation, SplitPointReason.Prefix);
                                     candidate = candidate.Slice(prefixLocation + 1);
                                     offset += prefixLocation + 1;
                                     continue;
@@ -263,7 +312,7 @@ namespace Catalyst.Models
 
                                 if (sufixIndex > -1)
                                 {
-                                    splitPoints.Add(new SplitPoint(offset + sufixIndex, offset + sufixIndex + sufixLength - 1, SplitPointReason.Sufix));
+                                    AddSplitPoint(ref splitPoints, ref splitPointsCount, offset + sufixIndex, offset + sufixIndex + sufixLength - 1, SplitPointReason.Sufix);
                                     candidate = candidate.Slice(0, sufixIndex);
                                     splitPoint = offset + sufixIndex;
                                     sufix_offset += sufixLength;
@@ -279,7 +328,7 @@ namespace Catalyst.Models
                                     {
                                         if ((offset + index - 1) >= in_offset)
                                         {
-                                            splitPoints.Add(new SplitPoint(in_offset, offset + index - 1, SplitPointReason.Infix));
+                                            AddSplitPoint(ref splitPoints, ref splitPointsCount, in_offset, offset + index - 1, SplitPointReason.Infix);
                                         }
 
                                         //Test if the remaining is not an exception first
@@ -288,14 +337,16 @@ namespace Catalyst.Models
                                             var rest = candidate.Slice(in_offset - offset + index);
                                             int hashRest = rest.CaseSensitiveHash32();
 
-                                            if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) || baseSpecialCases.ContainsKey(hashRest))
+                                            if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) ||
+                                                (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hashRest)) || 
+                                                baseSpecialCases.ContainsKey(hashRest))
                                             {
                                                 in_offset = offset + index;
                                                 break;
                                             }
                                         }
                                         in_offset = offset + index + length;
-                                        splitPoints.Add(new SplitPoint(offset + index, offset + index + length - 1, SplitPointReason.Infix));
+                                        AddSplitPoint(ref splitPoints, ref splitPointsCount, offset + index, offset + index + length - 1, SplitPointReason.Infix);
                                     }
 
                                     candidate = candidate.Slice(in_offset - offset);
@@ -306,7 +357,7 @@ namespace Catalyst.Models
                             }
                         }
 
-                        splitPoints.Add(new SplitPoint(offset, splitPoint - 1, SplitPointReason.Normal));
+                        AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint - 1, SplitPointReason.Normal);
                         candidate = new ReadOnlySpan<char>();
                         offset = splitPoint + 1;
                     }
@@ -314,9 +365,25 @@ namespace Catalyst.Models
 
                 int spanBegin = span.Begin;
                 int pB = int.MinValue, pE = int.MinValue;
-                span.ReserveTokens(splitPoints.Count);
-                splitPoints.Sort(_splitPointSorter);
-                foreach (var sp in splitPoints)
+                span.ReserveTokens(splitPointsCount);
+
+#if NET5_0_OR_GREATER
+                var sortedSplitPoints = splitPoints.AsSpan(0, splitPointsCount);
+                if(splitPointsCount > 0)
+                {
+                    System.MemoryExtensions.Sort(sortedSplitPoints , _splitPointSorter);
+                }
+#else
+                var sortedSplitPoints = new List<SplitPoint>(splitPointsCount);
+                foreach(var sp in splitPoints.AsSpan(0, splitPointsCount))
+                {
+                    sortedSplitPoints.Add(sp);
+                }
+
+                sortedSplitPoints.Sort(_splitPointSorter);
+#endif
+
+                foreach (var sp in sortedSplitPoints)
                 {
                     if (checkEvery++ % 1024 == 0)
                     {
@@ -354,7 +421,11 @@ namespace Catalyst.Models
                         continue;
                     }
 
-                    if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
+                    if (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                    {
+                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                    }
+                    else if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
                     {
                         if (exp.Replacements is null)
                         {
@@ -383,11 +454,32 @@ namespace Catalyst.Models
                         }
                     }
                 }
+                
+                ArrayPool<SplitPoint>.Shared.Return(rentedSplitPoints);
             }
             finally
             {
                 _lockSpecialCases.ExitReadLock();
             }
+        }
+
+        private void AddSplitPoint(ref SplitPoint[] splitPoints, ref int splitPointsCount, int start, int end, SplitPointReason reason)
+        {
+            if (splitPoints.Length == splitPointsCount)
+            {
+                if(splitPoints.Length == 0) 
+                {
+                    Array.Resize(ref splitPoints, 4);
+                }
+                else
+                {
+                    Array.Resize(ref splitPoints, 2 * splitPoints.Length);
+                }
+            }
+            
+            splitPoints[splitPointsCount] = new SplitPoint(start, end, reason);
+            
+            splitPointsCount++;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -432,14 +524,16 @@ namespace Catalyst.Models
                 }
                 else if (s.Length > 2)
                 {
-                    int c = 0, u = 0, l = 0; // Count the number of dots and upper case
+                    int c = 0, u = 0, l = 0, n = 0; // Count the number of dots, upper case and numbers
                     for (int i = 0; i < s.Length; i++)
                     {
                         if (s[i] == '.') c++;
                         else if (char.IsUpper(s[i])) u++;
                         else if (char.IsLower(s[i])) l++;
+                        else if (char.IsDigit(s[i])) n++;
                     }
-                    if (u == 1 && c == 1 && l < 3) { return (-1, 0); } // Handles abbreviations on the form of Ul. or Ull.
+                    if (u == 1 && c == 1 && l < 3 && n == 0) { return (-1, 0); } // Handles abbreviations on the form of Ul. or Ull.
+                    if (n > u)     { return (s.Length - 1, 1); }
                     if (u > c + 1) { return (s.Length - 1, 1); }
                 }
             }
@@ -523,7 +617,7 @@ namespace Catalyst.Models
             }
         }
 
-        private static SplitPointSorter _splitPointSorter = new();
+        private static readonly SplitPointSorter _splitPointSorter = new();
         private sealed class SplitPointSorter : IComparer<SplitPoint>
         {
             public int Compare(SplitPoint x, SplitPoint y)
@@ -611,6 +705,10 @@ namespace Catalyst.Models
             }
         }
 
-
+        public void OptimizeMemory()
+        {
+            _customSimpleSpecialCases?.TrimExcess();
+            _customSpecialCases?.TrimExcess();
+        }
     }
 }

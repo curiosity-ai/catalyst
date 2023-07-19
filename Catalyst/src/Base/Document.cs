@@ -112,16 +112,18 @@ namespace Catalyst
             {
                 throw new InvalidOperationException();
             }
-            int index = TokensData[spanIndex].Count;
+            var sd = TokensData[spanIndex];
+            int index = sd.Count;
 
-            TokensData[spanIndex].Add(new TokenData(new int[] { begin, end }));
+            sd.Add(new TokenData(begin, end));
 
             return new Token(this, index, spanIndex, hasReplacement: false, begin, end);
         }
 
         internal void ReserveTokens(int spanIndex, int expectedTokenCount)
         {
-            TokensData[spanIndex].Capacity = Math.Max(1, Math.Max(TokensData[spanIndex].Capacity, expectedTokenCount));
+            var sd = TokensData[spanIndex];
+            sd.Capacity = Math.Max(1, Math.Max(sd.Capacity, expectedTokenCount));
         }
 
         public List<IToken> ToTokenList()
@@ -141,9 +143,10 @@ namespace Catalyst
 
         internal void SetTokenHead(int spanIndex, int tokenIndex, int head)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData [tokenIndex];
             tmp.Head = head;
-            TokensData[spanIndex][tokenIndex] = tmp;
+            spanData[tokenIndex] = tmp;
         }
 
         internal string GetTokenDependencyType(int spanIndex, int tokenIndex)
@@ -153,9 +156,10 @@ namespace Catalyst
 
         internal void SetTokenDependencyType(int spanIndex, int tokenIndex, string type)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData[tokenIndex];
             tmp.DependencyType = type;
-            TokensData[spanIndex][tokenIndex] = tmp;
+            spanData[tokenIndex] = tmp;
         }
 
         internal float GetTokenFrequency(int spanIndex, int tokenIndex)
@@ -255,13 +259,13 @@ namespace Catalyst
             return Value.AsSpan().Slice(span[0], span[1] - span[0] + 1);
         }
 
-        internal EntityType[] GetTokenEntityTypes(int tokenIndex, int spanIndex)
+        internal IReadOnlyList<EntityType> GetTokenEntityTypes(int tokenIndex, int spanIndex)
         {
             long ix = GetTokenIndex(spanIndex, tokenIndex);
             List<EntityType> entityList;
             if (EntityData is object && EntityData.TryGetValue(ix, out entityList))
             {
-                return entityList.ToArray();
+                return entityList;
             }
             else
             {
@@ -348,25 +352,28 @@ namespace Catalyst
 
         internal void SetTokenTag(int tokenIndex, int spanIndex, PartOfSpeech tag)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData[tokenIndex];
             tmp.Tag = tag;
-            TokensData[spanIndex][tokenIndex] = tmp;
+            spanData[tokenIndex] = tmp;
         }
 
         internal int GetTokenHash(int tokenIndex, int spanIndex)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData[tokenIndex];
 
-            if (tmp.Hash == 0) { tmp.Hash = GetTokenValueAsSpan(tokenIndex, spanIndex).CaseSensitiveHash32(); TokensData[spanIndex][tokenIndex] = tmp; }
+            if (tmp.Hash == 0) { tmp.Hash = GetTokenValueAsSpan(tokenIndex, spanIndex).CaseSensitiveHash32(); spanData[tokenIndex] = tmp; }
 
             return tmp.Hash;
         }
 
         internal int GetTokenIgnoreCaseHash(int tokenIndex, int spanIndex)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData[tokenIndex];
 
-            if (tmp.IgnoreCaseHash == 0) { tmp.IgnoreCaseHash = GetTokenValueAsSpan(tokenIndex, spanIndex).IgnoreCaseHash32(); TokensData[spanIndex][tokenIndex] = tmp; }
+            if (tmp.IgnoreCaseHash == 0) { tmp.IgnoreCaseHash = GetTokenValueAsSpan(tokenIndex, spanIndex).IgnoreCaseHash32(); spanData[tokenIndex] = tmp; }
 
             return tmp.IgnoreCaseHash;
         }
@@ -391,28 +398,32 @@ namespace Catalyst
 
         internal void SetTokenReplacement(int tokenIndex, int spanIndex, string value)
         {
-            var tmp = TokensData[spanIndex][tokenIndex];
+            var spanData = TokensData[spanIndex];
+            var tmp = spanData[tokenIndex];
             tmp.Replacement = value;
-            TokensData[spanIndex][tokenIndex] = tmp;
+            spanData[tokenIndex] = tmp;
         }
 
         internal bool TokenHasReplacement(int tokenIndex, int spanIndex)
         {
-            return (TokensData[spanIndex][tokenIndex].Replacement is object);
+            return TokensData[spanIndex][tokenIndex].Replacement is object;
         }
 
         internal string GetTokenValue(int index, int spanIndex)
         {
-            int b = TokensData[spanIndex][index].LowerBound;
-            int e = TokensData[spanIndex][index].UpperBound;
+            var td = TokensData[spanIndex][index];
+
+            int b = td.LowerBound;
+            int e = td.UpperBound;
             return Value.Substring(b, e - b + 1);
         }
 
         internal ReadOnlySpan<char> GetTokenValueAsSpan(int index, int spanIndex)
         {
-            int b = TokensData[spanIndex][index].LowerBound;
-            int e = TokensData[spanIndex][index].UpperBound;
-            return Value.AsSpan().Slice(b, e - b + 1);
+            var td = TokensData[spanIndex][index];
+            int b = td.LowerBound;
+            int e = td.UpperBound;
+            return Value.AsSpan(b, e - b + 1);
         }
 
         internal Dictionary<string, string> GetTokenMetadata(int tokenIndex, int spanIndex)
@@ -420,8 +431,8 @@ namespace Catalyst
             if (TokenMetadata is null) { TokenMetadata = new Dictionary<long, Dictionary<string, string>>(); }
 
             long ix = GetTokenIndex(spanIndex, tokenIndex);
-            Dictionary<string, string> dict;
-            if (TokenMetadata.TryGetValue(ix, out dict))
+            
+            if (TokenMetadata.TryGetValue(ix, out var dict))
             {
                 return dict;
             }

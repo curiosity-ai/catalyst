@@ -194,24 +194,27 @@ namespace Catalyst.Models
 
         public void Predict(IDocument document, CancellationToken cancellationToken = default)
         {
-            Span<float> ScoreBuffer = stackalloc float[N_POS];
-            Span<int> Features = stackalloc int[N_Features];
+            Span<float> scoreBuffer = stackalloc float[N_POS];
+            Span<int>   features    = stackalloc int[N_Features];
+
             foreach (var span in document)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Predict(span, ScoreBuffer, Features);
+
+                Predict(span, scoreBuffer, features);
             }
         }
 
         public void Predict(Span span)
         {
-            Span<float> ScoreBuffer = stackalloc float[N_POS];
-            Span<int> Features = stackalloc int[N_Features];
-            Predict(span, ScoreBuffer, Features);
+            Span<float> scoreBuffer = stackalloc float[N_POS];
+            Span<int>   features    = stackalloc int[N_Features];
+
+            Predict(span, scoreBuffer, features);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Predict(Span span, Span<float> ScoreBuffer, Span<int> features)
+        private void Predict(Span span, Span<float> scoreBuffer, Span<int> features)
         {
             Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = (int)PartOfSpeech.NONE; int prev2Tag = (int)PartOfSpeech.NONE; int currTag = (int)PartOfSpeech.NONE;
@@ -219,6 +222,8 @@ namespace Catalyst.Models
             int i = 0;
 
             var en = span.GetStructEnumerator();
+            
+            var tokenToSingleTag = Data.TokenToSingleTag;
 
             while (!next.IsEndToken)
             {
@@ -227,13 +232,14 @@ namespace Catalyst.Models
 
                 if (!curr.IsBeginToken)
                 {
-                    if (!Data.TokenToSingleTag.TryGetValue(curr.IgnoreCaseHash, out int tag))
+                    if (!tokenToSingleTag.TryGetValue(curr.IgnoreCaseHash, out int tag))
                     {
                         GetFeatures(features, curr, prev, prev2, next, next2, prevTag, prev2Tag);
-                        tag = PredictTagFromFeatures(features, ScoreBuffer);
+                        tag = PredictTagFromFeatures(features, scoreBuffer);
                     }
+
                     span.SetTokenTag(i, (PartOfSpeech)tag);
-                    currTag = (int)tag;
+                    currTag = tag;
                     i++;
                 }
             }
@@ -280,11 +286,11 @@ namespace Catalyst.Models
         {
             bool first = true;
 
-            if (Data.WeightsHolder is object)
+            if (Data.WeightsHolder is WeightsHolder wh)
             {
                 for (int i = 0; i < features.Length; i++)
                 {
-                    if (Data.WeightsHolder.TryGetValue(features[i], out var weights))
+                    if (wh.TryGetValue(features[i], out var weights))
                     {
                         if (first)
                         {
@@ -303,9 +309,10 @@ namespace Catalyst.Models
             }
             else
             {
+                var weightsDict = Data.Weights;
                 for (int i = 0; i < features.Length; i++)
                 {
-                    if (Data.Weights.TryGetValue(features[i], out float[] weights))
+                    if (weightsDict.TryGetValue(features[i], out float[] weights))
                     {
                         if (first)
                         {
@@ -324,6 +331,7 @@ namespace Catalyst.Models
             }
 
             var best = scoreBuffer[0]; int index = 0;
+
             for (int i = 1; i < scoreBuffer.Length; i++)
             {
                 if (scoreBuffer[i] > best) { best = scoreBuffer[i]; index = i; }

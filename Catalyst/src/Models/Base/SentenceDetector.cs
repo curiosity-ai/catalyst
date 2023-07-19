@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.InteropServices;
-
+using System.Buffers;
 
 namespace Catalyst.Models
 {
@@ -49,25 +49,34 @@ namespace Catalyst.Models
         {
             if (document.Length == 0) { return; }
 
-            if (document.Spans.Count() != 1)
+            if (document.SpansCount != 1)
             {
                 return; //Document has already been tokenized and passed to the sentence detection, so ignore the second call
             }
 
-            var tokens = document.Spans.First().TokensStructArray;
+            var rentedTokens = document.Spans.First().ToTokenSpanPolled(out var actualLength);
+            var tokens = rentedTokens.AsSpan(0, actualLength);
 
-            Span<int> tokensBegins = tokens.Length < 256 ? stackalloc int[tokens.Length] : new int[tokens.Length];
-            Span<int> tokensEnds = tokens.Length < 256 ? stackalloc int[tokens.Length] : new int[tokens.Length];
+            if (tokens.Length == 0) 
+            {
+                ArrayPool<Token>.Shared.Return(rentedTokens);
+                return; 
+            }
+
+            int[] rentedBegins = tokens.Length < 256 ? null : ArrayPool<int>.Shared.Rent(tokens.Length);
+            int[] rentedEnds   = tokens.Length < 256 ? null : ArrayPool<int>.Shared.Rent(tokens.Length);
+
+            Span<int> tokensBegins = tokens.Length < 256 ? stackalloc int[tokens.Length] : rentedBegins.AsSpan(0,tokens.Length);
+            Span<int> tokensEnds   = tokens.Length < 256 ? stackalloc int[tokens.Length] : rentedEnds.AsSpan(0, tokens.Length);
 
             for (int i = 0; i < tokens.Length; i++)
             {
                 tokensBegins[i] = tokens[i].Begin;
-                tokensEnds[i] = tokens[i].End;
+                tokensEnds[i]   = tokens[i].End;
             }
 
-            if (tokens.Length == 0) { return; }
-
             bool hasReplacements = false;
+            
             //NOTE: This loop is not used for anything here, but instead to force tokens to cache the replacement
             //      As they'll not be able to retrieve it later when re-added to the document.
             for (int i = 0; i < tokens.Length; i++)
@@ -81,7 +90,8 @@ namespace Catalyst.Models
 
             int N = tokens.Length + 2 * padding;
 
-            var paddedTokens = new Token[N];
+            var rentedPaddedTokens = ArrayPool<Token>.Shared.Rent(N);
+            var paddedTokens = rentedPaddedTokens.AsSpan(0,N);
 
             paddedTokens[0] = Token.BeginToken;
             paddedTokens[1] = Token.BeginToken;
@@ -94,13 +104,17 @@ namespace Catalyst.Models
             paddedTokens[paddedTokens.Length - 2] = Token.EndToken;
             paddedTokens[paddedTokens.Length - 1] = Token.EndToken;
 
+            var rentedIsSentenceEnd = ArrayPool<bool>.Shared.Rent(N);
 
-            var isSentenceEnd = new bool[N];
+            var isSentenceEnd = rentedIsSentenceEnd.AsSpan(0, N);
+
+            Span<int> features = stackalloc int[27];
+
             for (int i = padding + 1; i < N - padding - 1; i++) //Skip BeginTokens and EndTokens, and first and last token of sentence
             {
                 if (paddedTokens[i].ValueAsSpan.IsSentencePunctuation())
                 {
-                    var features = GetFeatures(paddedTokens, i);
+                    GetFeatures(paddedTokens, i, features);
                     isSentenceEnd[i] = PredictTagFromFeatures(features, Data.Weights);
                 }
                 cancellationToken.ThrowIfCancellationRequested();
@@ -111,7 +125,7 @@ namespace Catalyst.Models
             //Now split the original document at the right places
             
             //If any sentence detected within the single span (i.e. ignoring the first and last tokens
-            if (isSentenceEnd.AsSpan().Slice(padding + 1, tokens.Length - 1).IndexOf(true) >= 0)
+            if (isSentenceEnd.Slice(padding + 1, tokens.Length - 1).IndexOf(true) >= 0)
             {
                 int offset = 0;
                 int lastBegin = 0;
@@ -223,6 +237,16 @@ namespace Catalyst.Models
                     }
                 }
             }
+
+            if (rentedBegins is object)
+            {
+                ArrayPool<int>.Shared.Return(rentedBegins);
+                ArrayPool<int>.Shared.Return(rentedEnds);
+            }
+
+            ArrayPool<bool>.Shared.Return(rentedIsSentenceEnd);
+            ArrayPool<Token>.Shared.Return(rentedTokens);
+            ArrayPool<Token>.Shared.Return(rentedPaddedTokens);
         }
 
         public IEnumerable<IToken> SentenceDetectorTokenizer(string input)
@@ -355,9 +379,11 @@ namespace Catalyst.Models
                 TrainingTokenMemory[i] = Token.Fake(sentenceTokensWithPadding[i]);
             }
 
+            Span<int> features = stackalloc int[27];
+
             for (int i = padding; i < N - padding; i++) //Skip BeginTokens and EndTokens
             {
-                var features = GetFeatures(TrainingTokenMemory, i);
+                GetFeatures(TrainingTokenMemory, i, features);
                 TrainingGuessMemory[i] = PredictTagFromFeatures(features, Data.Weights);
                 UpdateModel(IsSentenceEnd[i], TrainingGuessMemory[i], features);
                 if (IsSentenceEnd[i] && IsSentenceEnd[i] == TrainingGuessMemory[i]) { correct++; }
@@ -366,7 +392,7 @@ namespace Catalyst.Models
             return correct;
         }
 
-        private void UpdateModel(bool correctTag, bool predictedTag, int[] features)
+        private void UpdateModel(bool correctTag, bool predictedTag, ReadOnlySpan<int> features)
         {
             if (correctTag == predictedTag) { return; } //nothing to update
             foreach (var feature in features)
@@ -382,7 +408,7 @@ namespace Catalyst.Models
             }
         }
 
-        private bool PredictTagFromFeatures(int[] features, Dictionary<int, float[]> weightsSource)
+        private bool PredictTagFromFeatures(ReadOnlySpan<int> features, Dictionary<int, float[]> weightsSource)
         {
             float[] scoreDict = new float[N_Tags];
 
@@ -451,7 +477,7 @@ namespace Catalyst.Models
         private readonly int _Hash_Ip1Length = GetHash("Hash_Ip1Length");
 
 #if NET5_0_OR_GREATER
-        internal int[] GetFeatures(Token[] tokens, int indexCurrent)
+        internal void GetFeatures(Span<Token> tokens, int indexCurrent, Span<int> features)
         {
             ref Token current = ref tokens[indexCurrent];
             ref Token prev2   = ref tokens[indexCurrent - 2];
@@ -460,7 +486,7 @@ namespace Catalyst.Models
             ref Token next2   = ref tokens[indexCurrent + 2];
 
             //Features inspired by iSentenizer, but extended for better results (https://www.hindawi.com/journals/tswj/2014/196574/)
-            var features = new int[27];
+            
             features[0] = _Hash_Bias;// (GetHash(("bias")));
 
             features[1] = (current.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunct : _Hash_False_IIsPunct;
@@ -489,13 +515,11 @@ namespace Catalyst.Models
             features[24] = Hashes.CombineWeak(_Hash_FirstChar, current.Length > 0 ? current.ValueAsSpan.IgnoreCaseHash32(0, 0) : 0);
             features[25] = Hashes.CombineWeak(_Hash_Im1Length, HashLengths[Math.Min(99, prev.Length)]);
             features[26] = Hashes.CombineWeak(_Hash_Ip1Length, HashLengths[Math.Min(99, next.Length)]);
-
-            return features;
         }
 
 #else
 
-        internal int[] GetFeatures(Token[] tokens, int indexCurrent)
+        internal void GetFeatures(Span<Token> tokens, int indexCurrent, Span<int> features)
         {
             Token current = tokens[indexCurrent];
             Token prev2   = tokens[indexCurrent - 2];
@@ -504,7 +528,6 @@ namespace Catalyst.Models
             Token next2   = tokens[indexCurrent + 2];
 
             //Features inspired by iSentenizer, but extended for better results (https://www.hindawi.com/journals/tswj/2014/196574/)
-            var features = new int[27];
             features[0] = _Hash_Bias;// (GetHash(("bias")));
 
             features[1] = (current.ValueAsSpan.IsSentencePunctuation()) ? _Hash_True_IIsPunct : _Hash_False_IIsPunct;
@@ -533,8 +556,6 @@ namespace Catalyst.Models
             features[24] = Hashes.CombineWeak(_Hash_FirstChar, current.Length > 0 ? current.ValueAsSpan.IgnoreCaseHash32(0, 0) : 0);
             features[25] = Hashes.CombineWeak(_Hash_Im1Length, HashLengths[Math.Min(99, prev.Length)]);
             features[26] = Hashes.CombineWeak(_Hash_Ip1Length, HashLengths[Math.Min(99, next.Length)]);
-
-            return features;
         }
 #endif
 
@@ -574,7 +595,7 @@ namespace Catalyst.Models
 
             public PartOfSpeech POS { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
-            public EntityType[] EntityTypes => throw new NotImplementedException();
+            public IReadOnlyList<EntityType> EntityTypes => throw new NotImplementedException();
 
             public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

@@ -56,5 +56,18 @@ namespace Catalyst
             DependencyType = null;
             Frequency = 0f;
         }
+
+        public TokenData(int lowerBound, int upperBound)
+        {
+            LowerBound = lowerBound;
+            UpperBound = upperBound;
+            Tag = PartOfSpeech.NONE;
+            Replacement = null;
+            Hash = 0;
+            IgnoreCaseHash = 0;
+            Head = -1;
+            DependencyType = null;
+            Frequency = 0f;
+        }
     }
 }

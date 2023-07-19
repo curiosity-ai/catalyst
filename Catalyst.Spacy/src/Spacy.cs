@@ -152,7 +152,7 @@ namespace Catalyst
         {
             using (Py.GIL())
             {
-                dynamic sys = PythonEngine.ImportModule("sys");
+                dynamic sys = Py.Import("sys");
                 Console.WriteLine("Python version: " + sys.version);
             }
         }

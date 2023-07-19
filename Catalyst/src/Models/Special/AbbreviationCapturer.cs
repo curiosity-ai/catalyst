@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Collections.Specialized;
+using System.Buffers;
 
 namespace Catalyst.Models
 {
@@ -69,7 +70,9 @@ namespace Catalyst.Models
 
             foreach (var span in doc)
             {
-                var tokens = span.ToTokenSpan();
+                var pooledTokens = span.ToTokenSpanPolled(out var actualLength);
+                var tokens = pooledTokens.AsSpan(0, actualLength);
+
                 int N = tokens.Length - 3;
 
                 for (int i = 1; i < N; i++)
@@ -193,6 +196,8 @@ namespace Catalyst.Models
                         i += consumedTokens - 1; //-1 as we'll do an i++ imediatelly after
                     }
                 }
+
+                ArrayPool<Token>.Shared.Return(pooledTokens);
             }
             return found;
         }
@@ -252,10 +257,10 @@ namespace Catalyst.Models
 
         public List<string> GetContextForCandidate(Document doc, IToken innerToken)
         {
-            var context = new List<string>(); // We let duplicates happen here, as they contribute to show what are the most important words after
+            var context = new List<string>(ContextWindow * 2); // We let duplicates happen here, as they contribute to show what are the most important words after
 
             var contextWindowBegin = innerToken.Begin - ContextWindow;
-            var contextWindowEnd = innerToken.End + ContextWindow;
+            var contextWindowEnd   = innerToken.End + ContextWindow;
 
             if (contextWindowBegin < 0) { contextWindowBegin = 0; }
             if (contextWindowEnd > doc.Length - 1) { contextWindowEnd = doc.Length - 1; }
@@ -266,7 +271,7 @@ namespace Catalyst.Models
 
                 if (overlap)
                 {
-                    foreach (var tk in s)
+                    foreach (var tk in s.TokensStructEnumerable)
                     {
                         if (tk.Begin >= contextWindowBegin && tk.End < contextWindowEnd)
                         {

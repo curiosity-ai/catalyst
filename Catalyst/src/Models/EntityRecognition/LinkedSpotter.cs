@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,12 +18,12 @@ namespace Catalyst.Models
         public Dictionary<ulong, UID128> Hashes { get; set; } = new Dictionary<ulong, UID128>();
         public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
         public string CaptureTag { get; set; }
-        public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
+        public HashSet<int> TokenizerExceptionsSet { get; set; } = new HashSet<int>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
     }
 
-    public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
+    public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
 
@@ -78,6 +79,12 @@ namespace Catalyst.Models
             return false;
         }
 
+        public void OptimizeMemory()
+        {
+            Data.TokenizerExceptionsSet?.Clear();
+            Data.TokenizerExceptionsSet = null;
+        }
+
         public static ulong HashCombine64(ulong rhs, ulong lhs)
         {
             lhs ^= rhs + 0x9e3779b97f492000 + (lhs << 6) + (lhs >> 2);
@@ -112,12 +119,14 @@ namespace Catalyst.Models
         {
             Data.Hashes.Clear();
             Data.MultiGramHashes.Clear();
-            Data.TokenizerExceptions.Clear();
+            Data.TokenizerExceptionsSet.Clear();
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
-            var tokens = ispan.ToTokenSpan();
+            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
+            var tokens = pooledTokens.AsSpan(0, actualLength);
+
             int N = tokens.Length;
             bool hasMultiGram = Data.MultiGramHashes.Any();
             bool foundAny = false;
@@ -182,16 +191,19 @@ namespace Catalyst.Models
                     tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Single, uid));
                 }
             }
+            
+            ArrayPool<Token>.Shared.Return(pooledTokens);
+
             return foundAny;
         }
 
         private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
 
-        public IEnumerable<KeyValuePair<int, TokenizationException>> GetSpecialCases()
+        public IEnumerable<int> GetSimpleSpecialCases()
         {
-            if (Data.TokenizerExceptions is object)
+            if (Data.TokenizerExceptionsSet is object)
             {
-                foreach (var sc in Data.TokenizerExceptions)
+                foreach (var sc in Data.TokenizerExceptionsSet)
                 {
                     yield return sc;
                 }
@@ -200,52 +212,80 @@ namespace Catalyst.Models
 
         public void AddEntry(string entry, UID128 uid)
         {
-            void AddSingleTokenConcept(ulong entryHash)
-            {
-                Data.Hashes[entryHash] =  uid;
-            }
-
             if (string.IsNullOrWhiteSpace(entry)) { return; }
-
 
             if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
 
-            var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length == 1)
-            {
-                var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
-                AddSingleTokenConcept(hash);
+            //The logic below uses SpanSplitEnumerator and is the allocation-free version of this:
+            //  var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                if (!words[0].AsSpan().IsLetter())
+            var entrySpan = entry.AsSpan();
+            var partsEnumerator = entrySpan.Split(' ' );
+
+            int wordsLength = 0;
+            Range currentPart;
+            Range validCurrentPart = default;
+            while (partsEnumerator.MoveNext())
+            {
+                currentPart = partsEnumerator.Current;
+
+                if (currentPart.End.Value > currentPart.Start.Value) //Skip empty entries (i.e. 'Hello   World' would be split into: 'Hello', '', '', '', 'World')
                 {
-                    Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                    validCurrentPart = currentPart;
+                    wordsLength++;
+                }
+            }
+
+            if (wordsLength == 1)
+            {
+                var wordSpan = entrySpan.Slice(validCurrentPart.Start.Value, validCurrentPart.End.Value - validCurrentPart.Start.Value);
+                var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
+                
+                Data.Hashes[hash] = uid;
+
+                if (!wordSpan.IsAllLetterOrDigit())
+                {
+                    Data.TokenizerExceptionsSet.Add(wordSpan.CaseSensitiveHash32());
                 }
 
                 return;
             }
 
+            partsEnumerator = entrySpan.Split(' ');
+
             ulong combinedHash = 0;
-            for (int n = 0; n < words.Length; n++)
+            int n = 0;
+            while (partsEnumerator.MoveNext())
             {
-                var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[n].AsSpan()) : Spotter.Hash64(words[n].AsSpan());
-                if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
-                if (Data.MultiGramHashes.Count < n + 1)
-                {
-                    Data.MultiGramHashes.Add(new HashSet<ulong>());
-                }
+                currentPart = partsEnumerator.Current;
 
-                if (!Data.MultiGramHashes[n].Contains(word_hash))
+                if (currentPart.End.Value > currentPart.Start.Value) //Skip empty entries (i.e. 'Hello   World' would be split into: 'Hello', '', '', '', 'World')
                 {
-                    Data.MultiGramHashes[n].Add(word_hash);
-                }
+                    var wordSpan = entrySpan.Slice(currentPart.Start.Value, currentPart.End.Value - currentPart.Start.Value);
 
-                if (!words[n].AsSpan().IsLetter())
-                {
-                    Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
+                    var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
+                    if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
+
+                    if (Data.MultiGramHashes.Count < n + 1)
+                    {
+                        Data.MultiGramHashes.Add(new HashSet<ulong>());
+                    }
+
+                    if (!Data.MultiGramHashes[n].Contains(word_hash))
+                    {
+                        Data.MultiGramHashes[n].Add(word_hash);
+                    }
+
+                    if (!wordSpan.IsAllLetterOrDigit())
+                    {
+                        Data.TokenizerExceptionsSet.Add(wordSpan.CaseSensitiveHash32());
+                    }
+                 
+                    n++;
                 }
             }
 
-            AddSingleTokenConcept(combinedHash);
+            Data.Hashes[combinedHash] = uid;
         }
 
         public void AppendList(IEnumerable<(string word, UID128 uid)> words)
