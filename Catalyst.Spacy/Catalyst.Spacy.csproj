@@ -21,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Semver" Version="2.3.0" />
     <PackageReference Include="Catalyst" Version="1.0.39634" />
     <PackageReference Include="Python.Included" Version="3.11.2" />
   </ItemGroup>
@@ -31,5 +32,4 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
-
 </Project>
