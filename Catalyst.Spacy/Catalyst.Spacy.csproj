@@ -21,8 +21,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="1.0.39634" />
-    <PackageReference Include="Python.Included" Version="3.11.2" />
+    <PackageReference Include="Catalyst" Version="1.0.39645" />
+    <PackageReference Include="Python.Included" Version="3.11.4" />
   </ItemGroup>
 
   <ItemGroup>

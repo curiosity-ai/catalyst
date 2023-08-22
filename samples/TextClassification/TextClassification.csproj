@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="1.0.39634" />
+    <PackageReference Include="Catalyst" Version="1.0.39645" />
     <PackageReference Include="Catalyst.Models.English" Version="1.0.30952" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
