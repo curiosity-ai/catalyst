@@ -294,7 +294,13 @@ namespace Catalyst
             List<EntityType> entityList;
             if (EntityData.TryGetValue(ix, out entityList))
             {
+#if NET6_0_OR_GREATER
+                // We use CollectionsMarshal.AsSpan directly so that we don't trigger increasing the _version field of the List, which would cause anything enumerating the list to throw.
+                Span<EntityType> entityListAsSpan = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(entityList);
+                entityListAsSpan[entityIndex] = entityType;
+#else
                 entityList[entityIndex] = entityType;
+#endif
             }
             else
             {
