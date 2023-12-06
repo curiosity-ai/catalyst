@@ -432,6 +432,28 @@ namespace Catalyst
             return Value.AsSpan(b, e - b + 1);
         }
 
+        public string ToStringWithReplacements(Func<ITokens, string> replacement)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(Value);
+
+            foreach(var span in this.Reverse())
+            {
+                foreach(var entity in span.GetEntities().Reverse())
+                {
+                    var replaceWith = replacement(entity);
+                    if (replaceWith != null)
+                    {
+                        sb.Remove(entity.Begin, entity.End - entity.Begin + 1);
+                        sb.Insert(entity.Begin, replaceWith);
+                    }
+                }
+            }
+
+            return sb.ToString();
+        }
+
         internal Dictionary<string, string> GetTokenMetadata(int tokenIndex, int spanIndex)
         {
             if (TokenMetadata is null) { TokenMetadata = new Dictionary<long, Dictionary<string, string>>(); }

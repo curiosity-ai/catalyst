@@ -73,6 +73,23 @@ namespace Catalyst.Tests
         }
 
         [Theory]
+        [InlineData("This is a TEST")]
+        public async Task ToStringWithReplacements(string text)
+        {
+            English.Register();
+            var spotter = new Spotter(Language.English, 0, "", "Entity");
+            spotter.AddEntry("TEST");
+
+            var nlp = await Pipeline.ForAsync(Language.English);
+            nlp.Add(spotter);
+
+            var doc = new Document(text, Language.English);
+            nlp.ProcessSingle(doc);
+
+            Assert.Equal("This is a POTATO", doc.ToStringWithReplacements(t => "POTATO"));
+        }
+
+        [Theory]
         [InlineData("wiki-extract.txt")]
         public async Task TokenizerDoesNotThrowTimeoutDueToMalformedURLs(string file)
         {
