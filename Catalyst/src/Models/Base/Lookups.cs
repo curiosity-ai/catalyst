@@ -109,7 +109,9 @@ namespace Catalyst.Models
 
         public static async Task<Lookups> FromStream(Stream stream)
         {
-            return await MessagePackSerializer.DeserializeAsync<Lookups>(stream, LZ4Standard);
+            var lookups = await MessagePackSerializer.DeserializeAsync<Lookups>(stream, LZ4Standard);
+            lookups.Entries?.TrimExcess();
+            return lookups;
         }
     }
 }
