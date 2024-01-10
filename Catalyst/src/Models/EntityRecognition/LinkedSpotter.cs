@@ -44,7 +44,26 @@ namespace Catalyst.Models
         {
             var a = new LinkedSpotter(language, version, tag);
             await a.LoadDataAsync();
+            a.TrimExcess();
             return a;
+        }
+
+        public void TrimExcess()
+        {
+            if (Data is null) return;
+
+            if (Data.MultiGramHashes is object)
+            {
+
+                Data.MultiGramHashes.TrimExcess();
+
+                foreach (var v in Data.MultiGramHashes)
+                {
+                    v.TrimExcess();
+                }
+            }
+            Data.TokenizerExceptionsSet?.TrimExcess();
+            Data.Hashes?.TrimExcess();
         }
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
