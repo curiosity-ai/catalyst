@@ -59,6 +59,7 @@ namespace Catalyst.Tests
 
         [Theory]
         [InlineData("this is an abbreviation test As Soon As Possible (ASAP) I hope this abbreviation was found")]
+        [InlineData("this is an abbreviation test As Soon As Possible (ASAP)")]
         public async Task Abbreviations(string text)
         {
             English.Register();
