@@ -1,5 +1,5 @@
-
 [![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)](https://www.nuget.org/packages/Catalyst/) [![Build Status](https://dev.azure.com/curiosity-ai/mosaik/_apis/build/status/catalyst?branchName=master)](https://dev.azure.com/curiosity-ai/mosaik/_build/latest?definitionId=10&branchName=master)
+[![BuiltWithDot.Net shield](https://builtwithdot.net/project/427/catalyst-nlp-csharp-spacy-embeddings/badge)](https://builtwithdot.net/project/427/catalyst-nlp-csharp-spacy-embeddings)
 
 <img src="https://raw.githubusercontent.com/curiosity-ai/catalyst/master/Catalyst/catalyst.png?token=ACDCOAYAIML2KGJTHTJP27C5KGCEC"/>
 
