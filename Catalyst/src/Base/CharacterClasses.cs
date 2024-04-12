@@ -8,39 +8,38 @@ namespace Catalyst
 {
     public static class CharacterClasses
     {
-        public static string Alpha = @"\p{L}";
-        public static string AlphaLower = @"\p{Ll}";
-        public static string AlphaUpper = @"\p{Lu}";
-        public static string Units = @"mb|m\/s|km\/h|kmh|mph|km³|km²|km|m³|m²|m|dm³|dm²|dm|cm³|cm²|cm|mm³|mm²|mm|ha|µm|nm|yd|in|ft|kg|mg|µg|g|t|lb|oz|hPa|Pa|mbar|MB|kb|KB|gb|GB|tb|TB|T|G|M"; // this should actually be sorted by token length, so that e.g. m/s matches before m
-        public static string Currency = @"\p{Sc}";
-        public static string SentencePunctuation = @"…|:|;|\!|\?|¿|¡|\.";
-        public static string Punctuation = @"…|,|:|;|\!|\?|¿|¡|\(|\)|\[|\]|\{|\}|<|>|_|#|\*|&";
-        public static string Quotes = @"'|''|""|”|“|``|`|‘|´|‚|,|„|»|«";
-        public static string OpenQuotes = @"'|''|""|“|``|`|‘|«";
-        public static string Hyphens = @"-|–|—";
-        public static string Symbols = @"\p{So}";  //Symbols like dingbats, but also emoji, see: https://www.compart.com/en/unicode/category/So
-        public static string Ellipses = @"\.\.+|…";
+        public const string Alpha = @"\p{L}";
+        public const string AlphaLower = @"\p{Ll}";
+        public const string AlphaUpper = @"\p{Lu}";
+        public const string Units = @"mb|m\/s|km\/h|kmh|mph|km³|km²|km|m³|m²|m|dm³|dm²|dm|cm³|cm²|cm|mm³|mm²|mm|ha|µm|nm|yd|in|ft|kg|mg|µg|g|t|lb|oz|hPa|Pa|mbar|MB|kb|KB|gb|GB|tb|TB|T|G|M"; // this should actually be sorted by token length, so that e.g. m/s matches before m
+        public const string Currency = @"\p{Sc}";
+        public const string SentencePunctuation = @"…|:|;|\!|\?|¿|¡|\.";
+        public const string Punctuation = @"…|,|:|;|\!|\?|¿|¡|\(|\)|\[|\]|\{|\}|<|>|_|#|\*|&";
+        public const string Quotes = @"'|''|""|”|“|``|`|‘|´|‚|,|„|»|«";
+        public const string OpenQuotes = @"'|''|""|“|``|`|‘|«";
+        public const string Hyphens = @"-|–|—";
+        public const string Symbols = @"\p{So}";  //Symbols like dingbats, but also emoji, see: https://www.compart.com/en/unicode/category/So
+        public const string Ellipses = @"\.\.+|…";
 
-        public static string Prefixes = $"§|%|=|\\+|{Punctuation}|{Ellipses}|{Quotes}|{Currency}|{Symbols}";
-        public static string Sufixes = $"{Punctuation}|{Ellipses}|{Quotes}|{Currency}|{Symbols}|{Hyphens}|['’][sS]|(?<=[0-9])\\+|(?<=°[FfCcKk])\\.]|(?<=[0-9])(?:{Currency})|(?<=[0-9])(?:{Units})|(?<=[0-9{AlphaLower}%²\\-\\)\\]\\+(?:{Quotes})])\\.|(?<=[{AlphaUpper}][{AlphaUpper}])\\.";
-        public static string Infixes = $"{Ellipses}|{Symbols}|(?<=[0-9])[+\\-\\*^](?=[0-9-])|(?<=[{AlphaLower}])\\.(?=[{AlphaUpper}])|(?<=[{Alpha}]),(?=[{Alpha}])|(?<=[{Alpha}])[?\";:=,.]*(?:{Hyphens})(?=[{Alpha}])|(?<=[{Alpha}\"])[:<>=\\/](?=[{Alpha}])";
+        public const string Prefixes = $"§|%|=|\\+|{Punctuation}|{Ellipses}|{Quotes}|{Currency}|{Symbols}";
+        public const string Sufixes = $"{Punctuation}|{Ellipses}|{Quotes}|{Currency}|{Symbols}|{Hyphens}|['’][sS]|(?<=[0-9])\\+|(?<=°[FfCcKk])\\.]|(?<=[0-9])(?:{Currency})|(?<=[0-9])(?:{Units})|(?<=[0-9{AlphaLower}%²\\-\\)\\]\\+(?:{Quotes})])\\.|(?<=[{AlphaUpper}][{AlphaUpper}])\\.";
+        public const string Infixes = $"{Ellipses}|{Symbols}|(?<=[0-9])[+\\-\\*^](?=[0-9-])|(?<=[{AlphaLower}])\\.(?=[{AlphaUpper}])|(?<=[{Alpha}]),(?=[{Alpha}])|(?<=[{Alpha}])[?\";:=,.]*(?:{Hyphens})(?=[{Alpha}])|(?<=[{Alpha}\"])[:<>=\\/](?=[{Alpha}])";
 
-        public static Regex RE_Prefixes = new Regex(string.Join("|", Prefixes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).Select(e => "^" + e)), RegexOptions.Compiled);
-        public static Regex RE_Sufixes = new Regex(string.Join("|", Sufixes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e + "$")), RegexOptions.Compiled);
-        public static Regex RE_Infixes = new Regex(Infixes, RegexOptions.Compiled);
+        public static readonly Regex RE_Prefixes = new Regex(string.Join("|", Prefixes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).Select(e => "^" + e)), RegexOptions.Compiled);
+        public static readonly Regex RE_Sufixes = new Regex(string.Join("|", Sufixes.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e + "$")), RegexOptions.Compiled);
+        public static readonly Regex RE_Infixes = new Regex(Infixes, RegexOptions.Compiled);
 
+        public static readonly Regex RE_OpenQuotes = new Regex(OpenQuotes, RegexOptions.Compiled);
+        public static readonly Regex RE_Currency = new Regex(Currency, RegexOptions.Compiled);
+        public static readonly Regex RE_SentencePunctuation = new Regex($"^({SentencePunctuation})*$", RegexOptions.Compiled);
+        public static readonly Regex RE_AnyPunctuation = new Regex($"^({Punctuation})*$", RegexOptions.Compiled);
 
-        public static Regex RE_OpenQuotes = new Regex(OpenQuotes, RegexOptions.Compiled);
-        public static Regex RE_Currency = new Regex(Currency, RegexOptions.Compiled);
-        public static Regex RE_SentencePunctuation = new Regex($"^({SentencePunctuation})*$", RegexOptions.Compiled);
-        public static Regex RE_AnyPunctuation = new Regex($"^({Punctuation})*$", RegexOptions.Compiled);
+        public static readonly Regex RE_IsSymbol = new Regex($"^({Symbols})+$", RegexOptions.Compiled);
 
-        public static Regex RE_IsSymbol = new Regex($"^({Symbols})+$", RegexOptions.Compiled);
-
-        public static Regex RE_IsHyphen = new Regex($"^({Hyphens})+$", RegexOptions.Compiled);
-        public static Regex RE_AllLetters = new Regex($"^({Alpha})+$", RegexOptions.Compiled);
-        public static Regex RE_AllNumeric = new Regex(@"^[\-\+\p{Sc}]{0,3}[0-9.,]{1,}[\p{Sc}]{0,1}$", RegexOptions.Compiled);
-        public static Regex RE_HasNumeric = new Regex(@"\d", RegexOptions.Compiled);
+        public static readonly Regex RE_IsHyphen = new Regex($"^({Hyphens})+$", RegexOptions.Compiled);
+        public static readonly Regex RE_AllLetters = new Regex($"^({Alpha})+$", RegexOptions.Compiled);
+        public static readonly Regex RE_AllNumeric = new Regex(@"^[\-\+\p{Sc}]{0,3}[0-9.,]{1,}[\p{Sc}]{0,1}$", RegexOptions.Compiled);
+        public static readonly Regex RE_HasNumeric = new Regex(@"\d", RegexOptions.Compiled);
 
         internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> input) => new HashSet<T>(input);
 
