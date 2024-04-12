@@ -82,28 +82,34 @@ namespace Catalyst.Models
 
             for (int i = 0; i < N; i++)
             {
-                foreach (var p in patterns)
+                int consumedTokens = -1;
+
+                foreach (var p in patterns) //Loop through all patterns as we want to find the longest match possible
                 {
-                    if (p.IsMatch(tokens.Slice(i), out var consumedTokens))
+                    if (p.IsMatch(tokens.Slice(i), out var consumedTokensByThisPattern))
                     {
                         if (stopOnFirstFound) { return true; } //Do not capture the entity, just returns true to say there's a match
 
-                        if (consumedTokens == 1)
-                        {
-                            tokens[i].AddEntityType(new EntityType(Data.CaptureTag, EntityTag.Single));
-                        }
-                        else
-                        {
-                            for (int j = i; j < (i + consumedTokens); j++)
-                            {
-                                tokens[j].AddEntityType(new EntityType(Data.CaptureTag, (j == i ? EntityTag.Begin : (j == (i + consumedTokens - 1) ? EntityTag.End : EntityTag.Inside))));
-                            }
-                        }
-
-                        i += consumedTokens - 1; //-1 as we'll do an i++ imediatelly after
-                        foundAny = true;
-                        break;
+                        consumedTokens = Math.Max(consumedTokens, consumedTokensByThisPattern);
                     }
+                }
+
+                if (consumedTokens > 0)
+                {
+                    if (consumedTokens == 1)
+                    {
+                        tokens[i].AddEntityType(new EntityType(Data.CaptureTag, EntityTag.Single));
+                    }
+                    else
+                    {
+                        for (int j = i; j < (i + consumedTokens); j++)
+                        {
+                            tokens[j].AddEntityType(new EntityType(Data.CaptureTag, (j == i ? EntityTag.Begin : (j == (i + consumedTokens - 1) ? EntityTag.End : EntityTag.Inside))));
+                        }
+                    }
+
+                    i += consumedTokens - 1; //-1 as we'll do an i++ imediatelly after
+                    foundAny = true;
                 }
             }
 
