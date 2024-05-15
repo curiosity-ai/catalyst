@@ -73,6 +73,23 @@ namespace Catalyst.Tests
         }
 
         [Theory]
+        [InlineData("Test of previous and next char")]
+        public async Task TextPreviousNext(string text)
+        {
+            English.Register();
+            var nlp = await Pipeline.ForAsync(Language.English);
+            var doc = new Document(text, Language.English);
+            nlp.ProcessSingle(doc);
+            var tokens = doc.SelectMany(s => s.Tokens).ToArray();
+
+            Assert.Equal(tokens.First().PreviousChar, null);
+            Assert.Equal(tokens.First().NextChar, ' ');
+
+            Assert.Equal(tokens.Last().PreviousChar, ' ');
+            Assert.Equal(tokens.Last().NextChar, null);
+        }
+
+        [Theory]
         [InlineData("This is a TEST")]
         public async Task ToStringWithReplacements(string text)
         {

@@ -565,53 +565,6 @@ namespace Catalyst.Models
             return feature.IgnoreCaseHash32();
         }
 
-        private struct FakeToken : IToken
-        {
-            public FakeToken(string value)
-            {
-                Value = value;
-                Lemma = null;
-            }
-
-            public int Begin { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public int End { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public int Length => Value.Length;
-
-            public int Index => throw new NotImplementedException();
-
-            public string Value { get; set; }
-
-            public ReadOnlySpan<char> ValueAsSpan => Value.AsSpan();
-            public string Lemma { get; set; }
-
-            public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
-
-            public string Replacement { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public int Hash { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public int IgnoreCaseHash { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public Dictionary<string, string> Metadata => throw new NotImplementedException();
-
-            public PartOfSpeech POS { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public IReadOnlyList<EntityType> EntityTypes => throw new NotImplementedException();
-
-            public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-            public float Frequency { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-            public void AddEntityType(EntityType entityType) => throw new NotImplementedException();
-
-            public void ClearEntities() => throw new NotImplementedException();
-
-            public void UpdateEntityType(int ix, ref EntityType entityType) => throw new NotImplementedException();
-
-            public void RemoveEntityType(int ix) => throw new NotImplementedException();
-
-            public void RemoveEntityType(string entityType) => throw new NotImplementedException();
-        }
-
         public class SentenceDetectorToken
         {
             public string Value { get; private set; }

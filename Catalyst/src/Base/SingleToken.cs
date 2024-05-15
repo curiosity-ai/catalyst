@@ -30,6 +30,9 @@ namespace Catalyst
         [IgnoreMember] public float Frequency { get; set; }
         [IgnoreMember] public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
+        [IgnoreMember] public char? PreviousChar => null;
+        [IgnoreMember] public char? NextChar => null;
+
         public SingleToken(IToken source, Language language)
         {
             Value = source.Value;

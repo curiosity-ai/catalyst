@@ -158,6 +158,9 @@ namespace Catalyst
 
         public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
+        public char? PreviousChar => Parent.GetPreviousChar(ChildrenIndexes[0], SpanIndex);
+        public char? NextChar => Parent.GetNextChar(ChildrenIndexes[ChildrenIndexes.Length - 1], SpanIndex);
+
         public Tokens(Document parent, int spanIndex, int[] children, EntityType entityType = default(EntityType))
         {
             Parent = parent;

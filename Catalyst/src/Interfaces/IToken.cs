@@ -23,6 +23,9 @@ namespace Catalyst
         string DependencyType { get; set; }
         float Frequency { get; set; }
 
+        char? PreviousChar {get;}
+        char? NextChar { get; }
+
         void AddEntityType(EntityType entityType);
 
         void UpdateEntityType(int ix, ref EntityType entityType);

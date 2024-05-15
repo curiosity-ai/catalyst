@@ -110,6 +110,9 @@ namespace Catalyst
 
         public ReadOnlySpan<char> LemmaAsSpan => LemmatizerStore.Get(Parent.Language).GetLemmaAsSpan(this);
 
+        public char? PreviousChar => Parent.GetPreviousChar(_index, SpanIndex);
+        public char? NextChar => Parent.GetNextChar(_index, SpanIndex);
+
         public override string ToString()
         {
             return $"[{Begin}->{End}]" + Value;

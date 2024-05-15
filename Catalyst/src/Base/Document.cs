@@ -793,5 +793,21 @@ namespace Catalyst
                                          TokenMetadata?.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(kv2 => kv2.Key, kv2 => kv2.Value))
                                         );
         }
+
+        internal char? GetNextChar(int index, int spanIndex)
+        {
+            var td = TokensData[spanIndex][index];
+            int e = td.UpperBound;
+            if (e == Value.Length - 1) return null;
+            return Value[e];
+        }
+
+        internal char? GetPreviousChar(int index, int spanIndex)
+        {
+            var td = TokensData[spanIndex][index];
+            int b = td.LowerBound;
+            if (b == 0) return null;
+            return Value[b - 1];
+        }
     }
 }
