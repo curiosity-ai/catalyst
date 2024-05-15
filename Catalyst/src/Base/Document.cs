@@ -799,7 +799,7 @@ namespace Catalyst
             var td = TokensData[spanIndex][index];
             int e = td.UpperBound;
             if (e == Value.Length - 1) return null;
-            return Value[e];
+            return Value[e + 1];
         }
 
         internal char? GetPreviousChar(int index, int spanIndex)

@@ -73,7 +73,7 @@ namespace Catalyst.Tests
         }
 
         [Theory]
-        [InlineData("Test of previous and next char")]
+        [InlineData("Test of, previous and next char ")]
         public async Task TextPreviousNext(string text)
         {
             English.Register();
@@ -82,11 +82,15 @@ namespace Catalyst.Tests
             nlp.ProcessSingle(doc);
             var tokens = doc.SelectMany(s => s.Tokens).ToArray();
 
-            Assert.Equal(tokens.First().PreviousChar, null);
-            Assert.Equal(tokens.First().NextChar, ' ');
+            Assert.Null(tokens.First().PreviousChar);
+            Assert.Equal(' ', tokens.First().NextChar);
 
-            Assert.Equal(tokens.Last().PreviousChar, ' ');
-            Assert.Equal(tokens.Last().NextChar, null);
+            Assert.Equal(' ', tokens[1].PreviousChar);
+            Assert.Equal(',', tokens[1].NextChar);
+
+            Assert.Equal(' ', tokens.Last().PreviousChar);
+            Assert.Equal(' ', tokens.Last().NextChar);
+            //Assert.Null(tokens.Last().NextChar);
         }
 
         [Theory]
