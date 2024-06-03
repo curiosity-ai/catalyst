@@ -32,5 +32,10 @@ namespace Catalyst
         /// <param name="partOfSpeech"></param>
         /// <returns></returns>
         public IEnumerable<WordNetTerm> GetTerms(string word, PartOfSpeech partOfSpeech = PartOfSpeech.NONE);
+
+        /// <summary>
+        /// Gets the (localized) words for this term. For English this is only one word.
+        /// </summary>
+        IEnumerable<string> GetWords(WordNetTerm term);
     }
 }

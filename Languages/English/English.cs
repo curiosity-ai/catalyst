@@ -88,6 +88,13 @@ namespace Catalyst.Models
                     _ => null,
                 });
             }
+
+            /// <inheritdoc/>
+            public IEnumerable<string> GetWords(WordNetTerm term)
+            {
+                var data = GetDataImplementation(term.PartOfSpeech);
+                return data.GetWords(term);
+            }
         }
 
     }

@@ -93,5 +93,12 @@ namespace Catalyst
         {
             return data.GetWordFromCache(start, len);
         }
+
+        /// <inheritdoc/>
+        public IEnumerable<string> GetWords(WordNetTerm term)
+        {
+            var word = data.GetWordFromCache(term.WordStart, term.WordLength);
+            return this.mapping.GetInverseMapping(word, term.LexID);
+        }
     }
 }

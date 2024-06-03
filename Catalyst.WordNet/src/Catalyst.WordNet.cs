@@ -706,6 +706,12 @@ namespace Catalyst
             {
                 return this.TermsByWord.Value[word];
             }
+
+            /// <inheritdoc/>
+            public IEnumerable<string> GetWords(WordNetTerm term)
+            {
+                return new[] { GetWordFromCache(term.WordStart, term.WordLength) };
+            }
         }
     }
 }

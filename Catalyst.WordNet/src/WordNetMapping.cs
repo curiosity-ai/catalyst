@@ -212,8 +212,7 @@ namespace Catalyst
         public IEnumerable<string> GetWords(WordNetTerm term)
         {
             var data = GetDataMapping(term.PartOfSpeech);
-            var word = data.GetWordFromCache(term.WordStart, term.WordLength);
-            return this.GetInverseMapping(word, term.LexID);
+            return data.GetWords(term);
         }
 
         /// <inheritdoc/>        

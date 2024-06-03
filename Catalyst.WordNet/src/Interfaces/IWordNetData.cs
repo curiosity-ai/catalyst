@@ -28,5 +28,10 @@ namespace Catalyst
         /// <param name="offset"></param>
         /// <returns></returns>
         WordNetTerm GetTerm(int offset);
+
+        /// <summary>
+        /// Gets the (localized) words for this term. For English this is only one word.
+        /// </summary>
+        IEnumerable<string> GetWords(WordNetTerm term);
     }
 }
