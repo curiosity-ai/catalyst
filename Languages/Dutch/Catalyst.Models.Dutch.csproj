@@ -24,6 +24,7 @@
   <ItemGroup>
     <None Remove="Resources\*.bin" />
     <EmbeddedResource Include="Resources\*.bin" />
+    <EmbeddedResource Include="Resources\WordNet\*.tab" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    
-    <PackageReference Include="Catalyst" Version="1.0.39634" />
+    <ProjectReference Include="../../Catalyst/Catalyst.csproj" />
+    <ProjectReference Include="../../Catalyst.WordNet/Catalyst.WordNet.csproj" />    
   </ItemGroup>
 </Project>
