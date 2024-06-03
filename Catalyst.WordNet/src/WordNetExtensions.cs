@@ -65,20 +65,22 @@ namespace Catalyst
                 throw new Exception("Only english is supported");
             }
 
-            switch (token.POS)
+            return from pointer in (token.POS switch
             {
-                case PartOfSpeech.ADJ:
-                    return WordNet.Nouns.GetPointers(token.Value);
-                case PartOfSpeech.ADV:
-                    return WordNet.Adverbs.GetPointers(token.Value);
-                case PartOfSpeech.PROPN:
-                case PartOfSpeech.NOUN:
-                    return WordNet.Nouns.GetPointers(token.Value);
-                case PartOfSpeech.VERB:
-                    return WordNet.Verbs.GetPointers(token.Value);
-                default:
-                    return Enumerable.Empty<(string, WordNet.PointerSymbol, PartOfSpeech, byte, byte)>();
-            }
+                PartOfSpeech.ADJ => WordNet.Nouns.GetPointers(token.Value),
+                PartOfSpeech.ADV => WordNet.Adverbs.GetPointers(token.Value),
+                PartOfSpeech.PROPN or PartOfSpeech.NOUN => WordNet.Nouns.GetPointers(token.Value),
+                PartOfSpeech.VERB => WordNet.Verbs.GetPointers(token.Value),
+                _ => Enumerable.Empty<(int Offset, string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)>(),
+            })
+                   select
+                   (
+                       pointer.Word,
+                       pointer.Symbol,
+                       pointer.PartOfSpeech,
+                       pointer.Source,
+                       pointer.Target
+                   );
         }
 
         public static async Task<IEnumerable<WordNetPointers>> WordNetPointersAsync(this IToken token, Language language)
@@ -100,7 +102,7 @@ namespace Catalyst
                 PartOfSpeech.ADV => WordNet.Adverbs.GetPointers(token.Value),
                 PartOfSpeech.PROPN or PartOfSpeech.NOUN => WordNet.Nouns.GetPointers(token.Value),
                 PartOfSpeech.VERB => WordNet.Verbs.GetPointers(token.Value),
-                _ => Enumerable.Empty<(string Word, PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)>(),
+                _ => Enumerable.Empty<(int Offset, string Word, PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)>(),
             };
 
             return from pointer in pointers

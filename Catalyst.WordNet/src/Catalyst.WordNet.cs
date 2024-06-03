@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UID;
 
@@ -604,7 +605,7 @@ namespace Catalyst
                 var word = GetWordFromCache(term.WordStart, term.WordLength);
                 foreach (var pointer in this.GetPointers(word, term.LexID))
                 {
-                    yield return new WordNetPointers(term.Offset, pointer.Symbol, pointer.PartOfSpeech, pointer.Source, pointer.Target)
+                    yield return new WordNetPointers(pointer.Offset, pointer.Symbol, pointer.PartOfSpeech, pointer.Source, pointer.Target)
                     {
                         SourceWord = word
                     };
@@ -612,7 +613,7 @@ namespace Catalyst
             }
 
             /// <inheritdoc/>
-            public IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
+            public IEnumerable<(int Offset, string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
             {
                 ulong uniqueId = 0;
 
@@ -646,7 +647,7 @@ namespace Catalyst
                                         default: continue;
                                     }
                                     var otherTerm = otherData.Terms[p.Offset];
-                                    yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                    yield return (p.Offset, otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
                                 }
 
                                 lexID++;
@@ -683,7 +684,7 @@ namespace Catalyst
                                     default: continue;
                                 }
                                 var otherTerm = otherData.Terms[p.Offset];
-                                yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                yield return (otherTerm.Offset, otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
                             }
                         }
                         else
@@ -704,7 +705,12 @@ namespace Catalyst
 
             public IEnumerable<WordNetTerm> GetTerms(string word)
             {
-                return this.TermsByWord.Value[word];
+                if (this.TermsByWord.Value.TryGetValue(word, out var output))
+                {
+                    return output;
+                }
+
+                return Enumerable.Empty<WordNetTerm>();
             }
 
             /// <inheritdoc/>

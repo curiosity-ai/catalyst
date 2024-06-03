@@ -41,7 +41,7 @@ namespace Catalyst
         }
 
         /// <inheritdoc/>
-        public IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
+        public IEnumerable<(int Offset, string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
         {
             foreach (var term in this.mapping.GetTerms(word, partOfSpeech))
             {
@@ -49,7 +49,7 @@ namespace Catalyst
                 {
                     foreach (var (word2, _, pointer) in this.GetPointers(term))
                     {
-                        yield return (word2, pointer.Symbol, pointer.PartOfSpeech, pointer.Source, pointer.Target);
+                        yield return (pointer.Offset, word2, pointer.Symbol, pointer.PartOfSpeech, pointer.Source, pointer.Target);
                     }
                 }
             }

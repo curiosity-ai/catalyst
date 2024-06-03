@@ -48,6 +48,21 @@ namespace Catalyst.Tests
             var wordNetMapping = await GetWordNetMappingAsync();
             var actual = wordNetMapping.GetPointers(word).ToList();
             Assert.Contains(actual, pointer => pointer.Symbol == pointerSymbol && pointer.TargetWord == targetWord);
+
+            foreach (var pointer in actual)
+            {
+                if (pointer.Symbol != pointerSymbol)
+                {
+                    continue;
+                }
+
+                var targetTerm = wordNetMapping.GetData(pointer.PartOfSpeech).GetTerm(pointer.Offset);
+                var targetWords = wordNetMapping.GetWords(targetTerm);
+                var sourceTerms = wordNetMapping.GetTerms(word, pointer.PartOfSpeech);
+
+                // should not point to itself
+                Assert.DoesNotContain(targetTerm.Offset, sourceTerms.Select(x => x.Offset));
+            }
         }
     }
 }

@@ -20,7 +20,7 @@ namespace Catalyst
         /// <param name="word"></param>
         /// <param name="lexId">Lexical ID as used in the original WordNet</param>
         /// <returns></returns>
-        IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1);
+        IEnumerable<(int Offset, string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1);
 
         /// <summary>
         /// Gets the <see cref="WordNetTerm"/> by its byte offset.
