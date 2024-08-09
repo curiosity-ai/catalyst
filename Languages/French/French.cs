@@ -1,7 +1,7 @@
 
 using System;
 using System.Collections.Generic;
-using Catalyst;
+using System.Threading.Tasks;
 using Mosaik.Core;
 
 namespace Catalyst.Models
@@ -10,6 +10,16 @@ namespace Catalyst.Models
     {
         public static void Register()
         {
+            ObjectStore.OverrideModel(
+                new WordNetMapping(Language.French, 0).GetStoredObjectInfo(),
+                async () => await ResourceLoader.LoadAsync(
+                    typeof(French).Assembly, "WordNet.wn-data-fra.tab",
+                    async (s) =>
+                    {
+                        var mapping = new WordNetMapping(Language.French, 0, "");
+                        mapping.ReadData(s);
+                        return mapping;
+                    }));
             ObjectStore.OverrideModel(new AveragePerceptronTagger(Language.French, 0).GetStoredObjectInfo(),                                                                             async () => await ResourceLoader.LoadAsync(typeof(French).Assembly, "tagger.bin",                  async (s) => { var a = new AveragePerceptronTagger(Language.French, 0, "");                                                                          await a.LoadAsync(s); return a; }));
             ObjectStore.OverrideModel(new AveragePerceptronDependencyParser(Language.French, 0).GetStoredObjectInfo(),                                                                   async () => await ResourceLoader.LoadAsync(typeof(French).Assembly, "parser.bin",                  async (s) => { var a = new AveragePerceptronDependencyParser(Language.French, 0, "");                                                                await a.LoadAsync(s); return a; }));
             ObjectStore.OverrideModel(new SentenceDetector(Language.French, 0).GetStoredObjectInfo(),                                                                                    async () => await ResourceLoader.LoadAsync(typeof(French).Assembly, "sentence-detector.bin",       async (s) => { var a = new SentenceDetector(Language.French, 0, "");                                                                                 await a.LoadAsync(s); return a; }));
@@ -21,6 +31,11 @@ namespace Catalyst.Models
             Catalyst.StopWords.Spacy.Register(Language.French, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.French, new Lemmatizer());
             Catalyst.TokenizerExceptions.Register(Language.French, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
+        }
+
+        public static async Task<IWordNet> GetWordNetAsync()
+        {
+            return await WordNetMapping.FromStoreAsync(Language.French, 0, "");
         }
     }
 }
