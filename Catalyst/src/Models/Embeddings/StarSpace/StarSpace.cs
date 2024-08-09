@@ -595,7 +595,7 @@ namespace Catalyst.Models
         {
             var cols = Data.Dimensions;
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
             void Update(Span<float> dest, ReadOnlySpan<float> src, float rate, float weight, Span<float> adagradWeight, int idx)
             {
                 if (Data.AdaGrad)
@@ -722,7 +722,7 @@ namespace Catalyst.Models
             }
         }
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
         private void ProjectRHS(SharedState state, List<Base> ws, Span<float> retval)
 #else
         private void ProjectRHS(SharedState state, List<Base> ws, float[] retval)
@@ -736,7 +736,7 @@ namespace Catalyst.Models
             }
         }
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
         private void Forward(Matrix matrix, List<Base> ws, Span<float> retval)
         {
             retval.Fill(0f);
@@ -753,7 +753,7 @@ namespace Catalyst.Models
         }
 
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
         private double Norm2(Span<float> a)
         {
             const float Epsilon = 1.192092896e-07F;
@@ -769,7 +769,7 @@ namespace Catalyst.Models
         }
 #endif
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
         private void ProjectLHS(SharedState state, List<Base> ws, Span<float> retval)
 #else
         private void ProjectLHS(SharedState state, List<Base> ws, float[] retval)

@@ -24,16 +24,10 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 - Lemmatization ✨ (using lookup tables ported from [spaCy](https://github.com/explosion/spacy-lookups-data))
 
 
-## New: Language Packages ✨
-We're migrating our model repository to use NuGet packages for all language-specific data and models. 
-
-You can find all  new language packages [here](https://www.nuget.org/packages?q=catalyst.models). 
+## Language Packages ✨
+All language-specific data and models are provided as NuGet packages, you can find all packages [here](https://www.nuget.org/packages?q=catalyst.models). 
 
 The new models are trained on the latest release of [Universal Dependencies v2.7](https://universaldependencies.org/).
-
-This is technically not a breaking change *yet*, but our online repository will be deprecated in the near future - so you should migrate to the new NuGet packages.
-
-When using the new model packages, you can usually remove this line from your code: `Storage.Current = new OnlineRepositoryStorage(new DiskStorage("catalyst-models"));`, or replace it with `Storage.Current = new DiskStorage("catalyst-models")` if you are storing your own models locally.
 
 We've also added the option to store and load models using streams:
 `````csharp

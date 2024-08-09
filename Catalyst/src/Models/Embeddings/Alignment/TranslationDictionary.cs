@@ -1,6 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.GZip;
-using ICSharpCode.SharpZipLib.Tar;
-using Mosaik.Core;
+﻿using Mosaik.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,28 +12,28 @@ namespace Catalyst.Models
     {
         public static string Path = @"./Corpus/MUSE";
 
-        public static async Task DownloadMUSEDataAsync()
-        {
-            Directory.CreateDirectory(Path);
-            using(var c = new HttpClient())
-            {
-                var response = await c.GetAsync("https://dl.fbaipublicfiles.com/arrival/dictionaries.tar.gz");
-                var stream = await response.Content.ReadAsStreamAsync();
-                using(var tempStream = Storage.Current.GetTempStream())
-                {
-                    await stream.CopyToAsync(tempStream);
-                    tempStream.Seek(0, SeekOrigin.Begin);
-                    using (var gzipStream = new GZipInputStream(tempStream))
-                    using (var tarArchive = TarArchive.CreateInputTarArchive(gzipStream))
-                    {
-                        tarArchive.ExtractContents(Path);
-                        tarArchive.Close();
-                        gzipStream.Close();
-                        tempStream.Close();
-                    }
-                }
-            }
-        }
+        //public static async Task DownloadMUSEDataAsync()
+        //{
+        //    Directory.CreateDirectory(Path);
+        //    using(var c = new HttpClient())
+        //    {
+        //        var response = await c.GetAsync("https://dl.fbaipublicfiles.com/arrival/dictionaries.tar.gz");
+        //        var stream = await response.Content.ReadAsStreamAsync();
+        //        using(var tempStream = Storage.Current.GetTempStream())
+        //        {
+        //            await stream.CopyToAsync(tempStream);
+        //            tempStream.Seek(0, SeekOrigin.Begin);
+        //            using (var gzipStream = new GZipInputStream(tempStream))
+        //            using (var tarArchive = TarArchive.CreateInputTarArchive(gzipStream))
+        //            {
+        //                tarArchive.ExtractContents(Path);
+        //                tarArchive.Close();
+        //                gzipStream.Close();
+        //                tempStream.Close();
+        //            }
+        //        }
+        //    }
+        //}
 
         public static Dictionary<string, string> GetDictionary(Language from, Language to, int N)
         {
