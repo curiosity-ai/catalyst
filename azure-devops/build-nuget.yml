@@ -29,11 +29,12 @@ steps:
 - task: NuGetToolInstaller@1
 
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk'
+  displayName: 'Use .NET 8.0 SDK'
   inputs:
-    packageType: 'sdk'
-    version: 6.0.100
-    includePreviewVersions: true
+    packageType: sdk
+    version: 8.x
+    includePreviewVersions: false
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: DotNetCoreCLI@2
   displayName: 'restore nuget'
