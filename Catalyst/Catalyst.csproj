@@ -29,7 +29,7 @@
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
     <PackageReference Include="Microsoft.ML" Version="3.0.1" />
-    <PackageReference Include="MessagePack" Version="2.5.172" />
+    <PackageReference Include="MessagePack" Version="2.5.187" />
     <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.8" />
     <PackageReference Include="NuGet.CommandLine" Version="6.10.1">
       <PrivateAssets>all</PrivateAssets>
