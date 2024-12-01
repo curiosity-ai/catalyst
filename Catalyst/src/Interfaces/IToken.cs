@@ -10,7 +10,9 @@ namespace Catalyst
         int Length { get; }
         int Index { get; }
         string Value { get; }
+        string OriginalValue { get; }
         ReadOnlySpan<char> ValueAsSpan { get; }
+        ReadOnlySpan<char> OriginalValueAsSpan { get; }
         string Lemma { get; }
         ReadOnlySpan<char> LemmaAsSpan { get; }
         string Replacement { get; set; }
