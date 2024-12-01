@@ -27,17 +27,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
-    <PackageReference Include="Microsoft.ML" Version="3.0.1" />
-    <PackageReference Include="MessagePack" Version="2.5.172" />
-    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.8" />
-    <PackageReference Include="NuGet.CommandLine" Version="6.10.1">
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
+    <PackageReference Include="Microsoft.ML" Version="4.0.0" />
+    <PackageReference Include="MessagePack" Version="2.5.192" />
+    <PackageReference Include="Microsoft.Recognizers.Text.DateTime" Version="1.8.10" />
+    <PackageReference Include="NuGet.CommandLine" Version="6.12.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>    
-    <PackageReference Include="Mosaik.Core" Version="24.8.51112" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="Mosaik.Core" Version="24.9.51621" />
+    <PackageReference Include="System.Memory" Version="4.6.0" />
+    <PackageReference Include="System.Numerics.Vectors" Version="4.6.0" />
     <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.3.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
