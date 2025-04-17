@@ -5,7 +5,7 @@ using MessagePack;
 namespace Catalyst
 {
     [MessagePackObject(keyAsPropertyName:true)]
-    public class TrainingHistory
+    public partial class TrainingHistory
     {
         public List<TrainingUpdate> History { get; set; } = new List<TrainingUpdate>();
         public TimeSpan ElapsedTime { get; set; }
@@ -17,7 +17,7 @@ namespace Catalyst
     }
 
     [MessagePackObject]
-    public class TrainingUpdate : EventArgs
+    public partial class TrainingUpdate : EventArgs
     {
         [Key(0)] public float Progress { get; set; }
         [Key(1)] public float Epoch { get; set; }

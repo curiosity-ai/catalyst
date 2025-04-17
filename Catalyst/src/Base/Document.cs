@@ -19,7 +19,7 @@ namespace Catalyst
 
     [JsonObject]
     [MessagePackObject]
-    public class Document : IDocument
+    public partial class Document : IDocument
     {
         [Key(0)] public Language Language { get; set; }
         [Key(1)] public string Value { get; set; }

@@ -132,7 +132,7 @@ namespace Catalyst.Models
     }
 
     [MessagePackObject]
-    public class MatchingPattern
+    public partial class MatchingPattern
     {
         [Key(0)] public List<PatternUnit[]> Patterns { get; set; } = new List<PatternUnit[]>();
         [Key(1)] public string Name { get; set; }
@@ -243,7 +243,7 @@ namespace Catalyst.Models
     }
 
     [MessagePackObject]
-    public class PatternUnit
+    public partial class PatternUnit
     {
         [Key(0)] public PatternMatchingMode Mode { get; set; }
         [Key(1)] public bool Optional { get; set; }
@@ -652,7 +652,7 @@ namespace Catalyst.Models
 
     //Used to serialize the pattern spotter model data for the front-end
     [MessagePackObject(keyAsPropertyName: true)]
-    public class PatternSpotterData
+    public partial class PatternSpotterData
     {
         public StoredObjectInfo Model { get; set; }
         public string CaptureTag { get; set; }

@@ -7,7 +7,7 @@ namespace Catalyst
 {
     [JsonObject]
     [MessagePackObject]
-    public struct EntityType
+    public partial struct EntityType
     {
         [Key(0)] public string Type { get; set; }
         [Key(1)] public EntityTag Tag { get; set; }

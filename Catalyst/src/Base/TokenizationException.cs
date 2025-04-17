@@ -3,7 +3,7 @@
 namespace Catalyst
 {
     [MessagePackObject]
-    public struct TokenizationException
+    public partial struct TokenizationException
     {
         [Key(0)] public string[] Replacements;
 
