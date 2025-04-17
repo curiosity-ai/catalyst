@@ -3,7 +3,7 @@
 namespace Catalyst
 {
     [MessagePackObject]
-    public struct TokenData
+    public partial struct TokenData
     {
         [IgnoreMember] public int LowerBound;
         [IgnoreMember] public int UpperBound;

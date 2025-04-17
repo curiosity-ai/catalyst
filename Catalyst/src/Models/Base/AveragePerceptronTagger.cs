@@ -14,7 +14,8 @@ using System.Threading;
 
 namespace Catalyst.Models
 {
-    public class AveragePerceptronTaggerModel : StorableObjectData
+    [MessagePackObject(keyAsPropertyName: true)]
+    public partial class AveragePerceptronTaggerModel : StorableObjectData
     {
         public Dictionary<int, float[]> Weights { get; set; } = new Dictionary<int, float[]>();
         public Dictionary<int, int> TokenToSingleTag { get; set; } = new Dictionary<int, int>();

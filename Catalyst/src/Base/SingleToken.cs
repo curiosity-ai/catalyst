@@ -6,8 +6,8 @@ using System.Collections.Generic;
 
 namespace Catalyst
 {
-    [MessagePackObject]
-    public class SingleToken : IToken
+    [MessagePackObject(true)]
+    public partial class SingleToken : IToken
     {
         [Key(0)] public string Value { get; set; }
         [Key(1)] public int Hash { get; set; }

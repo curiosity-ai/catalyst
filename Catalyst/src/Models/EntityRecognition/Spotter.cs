@@ -458,7 +458,7 @@ namespace Catalyst.Models
     }
 
     [MessagePack.MessagePackObject(keyAsPropertyName: true)]
-    public class Word2SenseTrainingData
+    public partial class Word2SenseTrainingData
     {
         public Dictionary<ulong, int> HashCount { get; set; } = new Dictionary<ulong, int>();
         public Dictionary<ulong, ulong[]> Senses { get; set; } = new Dictionary<ulong, ulong[]>();
