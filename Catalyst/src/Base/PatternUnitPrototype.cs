@@ -18,6 +18,7 @@ namespace Catalyst
         public string Prefix { get; set; }
         public string Shape { get; set; }
         public string Token { get; set; }
+        public float Confidence { get; set; }
         public HashSet<string> Set { get; set; }
         public string EntityType { get; set; }
         public HashSet<ulong> SetHashes { get; set; }
@@ -87,6 +88,16 @@ namespace Catalyst
             Set = new HashSet<string>(tokens);
             CaseSensitive = !ignoreCase;
             SetHashes = new HashSet<ulong>(tokens.Select(tk => ignoreCase ? IgnoreCaseHash64(tk.AsSpan()) : Hash64(tk.AsSpan())));
+            return this;
+        }
+
+        public IPatternUnit WithTokenFuzzy(string token, float confidence = 0.8f, bool ignoreCase = false) 
+        {
+            Type |= PatternUnitType.Fuzzy;
+            Token = token;
+            CaseSensitive = !ignoreCase;
+            Confidence = confidence;
+            TokenHash = ignoreCase ? IgnoreCaseHash64(token.AsSpan()) : Hash64(token.AsSpan());
             return this;
         }
 

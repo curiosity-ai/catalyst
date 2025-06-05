@@ -26,6 +26,7 @@ namespace Catalyst
         IPatternUnit WithSuffix(string suffix, bool ignoreCase = false);
         IPatternUnit WithToken(string token, bool ignoreCase = false);
         IPatternUnit WithTokens(IEnumerable<string> tokens, bool ignoreCase = false);
+        IPatternUnit WithTokenFuzzy(string token, float confidence = 0.8f, bool ignoreCase = false);
         IPatternUnit WithChars(IEnumerable<char> chars);
         IPatternUnit WithLength(int minLength, int maxLength);
     }
