@@ -75,8 +75,10 @@ namespace Catalyst
         public int Index { get { return _index; } }
 
         public string Value { get { if (_hasReplacement) { return Replacement; } if (_value is null) { _value = Parent.GetTokenValue(_index, SpanIndex); } return _value; } }
+        public string OriginalValue { get { if (_value is null) { _value = Parent.GetTokenValue(_index, SpanIndex); } return _value; } }
 
         public ReadOnlySpan<char> ValueAsSpan { get { if (_hasReplacement) { return Replacement.AsSpan(); } return Parent.GetTokenValueAsSpan(_index, SpanIndex); } }
+        public ReadOnlySpan<char> OriginalValueAsSpan { get { return Parent.GetTokenValueAsSpan(_index, SpanIndex); } }
 
         public int Hash { get { if (_hasReplacement) { return Replacement.CaseSensitiveHash32(); } return Parent.GetTokenHash(_index, SpanIndex); } set { throw new NotImplementedException(); } }
 

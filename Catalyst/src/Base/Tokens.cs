@@ -43,7 +43,42 @@ namespace Catalyst
                 if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
 
                 var val = sb.ToString();
-                
+
+                if (sb.Length < 10000) Pools.StringBuilder.Return(sb);
+
+                return val;
+            }
+        }
+
+        public string OriginalValue
+        {
+            get
+            {
+                if ((Length + ChildrenIndexes.Length) < 1)
+                {
+                    return string.Empty;
+                }
+
+                var sb = Pools.StringBuilder.Rent();
+
+                foreach (var token in Children)
+                {
+                    bool isHyphen = token.OriginalValueAsSpan.IsHyphen();
+                    if (isHyphen)
+                    {
+                        if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
+                        sb.Append(token.OriginalValueAsSpan);
+                    }
+                    else
+                    {
+                        sb.Append(token.OriginalValueAsSpan).Append(' ');
+                    }
+                }
+
+                if (sb.Length > 0 && sb[sb.Length - 1] == ' ') { sb.Length--; }
+
+                var val = sb.ToString();
+
                 if (sb.Length < 10000) Pools.StringBuilder.Return(sb);
 
                 return val;
@@ -109,6 +144,7 @@ namespace Catalyst
         public int Index => throw new NotImplementedException();
 
         public ReadOnlySpan<char> ValueAsSpan => Value.AsSpan();
+        public ReadOnlySpan<char> OriginalValueAsSpan => OriginalValue.AsSpan();
 
         public string Replacement { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 

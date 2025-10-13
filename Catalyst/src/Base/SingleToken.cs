@@ -19,9 +19,12 @@ namespace Catalyst
         [Key(7)] public Language Language { get; set; }
         [Key(8)] public string Lemma { get; set; }
 
+        [IgnoreMember] public string OriginalValue => Value;
+
         [IgnoreMember] public int Begin { get; set; }
         [IgnoreMember] public int End { get; set; }
         [IgnoreMember] public ReadOnlySpan<char> ValueAsSpan => Value.AsSpan();
+        [IgnoreMember] public ReadOnlySpan<char> OriginalValueAsSpan => Value.AsSpan();
         [IgnoreMember] public int Index => throw new NotImplementedException();
         [IgnoreMember] public string Replacement { get; set; }
 
