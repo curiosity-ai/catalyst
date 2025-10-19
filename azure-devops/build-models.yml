@@ -23,10 +23,11 @@ steps:
 - task: NuGetToolInstaller@1
 
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk'
+  displayName: 'Use .NET 10.0 SDK'
   inputs:
     packageType: sdk
-    version: 6.x
+    version: 10.x
+    includePreviewVersions: true
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: DotNetCoreCLI@2
