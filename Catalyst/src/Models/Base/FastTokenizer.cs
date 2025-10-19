@@ -163,6 +163,7 @@ namespace Catalyst.Models
                 }
 
                 var rentedSplitPoints = ArrayPool<SplitPoint>.Shared.Rent(textSpan.Length / 4);
+                rentedSplitPoints.AsSpan().Fill(default);
                 var splitPoints = rentedSplitPoints;
 
                 var splitPointsCount = 0;

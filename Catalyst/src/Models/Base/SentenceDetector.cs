@@ -107,6 +107,7 @@ namespace Catalyst.Models
             var rentedIsSentenceEnd = ArrayPool<bool>.Shared.Rent(N);
 
             var isSentenceEnd = rentedIsSentenceEnd.AsSpan(0, N);
+            isSentenceEnd.Fill(false);
 
             Span<int> features = stackalloc int[27];
 

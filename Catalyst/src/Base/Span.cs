@@ -315,6 +315,7 @@ namespace Catalyst
             actualLength = tkc;
             
             var tokens = ArrayPool<Token>.Shared.Rent(tkc);
+            tokens.AsSpan().Fill(default);
             
             var sd = Parent.TokensData[Index];
             

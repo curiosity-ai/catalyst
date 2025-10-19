@@ -26,7 +26,7 @@ namespace Catalyst
 
             private static string GetDataPath()
             {
-                return Storage.Current.GetDataPath(Language.English, nameof(Reuters), 0, "reuters-dataset-nltk");
+                return Storage.Current.GetDataPath(Language.English, nameof(Reuters), 0, "reuters-dataset-nltk", createPathIfMissing: false);
             }
 
             public static async Task<(IDocument[] trainDocuments, IDocument[] testDocuments)> GetAsync()

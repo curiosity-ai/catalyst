@@ -10,7 +10,7 @@ namespace Catalyst
         int Columns { get; }
 
         float this[int i, int j] { get; set; }
-#if  NET5_0 || NET6_0 || NET7_0 || NET8_0 || NET9_0
+#if  NET5_0_OR_GREATER
 
         void AddToRow(ReadOnlySpan<float> vec, int i, float a);
 

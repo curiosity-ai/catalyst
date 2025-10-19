@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Catalyst
 {
-    [MessagePackObject]
+    [MessagePackObject(AllowPrivate = true)]
     public class SingleToken : IToken
     {
         [Key(0)] public string Value { get; set; }
@@ -35,6 +35,11 @@ namespace Catalyst
 
         [IgnoreMember] public char? PreviousChar => null;
         [IgnoreMember] public char? NextChar => null;
+
+        internal SingleToken()
+        {
+
+        }
 
         public SingleToken(IToken source, Language language)
         {
