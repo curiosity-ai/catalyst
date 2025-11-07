@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 using Catalyst.Models;
+using P = Catalyst.PatternUnitPrototype;
 
 namespace Catalyst.Tests
 {
@@ -149,6 +150,27 @@ namespace Catalyst.Tests
             var nlp = await Pipeline.ForAsync(Language.English);
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
+        }
+
+        [Theory]
+        [InlineData("This is a very spec1fic Test")]
+        public async Task PatternSpotterFuzzy(string text) {
+            English.Register();
+            var spotter = new PatternSpotter(Language.Any, 0, tag: "", captureTag: "Special");
+            spotter.NewPattern(
+                "S1",
+                mp => mp.Add(
+                       new PatternUnit(P.Single().WithTokenFuzzy("specific")),
+                       new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN, PartOfSpeech.AUX, PartOfSpeech.DET, PartOfSpeech.ADJ))
+            ));
+ 
+            var nlp = await Pipeline.ForAsync(Language.English);
+            nlp.Add(spotter);
+ 
+            var doc = new Document(text, Language.English);
+            nlp.ProcessSingle(doc);
+            
+            Assert.Equal(2, doc.EntityData.Count);
         }
     }
 }
