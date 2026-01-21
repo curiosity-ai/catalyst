@@ -7,14 +7,21 @@ using System.Text;
 
 namespace Catalyst
 {
+    /// <summary>
+    /// Represents a group of tokens, typically representing an entity.
+    /// </summary>
     public struct Tokens : ITokens
     {
+        /// <inheritdoc />
         public int Begin { get { return Parent.TokensData[SpanIndex][ChildrenIndexes[0]].LowerBound; } set { throw new NotImplementedException(); } }
 
+        /// <inheritdoc />
         public int End { get { return Parent.TokensData[SpanIndex][ChildrenIndexes[ChildrenIndexes.Length - 1]].UpperBound; } set { throw new NotImplementedException(); } }
 
+        /// <inheritdoc />
         public int Length { get { return End - Begin + 1; } }
 
+        /// <inheritdoc />
         public string Value
         {
             get
@@ -50,6 +57,7 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public string OriginalValue
         {
             get
@@ -85,6 +93,7 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public int Hash
         {
             get
@@ -99,6 +108,7 @@ namespace Catalyst
             set { throw new NotImplementedException(); }
         }
 
+        /// <inheritdoc />
         public int IgnoreCaseHash
         {
             get
@@ -119,15 +129,19 @@ namespace Catalyst
             set { throw new NotImplementedException(); }
         }
 
+        /// <inheritdoc />
         public EntityType EntityType { get; set; }
 
+        /// <inheritdoc />
         public float Frequency { get; set; }
 
+        /// <summary>Gets or sets the indexes of the child tokens within their span.</summary>
         public int[] ChildrenIndexes { get; set; }
 
         private int SpanIndex { get; set; }
         private Document Parent { get; set; }
 
+        /// <inheritdoc />
         public IEnumerable<IToken> Children
         {
             get
@@ -141,22 +155,32 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public int Index => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public ReadOnlySpan<char> ValueAsSpan => Value.AsSpan();
+        /// <inheritdoc />
         public ReadOnlySpan<char> OriginalValueAsSpan => OriginalValue.AsSpan();
 
+        /// <inheritdoc />
         public string Replacement { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        /// <inheritdoc />
         public Dictionary<string, string> Metadata => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public PartOfSpeech POS { get => PartOfSpeech.X; set => throw new NotImplementedException(); }
 
+        /// <inheritdoc />
         public IReadOnlyList<EntityType> EntityTypes => new EntityType[] { EntityType };
 
+        /// <inheritdoc />
         public int Head { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        /// <inheritdoc />
         public string DependencyType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        /// <inheritdoc />
         public string Lemma
         {
             get
@@ -192,11 +216,21 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public ReadOnlySpan<char> LemmaAsSpan => Lemma.AsSpan();
 
+        /// <inheritdoc />
         public char? PreviousChar => Parent.GetPreviousChar(ChildrenIndexes[0], SpanIndex);
+        /// <inheritdoc />
         public char? NextChar => Parent.GetNextChar(ChildrenIndexes[ChildrenIndexes.Length - 1], SpanIndex);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Tokens"/> struct.
+        /// </summary>
+        /// <param name="parent">The parent document.</param>
+        /// <param name="spanIndex">The index of the span within the document.</param>
+        /// <param name="children">The indexes of the child tokens.</param>
+        /// <param name="entityType">The entity type.</param>
         public Tokens(Document parent, int spanIndex, int[] children, EntityType entityType = default(EntityType))
         {
             Parent = parent;
@@ -206,14 +240,19 @@ namespace Catalyst
             EntityType = entityType;
         }
 
+        /// <inheritdoc />
         public void AddEntityType(EntityType entityType) => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public void UpdateEntityType(int ix, ref EntityType entityType) => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public void RemoveEntityType(string entityType) => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public void RemoveEntityType(int ix) => throw new NotImplementedException();
 
+        /// <inheritdoc />
         public void ClearEntities() => throw new NotImplementedException();
     }
 }

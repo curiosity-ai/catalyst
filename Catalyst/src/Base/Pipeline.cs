@@ -15,12 +15,19 @@ using MessagePack;
 
 namespace Catalyst
 {
+    /// <summary>
+    /// Represents the data associated with a <see cref="Pipeline"/>.
+    /// </summary>
     [FormerName("Mosaik.NLU", "PipelineModelData")]
     public class PipelineData : StorableObjectData
     {
+        /// <summary>Gets or sets the list of stored object info for processes in the pipeline.</summary>
         public List<StoredObjectInfo> Processes { get; set; }
     }
 
+    /// <summary>
+    /// Represents a processing pipeline for documents, consisting of multiple processing steps.
+    /// </summary>
     public class Pipeline : StorableObject<Pipeline, PipelineData>, ICanUpdateModel
     {
         internal static readonly MessagePackSerializerOptions LZ4Standard = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4Block);
@@ -29,15 +36,35 @@ namespace Catalyst
 
         private ReaderWriterLockSlim RWLock = new ReaderWriterLockSlim();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Pipeline"/> class.
+        /// </summary>
+        /// <param name="language">The language of the pipeline.</param>
+        /// <param name="version">The version of the pipeline.</param>
+        /// <param name="tag">The tag of the pipeline.</param>
         public Pipeline(Language language = Language.Any, int version = 0, string tag = "") : base(language, version, tag)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Pipeline"/> class with the specified processes.
+        /// </summary>
+        /// <param name="processes">The list of processes to include in the pipeline.</param>
+        /// <param name="language">The language of the pipeline.</param>
+        /// <param name="version">The version of the pipeline.</param>
+        /// <param name="tag">The tag of the pipeline.</param>
         public Pipeline(IList<IProcess> processes, Language language = Language.Any, int version = 0, string tag = "") : this(language, version, tag)
         {
             Processes = processes.ToList();
         }
 
+        /// <summary>
+        /// Asynchronously loads a pipeline from the store.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the loaded pipeline.</returns>
         public new static async Task<Pipeline> FromStoreAsync(Language language, int version, string tag)
         {
             var pipeline = new Pipeline(language, version, tag);
@@ -76,6 +103,10 @@ namespace Catalyst
             return pipeline;
         }
 
+        /// <summary>
+        /// Packs the pipeline and all its models into a single ZIP stream.
+        /// </summary>
+        /// <param name="outputStream">The stream to write to.</param>
         public void PackTo(Stream outputStream)
         {
             UpdateProcessData();
@@ -114,6 +145,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Asynchronously loads a pipeline from a packed ZIP stream.
+        /// </summary>
+        /// <param name="inputStream">The packed stream to read from.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the loaded pipeline.</returns>
         public static async Task<Pipeline> LoadFromPackedAsync(Stream inputStream)
         {
             using (var zip = new ZipArchive(inputStream, ZipArchiveMode.Read, leaveOpen: true))
@@ -197,6 +233,15 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Asynchronously checks if a pipeline in the store contains a specific model.
+        /// </summary>
+        /// <param name="language">The language of the pipeline.</param>
+        /// <param name="version">The version of the pipeline.</param>
+        /// <param name="tag">The tag of the pipeline.</param>
+        /// <param name="model">The model information to check for.</param>
+        /// <param name="matchVersion">Whether to match the version exactly.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a boolean indicating whether the model exists in the pipeline.</returns>
         public static async Task<bool> CheckIfHasModelAsync(Language language, int version, string tag, StoredObjectInfo model, bool matchVersion = true)
         {
             var a = new Pipeline(language, version, tag);
@@ -204,6 +249,7 @@ namespace Catalyst
             return a.Data.Processes.Any(p => p.Language == model.Language && p.ModelType == model.ModelType && p.Tag == model.Tag && (!matchVersion || p.Version == model.Version));
         }
 
+        /// <inheritdoc />
         public override async Task StoreAsync()
         {
             UpdateProcessData();
@@ -224,6 +270,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Adds a special case to all tokenizers in the pipeline.
+        /// </summary>
+        /// <param name="word">The word to add as a special case.</param>
+        /// <param name="exception">The tokenization exception details.</param>
         public void AddSpecialCase(string word, TokenizationException exception)
         {
             foreach (var p in Processes)
@@ -235,6 +286,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Registers a neuralyzer to be used in the pipeline.
+        /// </summary>
+        /// <param name="neuralyzer">The neuralyzer to use.</param>
+        /// <returns>The current pipeline instance.</returns>
         public Pipeline UseNeuralyzer(Neuralyzer neuralyzer)
         {
             RWLock.EnterWriteLock();
@@ -249,6 +305,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Registers multiple neuralyzers to be used in the pipeline.
+        /// </summary>
+        /// <param name="neuralyzeres">The collection of neuralyzers to use.</param>
+        /// <returns>The current pipeline instance.</returns>
         public Pipeline UseNeuralyzers(IEnumerable<Neuralyzer> neuralyzeres)
         {
             RWLock.EnterWriteLock();
@@ -267,6 +328,9 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Removes all registered neuralyzers from the pipeline.
+        /// </summary>
         public void RemoveAllNeuralizers()
         {
             RWLock.EnterWriteLock();
@@ -294,6 +358,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Adds a process to the beginning of the pipeline.
+        /// </summary>
+        /// <param name="process">The process to add.</param>
+        /// <returns>The current pipeline instance.</returns>
         public Pipeline AddToBegin(IProcess process)
         {
             RWLock.EnterWriteLock();
@@ -312,6 +381,10 @@ namespace Catalyst
             return this;
         }
 
+        /// <summary>
+        /// Removes all processes that match the specified predicate.
+        /// </summary>
+        /// <param name="p">The predicate to match.</param>
         public void RemoveAll(Predicate<IProcess> p)
         {
             RWLock.EnterWriteLock();
@@ -326,8 +399,18 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Asynchronously adds a process to the pipeline from a task.
+        /// </summary>
+        /// <param name="modelLoadTask">The task that loads the process.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the updated pipeline.</returns>
         public async Task<Pipeline> AddAsync(Task<IProcess> modelLoadTask) => Add(await modelLoadTask);
 
+        /// <summary>
+        /// Adds a process to the pipeline, maintaining a logical order (Normalizers, Tokenizers, SentenceDetectors, Taggers, others).
+        /// </summary>
+        /// <param name="process">The process to add.</param>
+        /// <returns>The current pipeline instance.</returns>
         public Pipeline Add(IProcess process)
         {
             RWLock.EnterWriteLock();
@@ -373,6 +456,9 @@ namespace Catalyst
             return this;
         }
 
+        /// <summary>
+        /// Triggers memory optimization for all processes in the pipeline that support it.
+        /// </summary>
         public void OptimizeMemory()
         {
             RWLock.EnterWriteLock();
@@ -392,6 +478,10 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Replaces the current pipeline's processes and version with those from another pipeline.
+        /// </summary>
+        /// <param name="newPipeline">The new pipeline to use.</param>
         public void ReplaceWith(Pipeline newPipeline)
         {
             RWLock.EnterWriteLock();
@@ -407,11 +497,25 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Creates a default pipeline for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="sentenceDetector">Whether to include a sentence detector.</param>
+        /// <param name="tagger">Whether to include a part-of-speech tagger.</param>
+        /// <returns>A <see cref="Pipeline"/> instance.</returns>
         public static Pipeline For(Language language, bool sentenceDetector = true, bool tagger = true)
         {
             return ForAsync(language, sentenceDetector, tagger).WaitResult();
         }
 
+        /// <summary>
+        /// Asynchronously creates a default pipeline for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="sentenceDetector">Whether to include a sentence detector.</param>
+        /// <param name="tagger">Whether to include a part-of-speech tagger.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the created pipeline.</returns>
         public static async Task<Pipeline> ForAsync(Language language, bool sentenceDetector = true, bool tagger = true)
         {
             var p = await TokenizerForAsync(language, sentenceDetector);
@@ -419,6 +523,13 @@ namespace Catalyst
             return p;
         }
 
+        /// <summary>
+        /// Asynchronously creates a pipeline that supports multiple languages.
+        /// </summary>
+        /// <param name="languages">The collection of languages to support.</param>
+        /// <param name="sentenceDetector">Whether to include a sentence detector for each language.</param>
+        /// <param name="tagger">Whether to include a part-of-speech tagger for each language.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the created pipeline.</returns>
         public static async Task<Pipeline> ForManyAsync(IEnumerable<Language> languages, bool sentenceDetector = true, bool tagger = true)
         {
             var processes = new List<IProcess>();
@@ -432,11 +543,23 @@ namespace Catalyst
             return p;
         }
 
+        /// <summary>
+        /// Creates a pipeline with only a tokenizer (and optionally a sentence detector) for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="sentenceDetector">Whether to include a sentence detector.</param>
+        /// <returns>A <see cref="Pipeline"/> instance.</returns>
         public static Pipeline TokenizerFor(Language language, bool sentenceDetector = true)
         {
             return TokenizerForAsync(language, sentenceDetector).WaitResult();
         }
 
+        /// <summary>
+        /// Asynchronously creates a pipeline with only a tokenizer (and optionally a sentence detector) for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="sentenceDetector">Whether to include a sentence detector.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the created pipeline.</returns>
         public static async Task<Pipeline> TokenizerForAsync(Language language, bool sentenceDetector = true)
         {
             var p = new Pipeline() { Language = language };
@@ -474,6 +597,12 @@ namespace Catalyst
             return p;
         }
 
+        /// <summary>
+        /// Processes a single document through all steps in the pipeline.
+        /// </summary>
+        /// <param name="document">The document to process.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The processed document.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IDocument ProcessSingle(IDocument document, CancellationToken cancellationToken = default)
         {
@@ -506,6 +635,13 @@ namespace Catalyst
             return document;
         }
 
+        /// <summary>
+        /// Processes a collection of documents using a single thread.
+        /// </summary>
+        /// <param name="documents">The documents to process.</param>
+        /// <param name="throwOnError">Whether to throw an exception if an error occurs during processing.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>An enumerable of processed documents.</returns>
         public IEnumerable<IDocument> ProcessSingleThread(IEnumerable<IDocument> documents, bool throwOnError = false, CancellationToken cancellationToken = default)
         {
             RWLock.EnterReadLock();
@@ -571,6 +707,12 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Processes a collection of documents using multiple threads.
+        /// </summary>
+        /// <param name="documents">The documents to process.</param>
+        /// <param name="parallelOptions">Parallel options to control the execution.</param>
+        /// <returns>An enumerable of processed documents.</returns>
         public IEnumerable<IDocument> Process(IEnumerable<IDocument> documents, ParallelOptions parallelOptions = default)
         {
             var sw = Stopwatch.StartNew();
@@ -626,6 +768,10 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Gets a list of all models (processes) in the pipeline.
+        /// </summary>
+        /// <returns>A list of <see cref="IModel"/>.</returns>
         public IList<IModel> GetModelsList()
         {
             RWLock.EnterReadLock();
@@ -639,6 +785,10 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Gets a list of information about all models in the pipeline.
+        /// </summary>
+        /// <returns>A list of <see cref="StoredObjectInfo"/>.</returns>
         public List<StoredObjectInfo> GetModelsDescriptions()
         {
             RWLock.EnterReadLock();
@@ -652,6 +802,10 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Gets a list of all possible entity types that can be recognized by the pipeline.
+        /// </summary>
+        /// <returns>A list of models and the entity types they produce.</returns>
         public IReadOnlyList<(StoredObjectInfo Model, string[] EntityTypes)> GetPossibleEntityTypes()
         {
             RWLock.EnterReadLock();
@@ -674,6 +828,12 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Checks if the pipeline contains a model matching the specified information.
+        /// </summary>
+        /// <param name="model">The model information to check for.</param>
+        /// <param name="matchVersion">Whether to match the version exactly.</param>
+        /// <returns>True if the model exists in the pipeline, false otherwise.</returns>
         public bool HasModel(StoredObjectInfo model, bool matchVersion = true)
         {
             RWLock.EnterReadLock();
@@ -689,6 +849,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Removes any model matching the specified information from the pipeline.
+        /// </summary>
+        /// <param name="model">The model information to match for removal.</param>
+        /// <returns>True if any model was removed, false otherwise.</returns>
         public bool RemoveModel(StoredObjectInfo model)
         {
             //Removes any model matching the description, independent of the version
@@ -704,6 +869,7 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public bool HasModelToUpdate(StoredObjectInfo newModel)
         {
             RWLock.EnterReadLock();
@@ -718,6 +884,7 @@ namespace Catalyst
             }
         }
 
+        /// <inheritdoc />
         public void UpdateModel(StoredObjectInfo newModel, object modelToBeUpdated)
         {
             if (modelToBeUpdated is IProcess process)

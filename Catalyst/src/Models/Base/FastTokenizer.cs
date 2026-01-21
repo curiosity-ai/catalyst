@@ -10,16 +10,25 @@ using System.Buffers;
 
 namespace Catalyst.Models
 {
+    /// <summary>
+    /// Implements a fast, non-destructive tokenizer.
+    /// </summary>
     [FormerName("Mosaik.NLU.Models", "SimpleTokenizer")]
     public class FastTokenizer : ITokenizer, IProcess, ICanOptimizeMemory
     {
+        /// <summary>Gets or sets a value indicating whether email and URL capture should be disabled.</summary>
         public static bool DisableEmailOrURLCapture { get; set; } = false;
         
+        /// <summary>Gets or sets the timeout for tokenization.</summary>
         public static TimeSpan Timeout { get; set; } = TimeSpan.FromHours(1);
 
+        /// <summary>Gets or sets the language supported by the tokenizer.</summary>
         public Language Language { get; set; }
+        /// <summary>Gets the type name of the tokenizer.</summary>
         public string Type => typeof(FastTokenizer).FullName;
+        /// <summary>Gets the tag of the tokenizer.</summary>
         public string Tag => "";
+        /// <summary>Gets the version of the tokenizer.</summary>
         public int Version => 0;
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
@@ -27,27 +36,47 @@ namespace Catalyst.Models
         private HashSet<int> _customSimpleSpecialCases;
         private ReaderWriterLockSlim _lockSpecialCases = new();
 
+        /// <summary>
+        /// Asynchronously loads a <see cref="FastTokenizer"/> from the store.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the loaded tokenizer.</returns>
         public static Task<FastTokenizer> FromStoreAsync(Language language, int version, string tag)
         {
             return Task.FromResult(new FastTokenizer(language));
         }
 
+        /// <summary>
+        /// Asynchronously checks if a tokenizer exists for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a boolean indicating existence.</returns>
         public static Task<bool> ExistsAsync(Language language, int version, string tag)
         {
             return Task.FromResult(true);
         } // Needs to say it exists, otherwise when calling StoredObjectInfo.ExistsAsync(Language language, int version, string tag), it will fail to load this model
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FastTokenizer"/> class for the specified language.
+        /// </summary>
+        /// <param name="language">The language.</param>
         public FastTokenizer(Language language)
         {
             Language = language;
             _baseSpecialCases = TokenizerExceptions.Get(Language);
         }
 
+        /// <inheritdoc />
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Parse(document, cancellationToken);
         }
 
+        /// <inheritdoc />
         public void Parse(IDocument document, CancellationToken cancellationToken = default)
         {
             if (document.SpansCount == 0)
@@ -74,6 +103,12 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Tokenizes the specified text and returns an enumerable of tokens.
+        /// </summary>
+        /// <param name="text">The text to tokenize.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>An enumerable of tokens.</returns>
         public IEnumerable<IToken> Parse(string text, CancellationToken cancellationToken = default)
         {
             var tmpDoc = new Document(text);
@@ -81,6 +116,10 @@ namespace Catalyst.Models
             return tmpDoc.Spans.First().Tokens;
         }
 
+        /// <summary>
+        /// Imports special tokenization cases from another process.
+        /// </summary>
+        /// <param name="process">The process to import special cases from.</param>
         public void ImportSpecialCases(IProcess process)
         {
             if (process is IHasSpecialCases cases)
@@ -120,6 +159,11 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Adds a custom special case for tokenization.
+        /// </summary>
+        /// <param name="word">The word to add as a special case.</param>
+        /// <param name="exception">The tokenization exception.</param>
         public void AddSpecialCase(string word, TokenizationException exception)
         {
             _lockSpecialCases.EnterWriteLock();
@@ -134,6 +178,7 @@ namespace Catalyst.Models
             }
         }
 
+        /// <inheritdoc />
         public void Parse(Span span, CancellationToken cancellationToken = default)
         {
             var sw = ValueStopwatch.StartNew();
@@ -706,6 +751,7 @@ namespace Catalyst.Models
             }
         }
 
+        /// <inheritdoc />
         public void OptimizeMemory()
         {
             _customSimpleSpecialCases?.TrimExcess();

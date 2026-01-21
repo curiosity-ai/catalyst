@@ -10,23 +10,45 @@ using System.Threading.Tasks;
 
 namespace Catalyst.Models
 {
+    /// <summary>
+    /// Represents the data model for the PatternSpotter.
+    /// </summary>
     public class PatternSpotterModel : StorableObjectData
     {
+        /// <summary>Gets or sets the tag to use for captured entities.</summary>
         public string CaptureTag { get; set; }
+        /// <summary>Gets or sets the list of matching patterns.</summary>
         public List<MatchingPattern> Patterns { get; set; } = new List<MatchingPattern>();
     }
 
+    /// <summary>
+    /// Implements an entity recognizer that uses complex patterns of tokens to identify entities.
+    /// </summary>
     public class PatternSpotter : StorableObjectV2<PatternSpotter, PatternSpotterModel>, IEntityRecognizer, IProcess
     {
         private PatternSpotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PatternSpotter"/> class.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <param name="captureTag">The tag to use for captured entities.</param>
         public PatternSpotter(Language language, int version, string tag, string captureTag) : this(language, version, tag)
         {
             Data.CaptureTag = captureTag;
         }
 
+        /// <summary>
+        /// Loads a PatternSpotter from the store.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, returning the loaded spotter.</returns>
         public new static async Task<PatternSpotter> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new PatternSpotter(language, version, tag);
@@ -34,16 +56,23 @@ namespace Catalyst.Models
             return a;
         }
 
+        /// <inheritdoc />
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             RecognizeEntities(document);
         }
 
+        /// <inheritdoc />
         public string[] Produces()
         {
             return new[] { Data.CaptureTag };
         }
 
+        /// <summary>
+        /// Checks if the document contains any entities recognized by this spotter.
+        /// </summary>
+        /// <param name="document">The document.</param>
+        /// <returns>True if any entity is found.</returns>
         public bool HasAnyEntity(IDocument document)
         {
             var foundAny = false;
@@ -55,6 +84,7 @@ namespace Catalyst.Models
             return false;
         }
 
+        /// <inheritdoc />
         public bool RecognizeEntities(IDocument document)
         {
             var foundAny = false;
@@ -65,11 +95,20 @@ namespace Catalyst.Models
             return foundAny;
         }
 
+        /// <summary>
+        /// Clears all patterns from the model.
+        /// </summary>
         public void ClearModel()
         {
             Data.Patterns.Clear();
         }
 
+        /// <summary>
+        /// Recognizes entities in the specified span.
+        /// </summary>
+        /// <param name="ispan">The span.</param>
+        /// <param name="stopOnFirstFound">Whether to stop after finding the first entity.</param>
+        /// <returns>True if any entities were found.</returns>
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
             var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
@@ -118,6 +157,11 @@ namespace Catalyst.Models
             return foundAny;
         }
 
+        /// <summary>
+        /// Adds a new pattern to the spotter.
+        /// </summary>
+        /// <param name="name">The name of the pattern.</param>
+        /// <param name="pattern">The action to configure the pattern.</param>
         public void NewPattern(string name, Action<MatchingPattern> pattern)
         {
             var mp = new MatchingPattern(name);
@@ -125,23 +169,40 @@ namespace Catalyst.Models
             Data.Patterns.Add(mp);
         }
 
+        /// <summary>
+        /// Removes a pattern by name.
+        /// </summary>
+        /// <param name="name">The name of the pattern to remove.</param>
         public void RemovePattern(string name)
         {
             Data.Patterns.RemoveAll(p => p.Name == name);
         }
     }
 
+    /// <summary>
+    /// Represents a pattern composed of multiple sequences of pattern units.
+    /// </summary>
     [MessagePackObject]
     public class MatchingPattern
     {
+        /// <summary>Gets or sets the list of alternative sequences of pattern units.</summary>
         [Key(0)] public List<PatternUnit[]> Patterns { get; set; } = new List<PatternUnit[]>();
+        /// <summary>Gets or sets the name of the pattern.</summary>
         [Key(1)] public string Name { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MatchingPattern"/> class.
+        /// </summary>
         public MatchingPattern()
         {
             //Constructor for Json serialization
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MatchingPattern"/> class with specified patterns and name.
+        /// </summary>
+        /// <param name="patterns">The patterns.</param>
+        /// <param name="name">The name.</param>
         [SerializationConstructor]
         public MatchingPattern(List<PatternUnit[]> patterns, string name)
         {
@@ -149,23 +210,41 @@ namespace Catalyst.Models
             Name = name;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MatchingPattern"/> class from a prototype.
+        /// </summary>
+        /// <param name="prototype">The prototype.</param>
         public MatchingPattern(IMatchingPattern prototype)
         {
             Patterns = ((MatchingPatternPrototype)prototype).Patterns.Select(p => p.Select(pt => new PatternUnit(pt)).ToArray()).ToList();
             Name = ((MatchingPatternPrototype)prototype).Name;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MatchingPattern"/> class with a specified name.
+        /// </summary>
+        /// <param name="name">The name.</param>
         public MatchingPattern(string name)
         {
             Name = name;
         }
 
+        /// <summary>
+        /// Copies patterns from another <see cref="MatchingPattern"/>.
+        /// </summary>
+        /// <param name="mp">The source pattern.</param>
         public void From(MatchingPattern mp)
         {
             //Creates new instances of all PatternUnits in the source MatchingPattern
             Patterns.AddRange(mp.Patterns.Select(pu => pu.Select(p => p.Clone()).ToArray()));
         }
 
+        /// <summary>
+        /// Checks if the specified tokens match any of the sequences in this pattern.
+        /// </summary>
+        /// <param name="tokens">The tokens to match.</param>
+        /// <param name="consumedTokens">The number of tokens consumed by the match.</param>
+        /// <returns>True if it's a match.</returns>
         public bool IsMatch(Span<Token> tokens, out int consumedTokens)
         {
             int largestMatch = -1;
@@ -229,12 +308,22 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Adds a sequence of pattern units to this pattern.
+        /// </summary>
+        /// <param name="units">The pattern units.</param>
+        /// <returns>This instance.</returns>
         public MatchingPattern Add(params IPatternUnit[] units)
         {
             Patterns.Add(units.Select(u => new PatternUnit(u)).ToArray());
             return this;
         }
 
+        /// <summary>
+        /// Adds a sequence of pattern units to this pattern.
+        /// </summary>
+        /// <param name="units">The pattern units.</param>
+        /// <returns>This instance.</returns>
         public MatchingPattern Add(params PatternUnit[] units)
         {
             Patterns.Add(units);
@@ -242,30 +331,50 @@ namespace Catalyst.Models
         }
     }
 
+    /// <summary>
+    /// Represents a single unit in a pattern, which can match a token based on various criteria.
+    /// </summary>
     [MessagePackObject]
     public class PatternUnit
     {
+        /// <summary>Gets or sets the matching mode (Single, And, Or, ShouldNotMatch).</summary>
         [Key(0)] public PatternMatchingMode Mode { get; set; }
+        /// <summary>Gets or sets a value indicating whether this unit is optional.</summary>
         [Key(1)] public bool Optional { get; set; }
+        /// <summary>Gets or sets a value indicating whether matching should be case-sensitive.</summary>
         [Key(2)] public bool CaseSensitive { get => caseSensitive; set { caseSensitive = value; Set = set; } } //Reset Set so it recomputes the hashes based on the new case sensitivity
+        /// <summary>Gets or sets the criteria types used for matching.</summary>
         [Key(3)] public PatternUnitType Type { get; set; }
+        /// <summary>Gets or sets the part of speech to match.</summary>
         [Key(4)] public PartOfSpeech[] POS { get; set; }
+        /// <summary>Gets or sets the suffix to match.</summary>
         [Key(5)] public string Suffix { get => suffix; set { suffix = value; _splitSuffix = suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
+        /// <summary>Gets or sets the prefix to match.</summary>
         [Key(6)] public string Prefix { get => prefix; set { prefix = value; _splitPrefix = prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
+        /// <summary>Gets or sets the shape to match.</summary>
         [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null; } }
+        /// <summary>Gets or sets the exact token value to match.</summary>
         [Key(8)] public string Token { get; set; }
+        /// <summary>Gets or sets the set of token values to match.</summary>
         [Key(9)] public string[] Set { get => set; set { set = value?.Distinct()?.ToArray(); _setHashes = set is object ? new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))) : null; } }
+        /// <summary>Gets or sets the entity type to match.</summary>
         [Key(10)] public string EntityType { get => entityType; set { entityType = value; _splitEntityType = entityType is object ? new HashSet<string>(entityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null; } }
 
         //[Key(11)] removed
 
         //[Key(12)] removed
 
+        /// <summary>Gets or sets the left side of an And/Or/Not operation.</summary>
         [Key(13)] public PatternUnit LeftSide { get; set; }
+        /// <summary>Gets or sets the right side of an And/Or operation.</summary>
         [Key(14)] public PatternUnit RightSide { get; set; }
+        /// <summary>Gets or sets the set of valid characters.</summary>
         [Key(15)] public HashSet<char> ValidChars { get; set; }
+        /// <summary>Gets or sets the minimum length of the token value.</summary>
         [Key(16)] public int MinLength { get; set; }
+        /// <summary>Gets or sets the maximum length of the token value.</summary>
         [Key(17)] public int MaxLength { get; set; }
+        /// <summary>Gets or sets the maximum number of times this unit can match consecutively.</summary>
         [Key(18)] public int MaxMatches { get; set; }
 
         internal readonly static char[] splitChar = new[] { ',' };
@@ -285,6 +394,10 @@ namespace Catalyst.Models
         private bool caseSensitive;
         private PatternUnit p;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PatternUnit"/> class from a prototype.
+        /// </summary>
+        /// <param name="prototype">The prototype.</param>
         public PatternUnit(IPatternUnit prototype)
         {
             var p = (PatternUnitPrototype)prototype;
@@ -308,10 +421,17 @@ namespace Catalyst.Models
         }
 
         //Constructor for Json/MsgPack serialization
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PatternUnit"/> class.
+        /// </summary>
         public PatternUnit()
         {
         }
 
+        /// <summary>
+        /// Clones this instance.
+        /// </summary>
+        /// <returns>A new <see cref="PatternUnit"/> instance.</returns>
         public PatternUnit Clone()
         {
             return new PatternUnit()
@@ -338,6 +458,11 @@ namespace Catalyst.Models
 
         #region Match
 
+        /// <summary>
+        /// Checks if the specified token matches the criteria in this unit.
+        /// </summary>
+        /// <param name="token">The token to match.</param>
+        /// <returns>True if it matches.</returns>
         public bool IsMatch(ref Token token)
         {
             bool isMatch = true;
@@ -651,11 +776,17 @@ namespace Catalyst.Models
     }
 
     //Used to serialize the pattern spotter model data for the front-end
+    /// <summary>
+    /// Represents the serialized data for the PatternSpotter, intended for frontend use.
+    /// </summary>
     [MessagePackObject(keyAsPropertyName: true)]
     public class PatternSpotterData
     {
+        /// <summary>Gets or sets the model information.</summary>
         public StoredObjectInfo Model { get; set; }
+        /// <summary>Gets or sets the capture tag.</summary>
         public string CaptureTag { get; set; }
+        /// <summary>Gets or sets the matching patterns.</summary>
         public MatchingPattern[] Patterns { get; set; }
     }
 }

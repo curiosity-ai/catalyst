@@ -9,18 +9,39 @@ using System.Linq;
 
 namespace Catalyst
 {
+    /// <summary>
+    /// Represents an immutable document in the Catalyst NLP pipeline.
+    /// </summary>
     public class ImmutableDocument
     {
+        /// <summary>Gets or sets the language of the document.</summary>
         public Language Language { get; set; }
+
+        /// <summary>Gets or sets the text value of the document.</summary>
         public string Value { get; set; }
+
+        /// <summary>Gets or sets the token data for each span in the document.</summary>
         public TokenData[][] TokensData { get; set; }
+
+        /// <summary>Gets or sets the bounds for each span in the document, packed as long (begin &lt;&lt; 32 | end).</summary>
         public long[] SpanBounds { get; set; }
+
+        /// <summary>Gets or sets the metadata for the document.</summary>
         public Dictionary<string, string> Metadata { get; set; }
+
+        /// <summary>Gets or sets the unique identifier for the document.</summary>
         public UID128 UID { get; set; }
+
+        /// <summary>Gets or sets the labels for the document.</summary>
         public string[] Labels { get; set; }
+
+        /// <summary>Gets or sets the entity data for the document.</summary>
         public Dictionary<long, EntityType[]> EntityData { get; set; }
+
+        /// <summary>Gets or sets the token metadata for the document.</summary>
         public Dictionary<long, Dictionary<string, string>> TokenMetadata { get; set; }
 
+        /// <summary>Gets the length of the document's text value.</summary>
         public int Length { get { return Value.Length; } }
 
         private static long GetTokenIndex(int spanIndex, int tokenIndex)
@@ -28,6 +49,9 @@ namespace Catalyst
             return (long)spanIndex << 32 | (long)(uint)tokenIndex;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableDocument"/> class.
+        /// </summary>
         public ImmutableDocument(Language language, string value, TokenData[][] tokensData, long[] spanBounds, Dictionary<string, string> metadata, UID128 uID, string[] labels, Dictionary<long, EntityType[]> entityData, Dictionary<long, Dictionary<string, string>> tokenMetadata)
         {
             Language = language;
@@ -41,11 +65,19 @@ namespace Catalyst
             TokenMetadata = tokenMetadata;
         }
 
+        /// <summary>
+        /// Converts the current immutable document to a mutable <see cref="Document"/>.
+        /// </summary>
+        /// <returns>A <see cref="Document"/> instance.</returns>
         public Document ToMutable()
         {
             return Document.FromImmutable(this);
         }
 
+        /// <summary>
+        /// Writes the document to an <see cref="IJsonWriter"/>.
+        /// </summary>
+        /// <param name="jw">The JSON writer.</param>
         public void WriteAsJson(IJsonWriter jw)
         {
             jw.WriteStartObject();

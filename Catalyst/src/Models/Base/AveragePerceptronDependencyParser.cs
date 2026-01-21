@@ -11,18 +11,30 @@ using Microsoft.Extensions.Logging;
 
 namespace Catalyst.Models
 {
+    /// <summary>
+    /// Represents the data for an average perceptron dependency parser model.
+    /// </summary>
     public class AveragePerceptronDependencyParserModel : StorableObjectData
     {
+        /// <summary>Gets or sets the time when the model was trained.</summary>
         public DateTime TrainedTime { get; set; }
 
+        /// <summary>Gets or sets the weights of the perceptron model.</summary>
         public ConcurrentDictionary<int, float[]> Weights { get; set; }
 
+        /// <summary>Gets or sets the mapping of action indexes to labels.</summary>
         public Dictionary<int, string> Actions { get; set; }
+        /// <summary>Gets or sets the mapping of action labels to indexes.</summary>
         public Dictionary<string, int> Action2Index { get; set; }
+        /// <summary>Gets or sets the mapping of indexes to moves.</summary>
         public Dictionary<int, int> Index2Move { get; set; }
+        /// <summary>Gets or sets the mapping of indexes to labels.</summary>
         public Dictionary<int, string> Index2Label { get; set; }
     }
 
+    /// <summary>
+    /// Implements a dependency parser based on the average perceptron algorithm.
+    /// </summary>
     public class AveragePerceptronDependencyParser : StorableObjectV2<AveragePerceptronDependencyParser, AveragePerceptronDependencyParserModel>, IProcess
     {
         private const int N_ACTIONS = 3;
@@ -33,11 +45,24 @@ namespace Catalyst.Models
 
         private ConcurrentDictionary<int, float[]> AverageWeights { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AveragePerceptronDependencyParser"/> class.
+        /// </summary>
+        /// <param name="language">The language supported by the parser.</param>
+        /// <param name="version">The version of the model.</param>
+        /// <param name="tag">The tag of the model.</param>
         public AveragePerceptronDependencyParser(Language language, int version, string tag = "") : base(language, version, tag, compress: true)
         {
             Data.Weights = new ConcurrentDictionary<int, float[]>();
         }
 
+        /// <summary>
+        /// Asynchronously loads an <see cref="AveragePerceptronDependencyParser"/> from the store.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the loaded parser.</returns>
         public new static async Task<AveragePerceptronDependencyParser> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new AveragePerceptronDependencyParser(language, version, tag);
@@ -45,6 +70,12 @@ namespace Catalyst.Models
             return a;
         }
 
+        /// <summary>
+        /// Trains the dependency parser using the specified documents.
+        /// </summary>
+        /// <param name="documents">The training documents.</param>
+        /// <param name="trainingSteps">The number of training iterations.</param>
+        /// <param name="learningRate">The learning rate.</param>
         public void Train(IEnumerable<IDocument> documents, int trainingSteps = 10, float learningRate = 0.9f)
         {
             AverageWeights = new ConcurrentDictionary<int, float[]>();
@@ -715,11 +746,16 @@ namespace Catalyst.Models
             //}
         }
 
+        /// <inheritdoc />
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Predict(document);
         }
 
+        /// <summary>
+        /// Predicts the dependency structure for all spans in the specified document.
+        /// </summary>
+        /// <param name="document">The document to process.</param>
         public void Predict(IDocument document)
         {
             foreach (var span in document)
@@ -728,6 +764,10 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Predicts the dependency structure for the specified span.
+        /// </summary>
+        /// <param name="span">The span to process.</param>
         public void Predict(Span span)
         {
             var buffer = new Buffer(span, N_FEATURES, N_ACTIONS);
