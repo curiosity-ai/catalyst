@@ -12,8 +12,16 @@ using System.Text.RegularExpressions;
 
 namespace Catalyst
 {
+    /// <summary>
+    /// Represents a span (typically a sentence) within a document.
+    /// </summary>
     public struct Span : IEnumerable<IToken>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Span"/> struct.
+        /// </summary>
+        /// <param name="parent">The parent document.</param>
+        /// <param name="index">The index of the span within the document.</param>
         public Span(Document parent, int index)
         {
             Parent = parent;
@@ -23,6 +31,11 @@ namespace Catalyst
             _value = "";
         }
 
+        /// <summary>
+        /// Gets the token at the specified index within the span.
+        /// </summary>
+        /// <param name="key">The index of the token.</param>
+        /// <returns>The <see cref="IToken"/> at the specified index.</returns>
         public IToken this[int key]
         {
             get
@@ -37,6 +50,7 @@ namespace Catalyst
             set { throw new InvalidOperationException(); }
         }
 
+        /// <summary>Gets the language of the span.</summary>
         public Language Language { get { return Parent.Language; } }
 
         private int _begin;
@@ -45,16 +59,25 @@ namespace Catalyst
         private Document Parent;
         private int Index;
 
+        /// <summary>Gets or sets the beginning character index of the span.</summary>
         public int Begin { get { if (_begin < 0) { _begin = Parent.SpanBounds[Index][0]; } return _begin; } set { Parent.SpanBounds[Index][0] = value; _begin = value; } }
+
+        /// <summary>Gets or sets the ending character index of the span.</summary>
         public int End { get { if (_end < 0) { _end = Parent.SpanBounds[Index][1]; } return _end; } set { Parent.SpanBounds[Index][1] = value; _end = value; } }
 
+        /// <summary>Gets the length of the span in characters.</summary>
         public int Length { get { return End - Begin + 1; } }
 
+        /// <summary>Gets the text value of the span.</summary>
         public string Value { get { if (string.IsNullOrEmpty(_value)) { _value = Parent.GetSpanValue(Index); } return _value; } }
+
+        /// <summary>Gets the text value of the span as a read-only span of characters.</summary>
         public ReadOnlySpan<char> ValueAsSpan { get { return Parent.GetSpanValue2(Index); } }
 
+        /// <summary>Gets the number of tokens in the span.</summary>
         public int TokensCount { get { return Parent.TokensData[Index].Count; } }
 
+        /// <summary>Gets an enumerable of all tokens in the span.</summary>
         public IEnumerable<IToken> Tokens
         {
             get
@@ -83,11 +106,22 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Adds a new token to the span.
+        /// </summary>
+        /// <param name="begin">The beginning character index.</param>
+        /// <param name="end">The ending character index.</param>
+        /// <returns>The newly created token.</returns>
         public IToken AddToken(int begin, int end)
         {
             return Parent.AddToken(Index, begin, end);
         }
 
+        /// <summary>
+        /// Adds a token to the span based on an existing token.
+        /// </summary>
+        /// <param name="token">The token to copy data from.</param>
+        /// <returns>The copied token.</returns>
         //Used by the sentence detector
         public IToken AddToken(IToken token)
         {
@@ -99,11 +133,19 @@ namespace Catalyst
             return token;
         }
 
+        /// <summary>
+        /// Reserves capacity for a specified number of tokens in the span.
+        /// </summary>
+        /// <param name="expectedTokenCount">The expected number of tokens.</param>
         public void ReserveTokens(int expectedTokenCount)
         {
             Parent.ReserveTokens(Index, expectedTokenCount);
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the tokens in the span.
+        /// </summary>
+        /// <returns>An enumerator for tokens.</returns>
         public IEnumerator<IToken> GetEnumerator()
         {
             return Tokens.GetEnumerator();
@@ -114,16 +156,26 @@ namespace Catalyst
             return TokensStructEnumerable.GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the tokens in the span.
+        /// </summary>
+        /// <returns>An enumerator for tokens.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return Tokens.GetEnumerator();
         }
 
+        /// <summary>
+        /// Sets the part-of-speech tag for the specified token index.
+        /// </summary>
+        /// <param name="tokenIndex">The index of the token.</param>
+        /// <param name="tag">The part-of-speech tag.</param>
         public void SetTokenTag(int tokenIndex, PartOfSpeech tag)
         {
             Parent.SetTokenTag(tokenIndex, Index, tag);
         }
 
+        /// <summary>Gets the tokenized text representation of the span.</summary>
         [JsonIgnore]
         public string TokenizedValue
         {
@@ -302,6 +354,11 @@ namespace Catalyst
             return (finalIndex, longestEntityType, finalFrequency);
         }
 
+        /// <summary>
+        /// Returns an ordered enumerable of entity types, preferring longer entities.
+        /// </summary>
+        /// <param name="entityTypes">The collection of entity types.</param>
+        /// <returns>An ordered enumerable of entity types.</returns>
         public static IOrderedEnumerable<EntityType> PreferLongerEntities(IEnumerable<EntityType> entityTypes)
         {
             //This method ensures we first try to enumerate the longest entities (i.e. starting with Begin), followed by Single entities
@@ -309,6 +366,11 @@ namespace Catalyst
             return entityTypes.OrderBy(et => (char)et.Tag);
         }
 
+        /// <summary>
+        /// Rents an array of tokens from the <see cref="ArrayPool{Token}"/> and fills it with the tokens in the span.
+        /// </summary>
+        /// <param name="actualLength">The number of tokens filled in the array.</param>
+        /// <returns>An array of tokens. The caller is responsible for returning it to the pool.</returns>
         public Token[] ToTokenSpanPolled(out int actualLength)
         {
             var tkc = TokensCount;

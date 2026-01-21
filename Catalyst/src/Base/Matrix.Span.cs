@@ -10,18 +10,31 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 namespace Catalyst
 {
+    /// <summary>
+    /// Represents a matrix of floating-point numbers.
+    /// </summary>
     // Cannot use [MessagePackObject] here, as it will limit the maximum size of the matrix - have to instead serialize manually to a stream
     public class Matrix : IMatrix
     {
+        /// <summary>Gets the number of rows in the matrix.</summary>
         public int Rows { get; private set; }
+
+        /// <summary>Gets the number of columns in the matrix.</summary>
         public int Columns { get; private set; }
 
+        /// <summary>The raw matrix data.</summary>
         public float[] Data;
 
         internal Matrix()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix"/> class.
+        /// </summary>
+        /// <param name="rows">The number of rows.</param>
+        /// <param name="columns">The number of columns.</param>
+        /// <param name="data">The raw data.</param>
         public Matrix(int rows, int columns, float[][] data)
         {
             Rows = rows;
@@ -42,6 +55,11 @@ namespace Catalyst
             return m;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix"/> class with the specified dimensions.
+        /// </summary>
+        /// <param name="rows">The number of rows.</param>
+        /// <param name="columns">The number of columns.</param>
         public Matrix(int rows, int columns)
         {
             Rows = rows;
@@ -49,12 +67,21 @@ namespace Catalyst
             Data = new float[rows * columns];
         }
 
+        /// <summary>
+        /// Gets the specified row.
+        /// </summary>
+        /// <param name="row">The row index.</param>
+        /// <returns>A span containing the row data.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<float> GetRow(int row)
         {
             return Data.AsSpan().Slice(row*Columns, Columns);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix"/> class with the specified raw data.
+        /// </summary>
+        /// <param name="data">The raw data.</param>
         public Matrix(float[][] data)
         {
             Rows = data.Length;
@@ -65,6 +92,11 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Writes the matrix to a stream with the specified quantization.
+        /// </summary>
+        /// <param name="stream">The stream to write to.</param>
+        /// <param name="quantization">The quantization type.</param>
         public void ToStream(Stream stream, QuantizationType quantization)
         {
             MessagePackBinary.WriteInt32(stream, Rows);
@@ -107,6 +139,12 @@ namespace Catalyst
             stream.Flush();
         }
 
+        /// <summary>
+        /// Reads a matrix from a stream with the specified quantization.
+        /// </summary>
+        /// <param name="stream">The stream to read from.</param>
+        /// <param name="quantization">The quantization type.</param>
+        /// <returns>A <see cref="Matrix"/> instance.</returns>
         public static Matrix FromStream(Stream stream, QuantizationType quantization)
         {
             var Rows    = MessagePackBinary.ReadInt32(stream);
@@ -147,12 +185,23 @@ namespace Catalyst
             return m;
         }
 
+        /// <summary>
+        /// Gets or sets the value at the specified row and column.
+        /// </summary>
+        /// <param name="i">The row index.</param>
+        /// <param name="j">The column index.</param>
+        /// <returns>The value.</returns>
         public float this[int i, int j]
         {
             get { return Data[i * Columns + j]; }
             set { Data[i * Columns + j] = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the specified row.
+        /// </summary>
+        /// <param name="i">The row index.</param>
+        /// <returns>A span containing the row data.</returns>
         public Span<float> this[int i]
         {
             get { return Data.AsSpan().Slice(i * Columns, Columns); }
@@ -160,6 +209,10 @@ namespace Catalyst
         }
 
 
+        /// <summary>
+        /// Fills the matrix with zeros.
+        /// </summary>
+        /// <returns>The current matrix instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix Zero()
         {
@@ -167,6 +220,11 @@ namespace Catalyst
             return this;
         }
 
+        /// <summary>
+        /// Fills the matrix with values from a uniform distribution between -a and a.
+        /// </summary>
+        /// <param name="a">The distribution parameter.</param>
+        /// <returns>The current matrix instance.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix Uniform(float a)
         {
@@ -180,6 +238,11 @@ namespace Catalyst
             return this;
         }
 
+        /// <summary>
+        /// Resizes the matrix and fills new rows with values from a uniform distribution.
+        /// </summary>
+        /// <param name="newRows">The new number of rows.</param>
+        /// <param name="a">The distribution parameter.</param>
         public void ResizeAndFillRows(int newRows, float a)
         {
             float a2 = 2 * a;
@@ -194,18 +257,35 @@ namespace Catalyst
             Rows = newRows;
         }
 
+        /// <summary>
+        /// Adds a scaled vector to the specified row.
+        /// </summary>
+        /// <param name="vec">The vector to add.</param>
+        /// <param name="i">The row index.</param>
+        /// <param name="a">The scaling factor.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddToRow(ReadOnlySpan<float> vec, int i, float a)
         {
             SIMD.MultiplyAndAdd(Data.AsSpan().Slice(i*Columns, Columns), vec, a);
         }
 
+        /// <summary>
+        /// Adds a vector to the specified row.
+        /// </summary>
+        /// <param name="vec">The vector to add.</param>
+        /// <param name="i">The row index.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddToRow(ReadOnlySpan<float> vec, int i)
         {
             SIMD.Add(Data.AsSpan().Slice(i * Columns, Columns), vec);
         }
 
+        /// <summary>
+        /// Computes the dot product of a vector and the specified row.
+        /// </summary>
+        /// <param name="vec">The vector.</param>
+        /// <param name="i">The row index.</param>
+        /// <returns>The dot product.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float DotRow(ReadOnlySpan<float> vec, int i)
         {
@@ -214,6 +294,12 @@ namespace Catalyst
             return d;
         }
 
+        /// <summary>
+        /// Computes the dot product of two vectors.
+        /// </summary>
+        /// <param name="vec">The first vector.</param>
+        /// <param name="other">The second vector.</param>
+        /// <returns>The dot product.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float DotRow(ReadOnlySpan<float> vec, ReadOnlySpan<float> other)
         {
@@ -222,6 +308,11 @@ namespace Catalyst
             return d;
         }
 
+        /// <summary>
+        /// Multiplies this matrix by another matrix.
+        /// </summary>
+        /// <param name="other">The other matrix.</param>
+        /// <returns>The resulting matrix.</returns>
         public Matrix Multiply(Matrix other)
         {
             var M = new Matrix(Rows, other.Columns);
@@ -240,6 +331,10 @@ namespace Catalyst
             return M;
         }
 
+        /// <summary>
+        /// Transposes the matrix.
+        /// </summary>
+        /// <returns>The transposed matrix.</returns>
         public Matrix Transpose()
         {
             var M = new Matrix(Columns, Rows);
