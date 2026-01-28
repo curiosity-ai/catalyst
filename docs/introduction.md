@@ -15,7 +15,7 @@
 Understanding Catalyst requires familiarity with its core building blocks:
 
 ### 1. Document
-The `Document` class represents a piece of text to be processed. It holds the original text and all the metadata generated during processing (tokens, spans, entities, etc.).
+The `Document` class represents a piece of text to be processed. It holds the original text and all the metadata generated during processing (tokens, spans, entities, etc.). See [Document](document.md) for more details.
 
 ```csharp
 var doc = new Document("The quick brown fox jumps over the lazy dog", Language.English);
