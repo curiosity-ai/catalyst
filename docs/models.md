@@ -90,6 +90,30 @@ A statistical model for NER, typically trained on large datasets like WikiNER.
 var ner = await AveragePerceptronEntityRecognizer.FromStoreAsync(Language.English, Version.Latest, "WikiNER");
 ```
 
+### Iterating through Entities
+
+Once a document has been processed by an NER model, you can iterate through the captured entities:
+
+```csharp
+foreach (var span in doc)
+{
+    foreach (var entity in span.GetEntities())
+    {
+        Console.WriteLine($"Entity: {entity.Value} [{entity.EntityType.Type}]");
+    }
+}
+```
+
+Or using LINQ:
+
+```csharp
+var entities = doc.SelectMany(span => span.GetEntities());
+foreach(var entity in entities)
+{
+    Console.WriteLine($"Entity: {entity.Value} [{entity.EntityType.Type}]");
+}
+```
+
 ## Embeddings
 
 Embeddings represent words or documents as dense vectors in a continuous vector space.
