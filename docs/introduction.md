@@ -40,7 +40,18 @@ Catalyst uses the `Language` enum to specify the language of a document or model
 
 ## Getting Started
 
-To use Catalyst, you need to install the `Catalyst` NuGet package. You should also register the languages you intend to use and configure the model storage.
+To use Catalyst, you need to install the `Catalyst` NuGet package.
+
+### Language Packages
+
+All language-specific data and models are provided as separate NuGet packages. You can find all available packages [here](https://www.nuget.org/packages?q=catalyst.models).
+
+Before using a language, you must install its respective NuGet package and register it in your code.
+
+```bash
+# Example: Adding English language support via dotnet CLI
+dotnet add package Catalyst.Models.English
+```
 
 ```csharp
 using Catalyst;
@@ -70,3 +81,23 @@ Catalyst uses a storage mechanism to load and cache models. By default, it can d
 ```csharp
 Storage.Current = new DiskStorage("catalyst-models");
 ```
+
+## Supported Languages
+
+Below is a list of supported languages and their corresponding NuGet packages.
+
+| Language | NuGet Package |
+| --- | --- |
+| English | [Catalyst.Models.English](https://www.nuget.org/packages/Catalyst.Models.English) |
+| French | [Catalyst.Models.French](https://www.nuget.org/packages/Catalyst.Models.French) |
+| German | [Catalyst.Models.German](https://www.nuget.org/packages/Catalyst.Models.German) |
+| Spanish | [Catalyst.Models.Spanish](https://www.nuget.org/packages/Catalyst.Models.Spanish) |
+| Italian | [Catalyst.Models.Italian](https://www.nuget.org/packages/Catalyst.Models.Italian) |
+| Dutch | [Catalyst.Models.Dutch](https://www.nuget.org/packages/Catalyst.Models.Dutch) |
+| Portuguese | [Catalyst.Models.Portuguese](https://www.nuget.org/packages/Catalyst.Models.Portuguese) |
+| Russian | [Catalyst.Models.Russian](https://www.nuget.org/packages/Catalyst.Models.Russian) |
+| Chinese | [Catalyst.Models.Chinese](https://www.nuget.org/packages/Catalyst.Models.Chinese) |
+| Japanese | [Catalyst.Models.Japanese](https://www.nuget.org/packages/Catalyst.Models.Japanese) |
+| ... and many more | [See all packages](https://www.nuget.org/packages?q=catalyst.models) |
+
+For a full list of supported languages, check the `Languages` folder in the repository or search NuGet for `Catalyst.Models`.

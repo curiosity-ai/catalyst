@@ -4,6 +4,18 @@ The `Pipeline` class is the central orchestrator in Catalyst. It defines the seq
 
 ## Creating a Pipeline
 
+Before creating a pipeline for a specific language, ensure you have installed the corresponding NuGet package and registered it.
+
+```bash
+# Example: Adding English language support
+dotnet add package Catalyst.Models.English
+```
+
+```csharp
+// Register the language models
+Catalyst.Models.English.Register();
+```
+
 ### Default Pipeline
 You can easily create a default pipeline for a specific language using `Pipeline.ForAsync`. This typically includes a tokenizer, a sentence detector, and a POS tagger.
 
@@ -12,10 +24,17 @@ var nlp = await Pipeline.ForAsync(Language.English);
 ```
 
 ### Tokenizer-only Pipeline
-If you only need tokenization (and optionally sentence detection), use `Pipeline.TokenizerForAsync`.
+If you only need tokenization (and optionally sentence detection), use `Pipeline.TokenizerForAsync`. This is **faster** than the default pipeline as it skips the part-of-speech tagging step.
 
 ```csharp
 var nlp = await Pipeline.TokenizerForAsync(Language.English, sentenceDetector: true);
+```
+
+You can also create a pipeline and explicitly disable the tagger to improve performance:
+
+```csharp
+// Creates a pipeline with tokenizer and sentence detector, but no tagger
+var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
 ```
 
 ## Customizing the Pipeline

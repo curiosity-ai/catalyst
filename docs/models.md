@@ -15,7 +15,7 @@ var tokenizer = new FastTokenizer(Language.English);
 
 ## Part-of-Speech (POS) Taggers
 
-POS taggers assign grammatical tags (e.g., Noun, Verb, Adjective) to each token.
+POS taggers assign grammatical tags (e.g., Noun, Verb, Adjective) to each token. Catalyst uses [Universal Dependencies](https://universaldependencies.org/) for POS tagging.
 
 ### AveragePerceptronTagger
 A fast and accurate POS tagger based on the averaged perceptron algorithm.
@@ -23,6 +23,22 @@ A fast and accurate POS tagger based on the averaged perceptron algorithm.
 ```csharp
 var tagger = await AveragePerceptronTagger.FromStoreAsync(Language.English, Version.Latest, "");
 ```
+
+**Example Output:**
+
+For the sentence: *"The quick brown fox jumps over the lazy dog"*
+
+| Token | POS Tag |
+| --- | --- |
+| The | DET |
+| quick | ADJ |
+| brown | ADJ |
+| fox | NOUN |
+| jumps | VERB |
+| over | ADP |
+| the | DET |
+| lazy | ADJ |
+| dog | NOUN |
 
 ## Named Entity Recognition (NER)
 
@@ -46,9 +62,16 @@ isApattern.NewPattern(
     "Is+Noun",
     mp => mp.Add(
         new PatternUnit(P.Single().WithToken("is").WithPOS(PartOfSpeech.VERB)),
-        new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN))
+        new PatternUnit(P.Multiple().WithPOS(PartOfSpeech.NOUN, PartOfSpeech.PROPN, PartOfSpeech.DET, PartOfSpeech.ADJ))
 ));
 ```
+
+**Matching Examples:**
+
+This pattern will match sequences like:
+- *"is a dog"*
+- *"is the quick brown fox"*
+- *"is Catalyst"*
 
 ### 3. AveragePerceptronEntityRecognizer
 A statistical model for NER, typically trained on large datasets like WikiNER.
@@ -67,6 +90,18 @@ Supports training and using FastText word and document embeddings.
 ```csharp
 var ft = new FastText(Language.English, 0, "my-fasttext-model");
 ft.Train(nlp.Process(docs));
+```
+
+**Example: Vector Retrieval and Similarity**
+
+```csharp
+// Get vector for a word
+float[] vector = ft.GetVector("apple", Language.English);
+
+// Compute similarity between two words
+float[] vector1 = ft.GetVector("apple", Language.English);
+float[] vector2 = ft.GetVector("orange", Language.English);
+float similarity = vector1.CosineSimilarityWith(vector2);
 ```
 
 ## Language Detectors
@@ -91,11 +126,15 @@ var detector = await LanguageDetector.FromStoreAsync(Language.Any, Version.Lates
 
 Normalizers transform text to a standard form (e.g., lowercasing, removing punctuation).
 
-- `LowerCaseNormalizer`
-- `UpperCaseNormalizer`
-- `HtmlNormalizer`
-- `FoldToAsciiNormalizer`
-- `RemovePunctuationNormalizer`
+| Normalizer | Input | Output |
+| --- | --- | --- |
+| `LowerCaseNormalizer` | *"Hello World"* | *"hello world"* |
+| `UpperCaseNormalizer` | *"Hello World"* | *"HELLO WORLD"* |
+| `HtmlNormalizer` | *"&lt;b&gt;Hello&lt;/b&gt;"* | *"Hello"* |
+| `FoldToAsciiNormalizer` | *"Crème brûlée"* | *"Creme brulee"* |
+| `RemovePunctuationNormalizer` | *"Hello, World!"* | *"Hello World"* |
+
+**Usage:**
 
 ```csharp
 nlp.Add(new LowerCaseNormalizer());
