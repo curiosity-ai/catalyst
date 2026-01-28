@@ -53,6 +53,15 @@ spotter.AddEntry("C#");
 spotter.AddEntry("Python");
 ```
 
+**Example Output:**
+
+For the sentence: *"I love coding in C# and Python."*
+
+| Entity | Entity Type |
+| --- | --- |
+| C# | ProgrammingLanguage |
+| Python | ProgrammingLanguage |
+
 ### 2. PatternSpotter
 A rule-based model that uses complex patterns of tokens to identify entities. Conceptual equivalent of RegEx but on tokens.
 
@@ -66,12 +75,13 @@ isApattern.NewPattern(
 ));
 ```
 
-**Matching Examples:**
+**Example Output:**
 
-This pattern will match sequences like:
-- *"is a dog"*
-- *"is the quick brown fox"*
-- *"is Catalyst"*
+For the sentence: *"Catalyst is a high-performance library."*
+
+| Match | Entity Type |
+| --- | --- |
+| is a high-performance library | IsA |
 
 ### 3. AveragePerceptronEntityRecognizer
 A statistical model for NER, typically trained on large datasets like WikiNER.
