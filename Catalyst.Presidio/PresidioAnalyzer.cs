@@ -12,59 +12,26 @@ namespace Catalyst.Presidio
     public class PresidioAnalyzer
     {
         private Pipeline _nlp;
-        private Language _language = Language.English;
+        private Language _language;
 
-        public PresidioAnalyzer()
-        {
-            _nlp = new Pipeline();
-        }
+        public Language Language => _language;
 
-        public async Task InitializeAsync(Language language = Language.English)
+        private PresidioAnalyzer(Language language)
         {
             _language = language;
-            // Add Tokenizer
-            var tokenizer = new FastTokenizer(language);
-            _nlp.Add(tokenizer);
+            _nlp = new Pipeline();
+            _nlp.Add(new FastTokenizer(language));
+        }
 
-            // Add Email Spotter
-            var emailSpotter = new PatternSpotter(language, 0, "email", "EMAIL_ADDRESS");
-            emailSpotter.NewPattern("Email", mp => mp.Add(new PatternUnit(P.Single().LikeEmail())));
-            _nlp.Add(emailSpotter);
+        public static PresidioAnalyzer For(Language language)
+        {
+            return new PresidioAnalyzer(language);
+        }
 
-            // Add URL Spotter
-            var urlSpotter = new PatternSpotter(language, 0, "url", "URL");
-            urlSpotter.NewPattern("URL", mp => mp.Add(new PatternUnit(P.Single().LikeURL())));
-            _nlp.Add(urlSpotter);
-
-            // Add Phone Spotter
-            var phoneSpotter = new PatternSpotter(language, 0, "phone", "PHONE_NUMBER");
-            // Matches 555-123-4567 (Single token)
-            phoneSpotter.NewPattern("Phone-US-Single", mp => mp.Add(new PatternUnit(P.Single().WithShape("999-999-9999"))));
-            // Matches (555) 123-4567
-            phoneSpotter.NewPattern("Phone-US-Parens", mp => mp.Add(
-                new PatternUnit(P.Single().IsOpeningParenthesis()),
-                new PatternUnit(P.Single().IsNumeric().WithLength(3, 3)),
-                new PatternUnit(P.Single().IsClosingParenthesis()),
-                new PatternUnit(P.Single().WithShape("999-9999"))
-            ));
-            _nlp.Add(phoneSpotter);
-
-            // Add Credit Card Spotter
-            var ccSpotter = new PatternSpotter(language, 0, "cc", "CREDIT_CARD");
-            // Matches 1234 5678 1234 5678
-            ccSpotter.NewPattern("CC-4x4", mp => mp.Add(
-                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
-                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
-                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
-                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4))
-            ));
-            _nlp.Add(ccSpotter);
-
-            // Add IP Address Spotter
-             var ipSpotter = new PatternSpotter(language, 0, "ip", "IP_ADDRESS");
-             // Matches 192.168.1.1
-             ipSpotter.NewPattern("IP-v4", mp => mp.Add(new PatternUnit(P.Single().WithShape("999.999.9.9"))));
-             _nlp.Add(ipSpotter);
+        public PresidioAnalyzer AddRecognizer(IProcess model)
+        {
+            _nlp.Add(model);
+            return this;
         }
 
         public List<RecognizerResult> Analyze(string text)
@@ -82,6 +49,8 @@ namespace Catalyst.Presidio
                 {
                      foreach (var et in tokens[i].EntityTypes)
                      {
+                         if (et.Type == "EmailOrURL") continue;
+
                          if (et.Tag == EntityTag.Single)
                          {
                              var result = new RecognizerResult
