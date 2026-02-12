@@ -22,21 +22,6 @@ namespace Catalyst.Presidio
             return analyzer.AddRecognizer(urlSpotter);
         }
 
-        public static PresidioAnalyzer AddPhone(this PresidioAnalyzer analyzer)
-        {
-            var phoneSpotter = new PatternSpotter(analyzer.Language, 0, "phone", "PHONE_NUMBER");
-            // Matches 555-123-4567 (Single token)
-            phoneSpotter.NewPattern("Phone-US-Single", mp => mp.Add(new PatternUnit(P.Single().WithShape("999-999-9999"))));
-            // Matches (555) 123-4567
-            phoneSpotter.NewPattern("Phone-US-Parens", mp => mp.Add(
-                new PatternUnit(P.Single().IsOpeningParenthesis()),
-                new PatternUnit(P.Single().IsNumeric().WithLength(3, 3)),
-                new PatternUnit(P.Single().IsClosingParenthesis()),
-                new PatternUnit(P.Single().WithShape("999-9999"))
-            ));
-            return analyzer.AddRecognizer(phoneSpotter);
-        }
-
         public static PresidioAnalyzer AddCreditCard(this PresidioAnalyzer analyzer)
         {
             var ccSpotter = new PatternSpotter(analyzer.Language, 0, "cc", "CREDIT_CARD");
