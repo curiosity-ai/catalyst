@@ -12,7 +12,7 @@ namespace Catalyst.Tests.Languages
         {
             Catalyst.Models.Croatian.Register();
             // tagger: false due to known serialization issue with MessagePack
-            var nlp = await Pipeline.ForAsync(Language.Croatian, tagger: false);
+            var nlp = await Pipeline.ForAsync(Language.Croatian);
             var doc = new Document("Test string", Language.Croatian);
             nlp.ProcessSingle(doc);
             Assert.True(doc.TokensCount > 0);

@@ -12,7 +12,7 @@ namespace Catalyst.Tests.Languages
         {
             Catalyst.Models.Finnish.Register();
             // tagger: false due to known serialization issue with MessagePack
-            var nlp = await Pipeline.ForAsync(Language.Finnish, tagger: false);
+            var nlp = await Pipeline.ForAsync(Language.Finnish);
             var doc = new Document("Test string", Language.Finnish);
             nlp.ProcessSingle(doc);
             Assert.True(doc.TokensCount > 0);

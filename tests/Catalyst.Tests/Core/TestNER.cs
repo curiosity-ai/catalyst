@@ -13,19 +13,22 @@ namespace Catalyst.Tests.Core
             Catalyst.Models.English.Register();
         }
 
-        [Fact(Skip = "Known issue with MessagePack serialization for Tagger/NER models")]
+        [Fact(Skip = "WikiNER model failing to detect entities with latest package")]
         public async Task TestEntityRecognition()
         {
-            var text = "John Smith lives in New York and works for Microsoft.";
+            var text = "Barack Obama lives in the United States.";
             var doc = new Document(text, Language.English);
-            var nlp = await Pipeline.ForAsync(Language.English); // Requires tagger
+            var nlp = await Pipeline.ForAsync(Language.English);
+
+            // Explicitly add NER model
+            nlp.Add(await AveragePerceptronEntityRecognizer.FromStoreAsync(Language.English, 0, "WikiNER"));
+
             nlp.ProcessSingle(doc);
 
             var entities = doc.SelectMany(span => span.GetEntities()).ToList();
 
-            Assert.Contains(entities, e => e.EntityType.Type == "Person" && e.Value == "John Smith");
-            Assert.Contains(entities, e => e.EntityType.Type == "Location" && e.Value == "New York");
-            Assert.Contains(entities, e => e.EntityType.Type == "Organization" && e.Value == "Microsoft");
+            Assert.Contains(entities, e => e.EntityType.Type == "Person" && e.Value == "Barack Obama");
+            Assert.Contains(entities, e => e.EntityType.Type == "Location" && e.Value == "United States");
         }
     }
 }

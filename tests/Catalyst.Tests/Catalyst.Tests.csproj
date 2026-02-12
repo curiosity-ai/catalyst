@@ -49,7 +49,7 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Catalyst" Version="1.0.39634" />
+    <PackageReference Include="Catalyst" Version="1.0.64265" />
     <PackageReference Include="Catalyst.Models.Latin" Version="1.0.30952" />
     <PackageReference Include="Catalyst.Models.Chinese" Version="1.0.30952" />
     <PackageReference Include="Catalyst.Models.Estonian" Version="1.0.30952" />

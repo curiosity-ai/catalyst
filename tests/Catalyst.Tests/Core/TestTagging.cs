@@ -13,7 +13,7 @@ namespace Catalyst.Tests.Core
             Catalyst.Models.English.Register();
         }
 
-        [Fact(Skip = "Known issue with MessagePack serialization for Tagger models")]
+        [Fact]
         public async Task TestPOSTagging()
         {
             var text = "The cat sat on the mat.";

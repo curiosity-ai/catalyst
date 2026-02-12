@@ -12,7 +12,7 @@ namespace Catalyst.Tests.Languages
         {
             Catalyst.Models.Faroese.Register();
             // tagger: false due to known serialization issue with MessagePack
-            var nlp = await Pipeline.ForAsync(Language.Faroese, tagger: false);
+            var nlp = await Pipeline.ForAsync(Language.Faroese);
             var doc = new Document("Test string", Language.Faroese);
             nlp.ProcessSingle(doc);
             Assert.True(doc.TokensCount > 0);
