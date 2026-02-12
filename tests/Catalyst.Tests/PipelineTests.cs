@@ -15,7 +15,7 @@ namespace Catalyst.Tests
         {
             English.Register();
             ObjectStore.AddOtherAssembly(typeof(Pipeline).Assembly);
-            var pipeline1 = await Pipeline.ForAsync(Language.English);
+            var pipeline1 = await Pipeline.ForAsync(Language.English, tagger: false);
 
             pipeline1.Version = 123;
             pipeline1.Tag = "Test";
@@ -38,7 +38,7 @@ namespace Catalyst.Tests
         public async Task MessyUnicode(string text)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(text, Language.English);
             nlp.ProcessSingle(doc);
             Assert.True(doc.TokensCount == 0);
@@ -49,7 +49,7 @@ namespace Catalyst.Tests
         public async Task HtmlNormalizer(string text)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             nlp.Add(new Models.HtmlNormalizer());
             var doc = new Document(text, Language.English);
             nlp.ProcessSingle(doc);
@@ -62,7 +62,7 @@ namespace Catalyst.Tests
         public async Task Abbreviations(string text)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(text, Language.English);
             nlp.ProcessSingle(doc);
 
@@ -77,7 +77,7 @@ namespace Catalyst.Tests
         public async Task TextPreviousNext(string text)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(text, Language.English);
             nlp.ProcessSingle(doc);
             var tokens = doc.SelectMany(s => s.Tokens).ToArray();
@@ -101,7 +101,7 @@ namespace Catalyst.Tests
             var spotter = new Spotter(Language.English, 0, "", "Entity");
             spotter.AddEntry("TEST");
 
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             nlp.Add(spotter);
 
             var doc = new Document(text, Language.English);
@@ -115,7 +115,7 @@ namespace Catalyst.Tests
         public async Task TokenizerDoesNotThrowTimeoutDueToMalformedURLs(string file)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
         }
@@ -125,7 +125,7 @@ namespace Catalyst.Tests
         public async Task TokenizerDoesNotThrowTimeoutDueToMalformedURLs2(string file)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
         }
@@ -135,7 +135,7 @@ namespace Catalyst.Tests
         public async Task TokenizerHandlesComplexFile(string file)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
         }
@@ -146,7 +146,7 @@ namespace Catalyst.Tests
         public async Task TokenizerHandlesJsonFile(string file)
         {
             English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English);
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
             var doc = new Document(File.ReadAllText(file), Language.English);
             nlp.ProcessSingle(doc);
         }
