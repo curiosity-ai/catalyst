@@ -36,21 +36,34 @@ namespace Catalyst.Presidio
             urlSpotter.NewPattern("URL", mp => mp.Add(new PatternUnit(P.Single().LikeURL())));
             _nlp.Add(urlSpotter);
 
-            // Add Phone Spotter (Regex)
-            // Simple US Phone regex
-            var phoneRegex = @"\b(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b";
-            var phoneSpotter = new RegexSpotter(phoneRegex, "PHONE_NUMBER", language);
+            // Add Phone Spotter
+            var phoneSpotter = new PatternSpotter(language, 0, "phone", "PHONE_NUMBER");
+            // Matches 555-123-4567 (Single token)
+            phoneSpotter.NewPattern("Phone-US-Single", mp => mp.Add(new PatternUnit(P.Single().WithShape("999-999-9999"))));
+            // Matches (555) 123-4567
+            phoneSpotter.NewPattern("Phone-US-Parens", mp => mp.Add(
+                new PatternUnit(P.Single().IsOpeningParenthesis()),
+                new PatternUnit(P.Single().IsNumeric().WithLength(3, 3)),
+                new PatternUnit(P.Single().IsClosingParenthesis()),
+                new PatternUnit(P.Single().WithShape("999-9999"))
+            ));
             _nlp.Add(phoneSpotter);
 
-            // Add Credit Card Spotter (Regex)
-            // Simple regex, not matching all
-            var ccRegex = @"\b(?:\d[ -]*?){13,16}\b";
-            var ccSpotter = new RegexSpotter(ccRegex, "CREDIT_CARD", language);
+            // Add Credit Card Spotter
+            var ccSpotter = new PatternSpotter(language, 0, "cc", "CREDIT_CARD");
+            // Matches 1234 5678 1234 5678
+            ccSpotter.NewPattern("CC-4x4", mp => mp.Add(
+                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
+                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
+                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
+                new PatternUnit(P.Single().IsNumeric().WithLength(4, 4))
+            ));
             _nlp.Add(ccSpotter);
 
-            // Add IP Address Spotter (Regex)
-             var ipRegex = @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b";
-             var ipSpotter = new RegexSpotter(ipRegex, "IP_ADDRESS", language);
+            // Add IP Address Spotter
+             var ipSpotter = new PatternSpotter(language, 0, "ip", "IP_ADDRESS");
+             // Matches 192.168.1.1
+             ipSpotter.NewPattern("IP-v4", mp => mp.Add(new PatternUnit(P.Single().WithShape("999.999.9.9"))));
              _nlp.Add(ipSpotter);
         }
 
@@ -119,9 +132,6 @@ namespace Catalyst.Presidio
                                              {
                                                  results.Add(result);
                                              }
-                                             // We consumed up to j for this entity type.
-                                             // We don't advance i because overlapping entities might exist.
-                                             // But strictly speaking, if we found B...E, we handled this entity instance.
                                              break;
                                          }
                                      }
