@@ -750,7 +750,7 @@ namespace Catalyst.Models
                     if (token.ValueAsSpan[i] == '@') countAt++;
                     if (token.ValueAsSpan[i] == '.') countDot++;
                 }
-                return countAt == 1 && countDot > 1;
+                return countAt == 1 && countDot >= 1;
             }
             else
             {
