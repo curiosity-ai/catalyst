@@ -54,5 +54,21 @@ namespace Catalyst.Tests.Core
             Assert.Contains(",", tokens);
             Assert.Contains("!", tokens);
         }
+
+        [Fact]
+        public async Task TestTokenDataBounds()
+        {
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
+            var doc = new Document("Test", Language.English);
+            nlp.ProcessSingle(doc);
+
+            // Accessing TokenData inside the list of lists
+            var tokenDataList = doc.TokensData.SelectMany(td => td).ToList();
+            Assert.NotEmpty(tokenDataList);
+            // Verify bounds exist (checking LowerBound/UpperBound indirectly via array if field access fails, but struct has fields)
+            // If NuGet package TokenData is different, we use Bounds array
+            Assert.True(tokenDataList[0].Bounds[0] == 0);
+            Assert.True(tokenDataList[0].Bounds[1] == 3);
+        }
     }
 }

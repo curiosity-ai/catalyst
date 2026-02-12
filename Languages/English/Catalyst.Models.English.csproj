@@ -33,6 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Catalyst/Catalyst.csproj" />
+    <PackageReference Include="Catalyst" Version="1.0.39634" />
   </ItemGroup>
 </Project>

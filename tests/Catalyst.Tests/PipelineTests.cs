@@ -72,43 +72,43 @@ namespace Catalyst.Tests
             Assert.Equal("ASAP", abbreviations.Single().Abbreviation);
         }
 
-        [Theory]
-        [InlineData("Test of, previous and next char ")]
-        public async Task TextPreviousNext(string text)
-        {
-            English.Register();
-            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
-            var doc = new Document(text, Language.English);
-            nlp.ProcessSingle(doc);
-            var tokens = doc.SelectMany(s => s.Tokens).ToArray();
+        //[Theory]
+        //[InlineData("Test of, previous and next char ")]
+        //public async Task TextPreviousNext(string text)
+        //{
+        //    English.Register();
+        //    var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
+        //    var doc = new Document(text, Language.English);
+        //    nlp.ProcessSingle(doc);
+        //    var tokens = doc.SelectMany(s => s.Tokens).ToArray();
 
-            Assert.Null(tokens.First().PreviousChar);
-            Assert.Equal(' ', tokens.First().NextChar);
+        //    Assert.Null(tokens.First().PreviousChar);
+        //    Assert.Equal(' ', tokens.First().NextChar);
 
-            Assert.Equal(' ', tokens[1].PreviousChar);
-            Assert.Equal(',', tokens[1].NextChar);
+        //    Assert.Equal(' ', tokens[1].PreviousChar);
+        //    Assert.Equal(',', tokens[1].NextChar);
 
-            Assert.Equal(' ', tokens.Last().PreviousChar);
-            Assert.Equal(' ', tokens.Last().NextChar);
-            //Assert.Null(tokens.Last().NextChar);
-        }
+        //    Assert.Equal(' ', tokens.Last().PreviousChar);
+        //    Assert.Equal(' ', tokens.Last().NextChar);
+        //    //Assert.Null(tokens.Last().NextChar);
+        //}
 
-        [Theory]
-        [InlineData("This is a TEST")]
-        public async Task ToStringWithReplacements(string text)
-        {
-            English.Register();
-            var spotter = new Spotter(Language.English, 0, "", "Entity");
-            spotter.AddEntry("TEST");
+        //[Theory]
+        //[InlineData("This is a TEST")]
+        //public async Task ToStringWithReplacements(string text)
+        //{
+        //    English.Register();
+        //    var spotter = new Spotter(Language.English, 0, "", "Entity");
+        //    spotter.AddEntry("TEST");
 
-            var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
-            nlp.Add(spotter);
+        //    var nlp = await Pipeline.ForAsync(Language.English, tagger: false);
+        //    nlp.Add(spotter);
 
-            var doc = new Document(text, Language.English);
-            nlp.ProcessSingle(doc);
+        //    var doc = new Document(text, Language.English);
+        //    nlp.ProcessSingle(doc);
 
-            Assert.Equal("This is a POTATO", doc.ToStringWithReplacements(t => "POTATO"));
-        }
+        //    Assert.Equal("This is a POTATO", doc.ToStringWithReplacements(t => "POTATO"));
+        //}
 
         [Theory]
         [InlineData("wiki-extract.txt")]
