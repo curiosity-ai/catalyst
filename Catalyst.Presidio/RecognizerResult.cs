@@ -8,12 +8,12 @@ namespace Catalyst.Presidio
     public class RecognizerResult
     {
         /// <summary>
-        /// Gets or sets the start index of the identified PII.
+        /// Gets or sets the start index of the identified PII (inclusive).
         /// </summary>
         public int Start { get; set; }
 
         /// <summary>
-        /// Gets or sets the end index of the identified PII.
+        /// Gets or sets the end index of the identified PII (inclusive).
         /// </summary>
         public int End { get; set; }
 

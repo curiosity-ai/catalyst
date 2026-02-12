@@ -115,6 +115,66 @@ namespace Catalyst.Presidio.Tests
         }
 
         [Fact]
+        public async Task TestUsBank()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddUsBankNumber();
+            var text = "Routing: 123456789";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "US_BANK_NUMBER" && text.Substring(r.Start, r.Length) == "123456789");
+        }
+
+        [Fact]
+        public async Task TestUkNhs()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddUkNhs();
+            var text = "NHS: 123 456 7890";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "UK_NHS" && text.Substring(r.Start, r.Length) == "123 456 7890");
+        }
+
+        [Fact]
+        public async Task TestEsNif()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddEsNif();
+            var text = "NIF: 12345678Z";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "ES_NIF" && text.Substring(r.Start, r.Length) == "12345678Z");
+        }
+
+        [Fact]
+        public async Task TestItFiscal()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddItFiscalCode();
+            var text = "CF: RSSMRA80A01H501U";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "IT_FISCAL_CODE" && text.Substring(r.Start, r.Length) == "RSSMRA80A01H501U");
+        }
+
+        [Fact]
+        public async Task TestSgNric()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddSgNric();
+            var text = "NRIC: S1234567D";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "SG_NRIC_FIN" && text.Substring(r.Start, r.Length) == "S1234567D");
+        }
+
+        [Fact]
+        public async Task TestAuAbn()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddAuAbn();
+            var text = "ABN: 51 824 753 556";
+            var results = analyzer.Analyze(text);
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "AU_ABN" && text.Substring(r.Start, r.Length) == "51 824 753 556");
+        }
+
+        [Fact]
         public async Task TestAll()
         {
             var analyzer = PresidioAnalyzer.For(Language.English).AddAllRecognizers();
