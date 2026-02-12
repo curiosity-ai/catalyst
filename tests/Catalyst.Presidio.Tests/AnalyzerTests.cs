@@ -82,6 +82,39 @@ namespace Catalyst.Presidio.Tests
         }
 
         [Fact]
+        public async Task TestIban()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddIban();
+            var text = "IBAN: GB12345678901234.";
+            var results = analyzer.Analyze(text);
+
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "IBAN_CODE" && text.Substring(r.Start, r.Length) == "GB12345678901234");
+        }
+
+        [Fact]
+        public async Task TestItin()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddUsItin();
+            var text = "ITIN: 987-65-4321.";
+            var results = analyzer.Analyze(text);
+
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "US_ITIN" && text.Substring(r.Start, r.Length) == "987-65-4321");
+        }
+
+        [Fact]
+        public async Task TestCrypto()
+        {
+            var analyzer = PresidioAnalyzer.For(Language.English).AddCrypto();
+            var text = "Send BTC to 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2.";
+            var results = analyzer.Analyze(text);
+
+            Assert.NotEmpty(results);
+            Assert.Contains(results, r => r.EntityType == "CRYPTO" && text.Substring(r.Start, r.Length) == "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2");
+        }
+
+        [Fact]
         public async Task TestAll()
         {
             var analyzer = PresidioAnalyzer.For(Language.English).AddAllRecognizers();
