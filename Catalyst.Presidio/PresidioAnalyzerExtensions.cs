@@ -39,7 +39,6 @@ namespace Catalyst.Presidio
         {
             var ipSpotter = new PatternSpotter(analyzer.Language, 0, "ip", "IP_ADDRESS");
             // Matches 192.168.1.1 or 10.0.0.1
-            // Try to use IsLikeURLorEmail which covers IP addresses internally in Catalyst
             ipSpotter.NewPattern("IP-LikeURL", mp => mp.Add(new PatternUnit(P.Single().LikeURL())));
             return analyzer.AddRecognizer(ipSpotter);
         }
@@ -63,9 +62,17 @@ namespace Catalyst.Presidio
         public static PresidioAnalyzer AddIban(this PresidioAnalyzer analyzer)
         {
             var ibanSpotter = new PatternSpotter(analyzer.Language, 0, "iban", "IBAN_CODE");
-            ibanSpotter.NewPattern("IBAN", mp => mp.Add(
-                new PatternUnit(P.Single().IsLetterOrDigit().WithLength(15, 34).WithPrefix("GB,DE,FR,IT,ES"))
-            ));
+
+            // WithPrefix only accepts one string. We need multiple patterns.
+            // Or rely on generic length + letter check.
+            // Let's add patterns for each common prefix group or generic.
+
+            foreach(var prefix in new[] { "GB", "DE", "FR", "IT", "ES" })
+            {
+                ibanSpotter.NewPattern($"IBAN-{prefix}", mp => mp.Add(
+                    new PatternUnit(P.Single().IsLetterOrDigit().WithLength(15, 34).WithPrefix(prefix))
+                ));
+            }
             return analyzer.AddRecognizer(ibanSpotter);
         }
 
@@ -81,9 +88,15 @@ namespace Catalyst.Presidio
         public static PresidioAnalyzer AddCrypto(this PresidioAnalyzer analyzer)
         {
             var cryptoSpotter = new PatternSpotter(analyzer.Language, 0, "crypto", "CRYPTO");
-            cryptoSpotter.NewPattern("BTC-Legacy", mp => mp.Add(
-                new PatternUnit(P.Single().IsLetterOrDigit().WithLength(26, 35).WithPrefix("1,3"))
+
+            // BTC Legacy: 1 or 3
+            cryptoSpotter.NewPattern("BTC-Legacy-1", mp => mp.Add(
+                new PatternUnit(P.Single().IsLetterOrDigit().WithLength(26, 35).WithPrefix("1"))
             ));
+            cryptoSpotter.NewPattern("BTC-Legacy-3", mp => mp.Add(
+                new PatternUnit(P.Single().IsLetterOrDigit().WithLength(26, 35).WithPrefix("3"))
+            ));
+
             cryptoSpotter.NewPattern("BTC-Segwit", mp => mp.Add(
                 new PatternUnit(P.Single().IsLetterOrDigit().WithLength(39, 62).WithPrefix("bc1"))
             ));
@@ -189,7 +202,7 @@ namespace Catalyst.Presidio
             return analyzer
                 .AddEmail()
                 .AddUrl()
-                .AddPhone()
+                .AddAllPhones()
                 .AddCreditCard()
                 .AddIp()
                 .AddUsSsn()

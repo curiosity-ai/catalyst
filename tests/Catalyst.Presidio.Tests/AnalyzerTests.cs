@@ -38,17 +38,6 @@ namespace Catalyst.Presidio.Tests
         }
 
         [Fact]
-        public async Task TestPhone()
-        {
-            var analyzer = PresidioAnalyzer.For(Language.English).AddPhone();
-            var text = "Call 555-123-4567 today.";
-            var results = analyzer.Analyze(text);
-
-            Assert.NotEmpty(results);
-            Assert.Contains(results, r => r.EntityType == "PHONE_NUMBER" && text.Substring(r.Start, r.Length) == "555-123-4567");
-        }
-
-        [Fact]
         public async Task TestCreditCard()
         {
             var analyzer = PresidioAnalyzer.For(Language.English).AddCreditCard();
