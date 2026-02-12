@@ -47,4 +47,65 @@
     <ProjectReference Include="..\..\Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Languages\Latin\Catalyst.Models.Latin.csproj" />
+    <ProjectReference Include="..\..\Languages\Chinese\Catalyst.Models.Chinese.csproj" />
+    <ProjectReference Include="..\..\Languages\Estonian\Catalyst.Models.Estonian.csproj" />
+    <ProjectReference Include="..\..\Languages\Portuguese\Catalyst.Models.Portuguese.csproj" />
+    <ProjectReference Include="..\..\Languages\Gaelic_Scottish_Gaelic\Catalyst.Models.Gaelic_Scottish_Gaelic.csproj" />
+    <ProjectReference Include="..\..\Languages\Norwegian\Catalyst.Models.Norwegian.csproj" />
+    <ProjectReference Include="..\..\Languages\Maltese\Catalyst.Models.Maltese.csproj" />
+    <ProjectReference Include="..\..\Languages\Serbian\Catalyst.Models.Serbian.csproj" />
+    <ProjectReference Include="..\..\Languages\Czech\Catalyst.Models.Czech.csproj" />
+    <ProjectReference Include="..\..\Languages\Indonesian\Catalyst.Models.Indonesian.csproj" />
+    <ProjectReference Include="..\..\Languages\Afrikaans\Catalyst.Models.Afrikaans.csproj" />
+    <ProjectReference Include="..\..\Languages\Bulgarian\Catalyst.Models.Bulgarian.csproj" />
+    <ProjectReference Include="..\..\Languages\Telugu\Catalyst.Models.Telugu.csproj" />
+    <ProjectReference Include="..\..\Languages\Belarusian\Catalyst.Models.Belarusian.csproj" />
+    <ProjectReference Include="..\..\Languages\Uighur\Catalyst.Models.Uighur.csproj" />
+    <ProjectReference Include="..\..\Languages\Romanian\Catalyst.Models.Romanian.csproj" />
+    <ProjectReference Include="..\..\Languages\Russian\Catalyst.Models.Russian.csproj" />
+    <ProjectReference Include="..\..\Languages\Tagalog\Catalyst.Models.Tagalog.csproj" />
+    <ProjectReference Include="..\..\Languages\Icelandic\Catalyst.Models.Icelandic.csproj" />
+    <ProjectReference Include="..\..\Languages\Lithuanian\Catalyst.Models.Lithuanian.csproj" />
+    <ProjectReference Include="..\..\Languages\Italian\Catalyst.Models.Italian.csproj" />
+    <ProjectReference Include="..\..\Languages\Swedish\Catalyst.Models.Swedish.csproj" />
+    <ProjectReference Include="..\..\Languages\Faroese\Catalyst.Models.Faroese.csproj" />
+    <ProjectReference Include="..\..\Languages\Hungarian\Catalyst.Models.Hungarian.csproj" />
+    <ProjectReference Include="..\..\Languages\Luxembourgish_Letzeburgesch\Catalyst.Models.Luxembourgish_Letzeburgesch.csproj" />
+    <ProjectReference Include="..\..\Languages\Catalan\Catalyst.Models.Catalan.csproj" />
+    <ProjectReference Include="..\..\Languages\French\Catalyst.Models.French.csproj" />
+    <ProjectReference Include="..\..\Languages\Vietnamese\Catalyst.Models.Vietnamese.csproj" />
+    <ProjectReference Include="..\..\Languages\Spanish\Catalyst.Models.Spanish.csproj" />
+    <ProjectReference Include="..\..\Languages\Urdu\Catalyst.Models.Urdu.csproj" />
+    <ProjectReference Include="..\..\Languages\Ukrainian\Catalyst.Models.Ukrainian.csproj" />
+    <ProjectReference Include="..\..\Languages\Macedonian\Catalyst.Models.Macedonian.csproj" />
+    <ProjectReference Include="..\..\Languages\Japanese\Catalyst.Models.Japanese.csproj" />
+    <ProjectReference Include="..\..\Languages\Church_Slavic_Slavonic_Old_Bulgarian\Catalyst.Models.Church_Slavic_Slavonic_Old_Bulgarian.csproj" />
+    <ProjectReference Include="..\..\Languages\Basque\Catalyst.Models.Basque.csproj" />
+    <ProjectReference Include="..\..\Languages\Marathi\Catalyst.Models.Marathi.csproj" />
+    <ProjectReference Include="..\..\Languages\Arabic\Catalyst.Models.Arabic.csproj" />
+    <ProjectReference Include="..\..\Languages\Polish\Catalyst.Models.Polish.csproj" />
+    <ProjectReference Include="..\..\Languages\German\Catalyst.Models.German.csproj" />
+    <ProjectReference Include="..\..\Languages\Armenian\Catalyst.Models.Armenian.csproj" />
+    <ProjectReference Include="..\..\Languages\Danish\Catalyst.Models.Danish.csproj" />
+    <ProjectReference Include="..\..\Languages\Hebrew\Catalyst.Models.Hebrew.csproj" />
+    <ProjectReference Include="..\..\Languages\Norwegian_Bokmal\Catalyst.Models.Norwegian_Bokmal.csproj" />
+    <ProjectReference Include="..\..\Languages\Galician\Catalyst.Models.Galician.csproj" />
+    <ProjectReference Include="..\..\Languages\Slovak\Catalyst.Models.Slovak.csproj" />
+    <ProjectReference Include="..\..\Languages\Kazakh\Catalyst.Models.Kazakh.csproj" />
+    <ProjectReference Include="..\..\Languages\Greek_Modern\Catalyst.Models.Greek_Modern.csproj" />
+    <ProjectReference Include="..\..\Languages\Irish\Catalyst.Models.Irish.csproj" />
+    <ProjectReference Include="..\..\Languages\Finnish\Catalyst.Models.Finnish.csproj" />
+    <ProjectReference Include="..\..\Languages\Croatian\Catalyst.Models.Croatian.csproj" />
+    <ProjectReference Include="..\..\Languages\Wolof\Catalyst.Models.Wolof.csproj" />
+    <ProjectReference Include="..\..\Languages\Latvian\Catalyst.Models.Latvian.csproj" />
+    <ProjectReference Include="..\..\Languages\Korean\Catalyst.Models.Korean.csproj" />
+    <ProjectReference Include="..\..\Languages\Slovenian\Catalyst.Models.Slovenian.csproj" />
+    <ProjectReference Include="..\..\Languages\Persian\Catalyst.Models.Persian.csproj" />
+    <ProjectReference Include="..\..\Languages\Tamil\Catalyst.Models.Tamil.csproj" />
+    <ProjectReference Include="..\..\Languages\Dutch\Catalyst.Models.Dutch.csproj" />
+    <ProjectReference Include="..\..\Languages\Hindi\Catalyst.Models.Hindi.csproj" />
+    <ProjectReference Include="..\..\Languages\Turkish\Catalyst.Models.Turkish.csproj" />
+  </ItemGroup>
 </Project>
