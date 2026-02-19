@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UID;
 
@@ -40,14 +41,14 @@ namespace Catalyst
                 for (int i = 0; i < word.Length; i++)
                 {
                     var c = word[i];
-                    
+
                     if (c == '_') c = ' ';
-                    
+
                     if (char.IsUpper(c)) c = char.ToLowerInvariant(c);
 
                     hash = (hash ^ c) * fnv_prime;
                 }
-                
+
                 return Hashes.Combine(Hashes.Combine(hash, lexID + 1UL), uniqueId + 1UL);
             }
         }
@@ -65,12 +66,12 @@ namespace Catalyst
             var lines = fileContent.AsSpan().Split(new char[] { '\r', '\n' });
 
             var wordCache = new StringBuilder();
-            var pointers  = new List<WordNetPointers>();  
+            var pointers  = new List<WordNetPointers>();
 
             var otherWords = new List<int>();
 
             var terms     = new Dictionary<int, WordNetTerm>();
-            
+
             var offsetMap = new Dictionary<ulong, int>();
 
             foreach (var line in lines)
@@ -255,52 +256,52 @@ namespace Catalyst
                 {
                     case '!': return PointerSymbol.Antonym;
                     case '@':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.Hypernym;
-                        else if (readOnlySpan[1] == 'i') return PointerSymbol.InstanceHypernym;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.Hypernym;
+                            else if (readOnlySpan[1] == 'i') return PointerSymbol.InstanceHypernym;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '~':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.Hyponym;
-                        else if (readOnlySpan[1] == 'i') return PointerSymbol.InstanceHyponym;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.Hyponym;
+                            else if (readOnlySpan[1] == 'i') return PointerSymbol.InstanceHyponym;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '#':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
-                        else if (readOnlySpan[1] == 'm') return PointerSymbol.MemberHolonym;
-                        else if (readOnlySpan[1] == 's') return PointerSymbol.SubstanceHolonym;
-                        else if (readOnlySpan[1] == 'p') return PointerSymbol.PartHolonym;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
+                            else if (readOnlySpan[1] == 'm') return PointerSymbol.MemberHolonym;
+                            else if (readOnlySpan[1] == 's') return PointerSymbol.SubstanceHolonym;
+                            else if (readOnlySpan[1] == 'p') return PointerSymbol.PartHolonym;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '%':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
-                        else if (readOnlySpan[1] == 'm') return PointerSymbol.MemberMeronym;
-                        else if (readOnlySpan[1] == 's') return PointerSymbol.SubstanceMeronym;
-                        else if (readOnlySpan[1] == 'p') return PointerSymbol.PartMeronym;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
+                            else if (readOnlySpan[1] == 'm') return PointerSymbol.MemberMeronym;
+                            else if (readOnlySpan[1] == 's') return PointerSymbol.SubstanceMeronym;
+                            else if (readOnlySpan[1] == 'p') return PointerSymbol.PartMeronym;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '*': return PointerSymbol.Entailment;
                     case '=': return PointerSymbol.Attribute;
                     case '+': return PointerSymbol.DerivationallyRelatedForm;
                     case ';':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
-                        else if (readOnlySpan[1] == 'c') return PointerSymbol.DomainOfSynsetTOPIC;
-                        else if (readOnlySpan[1] == 'r') return PointerSymbol.DomainOfSynsetREGION;
-                        else if (readOnlySpan[1] == 'u') return PointerSymbol.DomainOfSynsetUSAGE;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
+                            else if (readOnlySpan[1] == 'c') return PointerSymbol.DomainOfSynsetTOPIC;
+                            else if (readOnlySpan[1] == 'r') return PointerSymbol.DomainOfSynsetREGION;
+                            else if (readOnlySpan[1] == 'u') return PointerSymbol.DomainOfSynsetUSAGE;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '-':
-                    {
-                        if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
-                        else if (readOnlySpan[1] == 'c') return PointerSymbol.MemberOfThisDomainTOPIC;
-                        else if (readOnlySpan[1] == 'r') return PointerSymbol.MemberOfThisDomainREGION;
-                        else if (readOnlySpan[1] == 'u') return PointerSymbol.MemberOfThisDomainUSAGE;
-                        else return PointerSymbol.UNKNOWN;
-                    }
+                        {
+                            if (readOnlySpan.Length == 1) return PointerSymbol.UNKNOWN;
+                            else if (readOnlySpan[1] == 'c') return PointerSymbol.MemberOfThisDomainTOPIC;
+                            else if (readOnlySpan[1] == 'r') return PointerSymbol.MemberOfThisDomainREGION;
+                            else if (readOnlySpan[1] == 'u') return PointerSymbol.MemberOfThisDomainUSAGE;
+                            else return PointerSymbol.UNKNOWN;
+                        }
                     case '>': return PointerSymbol.Cause;
                     case '^': return PointerSymbol.AlsoSee;
                     case '$': return PointerSymbol.VerbGroup;
@@ -308,8 +309,8 @@ namespace Catalyst
                     case '<': return PointerSymbol.ParticipleOfVerb;
                     case '\\': return isAdverb ? PointerSymbol.DerivedFromAdjective:  PointerSymbol.Pertainym;
                 }
-                
-                
+
+
                 return PointerSymbol.UNKNOWN;
             }
 
@@ -378,9 +379,12 @@ namespace Catalyst
             Pertainym,
 
             DerivedFromAdjective,
-        } 
+        }
 
-        public struct WordNetTerm
+        /// <summary>
+        /// Represents a term in the <see cref="WordNetData"/>.
+        /// </summary>
+        public struct WordNetTerm : IEquatable<WordNetTerm>
         {
             public WordNetTerm(int termOffset, int lexID, int termLexFileNumber, PartOfSpeech termSynsetType, int termWordStart, int termWordLength, int termWordStart_Others, int termWordStart_Count, int termPointersStart, int termPointersLength)
             {
@@ -396,78 +400,178 @@ namespace Catalyst
                 PointersLength = termPointersLength;
             }
 
+            /// <summary>
+            /// Byte offset in the data file
+            /// </summary>
             public int Offset { get; }
             public int LexID { get; }
             public int FileNumber { get; }
             public PartOfSpeech PartOfSpeech { get; }
-            public int WordStart { get; }
+
+            /// <summary>
+            /// Start index in the <see cref="WordNetData.WordsCache" />
+            /// </summary>
+            internal int WordStart { get; }
+
+            /// <summary>
+            /// Character length of the word
+            /// </summary>
             public int WordLength { get; }
             public int WordsStart { get; }
             public int WordsLength { get; }
             public int PointersStart { get; }
             public int PointersLength { get; }
+            public override readonly bool Equals(object obj)
+                => obj is WordNetTerm term && this.Equals(term);
+
+            public readonly bool Equals(WordNetTerm obj)
+            {
+                return this.PartOfSpeech == obj.PartOfSpeech && this.Offset == obj.Offset;
+            }
         }
 
+        /// <summary>
+        /// Represents the pointers from a <see cref="WordNetTerm"/>.
+        /// </summary>
         public struct WordNetPointers
         {
-            public WordNetPointers(int pointer_offset, PointerSymbol pointer_symbol, PartOfSpeech partOfSpeech, byte source, byte target)
+            public WordNetPointers(int pointerOffset, PointerSymbol pointerSymbol, PartOfSpeech partOfSpeech, byte source, byte target)
             {
-                Offset = pointer_offset;
-                Symbol = pointer_symbol;
+                Offset = pointerOffset;
+                Symbol = pointerSymbol;
                 PartOfSpeech = partOfSpeech;
                 Source = source;
                 Target = target;
             }
 
-            internal int Offset { get; }
+            /// <summary>
+            /// Gets or sets the (translated) source word 
+            /// </summary>
+            public string SourceWord { get; set; }
+
+            /// <summary>
+            /// Gets or sets the (translated) target word
+            /// </summary>
+            public string TargetWord { get; set; }
+
+            /// <summary>
+            /// The byte offset of the target synset in the data file corresponding to PoS.
+            /// </summary>
+            public int Offset { get; }
             public PointerSymbol Symbol { get; }
             public PartOfSpeech PartOfSpeech { get; }
+
+            /// <summary>
+            /// The source/target field distinguishes lexical and semantic pointers.
+            /// These two digits indicates the word number in the current (source) synset.
+            /// </summary>
             public byte Source { get; }
+
+            /// <summary>
+            /// The source/target field distinguishes lexical and semantic pointers.
+            /// These two digits indicate the word number in the target synset.
+            /// </summary>
             public byte Target { get; }
         }
 
-        public class WordNetData
-    {
-        private readonly Dictionary<int, WordNet.WordNetTerm> Terms;
-        private readonly string WordsCache;
-        private readonly WordNet.WordNetPointers[] Pointers;
-        private readonly int[] OtherWordsCache;
-        private readonly Dictionary<ulong, int> HashToOffset;
-
-        public WordNetData(Dictionary<int, WordNet.WordNetTerm> terms, string wordsCache, WordNet.WordNetPointers[] pointers, int[] otherWordsCache, Dictionary<ulong, int> offsetMap)
+        /// <summary>
+        /// Represents a WordNet Data File for a single Part of Speech
+        /// <see cref="https://wordnet.princeton.edu/documentation/wndb5wn"/> 
+        /// </summary>
+        public class WordNetData : IWordNetData
         {
-            Terms = terms;
-            WordsCache = wordsCache;
-            Pointers = pointers;
-            OtherWordsCache = otherWordsCache;
-            HashToOffset = offsetMap;
-        }
+            private readonly Lazy<IDictionary<string, IList<WordNetTerm>>> TermsByWord;
 
-        public IEnumerable<(string Word, int LexId, PartOfSpeech PartOfSpeech)> GetAll()
-        {
-            foreach (var term in Terms.Values)
+            /// <summary>
+            /// The terms by their byte offset number
+            /// </summary>
+            internal readonly Dictionary<int, WordNet.WordNetTerm> Terms;
+            private readonly string WordsCache;
+            internal readonly WordNet.WordNetPointers[] Pointers;
+            private readonly int[] OtherWordsCache;
+            private readonly Dictionary<ulong, int> HashToOffset;
+
+            public WordNetData(Dictionary<int, WordNet.WordNetTerm> terms, string wordsCache, WordNet.WordNetPointers[] pointers, int[] otherWordsCache, Dictionary<ulong, int> offsetMap)
             {
-                yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID, term.PartOfSpeech);
-            }
-        }
-
-        public IEnumerable<(string Word, int LexId)> GetSynonyms(string word, int lexId = -1)
-        {
-            ulong uniqueId = 0;
-
-            while (true)
-            {
-                if (lexId < 0)
+                Terms = terms;
+                WordsCache = wordsCache;
+                Pointers = pointers;
+                OtherWordsCache = otherWordsCache;
+                HashToOffset = offsetMap;
+                TermsByWord = new Lazy<IDictionary<string, IList<WordNetTerm>>>(() =>
                 {
-                    ulong lexID = 0;
-                    bool foundAny = false;
-                    while (true)
+                    var result = new Dictionary<string, IList<WordNetTerm>>();
+                    foreach (var term in this.Terms.Values)
                     {
-                        var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, lexID, uniqueId);
+                        var word = GetWordFromCache(term.WordStart, term.WordLength);
+                        if (result.ContainsKey(word))
+                        {
+                            result[word].Add(term);
+                        }
+                        else
+                        {
+                            result[word] = new List<WordNetTerm> {
+                                 term
+                            };
+                        }
+                    }
+                    return result;
+                });
+            }
+
+            public IEnumerable<(string Word, int LexId, PartOfSpeech PartOfSpeech)> GetAll()
+            {
+                foreach (var term in Terms.Values)
+                {
+                    yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID, term.PartOfSpeech);
+                }
+            }
+
+            /// <inheritdoc/>
+            public IEnumerable<(string Word, int LexId)> GetSynonyms(string word, int lexId = -1)
+            {
+                ulong uniqueId = 0;
+
+                while (true)
+                {
+                    if (lexId < 0)
+                    {
+                        ulong lexID = 0;
+                        bool foundAny = false;
+                        while (true)
+                        {
+                            var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, lexID, uniqueId);
+
+                            if (HashToOffset.TryGetValue(wordHash, out var offset))
+                            {
+                                foundAny = true;
+                                var term = Terms[offset];
+                                yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID);
+
+                                if (term.WordsLength > 0)
+                                {
+                                    var others = OtherWordsCache.AsSpan(term.WordsStart, term.WordsLength).ToArray();
+                                    for (int i = 0; i < others.Length; i += 3)
+                                    {
+                                        yield return (GetWordFromCache(others[i], others[i + 1]), others[i + 2]);
+                                    }
+                                }
+
+                                lexID++;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        if (!foundAny) break;
+                    }
+                    else
+                    {
+                        var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, (ulong)lexId, uniqueId);
 
                         if (HashToOffset.TryGetValue(wordHash, out var offset))
                         {
-                            foundAny = true;
                             var term = Terms[offset];
                             yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID);
 
@@ -479,50 +583,37 @@ namespace Catalyst
                                     yield return (GetWordFromCache(others[i], others[i + 1]), others[i + 2]);
                                 }
                             }
-
-                            lexID++;
                         }
                         else
                         {
                             break;
                         }
                     }
-                    if (!foundAny) break;
+
+                    uniqueId++;
                 }
-                else
-                {
-                    var wordHash = WordNet.HashWordIgnoreCaseUnderscoreIsSpace(word, (ulong)lexId, uniqueId);
-
-                    if (HashToOffset.TryGetValue(wordHash, out var offset))
-                    {
-                        var term = Terms[offset];
-                        yield return (GetWordFromCache(term.WordStart, term.WordLength), term.LexID);
-
-                        if (term.WordsLength > 0)
-                        {
-                            var others = OtherWordsCache.AsSpan(term.WordsStart, term.WordsLength).ToArray();
-                            for (int i = 0; i < others.Length; i += 3)
-                            {
-                                yield return (GetWordFromCache(others[i], others[i + 1]), others[i + 2]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                uniqueId++;
             }
-        }
 
-        private string GetWordFromCache(int start, int len)
-        {
-            return WordsCache.Substring(start, len);
-        }
+            internal string GetWordFromCache(int start, int len)
+            {
+                return WordsCache.Substring(start, len);
+            }
 
-            public IEnumerable<(string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
+            /// <inheritdoc/>
+            public IEnumerable<WordNetPointers> GetPointers(WordNetTerm term)
+            {
+                var word = GetWordFromCache(term.WordStart, term.WordLength);
+                foreach (var pointer in this.GetPointers(word, term.LexID))
+                {
+                    yield return new WordNetPointers(pointer.Offset, pointer.Symbol, pointer.PartOfSpeech, pointer.Source, pointer.Target)
+                    {
+                        SourceWord = word
+                    };
+                }
+            }
+
+            /// <inheritdoc/>
+            public IEnumerable<(int Offset, string Word, WordNet.PointerSymbol Symbol, PartOfSpeech PartOfSpeech, byte Source, byte Target)> GetPointers(string word, int lexId = -1)
             {
                 ulong uniqueId = 0;
 
@@ -546,17 +637,17 @@ namespace Catalyst
                                 for (int i = 0; i < pointers.Length; i++)
                                 {
                                     var p = pointers[i];
-                                    WordNetData otherData; 
-                                    switch(p.PartOfSpeech)
+                                    WordNetData otherData;
+                                    switch (p.PartOfSpeech)
                                     {
-                                        case PartOfSpeech.NOUN: otherData = WordNet.Nouns;break;
+                                        case PartOfSpeech.NOUN: otherData = WordNet.Nouns; break;
                                         case PartOfSpeech.VERB: otherData = WordNet.Verbs; break;
                                         case PartOfSpeech.ADJ: otherData = WordNet.Adjectives; break;
                                         case PartOfSpeech.ADV: otherData = WordNet.Adverbs; break;
                                         default: continue;
                                     }
                                     var otherTerm = otherData.Terms[p.Offset];
-                                    yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                    yield return (p.Offset, otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
                                 }
 
                                 lexID++;
@@ -593,7 +684,7 @@ namespace Catalyst
                                     default: continue;
                                 }
                                 var otherTerm = otherData.Terms[p.Offset];
-                                yield return (otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
+                                yield return (otherTerm.Offset, otherData.GetWordFromCache(otherTerm.WordStart, otherTerm.WordLength), p.Symbol, p.PartOfSpeech, p.Source, p.Target);
                             }
                         }
                         else
@@ -604,6 +695,28 @@ namespace Catalyst
 
                     uniqueId++;
                 }
+            }
+
+            /// <inheritdoc/>
+            public WordNetTerm GetTerm(int offset)
+            {
+                return this.Terms[offset];
+            }
+
+            public IEnumerable<WordNetTerm> GetTerms(string word)
+            {
+                if (this.TermsByWord.Value.TryGetValue(word, out var output))
+                {
+                    return output;
+                }
+
+                return Enumerable.Empty<WordNetTerm>();
+            }
+
+            /// <inheritdoc/>
+            public IEnumerable<string> GetWords(WordNetTerm term)
+            {
+                return new[] { GetWordFromCache(term.WordStart, term.WordLength) };
             }
         }
     }

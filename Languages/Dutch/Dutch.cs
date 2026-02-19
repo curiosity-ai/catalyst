@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Catalyst;
 using Mosaik.Core;
 
@@ -10,6 +11,16 @@ namespace Catalyst.Models
     {
         public static void Register()
         {
+            ObjectStore.OverrideModel(
+                new WordNetMapping(Language.Dutch, 0).GetStoredObjectInfo(),
+                async () => await ResourceLoader.LoadAsync(
+                    typeof(Dutch).Assembly, "WordNet.wn-data-nld.tab",
+                    async (s) =>
+                    {
+                        var mapping = new WordNetMapping(Language.Dutch, 0, "");
+                        mapping.ReadData(s);
+                        return mapping;
+                    }));
             ObjectStore.OverrideModel(new AveragePerceptronTagger(Language.Dutch, 0).GetStoredObjectInfo(),                                                                             async () => await ResourceLoader.LoadAsync(typeof(Dutch).Assembly, "tagger.bin",                  async (s) => { var a = new AveragePerceptronTagger(Language.Dutch, 0, "");                                                                          await a.LoadAsync(s); return a; }));
             ObjectStore.OverrideModel(new AveragePerceptronDependencyParser(Language.Dutch, 0).GetStoredObjectInfo(),                                                                   async () => await ResourceLoader.LoadAsync(typeof(Dutch).Assembly, "parser.bin",                  async (s) => { var a = new AveragePerceptronDependencyParser(Language.Dutch, 0, "");                                                                await a.LoadAsync(s); return a; }));
             ObjectStore.OverrideModel(new SentenceDetector(Language.Dutch, 0).GetStoredObjectInfo(),                                                                                    async () => await ResourceLoader.LoadAsync(typeof(Dutch).Assembly, "sentence-detector.bin",       async (s) => { var a = new SentenceDetector(Language.Dutch, 0, "");                                                                                 await a.LoadAsync(s); return a; }));
@@ -21,6 +32,11 @@ namespace Catalyst.Models
             Catalyst.StopWords.Spacy.Register(Language.Dutch, StopWords.Spacy);
             Catalyst.LemmatizerStore.Register(Language.Dutch, new Lemmatizer());
             Catalyst.TokenizerExceptions.Register(Language.Dutch, new Lazy<Dictionary<int, TokenizationException>>(() => TokenizerExceptions.Get(), isThreadSafe:true));
+        }
+
+        public static async Task<IWordNet> GetWordNetAsync()
+        {
+            return await WordNetMapping.FromStoreAsync(Language.Dutch, 0, "");
         }
     }
 }

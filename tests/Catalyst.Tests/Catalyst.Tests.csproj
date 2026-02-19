@@ -5,7 +5,7 @@
 
     <IsPackable>false</IsPackable>
 
-    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,6 +45,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj" />
+    <ProjectReference Include="../../Languages/Dutch/Catalyst.Models.Dutch.csproj" />
+    <ProjectReference Include="../../Catalyst.WordNet/Catalyst.WordNet.csproj" />
   </ItemGroup>
 
 </Project>

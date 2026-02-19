@@ -5,12 +5,14 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
-  <!--<ItemGroup>
-    <PackageReference Include="Catalyst.WordNet" Version="0.0.15118" />
-  </ItemGroup>-->
+  <ItemGroup>
+    <PackageReference Include="Mosaik.Core" Version="0.0.40756" />
+  </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Catalyst.WordNet\Catalyst.WordNet.csproj" />
+    <ProjectReference Include="../Catalyst.WordNet/Catalyst.WordNet.csproj" />
+    <ProjectReference Include="../Languages/Dutch/Catalyst.Models.Dutch.csproj" />
+    <ProjectReference Include="../Languages/French/Catalyst.Models.French.csproj" />
   </ItemGroup>
 
 </Project>
