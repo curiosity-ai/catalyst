@@ -363,6 +363,7 @@ namespace Catalyst.Models
             foreach (char c in obj)
             {
                 char h = c;
+                //We need to normalize the valid alpha-numeric shape characters to the same value for the hash code
                 if (h == 'x' || h == 'X' || h == '9' || h == '~') h = '~';
                 hash = hash * 31 + h.GetHashCode();
             }
