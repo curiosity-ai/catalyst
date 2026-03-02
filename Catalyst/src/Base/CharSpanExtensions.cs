@@ -358,6 +358,7 @@ namespace Catalyst
         private static readonly int _H_Dash   = "shape_dash".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Slash  = "shape_slash".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Symbol = "shape_symbol".AsSpan().IgnoreCaseHash32();
+        private static readonly int _H_Tilde  = "shape_tilde".AsSpan().IgnoreCaseHash32();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Shape(this ReadOnlySpan<char> token, bool compact = false)
@@ -371,14 +372,14 @@ namespace Catalyst
                 int type;
                 char c = token[i];
 
-                if (c == '@')       { type = _H_At; }
+                if (c == '@')                   { type = _H_At;    }
+                else if (c == '~')              { type = _H_Tilde; }
                 else if (c == '/' || c == '\\') { type = _H_Slash; }
                 else if (CharacterClasses.HyphenCharacters.Contains(c))  { type = _H_Dash; }
                 else if (char.IsLower(c))       { type = _H_Lower; }
                 else if (char.IsUpper(c))       { type = _H_Upper; }
                 else if (char.IsNumber(c))      { type = _H_Digit; }
                 else if (char.IsPunctuation(c)) { type = _H_Punct; }
-                else if (c == '~') { type = "shape_tilde".AsSpan().IgnoreCaseHash32(); }
                 else { type = _H_Symbol; }
 
                 if (!compact || type != prevType)
@@ -398,14 +399,14 @@ namespace Catalyst
                 for (int i = 0; i < token.Length; i++)
                 {
                     var c = token[i];
-                    if (c == '@')       { curchar = '@'; }
-                    else if (c == '/' || c == '\\') { curchar = '/'; }
+                    if (c == '@')                           { curchar = '@'; }
+                    else if (c == '~')                      { curchar = '~'; }
+                    else if (c == '/' || c == '\\')         { curchar = '/'; }
                     else if (CharacterClasses.HyphenCharacters.Contains(c))  { curchar = '-'; }
                     else if (char.IsLower(token[i]))        { curchar = 'x'; }
                     else if (char.IsUpper(token[i]))        { curchar = 'X'; }
                     else if (char.IsNumber(token[i]))       { curchar = '9'; }
                     else if (char.IsPunctuation(token[i]))  { curchar = '.'; }
-                    else if (c == '~')                      { curchar = '~'; }
                     else { curchar = '#'; }
 
                     if (!compact || curchar != prevchar)
