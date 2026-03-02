@@ -378,6 +378,7 @@ namespace Catalyst
                 else if (char.IsUpper(c))       { type = _H_Upper; }
                 else if (char.IsNumber(c))      { type = _H_Digit; }
                 else if (char.IsPunctuation(c)) { type = _H_Punct; }
+                else if (c == '~') { type = "shape_tilde".AsSpan().IgnoreCaseHash32(); }
                 else { type = _H_Symbol; }
 
                 if (!compact || type != prevType)
@@ -404,6 +405,7 @@ namespace Catalyst
                     else if (char.IsUpper(token[i]))        { curchar = 'X'; }
                     else if (char.IsNumber(token[i]))       { curchar = '9'; }
                     else if (char.IsPunctuation(token[i]))  { curchar = '.'; }
+                    else if (c == '~')                      { curchar = '~'; }
                     else { curchar = '#'; }
 
                     if (!compact || curchar != prevchar)

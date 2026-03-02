@@ -331,6 +331,46 @@ namespace Catalyst.Models
         }
     }
 
+    public class ShapeEqualityComparer : IEqualityComparer<string>
+    {
+        public static readonly ShapeEqualityComparer Instance = new ShapeEqualityComparer();
+
+        public bool Equals(string x, string y)
+        {
+            if (x == null && y == null) return true;
+            if (x == null || y == null) return false;
+            if (x.Length != y.Length) return false;
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                if (x[i] == y[i]) continue;
+                if (x[i] == '~' && IsValidShapeChar(y[i])) continue;
+                if (y[i] == '~' && IsValidShapeChar(x[i])) continue;
+                return false;
+            }
+            return true;
+        }
+
+        private bool IsValidShapeChar(char c)
+        {
+            return c == 'x' || c == 'X' || c == '9';
+        }
+
+        public int GetHashCode(string obj)
+        {
+            if (obj == null) return 0;
+            int hash = 17;
+            foreach (char c in obj)
+            {
+                char h = c;
+                //We need to normalize the valid alpha-numeric shape characters to the same value for the hash code
+                if (h == 'x' || h == 'X' || h == '9' || h == '~') h = '~';
+                hash = hash * 31 + h.GetHashCode();
+            }
+            return hash;
+        }
+    }
+
     /// <summary>
     /// Represents a single unit in a pattern, which can match a token based on various criteria.
     /// </summary>
@@ -352,7 +392,7 @@ namespace Catalyst.Models
         /// <summary>Gets or sets the prefix to match.</summary>
         [Key(6)] public string Prefix { get => prefix; set { prefix = value; _splitPrefix = prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
         /// <summary>Gets or sets the shape to match.</summary>
-        [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false))) : null; } }
+        [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false)), ShapeEqualityComparer.Instance) : null; } }
         /// <summary>Gets or sets the exact token value to match.</summary>
         [Key(8)] public string Token { get; set; }
         /// <summary>Gets or sets the set of token values to match.</summary>
