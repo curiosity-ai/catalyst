@@ -11,6 +11,30 @@ namespace Catalyst.Tests
     public class PipelineTests
     {
         [Fact]
+        public async Task PatternSpotterWithTildeShape()
+        {
+            English.Register();
+            var nlp = await Pipeline.ForAsync(Language.English, tagger: false, sentenceDetector: false);
+
+            var spotter = new PatternSpotter(Language.English, 0, "test", "Capture");
+            spotter.NewPattern("TestPattern", mp => mp.Add(new PatternUnit() { Type = PatternUnitType.Shape, Shape = "X~~-X~~" }));
+
+            nlp.Add(spotter);
+
+            var doc = new Document("A23-B56", Language.English);
+
+            nlp.ProcessSingle(doc);
+
+            Assert.Equal(1, doc.SelectMany(span => span.GetEntities()).Count());
+            Assert.Equal("A23-B56", doc.SelectMany(span => span.GetEntities()).First().Value);
+
+            var doc2 = new Document("ABC-BEF", Language.English);
+            nlp.ProcessSingle(doc2);
+            Assert.Equal(1, doc2.SelectMany(span => span.GetEntities()).Count());
+            Assert.Equal("ABC-BEF", doc2.SelectMany(span => span.GetEntities()).First().Value);
+        }
+
+        [Fact]
         public async Task Pack_Unpack()
         {
             English.Register();
