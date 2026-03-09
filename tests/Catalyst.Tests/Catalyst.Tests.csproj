@@ -44,7 +44,71 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Catalyst" Version="1.0.64265" />
+    <PackageReference Include="Catalyst.Models.Latin" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Chinese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Estonian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Portuguese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Gaelic_Scottish_Gaelic" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Norwegian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Maltese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Serbian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Czech" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Indonesian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Afrikaans" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Bulgarian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Telugu" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Belarusian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Uighur" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Romanian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Russian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Tagalog" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Icelandic" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Lithuanian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Italian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Swedish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Faroese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Hungarian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Luxembourgish_Letzeburgesch" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Catalan" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.French" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Vietnamese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.English" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Spanish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Urdu" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Ukrainian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Macedonian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Japanese" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Church_Slavic_Slavonic_Old_Bulgarian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Basque" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Marathi" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Arabic" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Polish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.German" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Armenian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Danish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Hebrew" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Norwegian_Bokmal" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Galician" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Slovak" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Kazakh" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Greek_Modern" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Irish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Finnish" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Croatian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Wolof" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Latvian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Korean" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Slovenian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Persian" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Tamil" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Dutch" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Hindi" Version="1.0.30952" />
+    <PackageReference Include="Catalyst.Models.Turkish" Version="1.0.30952" />
+  </ItemGroup>
 </Project>
