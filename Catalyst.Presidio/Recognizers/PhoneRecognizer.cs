@@ -41,7 +41,8 @@ namespace Catalyst.Presidio
             ));
             // +44 ...
             phoneSpotter.NewPattern("Phone-UK-Intl-2-4-6", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")), // +44
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("44")), // +44
                 new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(6, 6))
             ));
@@ -59,7 +60,8 @@ namespace Catalyst.Presidio
             ));
             // +49 ...
             phoneSpotter.NewPattern("Phone-DE-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("49")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(2, 5)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(3, 8))
             ));
@@ -80,7 +82,8 @@ namespace Catalyst.Presidio
             ));
             // +33 x xx ...
             phoneSpotter.NewPattern("Phone-FR-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("33")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(1, 1)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(2, 2)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(2, 2)),
@@ -109,7 +112,8 @@ namespace Catalyst.Presidio
             ));
             // +55 ...
             phoneSpotter.NewPattern("Phone-BR-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("55")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(2, 2)),
                 new PatternUnit(P.Single().WithShape("99999-9999"))
             ));
@@ -122,7 +126,8 @@ namespace Catalyst.Presidio
             // India
             // +91 xxxxx xxxxx
             phoneSpotter.NewPattern("Phone-IN-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("91")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(5, 5)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(5, 5))
             ));
@@ -140,7 +145,8 @@ namespace Catalyst.Presidio
             // China
             // +86 1xx xxxx xxxx
             phoneSpotter.NewPattern("Phone-CN-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("86")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(3, 3).WithPrefix("1")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(4, 4))
@@ -160,7 +166,8 @@ namespace Catalyst.Presidio
             ));
             // +61 x ...
             phoneSpotter.NewPattern("Phone-AU-Intl", mp => mp.Add(
-                new PatternUnit(P.Single().WithShape("+99")),
+                new PatternUnit(P.Single().WithToken("+")),
+                new PatternUnit(P.Single().WithToken("61")),
                 new PatternUnit(P.Single().IsNumeric().WithLength(1, 1)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(4, 4)),
                 new PatternUnit(P.Single().IsNumeric().WithLength(4, 4))

@@ -1,5 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.BZip2;
-using Mosaik.Core;
+﻿using Mosaik.Core;
 using Catalyst.Models;
 using System;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using UID;
+using ICSharpCode.SharpZipLib.BZip2;
 
 
 namespace Catalyst.Training

@@ -18,8 +18,8 @@ namespace Catalyst.Presidio.Tests
 
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 11, End = 18, EntityType = "PERSON", Score = 1.0 },
-                new RecognizerResult { Start = 36, End = 56, EntityType = "EMAIL", Score = 1.0 }
+                new RecognizerResult(11, 18, "PERSON", 1f),
+                new RecognizerResult(36, 56, "EMAIL", 1f),
             };
 
             var finalResult = await cloaker.CloakAsync(doc, results, async (cloakedText) =>
@@ -50,13 +50,13 @@ namespace Catalyst.Presidio.Tests
             var doc1 = new Document("Hello John Doe.", Language.English);
             var results1 = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 6, End = 13, EntityType = "PERSON", Score = 1.0 }
+                new RecognizerResult(6, 13, "PERSON", 1.0f)
             };
 
             var doc2 = new Document("Goodbye John Doe.", Language.English);
             var results2 = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 8, End = 15, EntityType = "PERSON", Score = 1.0 }
+                new RecognizerResult(8, 15, "PERSON", 1f)
             };
 
             string token1 = null;
@@ -85,8 +85,8 @@ namespace Catalyst.Presidio.Tests
 
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 11, End = 18, EntityType = "PERSON", Score = 1.0 },
-                new RecognizerResult { Start = 36, End = 56, EntityType = "EMAIL", Score = 1.0 }
+                new RecognizerResult(11, 18, "PERSON", 1f),
+                new RecognizerResult(36, 56, "EMAIL", 1f),
             };
 
             // We simulate a stream that splits the cloaked text into very small chunks, even splitting the token "PERSON_1"

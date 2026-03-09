@@ -48,13 +48,7 @@ namespace Catalyst.Presidio
                 {
                     if (entity.EntityType.Type == "EmailOrURL") continue;
 
-                    var result = new RecognizerResult
-                    {
-                        Start = entity.Begin,
-                        End = entity.End,
-                        EntityType = entity.EntityType.Type,
-                        Score = 1.0 // Default score
-                    };
+                    var result = entity.AsRecognizerResult();
 
                     if (processedEntities.Add((result.Start, result.End, result.EntityType)))
                     {

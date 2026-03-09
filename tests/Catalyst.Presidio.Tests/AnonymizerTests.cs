@@ -13,7 +13,7 @@ namespace Catalyst.Presidio.Tests
             var text = "My email is user@example.com.";
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 12, End = 27, EntityType = "EMAIL_ADDRESS" } // "user@example.com"
+                new RecognizerResult(12, 27, "EMAIL_ADDRESS", 1f)
             };
 
             var anonymized = anonymizer.Anonymize(text, results, "mask", "*");
@@ -27,7 +27,7 @@ namespace Catalyst.Presidio.Tests
             var text = "My email is user@example.com.";
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 12, End = 27, EntityType = "EMAIL_ADDRESS" }
+                new RecognizerResult(12, 27, "EMAIL_ADDRESS", 1f)
             };
 
             var anonymized = anonymizer.Anonymize(text, results, "replace", replacement: "<EMAIL>");
@@ -41,7 +41,7 @@ namespace Catalyst.Presidio.Tests
             var text = "My email is user@example.com.";
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 12, End = 27, EntityType = "EMAIL_ADDRESS" }
+                new RecognizerResult(12, 27, "EMAIL_ADDRESS", 1f)
             };
 
             var anonymized = anonymizer.Anonymize(text, results, "redact");
@@ -57,8 +57,8 @@ namespace Catalyst.Presidio.Tests
             // "555-1234" -> 8 chars. Start: 32. End: 39.
             var results = new List<RecognizerResult>
             {
-                new RecognizerResult { Start = 7, End = 22, EntityType = "EMAIL_ADDRESS" },
-                new RecognizerResult { Start = 32, End = 39, EntityType = "PHONE_NUMBER" }
+                new RecognizerResult(7, 22, "EMAIL_ADDRESS", 1f),
+                new RecognizerResult(32, 39, "PHONE_NUMBER", 1f)
             };
 
             var anonymized = anonymizer.Anonymize(text, results, "mask", "*");
