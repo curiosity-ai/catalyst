@@ -11,19 +11,15 @@ namespace Catalyst.Presidio
     /// Implements privacy-preserving cloaking of PII entities.
     /// Replaces sensitive data with consistent pseudonyms (e.g., EMAIL_1) before sending to an external service,
     /// and then rehydrates the response to restore the original entities.
-    /// Inspired by the cloakpipe project.
     /// </summary>
+    /// <remarks>Not thread safe</remarks>
     public class PresidioCloaker
     {
         private readonly Dictionary<string, string> _entityToToken = new Dictionary<string, string>();
         private readonly Dictionary<string, string> _tokenToEntity = new Dictionary<string, string>();
         private readonly Dictionary<string, int> _typeCounts = new Dictionary<string, int>();
 
-        private readonly object _lock = new object();
-
-        /// <summary>
-        /// Maximum length of any generated token. Used to size the rolling buffer in the streaming version.
-        /// </summary>
+        // Maximum length of any generated token. Used to size the rolling buffer in the streaming version.
         private int _maxTokenLength = 0;
 
         /// <summary>
@@ -31,31 +27,28 @@ namespace Catalyst.Presidio
         /// </summary>
         private string GetOrCreateToken(string entityText, string entityType)
         {
-            lock (_lock)
+            if (_entityToToken.TryGetValue(entityText, out var existingToken))
             {
-                if (_entityToToken.TryGetValue(entityText, out var existingToken))
-                {
-                    return existingToken;
-                }
-
-                if (!_typeCounts.TryGetValue(entityType, out int count))
-                {
-                    count = 0;
-                }
-                count++;
-                _typeCounts[entityType] = count;
-
-                string newToken = $"{entityType.ToUpperInvariant()}_{count}";
-                _entityToToken[entityText] = newToken;
-                _tokenToEntity[newToken] = entityText;
-
-                if (newToken.Length > _maxTokenLength)
-                {
-                    _maxTokenLength = newToken.Length;
-                }
-
-                return newToken;
+                return existingToken;
             }
+
+            if (!_typeCounts.TryGetValue(entityType, out int count))
+            {
+                count = 0;
+            }
+            count++;
+            _typeCounts[entityType] = count;
+
+            string newToken = $"{entityType.ToUpperInvariant()}_{count}";
+            _entityToToken[entityText] = newToken;
+            _tokenToEntity[newToken] = entityText;
+
+            if (newToken.Length > _maxTokenLength)
+            {
+                _maxTokenLength = newToken.Length;
+            }
+
+            return newToken;
         }
 
         private List<RecognizerResult> RemoveOverlaps(IEnumerable<RecognizerResult> results)
@@ -162,16 +155,10 @@ namespace Catalyst.Presidio
             // Stream rehydration
             var buffer = new StringBuilder();
 
-            int currentMaxTokenLength;
-            lock (_lock)
-            {
-                currentMaxTokenLength = _maxTokenLength;
-            }
+            int currentMaxTokenLength = _maxTokenLength;
 
             // To ensure we don't miss tokens split across chunks, we need to hold back at least MaxTokenLength characters,
             // or perhaps more precisely, hold back enough to ensure we don't truncate a potential token.
-            // A token format is {ENTITY_TYPE}_{COUNT}.
-            // Actually, we can just use the MaxTokenLength.
 
             await foreach (var chunk in action(cloakedInput).ConfigureAwait(false))
             {
@@ -186,11 +173,6 @@ namespace Catalyst.Presidio
                     // Let's replace tokens in the entire buffer, then yield everything except the last MaxTokenLength characters.
 
                     RehydrateBuffer(buffer);
-
-                    lock (_lock)
-                    {
-                        currentMaxTokenLength = _maxTokenLength;
-                    }
 
                     if (buffer.Length > currentMaxTokenLength)
                     {
@@ -220,18 +202,9 @@ namespace Catalyst.Presidio
         private void RehydrateBuffer(StringBuilder sb)
         {
             // Simple replace of all known tokens.
-            // Since tokens like ORG_1 could be prefixes of ORG_10, we should sort tokens by length descending to replace ORG_10 before ORG_1.
+            // Since tokens like ORG_1 could be prefixes of ORG_10, we sort tokens by length descending to replace ORG_10 before ORG_1.
 
-            List<KeyValuePair<string, string>> tokens;
-            lock (_lock)
-            {
-                tokens = _tokenToEntity.ToList();
-            }
-
-            // Sort by token length descending
-            tokens.Sort((a, b) => b.Key.Length.CompareTo(a.Key.Length));
-
-            foreach (var kvp in tokens)
+            foreach (var kvp in _tokenToEntity.OrderByDescending(kv => kv.Key.Length))
             {
                 string token = kvp.Key;
                 string originalEntity = kvp.Value;
