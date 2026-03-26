@@ -71,10 +71,10 @@ Mike";
 
             Assert.Equal(4, splits.Count);
             // Splitting should correctly segment the whole string
-            Assert.Equal("Hi Sarah,\n\n> ", splits[0]);
-            Assert.Equal("Can we meet tomorrow at 10 AM?\nYes, that works for me.\n\n> ", splits[1]);
-            Assert.Equal("Also, please bring the quarterly report.\nI have it ready and will bring a printed copy.\n\n", splits[2]);
-            Assert.Equal("Thanks,\nMike", splits[3]);
+            Assert.Equal("Hi Sarah,\n\n> ".ReplaceLineEndings(), splits[0].ReplaceLineEndings());
+            Assert.Equal("Can we meet tomorrow at 10 AM?\nYes, that works for me.\n\n> ".ReplaceLineEndings(), splits[1].ReplaceLineEndings());
+            Assert.Equal("Also, please bring the quarterly report.\nI have it ready and will bring a printed copy.\n\n".ReplaceLineEndings(), splits[2].ReplaceLineEndings());
+            Assert.Equal("Thanks,\nMike".ReplaceLineEndings(), splits[3].ReplaceLineEndings());
             Assert.Equal(original, string.Join("", splits));
         }
 
@@ -112,6 +112,20 @@ Mike";
             Assert.Equal("The quick brown fox ", splits[0]);
             Assert.Equal("jumps over the lazy dog.", splits[1]);
             Assert.Equal(original, string.Join("", splits));
+        }
+
+        [Fact]
+        public void InvalidInput()
+        {
+            var original = "The quick brown fox jumps over the lazy dog.";
+            var parts = new List<string> {
+                "The tomato",
+                "is a fruit."
+            };
+
+            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+
+            Assert.Equal(0, splits.Count);
         }
     }
 }
