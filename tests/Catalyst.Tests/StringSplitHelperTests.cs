@@ -17,9 +17,10 @@ namespace Catalyst.Tests
                 "Best regards,\nJohn Doe"
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.True(success);
 
-            Assert.Equal(3, splits.Count);
+            Assert.Equal(3, splits.Length);
             Assert.Equal("Hello friend! ", splits[0]);
             Assert.Equal("This is a test email.\n\n", splits[1]);
             Assert.Equal("Best regards,\nJohn Doe", splits[2]);
@@ -36,9 +37,10 @@ namespace Catalyst.Tests
                 "Best rgrds, John Doe"
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.True(success);
 
-            Assert.Equal(3, splits.Count);
+            Assert.Equal(3, splits.Length);
             Assert.Equal("1) Hello friend! ", splits[0]);
             Assert.Equal("This is a test email.\n\n", splits[1]);
             Assert.Equal("Best regards,\nJohn Doe", splits[2]);
@@ -67,9 +69,10 @@ Mike";
                 "Thanks, Mike"
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.True(success);
 
-            Assert.Equal(4, splits.Count);
+            Assert.Equal(4, splits.Length);
             // Splitting should correctly segment the whole string
             Assert.Equal("Hi Sarah,\n\n> ".ReplaceLineEndings(), splits[0].ReplaceLineEndings());
             Assert.Equal("Can we meet tomorrow at 10 AM?\nYes, that works for me.\n\n> ".ReplaceLineEndings(), splits[1].ReplaceLineEndings());
@@ -88,9 +91,10 @@ Mike";
                 "Finaly test test."
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.True(success);
 
-            Assert.Equal(3, splits.Count);
+            Assert.Equal(3, splits.Length);
             Assert.Equal("Testing test test test. ", splits[0]);
             Assert.Equal("And again test test test. ", splits[1]);
             Assert.Equal("Finally test test.", splits[2]);
@@ -106,9 +110,10 @@ Mike";
                 "jumps over lazy dog."
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.True(success);
 
-            Assert.Equal(2, splits.Count);
+            Assert.Equal(2, splits.Length);
             Assert.Equal("The quick brown fox ", splits[0]);
             Assert.Equal("jumps over the lazy dog.", splits[1]);
             Assert.Equal(original, string.Join("", splits));
@@ -123,9 +128,9 @@ Mike";
                 "is a fruit."
             };
 
-            var splits = StringSplitHelper.SplitPerfectly(original, parts).ToList();
-
-            Assert.Equal(0, splits.Count);
+            bool success = StringSplitHelper.TryRealignSplit(original, parts, 0.5f, out var splits);
+            Assert.False(success);
+            Assert.Null(splits);
         }
     }
 }
