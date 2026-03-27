@@ -87,6 +87,10 @@ namespace Catalyst
                 }
             }
 
+            // Since the Needleman-Wunsch DP costs for insertions, deletions, and substitutions are non-negative
+            // (0 for a match, 1 otherwise), the cumulative cost dp[i, j] is monotonically increasing along any
+            // valid path from (0,0) to (n,m). Therefore, dp[n, m] represents not only the total alignment
+            // cost but is also mathematically guaranteed to be the maximum value found anywhere along the optimal path.
             float mismatchPercentage = dp[n, m] / (float)Math.Max(Math.Max(n, m), 1);
             if (mismatchPercentage > maxMismatchPercentage)
             {
