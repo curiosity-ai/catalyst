@@ -15,12 +15,22 @@ namespace Catalyst
         /// </summary>
         /// <param name="originalText">The original string to split.</param>
         /// <param name="splitParts">The approximate parts (e.g. from an LLM).</param>
-        /// <returns>A sequence of exact substrings of the original text, corresponding to each of the split parts.</returns>
-        public static IEnumerable<string> SplitPerfectly(string originalText, IEnumerable<string> splitParts)
+        /// <param name="maxMismatchPercentage">The maximum allowed mismatch percentage (0.0 to 1.0) between the original text and the concatenated parts.</param>
+        /// <param name="output">A sequence of exact substrings of the original text, corresponding to each of the split parts.</param>
+        /// <returns>True if the mismatch percentage is within the limit, false otherwise.</returns>
+        public static bool TryRealignSplit(string originalText, IEnumerable<string> splitParts, float maxMismatchPercentage, out string[] output)
         {
             var parts = splitParts.ToList();
-            if (parts.Count == 0) return new[] { originalText };
-            if (string.IsNullOrEmpty(originalText)) return new string[0];
+            if (parts.Count == 0)
+            {
+                output = new[] { originalText };
+                return true;
+            }
+            if (string.IsNullOrEmpty(originalText))
+            {
+                output = new string[0];
+                return true;
+            }
 
             // Strip whitespace from the original text to compute alignment,
             // while retaining mapping back to the original text indices.
@@ -75,6 +85,13 @@ namespace Catalyst
                     int cost = cleanOriginal[i - 1] == cleanAllParts[j - 1] ? 0 : 1;
                     dp[i, j] = Math.Min(Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1), dp[i - 1, j - 1] + cost);
                 }
+            }
+
+            float mismatchPercentage = dp[n, m] / (float)Math.Max(Math.Max(n, m), 1);
+            if (mismatchPercentage > maxMismatchPercentage)
+            {
+                output = null;
+                return false;
             }
 
             int currI = n;
@@ -142,7 +159,8 @@ namespace Catalyst
                 result.Add(originalText.Substring(start, end - start));
             }
 
-            return result;
+            output = result.ToArray();
+            return true;
         }
     }
 }
