@@ -166,9 +166,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.Gaelic_Scot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.Norwegian_Bokmal", "Languages\Norwegian_Bokmal\Catalyst.Models.Norwegian_Bokmal.csproj", "{8B74F28A-7643-4BD7-907D-0DFD0D5287D6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.English.ForTests", "Languages.ForTests\English.ForTests\Catalyst.Models.English.ForTests.csproj", "{E66840D8-AD0A-4BDE-8B8D-7AB7CC00655E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.English.ForTests", "Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj", "{E66840D8-AD0A-4BDE-8B8D-7AB7CC00655E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Languages.ForTests", "Languages.ForTests", "{8DE3267D-8A39-4C97-A539-ACE57E267999}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Languages.ForTest", "Languages.ForTest", "{8DE3267D-8A39-4C97-A539-ACE57E267999}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Catalyst.Models.English.ForTests", "Languages.ForTest\English.ForTests\Catalyst.Models.English.ForTests.csproj", "{2A902162-77F0-4642-B917-E463B3EA18E4}"
 EndProject
