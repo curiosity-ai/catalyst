@@ -348,6 +348,7 @@ namespace Catalyst
         }
 
         private static readonly ConcurrentDictionary<int, string> ShapesCache = new ConcurrentDictionary<int, string>();
+        private static int ShapesCacheCounter = 0;
 
         private static readonly int _H_Base   = "shape".AsSpan().IgnoreCaseHash32();
         private static readonly int _H_Digit  = "shape_digit".AsSpan().IgnoreCaseHash32();
@@ -418,6 +419,11 @@ namespace Catalyst
                 }
                 shape = sb.ToString();
                 ShapesCache[hash] = shape;
+                if (System.Threading.Interlocked.Increment(ref ShapesCacheCounter) > 1024)
+                {
+                    ShapesCache.Clear();
+                    System.Threading.Interlocked.Exchange(ref ShapesCacheCounter, 0);
+                }
             }
             return shape;
         }
