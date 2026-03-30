@@ -5,6 +5,7 @@ variables:
   projectWordNet:  './Catalyst.WordNet/Catalyst.WordNet.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  targetVersion: yy.M.$(build.buildId)
 
 trigger:
   branches:
@@ -28,6 +29,18 @@ steps:
 
 - task: NuGetToolInstaller@1
 
+- task: PowerShell@2
+  displayName: 'Create CalVer Version'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $dottedDate = (Get-Date).ToString("yy.M")
+      $buildID = $($env:BUILD_BUILDID) 
+      $modBuildID = [int]$buildID % 65536  # ensure fits in int16
+      $newTargetVersion = "$dottedDate.$modBuildID"
+      Write-Host "##vso[task.setvariable variable=targetVersion;]$newTargetVersion"
+      Write-Host "Updated targetVersion to '$newTargetVersion'"
+
 - task: UseDotNet@2
   displayName: 'Use .NET 10.0 SDK'
   inputs:
@@ -47,19 +60,19 @@ steps:
   inputs:
     command: 'build'
     projects: '$(project)'
-    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=$(targetVersion)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'build'
     projects: '$(projectSpacy)'
-    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=$(targetVersion)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'build'
     projects: '$(projectWordNet)'
-    arguments: '-c $(buildConfiguration) /p:Version=1.0.$(build.buildId)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
+    arguments: '-c $(buildConfiguration) /p:Version=$(targetVersion)  /p:AllowUnsafeBlocks=True /p:LangVersion=latest'
 
 - task: DotNetCoreCLI@2
   inputs:
@@ -67,7 +80,7 @@ steps:
     packagesToPack: '$(project)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="$(targetVersion)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 
@@ -77,7 +90,7 @@ steps:
     packagesToPack: '$(projectSpacy)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="$(targetVersion)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 
@@ -87,7 +100,7 @@ steps:
     packagesToPack: '$(projectWordNet)'
     versioningScheme: 'off'
     configuration: 'Release'
-    buildProperties: 'Version="1.0.$(build.buildId)";AllowUnsafeBlocks="True";LangVersion="latest"'
+    buildProperties: 'Version="$(targetVersion)";AllowUnsafeBlocks="True";LangVersion="latest"'
     verbosityPack: 'Diagnostic'
     nobuild: true
 
