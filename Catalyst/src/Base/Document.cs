@@ -17,25 +17,76 @@ using System.IO;
 namespace Catalyst
 {
 
+    /// <summary>
+    /// Represents a document in the Catalyst NLP pipeline.
+    /// </summary>
     [JsonObject]
     [MessagePackObject]
     public class Document : IDocument
     {
+        /// <summary>
+        /// Gets or sets the language of the document.
+        /// </summary>
         [Key(0)] public Language Language { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text value of the document.
+        /// </summary>
         [Key(1)] public string Value { get; set; }
+
+        /// <summary>
+        /// Gets or sets the token data for each span in the document.
+        /// </summary>
         [Key(2)] public List<List<TokenData>> TokensData { get; set; }
+
+        /// <summary>
+        /// Gets or sets the bounds for each span in the document.
+        /// </summary>
         [Key(3)] public List<int[]> SpanBounds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the metadata for the document.
+        /// </summary>
         [Key(4)] public Dictionary<string, string> Metadata { get; set; }
+
+        /// <summary>
+        /// Gets or sets the unique identifier for the document.
+        /// </summary>
         [Key(5)] public UID128 UID { get; set; }
+
+        /// <summary>
+        /// Gets or sets the labels for the document.
+        /// </summary>
         [Key(6)] public List<string> Labels { get; set; }
+
+        /// <summary>
+        /// Gets or sets the entity data for the document.
+        /// </summary>
         [Key(7)] public Dictionary<long, List<EntityType>> EntityData { get; set; }
+
+        /// <summary>
+        /// Gets or sets the token metadata for the document.
+        /// </summary>
         [Key(8)] public Dictionary<long, Dictionary<string, string>> TokenMetadata { get; set; }
 
+        /// <summary>
+        /// Gets the length of the document's text value.
+        /// </summary>
         [IgnoreMember] public int Length { get { return Value.Length; } }
+
+        /// <summary>
+        /// Gets a value indicating whether the document has been parsed (contains spans and tokens).
+        /// </summary>
         [IgnoreMember] public bool IsParsed { get { return SpansCount > 0 && TokensCount  > 0; } }
 
+        /// <summary>
+        /// Gets the number of spans in the document.
+        /// </summary>
         [JsonIgnore] [IgnoreMember] public int SpansCount { get { return SpanBounds.Count; } }
 
+        /// <summary>
+        /// Gets the total number of tokens in the document.
+        /// </summary>
         [JsonIgnore]
         [IgnoreMember]
         public int TokensCount
@@ -51,6 +102,9 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class.
+        /// </summary>
         public Document()
         {
             TokensData = new List<List<TokenData>>();
@@ -62,12 +116,21 @@ namespace Catalyst
             TokenMetadata = new Dictionary<long, Dictionary<string, string>>();
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class with the specified text and language.
+        /// </summary>
+        /// <param name="doc">The text of the document.</param>
+        /// <param name="language">The language of the document.</param>
         public Document(string doc, Language language = Language.Unknown) : this()
         {
             Value = string.IsNullOrWhiteSpace(doc) ? "" : doc.RemoveControlCharacters();
             Language = language;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class as a copy of another document.
+        /// </summary>
+        /// <param name="doc">The document to copy.</param>
         public Document(Document doc)
         {
             Language = doc.Language;
@@ -81,6 +144,18 @@ namespace Catalyst
             TokenMetadata = doc.TokenMetadata?.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(kv2 => kv2.Key, kv2 => kv2.Value));
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class for serialization.
+        /// </summary>
+        /// <param name="language">The language of the document.</param>
+        /// <param name="value">The text of the document.</param>
+        /// <param name="tokensData">The token data.</param>
+        /// <param name="spanBounds">The span bounds.</param>
+        /// <param name="metadata">The metadata.</param>
+        /// <param name="uid">The unique identifier.</param>
+        /// <param name="labels">The labels.</param>
+        /// <param name="entityData">The entity data.</param>
+        /// <param name="tokenMetadata">The token metadata.</param>
         [SerializationConstructor]
         public Document(Language language, string value, List<List<TokenData>> tokensData, List<int[]> spanBounds, Dictionary<string, string> metadata, UID128 uid, List<string> labels, Dictionary<long, List<EntityType>> entityData, Dictionary<long, Dictionary<string, string>> tokenMetadata)
         {
@@ -95,11 +170,18 @@ namespace Catalyst
             TokenMetadata = (tokenMetadata is null || tokenMetadata.Count == 0) ? null : tokenMetadata;
         }
 
+        /// <summary>
+        /// Creates a clone of the current document.
+        /// </summary>
+        /// <returns>A new <see cref="Document"/> instance that is a copy of the current document.</returns>
         public Document Clone()
         {
             return new Document(this);
         }
 
+        /// <summary>
+        /// Clears all token and span data from the document.
+        /// </summary>
         public void Clear()
         {
             SpanBounds.Clear();
@@ -126,6 +208,10 @@ namespace Catalyst
             sd.Capacity = Math.Max(1, Math.Max(sd.Capacity, expectedTokenCount));
         }
 
+        /// <summary>
+        /// Converts the document's tokens to a flat list of tokens.
+        /// </summary>
+        /// <returns>A list of <see cref="IToken"/>.</returns>
         public List<IToken> ToTokenList()
         {
             var list = new List<IToken>(TokensCount);
@@ -184,6 +270,12 @@ namespace Catalyst
             //}
         }
 
+        /// <summary>
+        /// Adds a new span to the document with the specified character bounds.
+        /// </summary>
+        /// <param name="begin">The beginning character index.</param>
+        /// <param name="end">The ending character index.</param>
+        /// <returns>The newly created <see cref="Span"/>.</returns>
         public Span AddSpan(int begin, int end)
         {
             SpanBounds.Add(new int[] { begin, end });
@@ -191,6 +283,11 @@ namespace Catalyst
             return new Span(this, SpanBounds.Count - 1);
         }
 
+        /// <summary>
+        /// Gets the tokenized text representation of the document.
+        /// </summary>
+        /// <param name="mergeEntities">If set to <c>true</c>, entities will be merged into single tokens.</param>
+        /// <returns>The tokenized text.</returns>
         public string TokenizedValue(bool mergeEntities = false)
         {
             var sb = new StringBuilder(Value.Length + TokensCount * 10 + 100);
@@ -228,10 +325,18 @@ namespace Catalyst
             return Regex.Replace(sb.ToString(), @"\s+", " ").TrimEnd(); //Remove the last space added during the loop
         }
 
+        /// <summary>
+        /// Gets the <see cref="Span"/> at the specified index.
+        /// </summary>
+        /// <param name="key">The index of the span.</param>
+        /// <returns>The <see cref="Span"/> at the specified index.</returns>
         [JsonIgnore]
         [IgnoreMember]
         public Span this[int key] { get { return Spans.ElementAt(key); } set { throw new InvalidOperationException(); } }
 
+        /// <summary>
+        /// Gets an enumerable of all spans in the document.
+        /// </summary>
         [JsonIgnore]
         [IgnoreMember]
         public IEnumerable<Span> Spans
@@ -245,6 +350,9 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Gets the total number of entities in the document.
+        /// </summary>
         [JsonIgnore] [IgnoreMember] public int EntitiesCount => EntityData is object ? EntityData.Values.Sum(l => l.Count) : 0;
 
         internal string GetSpanValue(int index)
@@ -384,11 +492,19 @@ namespace Catalyst
             return tmp.IgnoreCaseHash;
         }
 
+        /// <summary>
+        /// Gets the enumerator for spans in the document.
+        /// </summary>
+        /// <returns>An enumerator for spans.</returns>
         public IEnumerator<Span> GetEnumerator()
         {
             return Spans.GetEnumerator();
         }
 
+        /// <summary>
+        /// Gets the enumerator for spans in the document.
+        /// </summary>
+        /// <returns>An enumerator for spans.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return Spans.GetEnumerator();
@@ -432,6 +548,11 @@ namespace Catalyst
             return Value.AsSpan(b, e - b + 1);
         }
 
+        /// <summary>
+        /// Returns the text value of the document with entities replaced by the value returned by the replacement function.
+        /// </summary>
+        /// <param name="replacement">A function that takes a group of tokens (entity) and returns a replacement string.</param>
+        /// <returns>The text with replacements.</returns>
         public string ToStringWithReplacements(Func<ITokens, string> replacement)
         {
             var sb = new StringBuilder();
@@ -473,6 +594,9 @@ namespace Catalyst
             //TODO: REMOVE JsonIgnore from Token and from SingleToken when this is implemented
         }
 
+        /// <summary>
+        /// Removes overlapping tokens from all spans in the document.
+        /// </summary>
         public void RemoveOverlapingTokens()
         {
             for (int i = 0; i < TokensData.Count; i++)
@@ -486,6 +610,9 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Trims whitespace from the beginning and end of all tokens in the document.
+        /// </summary>
         public void TrimTokens()
         {
             for (int i = 0; i < TokensData.Count; i++)
@@ -508,6 +635,10 @@ namespace Catalyst
             }
         }
 
+        /// <summary>
+        /// Serializes the document to a JSON string.
+        /// </summary>
+        /// <returns>A JSON string representation of the document.</returns>
         public string ToJson()
         {
             var sb = StringExtensions.StringBuilderPool.Rent();
@@ -521,11 +652,20 @@ namespace Catalyst
             return json;
         }
 
+        /// <summary>
+        /// Deserializes a document from a JSON string.
+        /// </summary>
+        /// <param name="json">The JSON string.</param>
+        /// <returns>An <see cref="IDocument"/> instance.</returns>
         public static IDocument FromJson(string json)
         {
             return FromJObject(JObject.Parse(json));
         }
 
+        /// <summary>
+        /// Writes the document to an <see cref="IJsonWriter"/>.
+        /// </summary>
+        /// <param name="jw">The JSON writer.</param>
         public void WriteAsJson(IJsonWriter jw)
         {
             jw.WriteStartObject();
@@ -661,6 +801,11 @@ namespace Catalyst
             jw.WriteEndObject();
         }
 
+        /// <summary>
+        /// Deserializes a document from a <see cref="JObject"/>.
+        /// </summary>
+        /// <param name="jo">The JObject.</param>
+        /// <returns>A <see cref="Document"/> instance.</returns>
         public static Document FromJObject(JObject jo)
         {
             var emptyEntityTypes = new List<EntityType>();
@@ -770,6 +915,11 @@ namespace Catalyst
             return doc;
         }
 
+        /// <summary>
+        /// Creates a <see cref="Document"/> from an <see cref="ImmutableDocument"/>.
+        /// </summary>
+        /// <param name="imDoc">The immutable document.</param>
+        /// <returns>A <see cref="Document"/> instance.</returns>
         public static Document FromImmutable(ImmutableDocument imDoc)
         {
             var tokensData = imDoc.TokensData.Select(a => a.ToList()).ToList();
@@ -781,6 +931,10 @@ namespace Catalyst
             return new Document(imDoc.Language, imDoc.Value, tokensData, spanBounds.Select(l => new int[] { (int)(l >> 32), (int)(l & 0xFFFF_FFFFL) }).ToList(), metadata, imDoc.UID, labels, entityData, tokenMetadata);
         }
 
+        /// <summary>
+        /// Converts the current document to an <see cref="ImmutableDocument"/>.
+        /// </summary>
+        /// <returns>An <see cref="ImmutableDocument"/> instance.</returns>
         public ImmutableDocument ToImmutable()
         {
             return new ImmutableDocument(Language, Value,

@@ -14,20 +14,34 @@ using System.Threading;
 
 namespace Catalyst.Models
 {
+    /// <summary>
+    /// Represents the data for an average perceptron part-of-speech tagger model.
+    /// </summary>
     public class AveragePerceptronTaggerModel : StorableObjectData
     {
+        /// <summary>Gets or sets the weights of the perceptron model.</summary>
         public Dictionary<int, float[]> Weights { get; set; } = new Dictionary<int, float[]>();
+        /// <summary>Gets or sets the mapping of tokens to tags for tokens that always have the same tag.</summary>
         public Dictionary<int, int> TokenToSingleTag { get; set; } = new Dictionary<int, int>();
 
         [IgnoreMember] internal AveragePerceptronTagger.WeightsHolder WeightsHolder { get; set; } = null;
     }
 
+    /// <summary>
+    /// Implements a part-of-speech tagger based on the average perceptron algorithm.
+    /// </summary>
     public class AveragePerceptronTagger : StorableObjectV2<AveragePerceptronTagger, AveragePerceptronTaggerModel>, ITagger, IProcess
     {
         private int N_POS = Enum.GetValues(typeof(PartOfSpeech)).Length;
 
         private Dictionary<int, float[]> AverageWeights { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AveragePerceptronTagger"/> class.
+        /// </summary>
+        /// <param name="language">The language supported by the tagger.</param>
+        /// <param name="version">The version of the model.</param>
+        /// <param name="tag">The tag of the model.</param>
         public AveragePerceptronTagger(Language language, int version, string tag = "") : base(language, version, tag)
         {
             TagHashes = new int[Enum.GetValues(typeof(PartOfSpeech)).Length];
@@ -43,6 +57,13 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Asynchronously loads an <see cref="AveragePerceptronTagger"/> from the store.
+        /// </summary>
+        /// <param name="language">The language.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="tag">The tag.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the loaded tagger.</returns>
         public new static async Task<AveragePerceptronTagger> FromStoreAsync(Language language, int version, string tag)
         {
             var a = new AveragePerceptronTagger(language, version, tag);
@@ -52,6 +73,7 @@ namespace Catalyst.Models
             return a;
         }
 
+        /// <inheritdoc />
         public override async Task LoadAsync(Stream stream)
         {
             await base.LoadAsync(stream);
@@ -59,6 +81,7 @@ namespace Catalyst.Models
             Data.Weights = null;
         }
 
+        /// <inheritdoc />
         public override async Task StoreAsync(Stream stream)
         {
             if (Data.WeightsHolder is object)
@@ -73,6 +96,7 @@ namespace Catalyst.Models
             }
         }
 
+        /// <inheritdoc />
         public override async Task StoreAsync()
         {
             if(Data.WeightsHolder is object)
@@ -87,6 +111,11 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Trains the part-of-speech tagger using the specified documents.
+        /// </summary>
+        /// <param name="documents">The training documents.</param>
+        /// <param name="trainingSteps">The number of training iterations.</param>
         public void Train(IEnumerable<IDocument> documents, int trainingSteps)
         {
             Data.TokenToSingleTag.Clear();
@@ -153,6 +182,13 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Trains the tagger on a single sentence (span).
+        /// </summary>
+        /// <param name="span">The span to train on.</param>
+        /// <param name="ScoreBuffer">A buffer for scores.</param>
+        /// <param name="features">A buffer for features.</param>
+        /// <returns>A tuple containing True Positives, False Negatives, and False Positives.</returns>
         public (int TP, int FN, int FP) TrainOnSentence(Span span, Span<float> ScoreBuffer, Span<int> features)
         {
             Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
@@ -187,11 +223,17 @@ namespace Catalyst.Models
             return (TP, FN, FP);
         }
 
+        /// <inheritdoc />
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             Predict(document, cancellationToken);
         }
 
+        /// <summary>
+        /// Predicts part-of-speech tags for all spans in the specified document.
+        /// </summary>
+        /// <param name="document">The document to process.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
         public void Predict(IDocument document, CancellationToken cancellationToken = default)
         {
             Span<float> scoreBuffer = stackalloc float[N_POS];
@@ -205,6 +247,10 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Predicts part-of-speech tags for the specified span.
+        /// </summary>
+        /// <param name="span">The span to process.</param>
         public void Predict(Span span)
         {
             Span<float> scoreBuffer = stackalloc float[N_POS];
