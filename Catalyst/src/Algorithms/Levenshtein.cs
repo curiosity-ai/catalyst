@@ -55,62 +55,64 @@ namespace Catalyst.Algorithms
         {
             int columns = target.Length + 1;
 
-            int[] previousArray = Array.Empty<int>();
-            int[] currentArray = Array.Empty<int>();
+            if (columns <= StackallocLimit)
+            {
+                Span<int> previous = stackalloc int[columns];
+                Span<int> current = stackalloc int[columns];
+                return GetLevenshteinDistanceCore(source, target, previous, current);
+            }
 
-            Span<int> previous = default;
-            Span<int> current = default;
+            int[] previousArray = ArrayPool<int>.Shared.Rent(columns);
+            int[] currentArray = ArrayPool<int>.Shared.Rent(columns);
 
             try
             {
-                if (columns <= StackallocLimit)
-                {
-                    previous = stackalloc int[columns];
-                    current = stackalloc int[columns];
-                }
-                else
-                {
-                    previousArray = ArrayPool<int>.Shared.Rent(columns);
-                    currentArray = ArrayPool<int>.Shared.Rent(columns);
-
-                    previous = previousArray.AsSpan(0, columns);
-                    current = currentArray.AsSpan(0, columns);
-                }
-
-                for (int j = 0; j < columns; j++)
-                    previous[j] = j;
-
-                for (int i = 1; i <= source.Length; i++)
-                {
-                    current[0] = i;
-
-                    char sourceChar = source[i - 1];
-
-                    for (int j = 1; j < columns; j++)
-                    {
-                        int substitutionCost = sourceChar == target[j - 1] ? 0 : 1;
-
-                        current[j] = Minimum(
-                            previous[j] + 1,                    // deletion
-                            current[j - 1] + 1,                 // insertion
-                            previous[j - 1] + substitutionCost); // substitution
-                    }
-
-                    Span<int> temp = previous;
-                    previous = current;
-                    current = temp;
-                }
-
-                return previous[target.Length];
+                return GetLevenshteinDistanceCore(
+                    source,
+                    target,
+                    previousArray.AsSpan(0, columns),
+                    currentArray.AsSpan(0, columns));
             }
             finally
             {
-                if (previousArray.Length != 0)
-                    ArrayPool<int>.Shared.Return(previousArray);
-
-                if (currentArray.Length != 0)
-                    ArrayPool<int>.Shared.Return(currentArray);
+                ArrayPool<int>.Shared.Return(previousArray);
+                ArrayPool<int>.Shared.Return(currentArray);
             }
+        }
+
+        private static int GetLevenshteinDistanceCore(
+            ReadOnlySpan<char> source,
+            ReadOnlySpan<char> target,
+            Span<int> previous,
+            Span<int> current)
+        {
+            int columns = target.Length + 1;
+
+            for (int j = 0; j < columns; j++)
+                previous[j] = j;
+
+            for (int i = 1; i <= source.Length; i++)
+            {
+                current[0] = i;
+
+                char sourceChar = source[i - 1];
+
+                for (int j = 1; j < columns; j++)
+                {
+                    int substitutionCost = sourceChar == target[j - 1] ? 0 : 1;
+
+                    current[j] = Minimum(
+                        previous[j] + 1,                    // deletion
+                        current[j - 1] + 1,                 // insertion
+                        previous[j - 1] + substitutionCost); // substitution
+                }
+
+                Span<int> temp = previous;
+                previous = current;
+                current = temp;
+            }
+
+            return previous[target.Length];
         }
 
         private static int GetOptimalStringAlignmentDistance(
@@ -119,81 +121,81 @@ namespace Catalyst.Algorithms
         {
             int columns = target.Length + 1;
 
-            int[] previousPreviousArray = Array.Empty<int>();
-            int[] previousArray = Array.Empty<int>();
-            int[] currentArray = Array.Empty<int>();
+            if (columns <= StackallocLimit)
+            {
+                Span<int> previousPrevious = stackalloc int[columns];
+                Span<int> previous = stackalloc int[columns];
+                Span<int> current = stackalloc int[columns];
+                return GetOptimalStringAlignmentDistanceCore(
+                    source, target, previousPrevious, previous, current);
+            }
 
-            Span<int> previousPrevious = default;
-            Span<int> previous = default;
-            Span<int> current = default;
+            int[] previousPreviousArray = ArrayPool<int>.Shared.Rent(columns);
+            int[] previousArray = ArrayPool<int>.Shared.Rent(columns);
+            int[] currentArray = ArrayPool<int>.Shared.Rent(columns);
 
             try
             {
-                if (columns <= StackallocLimit)
-                {
-                    previousPrevious = stackalloc int[columns];
-                    previous = stackalloc int[columns];
-                    current = stackalloc int[columns];
-                }
-                else
-                {
-                    previousPreviousArray = ArrayPool<int>.Shared.Rent(columns);
-                    previousArray = ArrayPool<int>.Shared.Rent(columns);
-                    currentArray = ArrayPool<int>.Shared.Rent(columns);
-
-                    previousPrevious = previousPreviousArray.AsSpan(0, columns);
-                    previous = previousArray.AsSpan(0, columns);
-                    current = currentArray.AsSpan(0, columns);
-                }
-
-                for (int j = 0; j < columns; j++)
-                    previous[j] = j;
-
-                for (int i = 1; i <= source.Length; i++)
-                {
-                    current[0] = i;
-
-                    char sourceChar = source[i - 1];
-
-                    for (int j = 1; j < columns; j++)
-                    {
-                        int substitutionCost = sourceChar == target[j - 1] ? 0 : 1;
-
-                        int best = Minimum(
-                            previous[j] + 1,                    // deletion
-                            current[j - 1] + 1,                 // insertion
-                            previous[j - 1] + substitutionCost); // substitution
-
-                        if (i > 1 &&
-                            j > 1 &&
-                            sourceChar == target[j - 2] &&
-                            source[i - 2] == target[j - 1])
-                        {
-                            best = Math.Min(best, previousPrevious[j - 2] + 1);
-                        }
-
-                        current[j] = best;
-                    }
-
-                    Span<int> temp = previousPrevious;
-                    previousPrevious = previous;
-                    previous = current;
-                    current = temp;
-                }
-
-                return previous[target.Length];
+                return GetOptimalStringAlignmentDistanceCore(
+                    source,
+                    target,
+                    previousPreviousArray.AsSpan(0, columns),
+                    previousArray.AsSpan(0, columns),
+                    currentArray.AsSpan(0, columns));
             }
             finally
             {
-                if (previousPreviousArray.Length != 0)
-                    ArrayPool<int>.Shared.Return(previousPreviousArray);
-
-                if (previousArray.Length != 0)
-                    ArrayPool<int>.Shared.Return(previousArray);
-
-                if (currentArray.Length != 0)
-                    ArrayPool<int>.Shared.Return(currentArray);
+                ArrayPool<int>.Shared.Return(previousPreviousArray);
+                ArrayPool<int>.Shared.Return(previousArray);
+                ArrayPool<int>.Shared.Return(currentArray);
             }
+        }
+
+        private static int GetOptimalStringAlignmentDistanceCore(
+            ReadOnlySpan<char> source,
+            ReadOnlySpan<char> target,
+            Span<int> previousPrevious,
+            Span<int> previous,
+            Span<int> current)
+        {
+            int columns = target.Length + 1;
+
+            for (int j = 0; j < columns; j++)
+                previous[j] = j;
+
+            for (int i = 1; i <= source.Length; i++)
+            {
+                current[0] = i;
+
+                char sourceChar = source[i - 1];
+
+                for (int j = 1; j < columns; j++)
+                {
+                    int substitutionCost = sourceChar == target[j - 1] ? 0 : 1;
+
+                    int best = Minimum(
+                        previous[j] + 1,                    // deletion
+                        current[j - 1] + 1,                 // insertion
+                        previous[j - 1] + substitutionCost); // substitution
+
+                    if (i > 1 &&
+                        j > 1 &&
+                        sourceChar == target[j - 2] &&
+                        source[i - 2] == target[j - 1])
+                    {
+                        best = Math.Min(best, previousPrevious[j - 2] + 1);
+                    }
+
+                    current[j] = best;
+                }
+
+                Span<int> temp = previousPrevious;
+                previousPrevious = previous;
+                previous = current;
+                current = temp;
+            }
+
+            return previous[target.Length];
         }
     }
 }
