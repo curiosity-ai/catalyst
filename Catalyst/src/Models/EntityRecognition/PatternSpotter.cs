@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Catalyst.Algorithms;
 
 namespace Catalyst.Models
 {
@@ -416,6 +417,7 @@ namespace Catalyst.Models
         [Key(17)] public int MaxLength { get; set; }
         /// <summary>Gets or sets the maximum number of times this unit can match consecutively.</summary>
         [Key(18)] public int MaxMatches { get; set; }
+        [Key(19)] public float Confidence { get; set; }
 
         internal readonly static char[] splitChar = new[] { ',' };
         internal readonly static char[] splitCharWithWhitespaces = splitChar.Concat(CharacterClasses.WhitespaceCharacters).ToArray();
@@ -458,6 +460,7 @@ namespace Catalyst.Models
             MinLength     = p.MinLength;
             MaxLength     = p.MaxLength;
             MaxMatches    = p.MaxMatches;
+            Confidence    = p.Confidence;
         }
 
         //Constructor for Json/MsgPack serialization
@@ -492,7 +495,8 @@ namespace Catalyst.Models
                 ValidChars    = ValidChars,
                 MinLength     = MinLength,
                 MaxLength     = MaxLength,
-                MaxMatches    = MaxMatches
+                MaxMatches    = MaxMatches,
+                Confidence    = Confidence
             };
         }
 
@@ -546,6 +550,7 @@ namespace Catalyst.Models
                 if (isMatch && (Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail) { isMatch &= MatchLikeEmail(ref token); }
                 if (isMatch && (Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis) { isMatch &= MatchIsOpeningParenthesis(ref token); }
                 if (isMatch && (Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis) { isMatch &= MatchIsClosingParenthesis(ref token); }
+                if (isMatch && (Type & PatternUnitType.Fuzzy) == PatternUnitType.Fuzzy) { isMatch &= MatchTokenFuzzy(ref token); }
             }
 
             return Mode == PatternMatchingMode.ShouldNotMatch ? !isMatch : isMatch;
@@ -575,6 +580,25 @@ namespace Catalyst.Models
         private bool MatchToken(ref Token token)
         {
             return token.ValueAsSpan.Equals(Token.AsSpan(), CaseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool MatchTokenFuzzy(ref Token token) 
+        {
+            ReadOnlySpan<char> token1;
+            ReadOnlySpan<char> token2;
+            if (CaseSensitive) 
+            {
+                token1 = token.ValueAsSpan;
+                token2 = Token.AsSpan();
+            } 
+            else 
+            {
+                token1 = token.Value.ToLowerInvariant().AsSpan();
+                token2 = Token.ToLowerInvariant().AsSpan();
+            }
+            int distance = Levenshtein.GetDistance( token1, token2, true);
+            return 1.0-((float)distance / Math.Max(token1.Length, token2.Length)) >= Confidence;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

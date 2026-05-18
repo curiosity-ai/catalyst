@@ -38,6 +38,9 @@ namespace Catalyst
 
         /// <summary>Gets or sets the required token text.</summary>
         public string Token { get; set; }
+        
+        /// <summary>Confidence level for matching.</summary>
+        public float Confidence { get; set; }
 
         /// <summary>Gets or sets the set of valid token texts.</summary>
         public HashSet<string> Set { get; set; }
@@ -164,6 +167,17 @@ namespace Catalyst
             Set = new HashSet<string>(tokens);
             CaseSensitive = !ignoreCase;
             SetHashes = new HashSet<ulong>(tokens.Select(tk => ignoreCase ? IgnoreCaseHash64(tk.AsSpan()) : Hash64(tk.AsSpan())));
+            return this;
+        }
+
+        /// <inheritdoc />
+        public IPatternUnit WithTokenFuzzy(string token, float confidence = 0.8f, bool ignoreCase = false) 
+        {
+            Type |= PatternUnitType.Fuzzy;
+            Token = token;
+            CaseSensitive = !ignoreCase;
+            Confidence = confidence;
+            TokenHash = ignoreCase ? IgnoreCaseHash64(token.AsSpan()) : Hash64(token.AsSpan());
             return this;
         }
 

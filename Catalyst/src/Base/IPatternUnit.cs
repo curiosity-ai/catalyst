@@ -106,6 +106,13 @@ namespace Catalyst
         /// <param name="ignoreCase">Whether to ignore case.</param>
         /// <returns>The updated pattern unit.</returns>
         IPatternUnit WithTokens(IEnumerable<string> tokens, bool ignoreCase = false);
+      
+        /// <summary>Matches if the token matches any of the specified texts, up to a certain confidence level based on edit distance.</summary>
+        /// <param name="tokens">The collection of texts to match.</param>
+        /// <param name="confidence">Confidence level.</param>
+        /// <param name="ignoreCase">Whether to ignore case.</param>
+        /// <returns>The updated pattern unit.</returns>
+        IPatternUnit WithTokenFuzzy(string token, float confidence = 0.8f, bool ignoreCase = false);
 
         /// <summary>Matches if the token consists of the specified characters.</summary>
         /// <param name="chars">The characters.</param>
