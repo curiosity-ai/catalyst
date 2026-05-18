@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Catalyst
 {
-    [MessagePackObject(true)]
+    [MessagePackObject]
     public partial class SingleToken : IToken
     {
         [Key(0)] public string Value { get; set; }
