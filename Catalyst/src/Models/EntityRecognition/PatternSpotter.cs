@@ -519,7 +519,7 @@ namespace Catalyst.Models
     public class PatternUnit
     {
         /// <summary>Gets or sets the matching mode (Single, And, Or, ShouldNotMatch).</summary>
-        [Key(0)] public PatternMatchingMode Mode { get; set; }
+        [Key(0)] public PatternMatchingMode Mode { get; set; } = PatternMatchingMode.Single;
         /// <summary>Gets or sets a value indicating whether this unit is optional.</summary>
         [Key(1)] public bool Optional { get; set; }
         /// <summary>Gets or sets a value indicating whether matching should be case-sensitive.</summary>
