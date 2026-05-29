@@ -65,6 +65,22 @@ namespace Catalyst.Models
     }
 
     /// <summary>
+    /// The outcome of evaluating one alternative within a <see cref="MatchingPattern"/>.
+    /// Distinguishes "completed but a longer alternative beat it" from "didn't complete at all",
+    /// so a human reader can tell why a given alternative is or isn't the explanation
+    /// for the pattern's consumed-token count.
+    /// </summary>
+    public enum AlternativeOutcome
+    {
+        /// <summary>A mandatory unit didn't match; this alternative never completed.</summary>
+        Failed,
+        /// <summary>The alternative completed but another alternative consumed more tokens and won.</summary>
+        LostShorter,
+        /// <summary>The alternative's consumed-token count is the one the pattern reports. Ties win.</summary>
+        Won,
+    }
+
+    /// <summary>
     /// The trace of one alternative inside a <see cref="MatchingPattern"/>.
     /// </summary>
     public sealed class AlternativeTrace
@@ -73,9 +89,9 @@ namespace Catalyst.Models
         public int AlternativeIndex { get; init; }
         /// <summary>The unit traces in evaluation order. Multiple-mode units may produce multiple entries.</summary>
         public List<UnitTrace> Units { get; init; } = new();
-        /// <summary>Whether this alternative produced a non-negative consumed-token count.</summary>
-        public bool Matched { get; init; }
-        /// <summary>The number of tokens this alternative consumed.</summary>
+        /// <summary>How this alternative fared against the rest of the pattern's alternatives.</summary>
+        public AlternativeOutcome Outcome { get; init; }
+        /// <summary>The number of tokens this alternative consumed (0 when <see cref="Outcome"/> is <see cref="AlternativeOutcome.Failed"/>).</summary>
         public int ConsumedTokens { get; init; }
     }
 
@@ -101,7 +117,17 @@ namespace Catalyst.Models
     /// </summary>
     internal sealed class MatchTraceBuilder
     {
-        private readonly List<AlternativeTrace> _alternatives = new();
+        // Rows are kept in their pre-finalization shape (completed + consumed) because
+        // the winner is only known after every alternative has been evaluated.
+        private sealed class PendingAlternative
+        {
+            public int Index;
+            public List<UnitTrace> Units;
+            public bool Completed;
+            public int Consumed;
+        }
+
+        private readonly List<PendingAlternative> _alternatives = new();
 
         // pending alternative
         private int _altIndex;
@@ -123,14 +149,17 @@ namespace Catalyst.Models
             _altUnits = new List<UnitTrace>();
         }
 
-        public void EndAlternative(bool matched, int consumed)
+        // `completed` reflects whether the alternative ran its full unit sequence
+        // without aborting on a mandatory unit; whether it Won or LostShorter is
+        // decided later in Drain once the winning consumed-count is known.
+        public void EndAlternative(bool completed, int consumed)
         {
-            _alternatives.Add(new AlternativeTrace
+            _alternatives.Add(new PendingAlternative
             {
-                AlternativeIndex = _altIndex,
+                Index = _altIndex,
                 Units = _altUnits ?? new List<UnitTrace>(),
-                Matched = matched,
-                ConsumedTokens = consumed
+                Completed = completed,
+                Consumed = consumed,
             });
             _altUnits = null;
         }
@@ -229,11 +258,38 @@ namespace Catalyst.Models
         public int CurrentUnitTokenIndex => _unitTokenIndex;
         public string CurrentUnitTokenValue => _unitTokenValue;
 
-        public List<AlternativeTrace> Drain()
+        // Finalizes outcomes against the pattern's winning consumed-token count.
+        // Ties on the winning count are all reported as Won — they are equally valid
+        // explanations of the pattern's result.
+        public List<AlternativeTrace> Drain(int winnerConsumed)
         {
-            var x = new List<AlternativeTrace>(_alternatives);
+            var result = new List<AlternativeTrace>(_alternatives.Count);
+            foreach (var a in _alternatives)
+            {
+                AlternativeOutcome outcome;
+                if (!a.Completed)
+                {
+                    outcome = AlternativeOutcome.Failed;
+                }
+                else if (winnerConsumed > 0 && a.Consumed == winnerConsumed)
+                {
+                    outcome = AlternativeOutcome.Won;
+                }
+                else
+                {
+                    outcome = AlternativeOutcome.LostShorter;
+                }
+
+                result.Add(new AlternativeTrace
+                {
+                    AlternativeIndex = a.Index,
+                    Units = a.Units ?? new List<UnitTrace>(),
+                    Outcome = outcome,
+                    ConsumedTokens = a.Consumed,
+                });
+            }
             _alternatives.Clear();
-            return x;
+            return result;
         }
     }
 }

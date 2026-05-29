@@ -40,7 +40,7 @@ namespace Catalyst.Tests
 
             Assert.NotEmpty(explanations);
             var winning = Assert.Single(explanations.Where(e => e.ConsumedTokens > 0));
-            var alt = Assert.Single(winning.Alternatives.Where(a => a.Matched));
+            var alt = Assert.Single(winning.Alternatives.Where(a => a.Outcome == AlternativeOutcome.Won));
             var unit = Assert.Single(alt.Units);
             Assert.True(unit.Matched);
             var crit = Assert.Single(unit.Criteria);
@@ -121,7 +121,7 @@ namespace Catalyst.Tests
 
             var first = explanations.First(e => e.StartTokenIndex == 0);
             var alt = first.Alternatives[0];
-            Assert.True(alt.Matched);
+            Assert.Equal(AlternativeOutcome.Won, alt.Outcome);
             Assert.Equal(1, alt.ConsumedTokens);
 
             var optionalUnitTrace = alt.Units.First(u => u.Optional);
@@ -212,6 +212,12 @@ namespace Catalyst.Tests
         [Fact]
         public async Task MultipleAlternatives_LongerOneWins()
         {
+            // Two alternatives on the same pattern; each MatchingPattern.Add call appends
+            // one alternative to Patterns.
+            //   Alternatives[0] = [Token="Cat"]            — completes against "Cat"     (1 token)
+            //   Alternatives[1] = [IsAlpha, IsAlpha]       — completes against "Cat dog" (2 tokens)
+            // The matcher picks the longest, and Explain reports per-alternative outcomes
+            // a human can read: which one Won, which one LostShorter, which one Failed.
             var (nlp, spotter) = await SetupAsync();
             var pattern = new MatchingPattern("TwoAlts");
             pattern.Add(new PatternUnit
@@ -236,8 +242,13 @@ namespace Catalyst.Tests
 
             var first = explanations.First(e => e.StartTokenIndex == 0);
             Assert.Equal(2, first.ConsumedTokens);
-            Assert.False(first.Alternatives[0].Matched || first.Alternatives[0].ConsumedTokens > 1);
-            Assert.True(first.Alternatives[1].Matched);
+
+            // Alt 0 ran to completion against "Cat" but was beaten by the longer alt.
+            Assert.Equal(AlternativeOutcome.LostShorter, first.Alternatives[0].Outcome);
+            Assert.Equal(1, first.Alternatives[0].ConsumedTokens);
+
+            // Alt 1 is the explanation for ConsumedTokens=2.
+            Assert.Equal(AlternativeOutcome.Won, first.Alternatives[1].Outcome);
             Assert.Equal(2, first.Alternatives[1].ConsumedTokens);
         }
 

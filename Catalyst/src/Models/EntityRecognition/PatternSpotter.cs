@@ -199,7 +199,7 @@ namespace Catalyst.Models
                                 SpanIndex = spanIndex,
                                 StartTokenIndex = i,
                                 ConsumedTokens = consumed,
-                                Alternatives = trace.Drain()
+                                Alternatives = trace.Drain(consumed)
                             });
                         }
                     }
@@ -430,9 +430,9 @@ namespace Catalyst.Models
                     }
                 }
 
-                bool altMatched = currentToken > 0;
-                int altConsumed = altMatched ? currentToken : 0;
-                trace.EndAlternative(altMatched, altConsumed);
+                bool altCompleted = currentToken > 0;
+                int altConsumed = altCompleted ? currentToken : 0;
+                trace.EndAlternative(altCompleted, altConsumed);
 
                 if (largestMatch < currentToken) { largestMatch = currentToken; }
             }
