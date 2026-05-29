@@ -159,6 +159,62 @@ namespace Catalyst.Models
         }
 
         /// <summary>
+        /// Returns a per-position trace of all pattern match attempts. Read-only;
+        /// this method does not mutate the document. Significantly more allocating
+        /// than <see cref="Process"/>; intended for diagnostics only.
+        /// Unlike <see cref="RecognizeEntities(IDocument)"/>, this reports every
+        /// starting position the matcher would consider, including positions inside
+        /// an already-matched span, so callers can answer "why didn't a match start here?".
+        /// </summary>
+        /// <param name="document">The document to analyze.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The list of per-attempt explanations.</returns>
+        public IReadOnlyList<PatternMatchExplanation> Explain(IDocument document, CancellationToken cancellationToken = default)
+        {
+            var result = new List<PatternMatchExplanation>();
+            var patterns = Data.Patterns;
+            int spanIndex = 0;
+
+            foreach (var span in document)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var pooledTokens = span.ToTokenSpanPolled(out var actualLength);
+                try
+                {
+                    var tokens = pooledTokens.AsSpan(0, actualLength);
+                    int N = tokens.Length;
+
+                    for (int i = 0; i < N; i++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        foreach (var p in patterns)
+                        {
+                            var trace = new MatchTraceBuilder();
+                            p.IsMatch(tokens.Slice(i), i, trace, out var consumed);
+                            result.Add(new PatternMatchExplanation
+                            {
+                                PatternName = p.Name,
+                                SpanIndex = spanIndex,
+                                StartTokenIndex = i,
+                                ConsumedTokens = consumed,
+                                Alternatives = trace.Drain()
+                            });
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<Token>.Shared.Return(pooledTokens);
+                }
+                spanIndex++;
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Adds a new pattern to the spotter.
         /// </summary>
         /// <param name="name">The name of the pattern.</param>
@@ -293,6 +349,90 @@ namespace Catalyst.Models
                         }
                     }
                 }
+
+                if (largestMatch < currentToken) { largestMatch = currentToken; }
+            }
+
+            if (largestMatch > 0)
+            {
+                consumedTokens = largestMatch;
+                return true;
+            }
+            else
+            {
+                consumedTokens = 0;
+                return false;
+            }
+        }
+
+        // Traced sibling of IsMatch. Mirrors the production matcher's largest-match
+        // selection but records a UnitTrace per while-loop iteration and an
+        // AlternativeTrace per alternative into the supplied builder.
+        internal bool IsMatch(Span<Token> tokens, int absoluteStart, MatchTraceBuilder trace, out int consumedTokens)
+        {
+            int largestMatch = -1;
+            var patterns = Patterns;
+
+            for (int i = 0; i < patterns.Count; i++)
+            {
+                trace.BeginAlternative(i);
+                var currentToken = 0;
+                var innerPattern = patterns[i];
+                for (int j = 0; j < innerPattern.Length; j++)
+                {
+                    var currentPattern = innerPattern[j];
+                    int ct = currentToken;
+
+                    int maxMatches = currentPattern.MaxMatches;
+                    if (maxMatches == 0) maxMatches = 10;
+
+                    bool hasMatched = false;
+                    bool didAttempt = false;
+
+                    while (ct < tokens.Length && maxMatches > 0)
+                    {
+                        string tokenVal = tokens[ct].ValueAsSpan.ToString();
+                        trace.BeginUnit(j, currentPattern.Mode, currentPattern.Optional, absoluteStart + ct, tokenVal);
+                        bool unitMatched = currentPattern.IsMatch(ref tokens[ct], trace);
+                        var ut = trace.EndUnit(unitMatched);
+                        trace.AddUnitToAlternative(ut);
+                        didAttempt = true;
+
+                        if (!unitMatched) break;
+
+                        ct++;
+                        hasMatched = true;
+                        if (currentPattern.Mode == PatternMatchingMode.Single) break;
+                        maxMatches--;
+                    }
+
+                    // If the loop never entered (ct >= tokens.Length), still record a synthetic
+                    // failure trace so the explanation reflects that we couldn't even attempt.
+                    if (!didAttempt)
+                    {
+                        trace.BeginUnit(j, currentPattern.Mode, currentPattern.Optional, absoluteStart + ct, string.Empty);
+                        trace.RecordCriterion(MatchCriterion.TokenLengthZero, false, null, null);
+                        var ut = trace.EndUnit(false);
+                        trace.AddUnitToAlternative(ut);
+                    }
+
+                    if (hasMatched)
+                    {
+                        currentToken = ct;
+                    }
+                    else
+                    {
+                        if (!currentPattern.Optional)
+                        {
+                            currentToken = int.MinValue;
+                            break;
+                        }
+                    }
+                }
+
+                bool altMatched = currentToken > 0;
+                int altConsumed = altMatched ? currentToken : 0;
+                trace.EndAlternative(altMatched, altConsumed);
 
                 if (largestMatch < currentToken) { largestMatch = currentToken; }
             }
@@ -837,6 +977,248 @@ namespace Catalyst.Models
         }
 
         #endregion Match
+
+        #region Match (traced)
+
+        // Traced sibling of IsMatch. Records every criterion evaluation (pass or fail)
+        // into the supplied MatchTraceBuilder. Unlike the hot-path overload this
+        // does NOT short-circuit on the first failing criterion: it continues so the
+        // trace reveals every failing criterion rather than just the first one.
+        internal bool IsMatch(ref Token token, MatchTraceBuilder trace)
+        {
+            if (token.Length < 1)
+            {
+                trace.RecordCriterion(MatchCriterion.TokenLengthZero, false, null, "");
+                return false;
+            }
+
+            if (Mode == PatternMatchingMode.And)
+            {
+                var left = CaptureChild(LeftSide, ref token, trace);
+                var right = CaptureChild(RightSide, ref token, trace);
+                trace.SetLeftRight(left, right);
+                bool result = left.Matched && right.Matched;
+                trace.RecordCriterion(MatchCriterion.And, result, null, null);
+                return result;
+            }
+            else if (Mode == PatternMatchingMode.Or)
+            {
+                var left = CaptureChild(LeftSide, ref token, trace);
+                var right = CaptureChild(RightSide, ref token, trace);
+                trace.SetLeftRight(left, right);
+                bool result = left.Matched || right.Matched;
+                trace.RecordCriterion(MatchCriterion.Or, result, null, null);
+                return result;
+            }
+
+            bool isMatch = true;
+            string tokenValue = null; // lazily materialized below if needed
+
+            if ((Type & PatternUnitType.Length) == PatternUnitType.Length)
+            {
+                bool passed = MatchLength(ref token);
+                trace.RecordCriterion(MatchCriterion.Length, passed, $"{MinLength}..{MaxLength}", token.Length.ToString());
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Token) == PatternUnitType.Token)
+            {
+                bool passed = MatchToken(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.Token, passed, Token, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Shape) == PatternUnitType.Shape)
+            {
+                bool passed = MatchShape(ref token);
+                trace.RecordCriterion(MatchCriterion.Shape, passed, Shape, null);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.WithChars) == PatternUnitType.WithChars)
+            {
+                bool passed = MatchWithChars(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.WithChars, passed, ValidChars is null ? null : new string(System.Linq.Enumerable.ToArray(ValidChars)), tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.POS) == PatternUnitType.POS)
+            {
+                bool passed = MatchPOS(ref token);
+                trace.RecordCriterion(MatchCriterion.POS, passed, POS != null && POS.Length > 0 ? POS[0].ToString() : null, token.POS.ToString());
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.MultiplePOS) == PatternUnitType.MultiplePOS)
+            {
+                bool passed = MatchMultiplePOS(ref token);
+                trace.RecordCriterion(MatchCriterion.MultiplePOS, passed, POS == null ? null : string.Join("|", POS), token.POS.ToString());
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Suffix) == PatternUnitType.Suffix)
+            {
+                bool passed = MatchSuffix(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.Suffix, passed, Suffix, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Prefix) == PatternUnitType.Prefix)
+            {
+                bool passed = MatchPrefix(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.Prefix, passed, Prefix, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Set) == PatternUnitType.Set)
+            {
+                bool passed = MatchSet(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.Set, passed, Set == null ? null : string.Join("|", Set), tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.Entity) == PatternUnitType.Entity)
+            {
+                bool passed = MatchEntity(ref token);
+                trace.RecordCriterion(MatchCriterion.Entity, passed, EntityType, FormatEntityTypes(ref token));
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.NotEntity) == PatternUnitType.NotEntity)
+            {
+                bool passed = !MatchEntity(ref token);
+                trace.RecordCriterion(MatchCriterion.NotEntity, passed, EntityType, FormatEntityTypes(ref token));
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsDigit) == PatternUnitType.IsDigit)
+            {
+                bool passed = MatchIsDigit(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsDigit, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsNumeric) == PatternUnitType.IsNumeric)
+            {
+                bool passed = MatchIsNumeric(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsNumeric, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.HasNumeric) == PatternUnitType.HasNumeric)
+            {
+                bool passed = MatchHasNumeric(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.HasNumeric, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsAlpha) == PatternUnitType.IsAlpha)
+            {
+                bool passed = MatchIsAlpha(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsAlpha, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsLetterOrDigit) == PatternUnitType.IsLetterOrDigit)
+            {
+                bool passed = MatchIsLetterOrDigit(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsLetterOrDigit, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsEmoji) == PatternUnitType.IsEmoji)
+            {
+                bool passed = MatchIsEmoji(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsEmoji, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsPunctuation) == PatternUnitType.IsPunctuation)
+            {
+                bool passed = MatchIsPunctuation(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsPunctuation, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsLowerCase) == PatternUnitType.IsLowerCase)
+            {
+                bool passed = MatchIsLowerCase(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsLowerCase, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsUpperCase) == PatternUnitType.IsUpperCase)
+            {
+                bool passed = MatchIsUpperCase(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsUpperCase, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsTitleCase) == PatternUnitType.IsTitleCase)
+            {
+                bool passed = MatchIsTitleCase(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsTitleCase, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.LikeURL) == PatternUnitType.LikeURL)
+            {
+                bool passed = MatchLikeURL(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.LikeURL, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.LikeEmail) == PatternUnitType.LikeEmail)
+            {
+                bool passed = MatchLikeEmail(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.LikeEmail, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsOpeningParenthesis) == PatternUnitType.IsOpeningParenthesis)
+            {
+                bool passed = MatchIsOpeningParenthesis(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsOpeningParenthesis, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+            if ((Type & PatternUnitType.IsClosingParenthesis) == PatternUnitType.IsClosingParenthesis)
+            {
+                bool passed = MatchIsClosingParenthesis(ref token);
+                tokenValue ??= token.ValueAsSpan.ToString();
+                trace.RecordCriterion(MatchCriterion.IsClosingParenthesis, passed, null, tokenValue);
+                isMatch &= passed;
+            }
+
+            if (Mode == PatternMatchingMode.ShouldNotMatch)
+            {
+                bool final = !isMatch;
+                trace.RecordCriterion(MatchCriterion.ShouldNotMatch, final, null, null);
+                return final;
+            }
+            return isMatch;
+        }
+
+        private static string FormatEntityTypes(ref Token token)
+        {
+            var ets = token.EntityTypes;
+            if (ets is null || ets.Count == 0) return null;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < ets.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                sb.Append(ets[i].Type);
+            }
+            return sb.ToString();
+        }
+
+        private static UnitTrace CaptureChild(PatternUnit child, ref Token token, MatchTraceBuilder trace)
+        {
+            int tokIdx = trace.CurrentUnitTokenIndex;
+            string tokVal = trace.CurrentUnitTokenValue;
+            var saved = trace.SaveUnit();
+            trace.BeginUnit(-1, child.Mode, child.Optional, tokIdx, tokVal);
+            bool matched = child.IsMatch(ref token, trace);
+            var ut = trace.EndUnit(matched);
+            trace.RestoreUnit(saved);
+            return ut;
+        }
+
+        #endregion Match (traced)
     }
 
     //Used to serialize the pattern spotter model data for the front-end
