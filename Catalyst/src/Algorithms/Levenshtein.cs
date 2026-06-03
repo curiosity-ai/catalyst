@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace Catalyst.Algorithms
 {
-    internal static class Levenshtein
+    public static class Levenshtein
     {
         // OSA needs up to three rows, so keep this conservative:
         // 3 * 256 * sizeof(int) ~= 3 KB on the stack.
