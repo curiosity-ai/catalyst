@@ -112,6 +112,43 @@ namespace Catalyst.Tests
         }
 
         [Fact]
+        public void Spotter_OnlyRecordsExceptionsForSplittableWordsAndKeepsThemAfterOptimize()
+        {
+            var spotter = new Spotter(Language.English, 0, "", "Entity");
+
+            // Words that are all letters and/or digits are not split by the tokenizer, so they need no exception.
+            spotter.AddEntry("covid19");
+            spotter.AddEntry("New York 2024");
+            Assert.Empty(spotter.GetSpecialCases());
+
+            // Words containing punctuation would be split, so they require a "keep as-is" exception.
+            spotter.AddEntry("node.js");
+            spotter.AddEntry("U.S.A.");
+            var before = spotter.GetSpecialCases().Select(kv => kv.Key).OrderBy(k => k).ToArray();
+            Assert.Equal(2, before.Length);
+
+            // The same model can be imported into more than one pipeline, so OptimizeMemory must keep the table.
+            spotter.OptimizeMemory();
+            var after = spotter.GetSpecialCases().Select(kv => kv.Key).OrderBy(k => k).ToArray();
+            Assert.Equal(before, after);
+        }
+
+        [Fact]
+        public void LinkedSpotter_KeepsExceptionsAfterOptimize()
+        {
+            var spotter = new LinkedSpotter(Language.English, 0, "", "Linked");
+            spotter.AddEntry("plain", UID128.New());   // all letters -> no exception
+            spotter.AddEntry("node.js", UID128.New()); // punctuation -> needs an exception
+
+            var before = spotter.GetSimpleSpecialCases().OrderBy(k => k).ToArray();
+            Assert.Single(before);
+
+            spotter.OptimizeMemory();
+            var after = spotter.GetSimpleSpecialCases().OrderBy(k => k).ToArray();
+            Assert.Equal(before, after);
+        }
+
+        [Fact]
         public async Task Spotter_CanMutateAfterFreezeInExactMode()
         {
             English.Register();

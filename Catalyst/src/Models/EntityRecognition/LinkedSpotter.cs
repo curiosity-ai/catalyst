@@ -91,7 +91,7 @@ namespace Catalyst.Models
         }
 
         // Replaces the trained Dictionary/HashSet lookups with compact, read-only equivalents and releases
-        // the originals. Keeps TokenizerExceptionsSet intact (consumed later, then dropped by OptimizeMemory).
+        // the originals. Keeps TokenizerExceptionsSet intact - the model may still be imported into further pipelines.
         private void Freeze()
         {
             if (_frozen || Data is null || Data.Hashes is null) { return; }
@@ -199,10 +199,13 @@ namespace Catalyst.Models
             return false;
         }
 
+        // Compacts the in-memory hash tables (idempotent with the load-time compaction in TrimExcess).
+        // The tokenizer-exception set is intentionally kept: the same model can be imported into more
+        // than one pipeline, and each import needs the special cases. The set is already minimal -
+        // AddEntry only records an exception for words the tokenizer would otherwise split.
         public void OptimizeMemory()
         {
-            Data.TokenizerExceptionsSet?.Clear();
-            Data.TokenizerExceptionsSet = null;
+            Freeze();
         }
 
         public static ulong HashCombine64(ulong rhs, ulong lhs)

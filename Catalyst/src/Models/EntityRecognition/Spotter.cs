@@ -90,7 +90,7 @@ namespace Catalyst.Models
         }
 
         // Replaces the trained HashSet lookups with compact, read-only equivalents and releases the originals.
-        // Keeps TokenizerExceptions intact (consumed later, then dropped by OptimizeMemory).
+        // Keeps TokenizerExceptions intact - the model may still be imported into further pipelines.
         private void Freeze()
         {
             if (_frozen || Data is null || Data.Hashes is null) { return; }
@@ -154,12 +154,13 @@ namespace Catalyst.Models
             if (wasFrozen) { Freeze(); }
         }
 
-        // Releases the tokenizer-exception table once a pipeline has imported its special cases into the
-        // tokenizer (Pipeline.OptimizeMemory runs after the special cases have been imported on Add).
+        // Compacts the in-memory hash tables (idempotent with the load-time compaction in TrimExcess).
+        // The tokenizer-exception table is intentionally kept: the same model can be imported into more
+        // than one pipeline, and each import needs the special cases. The table is already minimal -
+        // AddEntry only records an exception for words the tokenizer would otherwise split.
         public void OptimizeMemory()
         {
-            Data.TokenizerExceptions?.Clear();
-            Data.TokenizerExceptions = null;
+            Freeze();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -536,7 +537,7 @@ namespace Catalyst.Models
                 var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
                 AddSingleTokenConcept(hash);
 
-                if (!words[0].AsSpan().IsLetter())
+                if (!words[0].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
@@ -559,7 +560,7 @@ namespace Catalyst.Models
                     Data.MultiGramHashes[n].Add(word_hash);
                 }
 
-                if (!words[n].AsSpan().IsLetter())
+                if (!words[n].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
