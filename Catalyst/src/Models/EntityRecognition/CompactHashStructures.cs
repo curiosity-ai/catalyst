@@ -87,6 +87,14 @@ namespace Catalyst.Models
                 ? new MphFingerprintMap64(map)
                 : (ICompactHashMap64)new MphHashMap64(map);
         }
+
+        // Probabilistic membership set (16-bit fingerprint, ~2^-16 false positives, no false negatives).
+        // Used when the caller can validate captures against an authoritative source (e.g. the graph), so a
+        // tiny false-positive rate is acceptable in exchange for ~3.5 B/key and dropping the stored values.
+        public static ICompactHashSet64 BuildProbabilisticSet(ICollection<ulong> keys)
+        {
+            return new MphFingerprint16Set64(keys);
+        }
     }
 
     /// <summary>
