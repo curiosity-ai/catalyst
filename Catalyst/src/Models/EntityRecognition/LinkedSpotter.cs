@@ -31,6 +31,28 @@ namespace Catalyst.Models
 
         public const string Separator = "_";
 
+        private ICompactHashMap64   _frozenHashes;
+        private ICompactHashSet64[] _frozenMultiGram;
+        private bool                _frozen;
+
+        /// <summary>True once the model's hash tables have been compacted into their read-only in-memory form.</summary>
+        public bool IsMemoryOptimized => _frozen;
+
+        /// <summary>Estimated bytes held by the compacted hash tables, or 0 when the model is not compacted.</summary>
+        public long OptimizedMemoryBytes
+        {
+            get
+            {
+                if (!_frozen) { return 0; }
+                long mem = _frozenHashes?.EstimatedBytes ?? 0;
+                if (_frozenMultiGram is object)
+                {
+                    foreach (var s in _frozenMultiGram) { mem += s.EstimatedBytes; }
+                }
+                return mem;
+            }
+        }
+
         private LinkedSpotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
         }
@@ -64,7 +86,86 @@ namespace Catalyst.Models
             }
             Data.TokenizerExceptionsSet?.TrimExcess();
             Data.Hashes?.TrimExcess();
+
+            Freeze();
         }
+
+        // Replaces the trained Dictionary/HashSet lookups with compact, read-only equivalents and releases
+        // the originals. Keeps TokenizerExceptionsSet intact (consumed later, then dropped by OptimizeMemory).
+        private void Freeze()
+        {
+            if (_frozen || Data is null || Data.Hashes is null) { return; }
+
+            _frozenHashes = CompactHash.BuildMap(Data.Hashes);
+
+            var multi = Data.MultiGramHashes;
+            _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
+            for (int i = 0; i < _frozenMultiGram.Length; i++)
+            {
+                _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
+            }
+
+            _frozen              = true;
+            Data.Hashes          = null;
+            Data.MultiGramHashes = null;
+        }
+
+        // Rebuilds the mutable Dictionary/HashSet representation from the compact tables so the model can be
+        // mutated or re-stored. Only possible for lossless (exact) compaction.
+        private void Unfreeze()
+        {
+            if (!_frozen) { return; }
+
+            if (_frozenHashes is object && !_frozenHashes.CanEnumerateKeys)
+            {
+                throw new InvalidOperationException("This LinkedSpotter was loaded with fingerprint compression (SpotterCompaction.UseFingerprint32) and cannot be modified or re-stored losslessly. Reload it with fingerprint compression disabled to modify it.");
+            }
+
+            var hashes = new Dictionary<ulong, UID128>(_frozenHashes?.Count ?? 0);
+            if (_frozenHashes is object)
+            {
+                foreach (var kv in _frozenHashes.Entries()) { hashes[kv.Key] = kv.Value; }
+            }
+            Data.Hashes = hashes;
+
+            var multi = new List<HashSet<ulong>>(_frozenMultiGram?.Length ?? 0);
+            if (_frozenMultiGram is object)
+            {
+                foreach (var s in _frozenMultiGram)
+                {
+                    var hs = new HashSet<ulong>(s.Count);
+                    foreach (var k in s.Keys()) { hs.Add(k); }
+                    multi.Add(hs);
+                }
+            }
+            Data.MultiGramHashes = multi;
+
+            Data.TokenizerExceptionsSet ??= new HashSet<int>();
+
+            _frozen          = false;
+            _frozenHashes    = null;
+            _frozenMultiGram = null;
+        }
+
+        public override async Task StoreAsync(System.IO.Stream stream)
+        {
+            bool wasFrozen = _frozen;
+            Unfreeze();
+            await base.StoreAsync(stream);
+            if (wasFrozen) { Freeze(); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HasMultiGram() => _frozen ? _frozenMultiGram.Length > 0 : Data.MultiGramHashes.Count > 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int MultiGramCount() => _frozen ? _frozenMultiGram.Length : Data.MultiGramHashes.Count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool MultiGramContains(int n, ulong hash) => _frozen ? _frozenMultiGram[n].Contains(hash) : Data.MultiGramHashes[n].Contains(hash);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HashesTryGetValue(ulong hash, out UID128 uid) => _frozen ? _frozenHashes.TryGetValue(hash, out uid) : Data.Hashes.TryGetValue(hash, out uid);
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
@@ -136,9 +237,13 @@ namespace Catalyst.Models
 
         public void ClearModel()
         {
-            Data.Hashes.Clear();
-            Data.MultiGramHashes.Clear();
-            Data.TokenizerExceptionsSet.Clear();
+            _frozen          = false;
+            _frozenHashes    = null;
+            _frozenMultiGram = null;
+
+            Data.Hashes                 = new Dictionary<ulong, UID128>();
+            Data.MultiGramHashes        = new List<HashSet<ulong>>();
+            Data.TokenizerExceptionsSet = new HashSet<int>();
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
@@ -147,7 +252,7 @@ namespace Catalyst.Models
             var tokens = pooledTokens.AsSpan(0, actualLength);
 
             int N = tokens.Length;
-            bool hasMultiGram = Data.MultiGramHashes.Any();
+            bool hasMultiGram = HasMultiGram();
             bool foundAny = false;
             for (int i = 0; i < N; i++)
             {
@@ -156,9 +261,9 @@ namespace Catalyst.Models
 
                 var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
-                if (hasMultiGram && Data.MultiGramHashes[0].Contains(tokenHash))
+                if (hasMultiGram && MultiGramContains(0, tokenHash))
                 {
-                    int window = Math.Min(N - i, Data.MultiGramHashes.Count);
+                    int window = Math.Min(N - i, MultiGramCount());
                     ulong hash = tokenHash;
                     bool someTokenHasReplacements = tk.Replacement is object;
                     int i_final = i;
@@ -170,12 +275,12 @@ namespace Catalyst.Models
                         someTokenHasReplacements |= (next.Replacement is object);
 
                         var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
-                        if (Data.MultiGramHashes[n].Contains(nextHash))
+                        if (MultiGramContains(n, nextHash))
                         {
                             //txt += " " + next.Value;
                             //var hashTxt = Hash64(txt);
                             hash = HashCombine64(hash, nextHash);
-                            if (Data.Hashes.TryGetValue(hash, out var uid_multi))
+                            if (HashesTryGetValue(hash, out var uid_multi))
                             {
                                 i_final = i + n;
                                 uid_final = uid_multi;
@@ -203,7 +308,7 @@ namespace Catalyst.Models
                     i = i_final;
                 }
 
-                if (Data.Hashes.TryGetValue(tokenHash, out var uid))
+                if (HashesTryGetValue(tokenHash, out var uid))
                 {
                     foundAny = true;
                     if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
@@ -232,6 +337,8 @@ namespace Catalyst.Models
         public void AddEntry(string entry, UID128 uid)
         {
             if (string.IsNullOrWhiteSpace(entry)) { return; }
+
+            if (_frozen) { Unfreeze(); }
 
             if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
 
