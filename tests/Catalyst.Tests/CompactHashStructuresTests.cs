@@ -149,27 +149,7 @@ namespace Catalyst.Tests
             }
         }
 
-        [Fact]
-        public void Factory_RespectsFingerprintToggle()
-        {
-            var keys = new HashSet<ulong> { 1, 2, 3, 4, 5 };
-            var map  = new Dictionary<ulong, UID128> { { 1, UID128.New() } };
-
-            var previous = SpotterCompaction.UseFingerprint32;
-            try
-            {
-                SpotterCompaction.UseFingerprint32 = false;
-                Assert.IsType<ExactHashSet64>(CompactHash.BuildSet(keys));
-                Assert.IsType<ExactHashMap64>(CompactHash.BuildMap(map));
-
-                SpotterCompaction.UseFingerprint32 = true;
-                Assert.IsType<FingerprintHashSet64>(CompactHash.BuildSet(keys));
-                Assert.IsType<FingerprintHashMap64>(CompactHash.BuildMap(map));
-            }
-            finally
-            {
-                SpotterCompaction.UseFingerprint32 = previous;
-            }
-        }
+        // Note: the open-addressed structures above are now the fallback; the CompactHash factory builds the
+        // perfect-hash variants by default - that is covered by MphPerfectHashTests.Factory_BuildsPerfectHashStructures.
     }
 }

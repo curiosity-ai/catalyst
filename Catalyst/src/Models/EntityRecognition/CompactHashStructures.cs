@@ -71,18 +71,21 @@ namespace Catalyst.Models
             return m;
         }
 
+        // Primary builders: perfect-hash backed (load factor ~1.0, deterministic footprint). The open-addressed
+        // ExactHashSet64/ExactHashMap64 (and fingerprint variants) remain as the never-fail fallback used
+        // internally by the MPH structures if perfect-hash construction ever fails to produce a function.
         public static ICompactHashSet64 BuildSet(ICollection<ulong> keys)
         {
             return SpotterCompaction.UseFingerprint32
-                ? new FingerprintHashSet64(keys)
-                : (ICompactHashSet64)new ExactHashSet64(keys);
+                ? new MphFingerprintSet64(keys)
+                : (ICompactHashSet64)new MphHashSet64(keys);
         }
 
         public static ICompactHashMap64 BuildMap(IDictionary<ulong, UID128> map)
         {
             return SpotterCompaction.UseFingerprint32
-                ? new FingerprintHashMap64(map)
-                : (ICompactHashMap64)new ExactHashMap64(map);
+                ? new MphFingerprintMap64(map)
+                : (ICompactHashMap64)new MphHashMap64(map);
         }
     }
 
