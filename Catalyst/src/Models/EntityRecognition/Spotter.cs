@@ -23,13 +23,35 @@ namespace Catalyst.Models
         public bool IgnoreCase { get; set; }
     }
 
-    public class Spotter : StorableObjectV2<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases
+    public class Spotter : StorableObjectV2<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
 
         public bool IgnoreCase { get { return Data.IgnoreCase; } set { Data.IgnoreCase = value; } }
 
         public const string Separator = "_";
+
+        private ICompactHashSet64   _frozenHashes;
+        private ICompactHashSet64[] _frozenMultiGram;
+        private bool                _frozen;
+
+        /// <summary>True once the model's hash tables have been compacted into their read-only in-memory form.</summary>
+        public bool IsMemoryOptimized => _frozen;
+
+        /// <summary>Estimated bytes held by the compacted hash tables, or 0 when the model is not compacted.</summary>
+        public long OptimizedMemoryBytes
+        {
+            get
+            {
+                if (!_frozen) { return 0; }
+                long mem = _frozenHashes?.EstimatedBytes ?? 0;
+                if (_frozenMultiGram is object)
+                {
+                    foreach (var s in _frozenMultiGram) { mem += s.EstimatedBytes; }
+                }
+                return mem;
+            }
+        }
 
         private Spotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
@@ -63,7 +85,95 @@ namespace Catalyst.Models
             }
             Data.TokenizerExceptions?.TrimExcess();
             Data.Hashes?.TrimExcess();
+
+            Freeze();
         }
+
+        // Replaces the trained HashSet lookups with compact, read-only equivalents and releases the originals.
+        // Keeps TokenizerExceptions intact - the model may still be imported into further pipelines.
+        private void Freeze()
+        {
+            if (_frozen || Data is null || Data.Hashes is null) { return; }
+
+            _frozenHashes = CompactHash.BuildSet(Data.Hashes);
+
+            var multi = Data.MultiGramHashes;
+            _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
+            for (int i = 0; i < _frozenMultiGram.Length; i++)
+            {
+                _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
+            }
+
+            _frozen              = true;
+            Data.Hashes          = null;
+            Data.MultiGramHashes = null;
+        }
+
+        // Rebuilds the mutable HashSet representation from the compact tables so the model can be mutated or
+        // re-stored. Only possible for lossless (exact) compaction.
+        private void Unfreeze()
+        {
+            if (!_frozen) { return; }
+
+            if (_frozenHashes is object && !_frozenHashes.CanEnumerateKeys)
+            {
+                throw new InvalidOperationException("This Spotter was loaded with fingerprint compression (SpotterCompaction.UseFingerprint32) and cannot be modified or re-stored losslessly. Reload it with fingerprint compression disabled to modify it.");
+            }
+
+            var hashes = new HashSet<ulong>(_frozenHashes?.Count ?? 0);
+            if (_frozenHashes is object)
+            {
+                foreach (var k in _frozenHashes.Keys()) { hashes.Add(k); }
+            }
+            Data.Hashes = hashes;
+
+            var multi = new List<HashSet<ulong>>(_frozenMultiGram?.Length ?? 0);
+            if (_frozenMultiGram is object)
+            {
+                foreach (var s in _frozenMultiGram)
+                {
+                    var hs = new HashSet<ulong>(s.Count);
+                    foreach (var k in s.Keys()) { hs.Add(k); }
+                    multi.Add(hs);
+                }
+            }
+            Data.MultiGramHashes = multi;
+
+            Data.TokenizerExceptions ??= new Dictionary<int, TokenizationException>();
+
+            _frozen          = false;
+            _frozenHashes    = null;
+            _frozenMultiGram = null;
+        }
+
+        public override async Task StoreAsync(System.IO.Stream stream)
+        {
+            bool wasFrozen = _frozen;
+            Unfreeze();
+            await base.StoreAsync(stream);
+            if (wasFrozen) { Freeze(); }
+        }
+
+        // Compacts the in-memory hash tables (idempotent with the load-time compaction in TrimExcess).
+        // The tokenizer-exception table is intentionally kept: the same model can be imported into more
+        // than one pipeline, and each import needs the special cases. The table is already minimal -
+        // AddEntry only records an exception for words the tokenizer would otherwise split.
+        public void OptimizeMemory()
+        {
+            Freeze();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HasMultiGram() => _frozen ? _frozenMultiGram.Length > 0 : Data.MultiGramHashes.Count > 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int MultiGramCount() => _frozen ? _frozenMultiGram.Length : Data.MultiGramHashes.Count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool MultiGramContains(int n, ulong hash) => _frozen ? _frozenMultiGram[n].Contains(hash) : Data.MultiGramHashes[n].Contains(hash);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool HashesContains(ulong hash) => _frozen ? _frozenHashes.Contains(hash) : Data.Hashes.Contains(hash);
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
@@ -99,6 +209,9 @@ namespace Catalyst.Models
 
         public bool IsEquivalentTo(Spotter other)
         {
+            Unfreeze();
+            other.Unfreeze();
+
             var omd = other.Data;
             var tmd = this.Data;
             return omd.IgnoreOnlyNumeric == tmd.IgnoreOnlyNumeric &&
@@ -140,9 +253,13 @@ namespace Catalyst.Models
 
         public void ClearModel()
         {
-            Data.Hashes.Clear();
-            Data.MultiGramHashes.Clear();
-            Data.TokenizerExceptions.Clear();
+            _frozen          = false;
+            _frozenHashes    = null;
+            _frozenMultiGram = null;
+
+            Data.Hashes              = new HashSet<ulong>();
+            Data.MultiGramHashes     = new List<HashSet<ulong>>();
+            Data.TokenizerExceptions = new Dictionary<int, TokenizationException>();
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
@@ -151,7 +268,7 @@ namespace Catalyst.Models
             var tokens = pooledTokens.AsSpan(0, actualLength);
 
             int N = tokens.Length;
-            bool hasMultiGram = Data.MultiGramHashes.Any();
+            bool hasMultiGram = HasMultiGram();
             bool foundAny = false;
             for (int i = 0; i < N; i++)
             {
@@ -160,9 +277,9 @@ namespace Catalyst.Models
 
                 var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
-                if (hasMultiGram && Data.MultiGramHashes[0].Contains(tokenHash))
+                if (hasMultiGram && MultiGramContains(0, tokenHash))
                 {
-                    int window = Math.Min(N - i, Data.MultiGramHashes.Count);
+                    int window = Math.Min(N - i, MultiGramCount());
                     ulong hash = tokenHash;
                     bool someTokenHasReplacements = tk.Replacement is object;
                     int i_final = i;
@@ -173,10 +290,10 @@ namespace Catalyst.Models
                         someTokenHasReplacements |= (next.Replacement is object);
 
                         var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
-                        if (Data.MultiGramHashes[n].Contains(nextHash))
+                        if (MultiGramContains(n, nextHash))
                         {
                             hash = HashCombine64(hash, nextHash);
-                            if (Data.Hashes.Contains(hash))
+                            if (HashesContains(hash))
                             {
                                 i_final = i + n;
                             }
@@ -203,7 +320,7 @@ namespace Catalyst.Models
                     i = i_final;
                 }
 
-                if (Data.Hashes.Contains(tokenHash))
+                if (HashesContains(tokenHash))
                 {
                     foundAny = true;
                     if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
@@ -220,6 +337,8 @@ namespace Catalyst.Models
 
         public void TrainWord2Sense(IEnumerable<IDocument> documents, ParallelOptions parallelOptions, int ngrams = 3, double tooRare = 1E-5, double tooCommon = 0.1, Word2SenseTrainingData trainingData = null)
         {
+            if (_frozen) { Unfreeze(); }
+
             var hashCount          = new ConcurrentDictionary<ulong, int>(trainingData?.HashCount           ?? new Dictionary<ulong, int>());
             var senses             = new ConcurrentDictionary<ulong, ulong[]>(trainingData?.Senses          ?? new Dictionary<ulong, ulong[]>());
             var words              = new ConcurrentDictionary<ulong, string>(trainingData?.Words            ?? new Dictionary<ulong, string>());
@@ -410,13 +529,15 @@ namespace Catalyst.Models
 
             if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
 
+            if (_frozen) { Unfreeze(); }
+
             var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (words.Length == 1)
             {
                 var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
                 AddSingleTokenConcept(hash);
 
-                if (!words[0].AsSpan().IsLetter())
+                if (!words[0].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
@@ -439,7 +560,7 @@ namespace Catalyst.Models
                     Data.MultiGramHashes[n].Add(word_hash);
                 }
 
-                if (!words[n].AsSpan().IsLetter())
+                if (!words[n].AsSpan().IsAllLetterOrDigit())
                 {
                     Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
                 }
