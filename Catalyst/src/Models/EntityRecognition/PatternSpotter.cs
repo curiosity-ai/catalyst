@@ -537,7 +537,7 @@ namespace Catalyst.Models
         /// <summary>Gets or sets the exact token value to match.</summary>
         [Key(8)] public string Token { get; set; }
         /// <summary>Gets or sets the set of token values to match.</summary>
-        [Key(9)] public string[] Set { get => set; set { set = value?.Distinct()?.ToArray(); _setHashes = set is object ? new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan()))) : null; } }
+        [Key(9)] public string[] Set { get => set; set { set = value?.Distinct()?.ToArray(); RebuildSetHashes(); } }
         /// <summary>Gets or sets the entity type to match.</summary>
         [Key(10)] public string EntityType { get => entityType; set { entityType = value; _splitEntityType = entityType is object ? new HashSet<string>(entityType.Split(splitChar, StringSplitOptions.RemoveEmptyEntries)) : null; } }
 
@@ -567,6 +567,8 @@ namespace Catalyst.Models
         private HashSet<string> _splitEntityType;
         private HashSet<string> _splitShape;
         private HashSet<ulong> _setHashes;
+        private int _setMinLength;
+        private int _setMaxLength;
 
         private string suffix;
         private string prefix;
@@ -809,10 +811,39 @@ namespace Catalyst.Models
             return false;
         }
 
+        // Precomputes the set-membership hashes together with the [min, max] character-length window of the set
+        // entries. The length window is the source for the pre-filter in MatchSet - a token can only equal one of
+        // the set entries if its length matches one of them, so we can reject out-of-range tokens without hashing.
+        private void RebuildSetHashes()
+        {
+            if (set is null)
+            {
+                _setHashes    = null;
+                _setMinLength = 0;
+                _setMaxLength = 0;
+                return;
+            }
+
+            _setHashes = new HashSet<ulong>(set.Select(tk => CaseSensitive ? PatternUnitPrototype.Hash64(tk.AsSpan()) : PatternUnitPrototype.IgnoreCaseHash64(tk.AsSpan())));
+
+            int min = int.MaxValue, max = 0;
+            foreach (var tk in set)
+            {
+                int len = tk?.Length ?? 0;
+                if (len < min) { min = len; }
+                if (len > max) { max = len; }
+            }
+            _setMinLength = min;
+            _setMaxLength = max;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchSet(ref Token token)
         {
-            return _setHashes is object && _setHashes.Contains(GetTokenHash(ref token));
+            if (_setHashes is null) { return false; }
+            int length = token.Length;
+            if (length < _setMinLength || length > _setMaxLength) { return false; } //Length pre-filter: a token outside the set's length window cannot be in the set, so skip hashing
+            return _setHashes.Contains(GetTokenHash(ref token));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

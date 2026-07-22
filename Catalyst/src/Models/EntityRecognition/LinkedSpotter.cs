@@ -21,6 +21,11 @@ namespace Catalyst.Models
         public HashSet<int> TokenizerExceptionsSet { get; set; } = new HashSet<int>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
+
+        /// <summary>Smallest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        public int MinTokenLength { get; set; }
+        /// <summary>Largest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        public int MaxTokenLength { get; set; }
     }
 
     public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
@@ -167,6 +172,29 @@ namespace Catalyst.Models
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool HashesTryGetValue(ulong hash, out UID128 uid) => _frozen ? _frozenHashes.TryGetValue(hash, out uid) : Data.Hashes.TryGetValue(hash, out uid);
 
+        // Widens the tracked [MinTokenLength, MaxTokenLength] window to cover a newly stored token length.
+        private void ObserveTokenLength(int length)
+        {
+            if (length <= 0) { return; }
+            if (Data.MaxTokenLength == 0) // model was empty until now
+            {
+                Data.MinTokenLength = length;
+                Data.MaxTokenLength = length;
+            }
+            else
+            {
+                if (length < Data.MinTokenLength) { Data.MinTokenLength = length; }
+                if (length > Data.MaxTokenLength) { Data.MaxTokenLength = length; }
+            }
+        }
+
+        // Cheap length pre-filter applied before hashing a token: a token whose length falls outside the window
+        // of every stored token can never match any stored hash, so we skip computing its hash entirely.
+        // A MaxTokenLength of 0 means the window is unknown (an empty model, or a model stored before this
+        // optimization existed), in which case filtering is disabled to preserve the exact previous behavior.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool CouldMatchLength(int length) => Data.MaxTokenLength == 0 || (length >= Data.MinTokenLength && length <= Data.MaxTokenLength);
+
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
             RecognizeEntities(document);
@@ -247,6 +275,8 @@ namespace Catalyst.Models
             Data.Hashes                 = new Dictionary<ulong, UID128>();
             Data.MultiGramHashes        = new List<HashSet<ulong>>();
             Data.TokenizerExceptionsSet = new HashSet<int>();
+            Data.MinTokenLength         = 0;
+            Data.MaxTokenLength         = 0;
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
@@ -262,6 +292,8 @@ namespace Catalyst.Models
                 var tk = tokens[i];
                 //if (tk.POS != PartOfSpeechEnum.NOUN && tk.POS != PartOfSpeechEnum.ADJ && tk.POS != PartOfSpeechEnum.PROPN) { continue; }
 
+                if (!CouldMatchLength(tk.Length)) { continue; } //Length pre-filter: skip hashing tokens that cannot match any stored entry
+
                 var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
 
                 if (hasMultiGram && MultiGramContains(0, tokenHash))
@@ -276,6 +308,8 @@ namespace Catalyst.Models
                     {
                         var next = tokens[n + i];
                         someTokenHasReplacements |= (next.Replacement is object);
+
+                        if (!CouldMatchLength(next.Length)) { break; } //Out-of-range token cannot extend the multi-gram, so stop before hashing
 
                         var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
                         if (MultiGramContains(n, nextHash))
@@ -369,8 +403,9 @@ namespace Catalyst.Models
             {
                 var wordSpan = entrySpan.Slice(validCurrentPart.Start.Value, validCurrentPart.End.Value - validCurrentPart.Start.Value);
                 var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
-                
+
                 Data.Hashes[hash] = uid;
+                ObserveTokenLength(wordSpan.Length);
 
                 if (!wordSpan.IsAllLetterOrDigit())
                 {
@@ -393,6 +428,7 @@ namespace Catalyst.Models
                     var wordSpan = entrySpan.Slice(currentPart.Start.Value, currentPart.End.Value - currentPart.Start.Value);
 
                     var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
+                    ObserveTokenLength(wordSpan.Length);
                     if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
 
                     if (Data.MultiGramHashes.Count < n + 1)
