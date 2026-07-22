@@ -170,6 +170,13 @@ namespace Catalyst.Models
             uint f = (uint)CompactHash.Mix(key);
             return f == 0 ? 1u : f;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort Fingerprint16(ulong key)
+        {
+            ushort f = (ushort)CompactHash.Mix(key);
+            return f == 0 ? (ushort)1 : f;
+        }
     }
 
     /// <summary>
@@ -368,6 +375,71 @@ namespace Catalyst.Models
         public bool CanEnumerateKeys => false;
         public long EstimatedBytes   => _mph is null ? _fallback.EstimatedBytes
             : 24 + (long)_fp.Length * sizeof(uint) + _mph.DisplacementBytes + (_overflow is null ? 0 : 32L * _overflow.Count + 64);
+
+        public IEnumerable<ulong> Keys() => throw new NotSupportedException("A fingerprint-compressed spotter cannot enumerate its original keys.");
+    }
+
+    /// <summary>
+    /// Lossy perfect-hash membership set storing a 16-bit fingerprint per key (load factor ~1.0). ~2^-16
+    /// (~0.0015%) false-positive rate; never false negatives. The small overflow set keeps full keys, so
+    /// overflow members are exact. Intended for use behind an authoritative validator that can reject the
+    /// (rare) false positives - e.g. a graph-backed capture resolver - in exchange for ~3.5 B/key.
+    /// </summary>
+    internal sealed class MphFingerprint16Set64 : ICompactHashSet64
+    {
+        private readonly Mph                  _mph;
+        private readonly ushort[]             _fp;
+        private readonly HashSet<ulong>       _overflow;
+        private readonly bool                 _hasZero;
+        private readonly int                  _count;
+        private readonly FingerprintHashSet64 _fallback;
+        public bool Perfect       => _overflow is null;
+        public int  OverflowCount => _overflow?.Count ?? 0;
+
+        public MphFingerprint16Set64(ICollection<ulong> source)
+        {
+            _count = source.Count;
+            var pul = ArrayPool<ulong>.Shared;
+            ulong[] scratch = pul.Rent(_count == 0 ? 1 : _count);
+            try
+            {
+                int n = 0; bool hasZero = false;
+                foreach (var k in source) { if (k == 0) hasZero = true; else scratch[n++] = k; }
+                _hasZero = hasZero;
+                var mph = Mph.Build(scratch, n, out var ofIdx, out var ofCount);
+                if (mph is null) { _fallback = new FingerprintHashSet64(source); return; }
+                _mph = mph;
+                _fp  = new ushort[_mph.M];
+
+                var ofSet = ofCount > 0 ? new HashSet<int>(ofCount) : null;
+                for (int i = 0; i < ofCount; i++) { ofSet.Add(ofIdx[i]); }
+                for (int i = 0; i < n; i++)
+                {
+                    if (ofSet is object && ofSet.Contains(i)) { continue; }
+                    _fp[_mph.Slot(scratch[i])] = Mph.Fingerprint16(scratch[i]);
+                }
+                if (ofCount > 0)
+                {
+                    _overflow = new HashSet<ulong>(ofCount);
+                    for (int i = 0; i < ofCount; i++) { _overflow.Add(scratch[ofIdx[i]]); }
+                }
+            }
+            finally { pul.Return(scratch); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(ulong key)
+        {
+            if (_mph is null) { return _fallback.Contains(key); }
+            if (key == 0) { return _hasZero; }
+            if (_fp[_mph.Slot(key)] == Mph.Fingerprint16(key)) { return true; }
+            return _overflow is object && _overflow.Contains(key);
+        }
+
+        public int  Count            => _mph is null ? _fallback.Count : _count;
+        public bool CanEnumerateKeys => false;
+        public long EstimatedBytes   => _mph is null ? _fallback.EstimatedBytes
+            : 24 + (long)_fp.Length * sizeof(ushort) + _mph.DisplacementBytes + (_overflow is null ? 0 : 32L * _overflow.Count + 64);
 
         public IEnumerable<ulong> Keys() => throw new NotSupportedException("A fingerprint-compressed spotter cannot enumerate its original keys.");
     }

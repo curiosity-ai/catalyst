@@ -28,6 +28,14 @@ namespace Catalyst.Models
         public int MaxTokenLength { get; set; }
     }
 
+    /// <summary>
+    /// Resolves the captured surface text to the authoritative graph node UID, or returns a null
+    /// <see cref="UID128"/> to reject the capture. Supplying one to a <see cref="LinkedSpotter"/> switches its
+    /// frozen tables to a low-memory probabilistic (false-positive, never false-negative) representation: the
+    /// resolver both filters the (rare) false positives and provides the UID, so the stored UIDs are dropped.
+    /// </summary>
+    public delegate UID128 CaptureResolver(ReadOnlySpan<char> matchedText);
+
     public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
@@ -37,8 +45,18 @@ namespace Catalyst.Models
         public const string Separator = "_";
 
         private ICompactHashMap64   _frozenHashes;
+        private ICompactHashSet64   _frozenHashesSet; // membership-only mode (resolver supplies the UID)
         private ICompactHashSet64[] _frozenMultiGram;
         private bool                _frozen;
+        private bool                _membershipOnly;
+        private CaptureResolver     _captureResolver;
+
+        /// <summary>
+        /// Sets the graph-backed capture resolver. Must be called before the model is frozen
+        /// (<see cref="OptimizeMemory"/> / load-time compaction); once set, freezing uses the probabilistic
+        /// membership tables. The model then becomes read-only (cannot be mutated or re-stored losslessly).
+        /// </summary>
+        public void SetCaptureResolver(CaptureResolver resolver) => _captureResolver = resolver;
 
         /// <summary>True once the model's hash tables have been compacted into their read-only in-memory form.</summary>
         public bool IsMemoryOptimized => _frozen;
@@ -49,7 +67,7 @@ namespace Catalyst.Models
             get
             {
                 if (!_frozen) { return 0; }
-                long mem = _frozenHashes?.EstimatedBytes ?? 0;
+                long mem = _membershipOnly ? (_frozenHashesSet?.EstimatedBytes ?? 0) : (_frozenHashes?.EstimatedBytes ?? 0);
                 if (_frozenMultiGram is object)
                 {
                     foreach (var s in _frozenMultiGram) { mem += s.EstimatedBytes; }
@@ -101,13 +119,31 @@ namespace Catalyst.Models
         {
             if (_frozen || Data is null || Data.Hashes is null) { return; }
 
-            _frozenHashes = CompactHash.BuildMap(Data.Hashes);
-
             var multi = Data.MultiGramHashes;
-            _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
-            for (int i = 0; i < _frozenMultiGram.Length; i++)
+
+            if (_captureResolver is object)
             {
-                _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
+                // Membership-only: the resolver supplies the UID and rejects false positives, so we keep only a
+                // probabilistic membership filter over the keys and drop the (16-byte) UID values entirely.
+                _frozenHashesSet = CompactHash.BuildProbabilisticSet(Data.Hashes.Keys);
+
+                _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
+                for (int i = 0; i < _frozenMultiGram.Length; i++)
+                {
+                    _frozenMultiGram[i] = CompactHash.BuildProbabilisticSet(multi[i]);
+                }
+
+                _membershipOnly = true;
+            }
+            else
+            {
+                _frozenHashes = CompactHash.BuildMap(Data.Hashes);
+
+                _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
+                for (int i = 0; i < _frozenMultiGram.Length; i++)
+                {
+                    _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
+                }
             }
 
             _frozen              = true;
@@ -120,6 +156,11 @@ namespace Catalyst.Models
         private void Unfreeze()
         {
             if (!_frozen) { return; }
+
+            if (_membershipOnly)
+            {
+                throw new InvalidOperationException("This LinkedSpotter was frozen with a graph-backed capture resolver (probabilistic membership) and cannot be modified or re-stored losslessly. Rebuild it without a capture resolver to modify it.");
+            }
 
             if (_frozenHashes is object && !_frozenHashes.CanEnumerateKeys)
             {
@@ -269,7 +310,9 @@ namespace Catalyst.Models
         public void ClearModel()
         {
             _frozen          = false;
+            _membershipOnly  = false;
             _frozenHashes    = null;
+            _frozenHashesSet = null;
             _frozenMultiGram = null;
 
             Data.Hashes                 = new Dictionary<ulong, UID128>();
@@ -286,6 +329,14 @@ namespace Catalyst.Models
 
             int N = tokens.Length;
             bool hasMultiGram = HasMultiGram();
+
+            if (_membershipOnly)
+            {
+                bool found = RecognizeEntitiesMembership(tokens, N, hasMultiGram, stopOnFirstFound);
+                ArrayPool<Token>.Shared.Return(pooledTokens);
+                return found;
+            }
+
             bool foundAny = false;
             for (int i = 0; i < N; i++)
             {
@@ -356,6 +407,108 @@ namespace Catalyst.Models
             ArrayPool<Token>.Shared.Return(pooledTokens);
 
             return foundAny;
+        }
+
+        // Membership-only recognition: the frozen tables only answer "could this be a known key" (with a tiny
+        // false-positive rate and no false negatives); the capture resolver validates each candidate against the
+        // graph and supplies the authoritative UID, dropping false positives. Mirrors the longest-match semantics
+        // of the exact path, resolving at each combined-hash hit and keeping the longest VALIDATED match.
+        private bool RecognizeEntitiesMembership(System.Span<Token> tokens, int N, bool hasMultiGram, bool stopOnFirstFound)
+        {
+            bool foundAny = false;
+            for (int i = 0; i < N; i++)
+            {
+                int i0 = i;
+                var tk = tokens[i0];
+                var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
+
+                if (hasMultiGram && MultiGramContains(0, tokenHash))
+                {
+                    int    window    = Math.Min(N - i0, MultiGramCount());
+                    ulong  hash      = tokenHash;
+                    int    i_final   = i0;
+                    UID128 uid_final = default;
+
+                    for (int n = 1; n < window; n++)
+                    {
+                        var next     = tokens[n + i0];
+                        var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
+
+                        if (MultiGramContains(n, nextHash))
+                        {
+                            hash = HashCombine64(hash, nextHash);
+                            if (_frozenHashesSet.Contains(hash))
+                            {
+                                var uid = ResolveMatch(tokens, i0, i0 + n);
+                                if (uid.IsNotNull())
+                                {
+                                    i_final   = i0 + n;
+                                    uid_final = uid;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    if (i_final > i0)
+                    {
+                        foundAny = true;
+                        if (stopOnFirstFound) { return foundAny; }
+                        tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Begin, uid_final));
+                        tokens[i_final].AddEntityType(new EntityType(CaptureTag, EntityTag.End, uid_final));
+
+                        for (int m = i0 + 1; m < i_final; m++)
+                        {
+                            tokens[m].AddEntityType(new EntityType(CaptureTag, EntityTag.Inside, uid_final));
+                        }
+                    }
+
+                    i = i_final;
+                }
+
+                if (_frozenHashesSet.Contains(tokenHash))
+                {
+                    var uid = ResolveMatch(tokens, i0, i0);
+                    if (uid.IsNotNull())
+                    {
+                        foundAny = true;
+                        if (stopOnFirstFound) { return foundAny; }
+                        tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Single, uid));
+                    }
+                }
+            }
+
+            return foundAny;
+        }
+
+        // Rebuilds the matched surface (single token, or words joined by a single space - matching how AddEntry
+        // keys multi-word entries) and asks the resolver for the authoritative UID (null = reject).
+        private UID128 ResolveMatch(System.Span<Token> tokens, int start, int end)
+        {
+            if (start == end)
+            {
+                return _captureResolver(tokens[start].ValueAsSpan);
+            }
+
+            int length = end - start; // single-space separators between words
+            for (int k = start; k <= end; k++) { length += tokens[k].ValueAsSpan.Length; }
+
+            char[] buffer = ArrayPool<char>.Shared.Rent(length);
+            int    pos    = 0;
+            for (int k = start; k <= end; k++)
+            {
+                if (k > start) { buffer[pos++] = ' '; }
+                var s = tokens[k].ValueAsSpan;
+                s.CopyTo(buffer.AsSpan(pos));
+                pos += s.Length;
+            }
+
+            var uid = _captureResolver(buffer.AsSpan(0, length));
+            ArrayPool<char>.Shared.Return(buffer);
+            return uid;
         }
 
         private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();

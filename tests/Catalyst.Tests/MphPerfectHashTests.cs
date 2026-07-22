@@ -135,6 +135,32 @@ namespace Catalyst.Tests
             Assert.False(map.CanEnumerateKeys);
         }
 
+        [Theory]
+        [InlineData(1000)]
+        [InlineData(100_000)]
+        public void MphFingerprint16Set_NoFalseNegatives_AndLowFalsePositiveRate(int count)
+        {
+            var keys    = RandomKeys(count, 91 + count, includeZero: true);
+            var present = new HashSet<ulong>(keys);
+            var set     = new MphFingerprint16Set64(present);
+
+            Assert.Equal(present.Count, set.Count);
+            Assert.False(set.CanEnumerateKeys);
+
+            // no false negatives - every member must be found
+            foreach (var k in keys) { Assert.True(set.Contains(k)); }
+
+            // false positives are allowed but should be ~2^-16; with 500k probes the expectation is ~7.6
+            var rng = new Random(123);
+            int fp = 0; const int trials = 500_000;
+            for (int i = 0; i < trials; i++)
+            {
+                ulong probe = (((ulong)(uint)rng.Next()) << 32) | (uint)rng.Next();
+                if (!present.Contains(probe) && set.Contains(probe)) { fp++; }
+            }
+            Assert.True(fp < 100, $"false-positive rate unexpectedly high: {fp}/{trials}");
+        }
+
         [Fact]
         public void Factory_BuildsPerfectHashStructures()
         {

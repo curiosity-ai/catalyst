@@ -149,6 +149,66 @@ namespace Catalyst.Tests
         }
 
         [Fact]
+        public void LinkedSpotter_MembershipMode_FreezesReadOnlyAndReportsMemory()
+        {
+            var spotter = new LinkedSpotter(Language.English, 0, "", "Linked");
+            spotter.AddEntry("Curiosity", UID128.New());
+            spotter.AddEntry("New York", UID128.New());
+
+            // Providing a resolver switches the freeze to the probabilistic membership tables.
+            spotter.SetCaptureResolver(text => default);
+            spotter.OptimizeMemory();
+
+            Assert.True(spotter.IsMemoryOptimized);
+            Assert.True(spotter.OptimizedMemoryBytes > 0);
+
+            // Membership-only mode is lossy/read-only: mutating (which would need a lossless unfreeze) must throw.
+            Assert.Throws<System.InvalidOperationException>(() => spotter.AddEntry("Boston", UID128.New()));
+        }
+
+        [Fact]
+        public async Task LinkedSpotter_MembershipMode_ResolvesUidAndFiltersFalsePositives()
+        {
+            English.Register();
+
+            var curiosity = UID128.New();
+            var newYork   = UID128.New();
+
+            var spotter = new LinkedSpotter(Language.English, 0, "", "Linked");
+            spotter.AddEntry("Curiosity", curiosity);
+            spotter.AddEntry("New York", newYork);
+            spotter.AddEntry("Ghost", UID128.New()); // a member of the table that the resolver will reject
+
+            // The resolver stands in for the graph: it accepts only real entities and supplies their UID.
+            spotter.SetCaptureResolver(text =>
+            {
+                var s = text.ToString();
+                if (s == "Curiosity") { return curiosity; }
+                if (s == "New York") { return newYork; }
+                return default; // not in the graph -> drop (covers "Ghost" and any fingerprint false positive)
+            });
+
+            var nlp = await Pipeline.ForAsync(Language.English);
+            nlp.Add(spotter);
+
+            spotter.OptimizeMemory();
+            Assert.True(spotter.IsMemoryOptimized);
+
+            var doc = new Document("Curiosity works in New York with Ghost.", Language.English);
+            nlp.ProcessSingle(doc);
+
+            var values = EntityValues(doc);
+            Assert.Contains("Curiosity", values);
+            Assert.Contains("New York", values);
+            Assert.DoesNotContain("Ghost", values); // table-member, but the resolver rejected it
+
+            // the emitted UID is the one the resolver returned
+            var entities = doc.SelectMany(s => s.GetEntities()).ToArray();
+            Assert.Contains(entities, e => e.Value == "New York" && e.EntityType.TargetUID == newYork);
+            Assert.Contains(entities, e => e.Value == "Curiosity" && e.EntityType.TargetUID == curiosity);
+        }
+
+        [Fact]
         public async Task Spotter_CanMutateAfterFreezeInExactMode()
         {
             English.Register();
