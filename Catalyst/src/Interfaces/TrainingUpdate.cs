@@ -8,7 +8,7 @@ namespace Catalyst
     /// Represents the training history of a model.
     /// </summary>
     [MessagePackObject(keyAsPropertyName:true)]
-    public class TrainingHistory
+    public partial class TrainingHistory
     {
         /// <summary>
         /// Gets or sets the list of training updates.
@@ -34,7 +34,7 @@ namespace Catalyst
     /// Represents a single update during the training of a model.
     /// </summary>
     [MessagePackObject]
-    public class TrainingUpdate : EventArgs
+    public partial class TrainingUpdate : EventArgs
     {
         /// <summary>
         /// Gets or sets the overall progress of the training (0 to 1).

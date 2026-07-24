@@ -22,7 +22,7 @@ namespace Catalyst
     /// </summary>
     [JsonObject]
     [MessagePackObject]
-    public class Document : IDocument
+    public partial class Document : IDocument
     {
         /// <summary>
         /// Gets or sets the language of the document.

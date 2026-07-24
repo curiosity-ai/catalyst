@@ -6,7 +6,7 @@ namespace Catalyst
     /// Represents the raw data of a token, used for serialization and storage within a <see cref="Document"/>.
     /// </summary>
     [MessagePackObject]
-    public struct TokenData
+    public partial struct TokenData
     {
         /// <summary>The lower bound (start index) of the token in the document text.</summary>
         [IgnoreMember] public int LowerBound;
