@@ -1,0 +1,180 @@
+  Determining projects to restore...
+/app/tests/Catalyst.Tests/Catalyst.Tests.csproj : warning NU1904: Package 'NuGet.CommandLine' 5.11.5 has a known critical severity vulnerability, https://github.com/advisories/GHSA-68w7-72jg-6qpp
+  All projects are up-to-date for restore.
+/app/tests/Catalyst.Tests/Catalyst.Tests.csproj : warning NU1904: Package 'NuGet.CommandLine' 5.11.5 has a known critical severity vulnerability, https://github.com/advisories/GHSA-68w7-72jg-6qpp
+  Catalyst.Tests -> /app/tests/Catalyst.Tests/bin/Debug/net10.0/Catalyst.Tests.dll
+Test run for /app/tests/Catalyst.Tests/bin/Debug/net10.0/Catalyst.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:02.67]     Catalyst.Tests.Languages.TestMacedonian.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestMacedonian.BasicTest [20 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Macedonian.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Macedonian.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestMacedonian.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestMacedonian.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+[xUnit.net 00:00:02.83]     Catalyst.Tests.Languages.TestNorwegian_Bokmal.BasicTest [FAIL]
+[xUnit.net 00:00:03.36]     Catalyst.Tests.Languages.TestKazakh.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestNorwegian_Bokmal.BasicTest [8 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Norwegian_Bokmal.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Norwegian_Bokmal.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestNorwegian_Bokmal.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestNorwegian_Bokmal.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+  Failed Catalyst.Tests.Languages.TestKazakh.BasicTest [7 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Kazakh.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Kazakh.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestKazakh.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestKazakh.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+[xUnit.net 00:00:03.45]     Catalyst.Tests.Languages.TestTamil.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestTamil.BasicTest [8 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Tamil.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Tamil.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestTamil.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestTamil.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+[xUnit.net 00:00:04.05]     Catalyst.Tests.Languages.TestMarathi.BasicTest [FAIL]
+[xUnit.net 00:00:05.19]     Catalyst.Tests.Languages.TestLuxembourgish_Letzeburgesch.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestMarathi.BasicTest [12 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Marathi.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Marathi.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestMarathi.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestMarathi.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+  Failed Catalyst.Tests.Languages.TestLuxembourgish_Letzeburgesch.BasicTest [14 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Luxembourgish_Letzeburgesch.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Luxembourgish_Letzeburgesch.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestLuxembourgish_Letzeburgesch.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestLuxembourgish_Letzeburgesch.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+[xUnit.net 00:00:05.90]     Catalyst.Tests.Languages.TestJapanese.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestJapanese.BasicTest [8 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Japanese.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Japanese.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestJapanese.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestJapanese.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+[xUnit.net 00:00:07.95]     Catalyst.Tests.Languages.TestTagalog.BasicTest [FAIL]
+  Failed Catalyst.Tests.Languages.TestTagalog.BasicTest [8 ms]
+  Error Message:
+   MessagePack.MessagePackSerializationException : Error occurred while reading from the stream.
+---- System.NullReferenceException : Object reference not set to an instance of an object.
+  Stack Trace:
+     at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+   at Catalyst.StorableObjectV2`2.LoadAsync(Stream stream)
+   at Catalyst.Models.AveragePerceptronTagger.LoadAsync(Stream stream)
+   at Catalyst.Models.Tagalog.<>c.<<Register>b__0_7>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Catalyst.ResourceLoader.LoadAsync[T](Assembly assembly, String resourceFile, Func`2 loader)
+   at Catalyst.Models.Tagalog.<>c.<<Register>b__0_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Mosaik.Core.StorableObject`2.LoadDataAsync()
+   at Catalyst.Models.AveragePerceptronTagger.FromStoreAsync(Language language, Int32 version, String tag)
+   at Catalyst.Pipeline.ForAsync(Language language, Boolean sentenceDetector, Boolean tagger)
+   at Catalyst.Tests.Languages.TestTagalog.BasicTest() in /app/tests/Catalyst.Tests/Languages/TestTagalog.cs:line 15
+--- End of stack trace from previous location ---
+----- Inner Stack Trace -----
+   at MessagePack.MessagePackSerializer.DeserializeAsync[T](Stream stream, MessagePackSerializerOptions options, CancellationToken cancellationToken)
+
+Failed!  - Failed:     8, Passed:    71, Skipped:     0, Total:    79, Duration: 15 s - Catalyst.Tests.dll (net10.0)
