@@ -73,7 +73,7 @@ namespace Catalyst.Models
                 var pooledTokens = span.ToTokenSpanPolled(out var actualLength);
                 var tokens = pooledTokens.AsSpan(0, actualLength);
 
-                int N = tokens.Length - 3;
+                int N = tokens.Length - 2;
 
                 for (int i = 1; i < N; i++)
                 {
