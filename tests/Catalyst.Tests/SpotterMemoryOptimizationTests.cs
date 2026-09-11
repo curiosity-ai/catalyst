@@ -23,6 +23,10 @@ namespace Catalyst.Tests
             spotter.AddEntry("New York");
             spotter.AddEntry("San Francisco Bay");
 
+            // Compaction happens the first time the model is used - joining a pipeline already needs its
+            // tokenizer-exception table - so "not yet optimized" is the state right after training it.
+            Assert.False(spotter.IsMemoryOptimized);
+
             var nlp = await Pipeline.ForAsync(Language.English);
             nlp.Add(spotter);
 
@@ -32,7 +36,7 @@ namespace Catalyst.Tests
             nlp.ProcessSingle(before);
             var beforeValues = EntityValues(before);
 
-            Assert.False(spotter.IsMemoryOptimized);
+            Assert.True(spotter.IsMemoryOptimized);
             Assert.Contains("Curiosity", beforeValues);
             Assert.Contains("New York", beforeValues);
             Assert.Contains("San Francisco Bay", beforeValues);
@@ -112,24 +116,28 @@ namespace Catalyst.Tests
         }
 
         [Fact]
-        public void Spotter_OnlyRecordsExceptionsForSplittableWordsAndKeepsThemAfterOptimize()
+        public void Spotter_OnlyRecordsExceptionsForWordsTheTokenizerWouldSplit()
         {
             var spotter = new Spotter(Language.English, 0, "", "Entity");
 
-            // Words that are all letters and/or digits are not split by the tokenizer, so they need no exception.
+            // Words the tokenizer already keeps whole need no exception - and that covers far more than
+            // "all letters and digits": a hyphen, a slash or a dot between alphanumerics never splits.
             spotter.AddEntry("covid19");
             spotter.AddEntry("New York 2024");
-            Assert.Empty(spotter.GetSpecialCases());
-
-            // Words containing punctuation would be split, so they require a "keep as-is" exception.
             spotter.AddEntry("node.js");
-            spotter.AddEntry("U.S.A.");
-            var before = spotter.GetSpecialCases().Select(kv => kv.Key).OrderBy(k => k).ToArray();
+            spotter.AddEntry("NAS1291-C3M");
+            spotter.AddEntry("D38999/24WC35PN");
+            Assert.Empty(spotter.GetSimpleSpecialCases().Hashes());
+
+            // Words the tokenizer really would break apart still need a "keep as-is" exception.
+            spotter.AddEntry("AT&T");
+            spotter.AddEntry("fish,chips");
+            var before = spotter.GetSimpleSpecialCases().Hashes().OrderBy(k => k).ToArray();
             Assert.Equal(2, before.Length);
 
             // The same model can be imported into more than one pipeline, so OptimizeMemory must keep the table.
             spotter.OptimizeMemory();
-            var after = spotter.GetSpecialCases().Select(kv => kv.Key).OrderBy(k => k).ToArray();
+            var after = spotter.GetSimpleSpecialCases().Hashes().OrderBy(k => k).ToArray();
             Assert.Equal(before, after);
         }
 
@@ -137,14 +145,15 @@ namespace Catalyst.Tests
         public void LinkedSpotter_KeepsExceptionsAfterOptimize()
         {
             var spotter = new LinkedSpotter(Language.English, 0, "", "Linked");
-            spotter.AddEntry("plain", UID128.New());   // all letters -> no exception
-            spotter.AddEntry("node.js", UID128.New()); // punctuation -> needs an exception
+            spotter.AddEntry("plain", UID128.New());    // kept whole by the tokenizer -> no exception
+            spotter.AddEntry("node.js", UID128.New());  // also kept whole -> no exception
+            spotter.AddEntry("AT&T", UID128.New());     // really would be split -> needs an exception
 
-            var before = spotter.GetSimpleSpecialCases().OrderBy(k => k).ToArray();
+            var before = spotter.GetSimpleSpecialCases().Hashes().OrderBy(k => k).ToArray();
             Assert.Single(before);
 
             spotter.OptimizeMemory();
-            var after = spotter.GetSimpleSpecialCases().OrderBy(k => k).ToArray();
+            var after = spotter.GetSimpleSpecialCases().Hashes().OrderBy(k => k).ToArray();
             Assert.Equal(before, after);
         }
 

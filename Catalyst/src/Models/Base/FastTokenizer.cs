@@ -33,7 +33,10 @@ namespace Catalyst.Models
 
         private readonly Dictionary<int, TokenizationException> _baseSpecialCases;
         private Dictionary<int, TokenizationException> _customSpecialCases;
-        private HashSet<int> _customSimpleSpecialCases;
+        // References to the models' own read-only tables, never a copy of them: a spotter over a large
+        // catalogue can hold millions of exceptions, and importing it into a pipeline used to duplicate the
+        // whole table inside the tokenizer.
+        private CompactHash32Set[] _customSimpleSpecialCases;
         private ReaderWriterLockSlim _lockSpecialCases = new();
 
         /// <summary>
@@ -142,19 +145,30 @@ namespace Catalyst.Models
 
             if (process is IHasSimpleSpecialCases simpleCases)
             {
-                _lockSpecialCases.EnterWriteLock();
-                try
-                {
+                var set = simpleCases.GetSimpleSpecialCases();
 
-                    _customSimpleSpecialCases ??= new();
-                    foreach (var sc in simpleCases.GetSimpleSpecialCases())
-                    {
-                        _customSimpleSpecialCases.Add(sc);
-                    }
-                }
-                finally
+                if (set is object && set.Count > 0)
                 {
-                    _lockSpecialCases.ExitWriteLock();
+                    _lockSpecialCases.EnterWriteLock();
+                    try
+                    {
+                        var previous = _customSimpleSpecialCases;
+                        int count    = previous?.Length ?? 0;
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (ReferenceEquals(previous[i], set)) { return; } //Already imported, e.g. the same model added to the pipeline twice
+                        }
+
+                        var next = new CompactHash32Set[count + 1];
+                        for (int i = 0; i < count; i++) { next[i] = previous[i]; }
+                        next[count] = set;
+                        _customSimpleSpecialCases = next;
+                    }
+                    finally
+                    {
+                        _lockSpecialCases.ExitWriteLock();
+                    }
                 }
             }
         }
@@ -303,7 +317,7 @@ namespace Catalyst.Models
                     {
                         int hash = candidate.CaseSensitiveHash32();
                         if ((customSpecialCases is object && customSpecialCases.ContainsKey(hash)) ||
-                            (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                            IsSimpleSpecialCase(customSimpleSpecialCases, hash)
                             || baseSpecialCases.ContainsKey(hash))
                         {
                             AddSplitPoint(ref splitPoints, ref splitPointsCount, offset, splitPoint - 1, SplitPointReason.Exception);
@@ -384,7 +398,7 @@ namespace Catalyst.Models
                                             int hashRest = rest.CaseSensitiveHash32();
 
                                             if ((customSpecialCases is object && customSpecialCases.ContainsKey(hashRest)) ||
-                                                (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hashRest)) || 
+                                                IsSimpleSpecialCase(customSimpleSpecialCases, hashRest) ||
                                                 baseSpecialCases.ContainsKey(hashRest))
                                             {
                                                 in_offset = offset + index;
@@ -467,7 +481,7 @@ namespace Catalyst.Models
                         continue;
                     }
 
-                    if (customSimpleSpecialCases is object && customSimpleSpecialCases.Contains(hash))
+                    if (IsSimpleSpecialCase(customSimpleSpecialCases, hash))
                     {
                         var tk = span.AddToken(spanBegin + b, spanBegin + e);
                     }
@@ -682,6 +696,67 @@ namespace Catalyst.Models
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsSimpleSpecialCase(CompactHash32Set[] sets, int hash)
+        {
+            if (sets is null) { return false; }
+            for (int i = 0; i < sets.Length; i++)
+            {
+                if (sets[i].Contains(hash)) { return true; }
+            }
+            return false;
+        }
+
+        [ThreadStatic] private static List<(int index, int length)> _wouldSplitInfixes;
+
+        /// <summary>
+        /// Whether tokenizing <paramref name="candidate"/> on its own would produce more than one token, and
+        /// therefore whether a model that wants to match it as a single token has to register a tokenization
+        /// exception for it.
+        ///
+        /// This mirrors the decisions the whitespace-delimited candidate takes in <see cref="Parse"/>, using
+        /// the same helpers, so the two cannot drift apart; <c>FastTokenizerSplitPredicateTests</c> pins them
+        /// against each other over a wide range of shapes. It matters because "contains something that is not
+        /// a letter or a digit" - the test the spotters used to apply - is far broader than what actually
+        /// splits: a hyphen, a slash, or a dot between alphanumerics are all kept whole, which is most of a
+        /// part-number or product-code catalogue.
+        /// </summary>
+        internal static bool WouldSplit(ReadOnlySpan<char> candidate, Language language)
+        {
+            if (candidate.Length <= 1) { return false; }
+            if (candidate.IsAllLetterOrDigit()) { return false; }
+
+            // A word the language already has an exception for is handled by that exception: it stays whole
+            // unless the exception replaces it with more than one token, in which case a model that wants it
+            // whole does need its own. This is what keeps the emoticon table (":(", ":0", ...) from being
+            // duplicated by every model that happens to contain one.
+            if (TokenizerExceptions.Get(language).TryGetValue(candidate.CaseSensitiveHash32(), out var known))
+            {
+                return known.Replacements is object && known.Replacements.Length > 1;
+            }
+
+            if (candidate.IsLikeURLorEmail()) { return false; }
+
+            for (int i = 0; i < candidate.Length - 1; i++)
+            {
+                if (candidate.Slice(i).IsEmoji(out var emojiLength))
+                {
+                    return emojiLength < candidate.Length;
+                }
+            }
+
+            if (candidate.IsSentencePunctuation() || candidate.IsHyphen() || candidate.IsSymbol()) { return false; }
+
+            if (FindPrefix(candidate) >= 0) { return true; }
+
+            var (sufixIndex, _) = FindSufix(candidate);
+            if (sufixIndex > -1) { return true; }
+
+            var infixes = _wouldSplitInfixes ??= new List<(int index, int length)>();
+            FindInfix(candidate, infixes);
+            return infixes.Count > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void FindInfix(ReadOnlySpan<char> s, List<(int index, int length)> infixLocation)
         {
             infixLocation.Clear();
@@ -754,7 +829,6 @@ namespace Catalyst.Models
         /// <inheritdoc />
         public void OptimizeMemory()
         {
-            _customSimpleSpecialCases?.TrimExcess();
             _customSpecialCases?.TrimExcess();
         }
     }
