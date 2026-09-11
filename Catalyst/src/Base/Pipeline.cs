@@ -346,7 +346,7 @@ namespace Catalyst
 
         private void TryImportSpecialCases(IProcess process)
         {
-            if (process is IHasSpecialCases)
+            if (process is IHasSpecialCases || process is IHasSimpleSpecialCases)
             {
                 foreach (FastTokenizer st in Processes.Where(p => p is FastTokenizer))
                 {

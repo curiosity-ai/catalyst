@@ -246,33 +246,28 @@ namespace SpotterMemoryLab
 
         private static void MeasureRealSpotters(StringBlob blob, int[] sorted, long exceptionCount)
         {
-            Console.WriteLine("## Real Catalyst models (built over the same dataset)");
+            Console.WriteLine("## Real Catalyst models, as implemented (built over the same dataset)");
 
             var sw = Stopwatch.StartNew();
             {
                 var spotter = new Spotter(Language.Any, 0, "lab", "PN");
                 for (int i = 0; i < sorted.Length; i++) { spotter.AddEntry(blob.StringAt(sorted[i])); }
+                double addSeconds = sw.Elapsed.TotalSeconds;
 
-                long single      = spotter.Data.Hashes.Count;
-                int  multiGrams  = spotter.Data.MultiGramHashes.Count;
-                long excCount    = spotter.Data.TokenizerExceptions.Count;
-                long excCapacity = spotter.Data.TokenizerExceptions.EnsureCapacity(0);
-
+                sw.Restart();
                 spotter.TrimExcess();
-                long tables = spotter.OptimizedMemoryBytes;
+                double freezeSeconds = sw.Elapsed.TotalSeconds;
 
-                long excBytes = BaselineModel.SpotterExceptionTable(excCount, excCapacity, out int excObjects);
+                long tables    = spotter.OptimizedMemoryBytes;
+                int  exceptions = spotter.GetSimpleSpecialCases().Count;
 
-                var m = new Measurement { Name = "S0  Spotter today (lossless MPH)", Group = "Spotter" };
-                m.Add("perfect-hash tables (measured)", tables);
-                m.Add("TokenizerExceptions dictionary", excBytes);
-                m.Add("copy inside the pipeline tokenizer", excBytes);
-                m.Objects   = 4 + excObjects * 2;
-                m.Notes     = $"hashes={single:n0}, multigram levels={multiGrams}, exceptions={excCount:n0} (capacity {excCapacity:n0})";
-                m.BuildSeconds = sw.Elapsed.TotalSeconds;
+                var m = new Measurement { Name = "N0  Spotter, implemented (entry dictionary + prefilter)", Group = "Spotter", Objects = 10 }; // engine + dictionary(3) + exception set(4) + prefilter(2)
+                m.Add("entry dictionary + exception table + prefilter (measured)", tables);
+                m.Notes        = $"entries={sorted.Length:n0}, tokenizer exceptions={exceptions:n0}; add {addSeconds:n0}s, compact {freezeSeconds:n0}s";
+                m.BuildSeconds = addSeconds + freezeSeconds;
                 Results.Add(m);
 
-                Console.WriteLine($"Spotter        : entry hashes {single:n0}, exceptions {excCount:n0}, MPH tables {Sz.MB(tables)}, built in {sw.Elapsed.TotalSeconds:n0}s");
+                Console.WriteLine($"Spotter        : {Sz.MB(tables)} total, {exceptions:n0} tokenizer exceptions, add {addSeconds:n0}s + compact {freezeSeconds:n0}s");
                 spotter.ClearModel();
             }
             GC.Collect(2, GCCollectionMode.Aggressive, true, true);
@@ -281,26 +276,22 @@ namespace SpotterMemoryLab
             {
                 var linked = new LinkedSpotter(Language.Any, 0, "lab", "PN");
                 for (int i = 0; i < sorted.Length; i++) { linked.AddEntry(blob.StringAt(sorted[i]), UID128.New()); }
+                double addSeconds = sw.Elapsed.TotalSeconds;
 
-                long entries     = linked.Data.Hashes.Count;
-                long excCount    = linked.Data.TokenizerExceptionsSet.Count;
-                long excCapacity = linked.Data.TokenizerExceptionsSet.EnsureCapacity(0);
-
+                sw.Restart();
                 linked.TrimExcess();
-                long tables = linked.OptimizedMemoryBytes;
+                double freezeSeconds = sw.Elapsed.TotalSeconds;
 
-                long excBytes = BaselineModel.LinkedExceptionTable(excCount, excCapacity, out int excObjects);
+                long tables     = linked.OptimizedMemoryBytes;
+                int  exceptions = linked.GetSimpleSpecialCases().Count;
 
-                var m = new Measurement { Name = "L0  LinkedSpotter today (lossless MPH)", Group = "LinkedSpotter" };
-                m.Add("perfect-hash tables (measured)", tables);
-                m.Add("TokenizerExceptionsSet", excBytes);
-                m.Add("copy inside the pipeline tokenizer", excBytes);
-                m.Objects   = 5 + excObjects * 2;
-                m.Notes     = $"entries={entries:n0}, exceptions={excCount:n0} (capacity {excCapacity:n0})";
-                m.BuildSeconds = sw.Elapsed.TotalSeconds;
+                var m = new Measurement { Name = "N1  LinkedSpotter, implemented (dictionary + dense UIDs + prefilter)", Group = "LinkedSpotter", Objects = 11 }; // the same, plus the dense UID array
+                m.Add("entry dictionary + UID array + exception table + prefilter (measured)", tables);
+                m.Notes        = $"entries={sorted.Length:n0}, tokenizer exceptions={exceptions:n0}; add {addSeconds:n0}s, compact {freezeSeconds:n0}s";
+                m.BuildSeconds = addSeconds + freezeSeconds;
                 Results.Add(m);
 
-                Console.WriteLine($"LinkedSpotter  : entries {entries:n0}, exceptions {excCount:n0}, MPH tables {Sz.MB(tables)}, built in {sw.Elapsed.TotalSeconds:n0}s");
+                Console.WriteLine($"LinkedSpotter  : {Sz.MB(tables)} total, {exceptions:n0} tokenizer exceptions, add {addSeconds:n0}s + compact {freezeSeconds:n0}s");
                 linked.ClearModel();
             }
             GC.Collect(2, GCCollectionMode.Aggressive, true, true);

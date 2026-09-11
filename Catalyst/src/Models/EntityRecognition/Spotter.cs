@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 using System;
 using System.Buffers;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UID;
@@ -15,48 +16,67 @@ namespace Catalyst.Models
 {
     public class SpotterModel : StorableObjectData
     {
-        public HashSet<ulong> Hashes { get; set; } = new HashSet<ulong>();
-        public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
         public string CaptureTag { get; set; }
-        public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
 
-        /// <summary>Smallest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        /// <summary>Smallest character length among the individual words stored in the model, or 0 when the model is empty.</summary>
         public int MinTokenLength { get; set; }
-        /// <summary>Largest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        /// <summary>Largest character length among the individual words stored in the model, or 0 when the model is empty.</summary>
         public int MaxTokenLength { get; set; }
+
+        // The entries, as one sorted prefix-compressed dictionary of their surface forms. These blobs are the
+        // in-memory structure verbatim, so loading a model is a read rather than a rebuild.
+        public byte[] EntriesPayload { get; set; }
+        public byte[] EntriesBlockOffsets { get; set; }
+        public int EntriesCount { get; set; }
+        public int EntriesBlockSize { get; set; }
+        public int EntriesMaxBytes { get; set; }
+
+        // The words the tokenizer would otherwise split, as a compact set of their case-sensitive 32-bit hashes.
+        public byte[] ExceptionBuckets { get; set; }
+        public byte[] ExceptionLows { get; set; }
+        public int ExceptionCount { get; set; }
+
+        // Superseded by the entry dictionary, kept so models stored before it still load and match. Never written.
+        public HashSet<ulong> Hashes { get; set; } = new HashSet<ulong>();
+        public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
+        public Dictionary<int, TokenizationException> TokenizerExceptions { get; set; } = new Dictionary<int, TokenizationException>();
     }
 
-    public class Spotter : StorableObjectV2<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSpecialCases, ICanOptimizeMemory
+    public class Spotter : StorableObjectV2<Spotter, SpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
 
-        public bool IgnoreCase { get { return Data.IgnoreCase; } set { Data.IgnoreCase = value; } }
+        public bool IgnoreCase
+        {
+            get { return Data.IgnoreCase; }
+            set { Data.IgnoreCase = value; if (_engine is object) { _engine.IgnoreCase = value; } }
+        }
 
         public const string Separator = "_";
 
-        private ICompactHashSet64   _frozenHashes;
-        private ICompactHashSet64[] _frozenMultiGram;
-        private bool                _frozen;
+        private readonly object _syncRoot = new object();
+        private SpotterEngine   _engine;
+        private bool            _initialized;
 
-        /// <summary>True once the model's hash tables have been compacted into their read-only in-memory form.</summary>
-        public bool IsMemoryOptimized => _frozen;
+        // Only reached by a model stored before the entry dictionary existed; see LegacySpotterTables.
+        private LegacySpotterTables _legacy;
 
-        /// <summary>Estimated bytes held by the compacted hash tables, or 0 when the model is not compacted.</summary>
+        /// <summary>True once the model's entries have been compacted into their read-only in-memory form.</summary>
+        public bool IsMemoryOptimized
+        {
+            get { Initialize(); return _legacy is object ? _legacy.IsFrozen : _engine.IsFrozen; }
+        }
+
+        /// <summary>Estimated bytes held by the compacted tables, or 0 when the model is not compacted.</summary>
         public long OptimizedMemoryBytes
         {
-            get
-            {
-                if (!_frozen) { return 0; }
-                long mem = _frozenHashes?.EstimatedBytes ?? 0;
-                if (_frozenMultiGram is object)
-                {
-                    foreach (var s in _frozenMultiGram) { mem += s.EstimatedBytes; }
-                }
-                return mem;
-            }
+            get { Initialize(); return _legacy is object ? _legacy.EstimatedBytes : _engine.EstimatedBytes; }
         }
+
+        /// <summary>True when this model was loaded from a store written before the entry dictionary existed.</summary>
+        public bool IsLegacyModel { get { Initialize(); return _legacy is object; } }
 
         private Spotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
@@ -74,134 +94,106 @@ namespace Catalyst.Models
             a.TrimExcess();
             return a;
         }
+
+        // Decides once, after Data is in place, whether this model speaks the entry dictionary or the older
+        // hash tables. Everything public funnels through here so the choice cannot be missed.
+        private void Initialize()
+        {
+            if (_initialized) { return; }
+
+            lock (_syncRoot)
+            {
+                if (_initialized) { return; }
+
+                if (Data.EntriesCount > 0 && Data.EntriesPayload is object)
+                {
+                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                    _engine.LoadFrom(Data.EntriesPayload, Data.EntriesBlockOffsets, Data.EntriesCount, Data.EntriesBlockSize, Data.EntriesMaxBytes,
+                                     Data.ExceptionBuckets, Data.ExceptionLows, Data.ExceptionCount);
+                }
+                else if ((Data.Hashes?.Count ?? 0) > 0 || (Data.MultiGramHashes?.Count ?? 0) > 0)
+                {
+                    _legacy = new LegacySpotterTables(Data);
+                }
+                else
+                {
+                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                }
+
+                _initialized = true;
+            }
+        }
+
+        private void EnsureFrozen()
+        {
+            if (_legacy is object)
+            {
+                if (!_legacy.IsFrozen) { lock (_syncRoot) { _legacy.Freeze(); } }
+                return;
+            }
+
+            if (!_engine.IsFrozen)
+            {
+                lock (_syncRoot)
+                {
+                    if (!_engine.IsFrozen)
+                    {
+                        _engine.Freeze();
+                        Data.MinTokenLength = _engine.MinTokenLength;
+                        Data.MaxTokenLength = _engine.MaxTokenLength;
+                    }
+                }
+            }
+        }
+
         public void TrimExcess()
         {
-            if (Data is null) return;
-
-            if (Data.MultiGramHashes is object)
-            {
-
-                Data.MultiGramHashes.TrimExcess();
-
-                foreach (var v in Data.MultiGramHashes)
-                {
-                    v.TrimExcess();
-                }
-            }
-            Data.TokenizerExceptions?.TrimExcess();
-            Data.Hashes?.TrimExcess();
-
-            Freeze();
+            if (Data is null) { return; }
+            Initialize();
+            EnsureFrozen();
         }
 
-        // Replaces the trained HashSet lookups with compact, read-only equivalents and releases the originals.
-        // Keeps TokenizerExceptions intact - the model may still be imported into further pipelines.
-        private void Freeze()
-        {
-            if (_frozen || Data is null || Data.Hashes is null) { return; }
-
-            _frozenHashes = CompactHash.BuildSet(Data.Hashes);
-
-            var multi = Data.MultiGramHashes;
-            _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
-            for (int i = 0; i < _frozenMultiGram.Length; i++)
-            {
-                _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
-            }
-
-            _frozen              = true;
-            Data.Hashes          = null;
-            Data.MultiGramHashes = null;
-        }
-
-        // Rebuilds the mutable HashSet representation from the compact tables so the model can be mutated or
-        // re-stored. Only possible for lossless (exact) compaction.
-        private void Unfreeze()
-        {
-            if (!_frozen) { return; }
-
-            if (_frozenHashes is object && !_frozenHashes.CanEnumerateKeys)
-            {
-                throw new InvalidOperationException("This Spotter was loaded with fingerprint compression (SpotterCompaction.UseFingerprint32) and cannot be modified or re-stored losslessly. Reload it with fingerprint compression disabled to modify it.");
-            }
-
-            var hashes = new HashSet<ulong>(_frozenHashes?.Count ?? 0);
-            if (_frozenHashes is object)
-            {
-                foreach (var k in _frozenHashes.Keys()) { hashes.Add(k); }
-            }
-            Data.Hashes = hashes;
-
-            var multi = new List<HashSet<ulong>>(_frozenMultiGram?.Length ?? 0);
-            if (_frozenMultiGram is object)
-            {
-                foreach (var s in _frozenMultiGram)
-                {
-                    var hs = new HashSet<ulong>(s.Count);
-                    foreach (var k in s.Keys()) { hs.Add(k); }
-                    multi.Add(hs);
-                }
-            }
-            Data.MultiGramHashes = multi;
-
-            Data.TokenizerExceptions ??= new Dictionary<int, TokenizationException>();
-
-            _frozen          = false;
-            _frozenHashes    = null;
-            _frozenMultiGram = null;
-        }
+        /// <summary>Compacts the in-memory tables. Idempotent with the compaction <see cref="TrimExcess"/> does on load.</summary>
+        public void OptimizeMemory() => TrimExcess();
 
         public override async Task StoreAsync(System.IO.Stream stream)
         {
-            bool wasFrozen = _frozen;
-            Unfreeze();
+            Initialize();
+
+            if (_legacy is object)
+            {
+                bool wasFrozen = _legacy.IsFrozen;
+                _legacy.Unfreeze();
+                await base.StoreAsync(stream);
+                if (wasFrozen) { _legacy.Freeze(); }
+                return;
+            }
+
+            EnsureFrozen();
+            WriteEngineToData();
             await base.StoreAsync(stream);
-            if (wasFrozen) { Freeze(); }
         }
 
-        // Compacts the in-memory hash tables (idempotent with the load-time compaction in TrimExcess).
-        // The tokenizer-exception table is intentionally kept: the same model can be imported into more
-        // than one pipeline, and each import needs the special cases. The table is already minimal -
-        // AddEntry only records an exception for words the tokenizer would otherwise split.
-        public void OptimizeMemory()
+        private void WriteEngineToData()
         {
-            Freeze();
+            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = _engine.Dictionary.ToBlobs();
+            var (buckets, lows, exceptionCount)                         = _engine.Exceptions.ToBlobs();
+
+            Data.EntriesPayload      = count > 0 ? payload : null;
+            Data.EntriesBlockOffsets = count > 0 ? blockOffsets : null;
+            Data.EntriesCount        = count;
+            Data.EntriesBlockSize    = blockSize;
+            Data.EntriesMaxBytes     = maxEntryBytes;
+            Data.ExceptionBuckets    = exceptionCount > 0 ? buckets : null;
+            Data.ExceptionLows       = exceptionCount > 0 ? lows : null;
+            Data.ExceptionCount      = exceptionCount;
+            Data.MinTokenLength      = _engine.MinTokenLength;
+            Data.MaxTokenLength      = _engine.MaxTokenLength;
+
+            Data.Hashes              = null;
+            Data.MultiGramHashes     = null;
+            Data.TokenizerExceptions = null;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HasMultiGram() => _frozen ? _frozenMultiGram.Length > 0 : Data.MultiGramHashes.Count > 0;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int MultiGramCount() => _frozen ? _frozenMultiGram.Length : Data.MultiGramHashes.Count;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool MultiGramContains(int n, ulong hash) => _frozen ? _frozenMultiGram[n].Contains(hash) : Data.MultiGramHashes[n].Contains(hash);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HashesContains(ulong hash) => _frozen ? _frozenHashes.Contains(hash) : Data.Hashes.Contains(hash);
-
-        // Widens the tracked [MinTokenLength, MaxTokenLength] window to cover a newly stored token length.
-        private void ObserveTokenLength(int length)
-        {
-            if (length <= 0) { return; }
-            if (Data.MaxTokenLength == 0) // model was empty until now
-            {
-                Data.MinTokenLength = length;
-                Data.MaxTokenLength = length;
-            }
-            else
-            {
-                if (length < Data.MinTokenLength) { Data.MinTokenLength = length; }
-                if (length > Data.MaxTokenLength) { Data.MaxTokenLength = length; }
-            }
-        }
-
-        // Cheap length pre-filter applied before hashing a token: a token whose length falls outside the window
-        // of every stored token can never match any stored hash, so we skip computing its hash entirely.
-        // A MaxTokenLength of 0 means the window is unknown (an empty model, or a model stored before this
-        // optimization existed), in which case filtering is disabled to preserve the exact previous behavior.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool CouldMatchLength(int length) => Data.MaxTokenLength == 0 || (length >= Data.MinTokenLength && length <= Data.MaxTokenLength);
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
@@ -235,18 +227,64 @@ namespace Catalyst.Models
             return false;
         }
 
+        private readonly struct Sink : ISpotterMatchSink
+        {
+            private readonly string _captureTag;
+
+            public Sink(string captureTag) { _captureTag = captureTag; }
+
+            public void OnSingle(ref Token token, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single));
+
+            public void OnMultiGram(Span<Token> tokens, int begin, int end, int rank)
+            {
+                tokens[begin].AddEntityType(new EntityType(_captureTag, EntityTag.Begin));
+                tokens[end].AddEntityType(new EntityType(_captureTag, EntityTag.End));
+
+                for (int m = begin + 1; m < end; m++)
+                {
+                    tokens[m].AddEntityType(new EntityType(_captureTag, EntityTag.Inside));
+                }
+            }
+        }
+
+        public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
+        {
+            Initialize();
+            EnsureFrozen();
+
+            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
+
+            try
+            {
+                var tokens = pooledTokens.AsSpan(0, actualLength);
+
+                if (_legacy is object) { return _legacy.Match(tokens, CaptureTag, stopOnFirstFound); }
+
+                var sink = new Sink(CaptureTag);
+                return _engine.Match(tokens, stopOnFirstFound, ref sink);
+            }
+            finally
+            {
+                ArrayPool<Token>.Shared.Return(pooledTokens);
+            }
+        }
+
         public bool IsEquivalentTo(Spotter other)
         {
-            Unfreeze();
-            other.Unfreeze();
+            Initialize();
+            other.Initialize();
 
-            var omd = other.Data;
-            var tmd = this.Data;
-            return omd.IgnoreOnlyNumeric == tmd.IgnoreOnlyNumeric &&
-                   omd.IgnoreCase == tmd.IgnoreCase &&
-                   omd.Hashes.SetEquals(tmd.Hashes) &&
-                   omd.MultiGramHashes.Count == tmd.MultiGramHashes.Count &&
-                   omd.MultiGramHashes.Zip(tmd.MultiGramHashes, (a, b) => a.SetEquals(b)).All(b => b);
+            if (Data.IgnoreOnlyNumeric != other.Data.IgnoreOnlyNumeric || Data.IgnoreCase != other.Data.IgnoreCase) { return false; }
+            if ((_legacy is object) != (other._legacy is object)) { return false; }
+
+            if (_legacy is object) { return _legacy.IsEquivalentTo(other._legacy); }
+
+            EnsureFrozen();
+            other.EnsureFrozen();
+
+            var mine   = _engine.Dictionary.ToBlobs();
+            var theirs = other._engine.Dictionary.ToBlobs();
+            return mine.count == theirs.count && mine.payload.AsSpan().SequenceEqual(theirs.payload);
         }
 
         public static ulong HashCombine64(ulong rhs, ulong lhs)
@@ -281,97 +319,68 @@ namespace Catalyst.Models
 
         public void ClearModel()
         {
-            _frozen          = false;
-            _frozenHashes    = null;
-            _frozenMultiGram = null;
+            Initialize();
 
-            Data.Hashes              = new HashSet<ulong>();
-            Data.MultiGramHashes     = new List<HashSet<ulong>>();
-            Data.TokenizerExceptions = new Dictionary<int, TokenizationException>();
-            Data.MinTokenLength      = 0;
-            Data.MaxTokenLength      = 0;
+            lock (_syncRoot)
+            {
+                _legacy = null;
+                _engine ??= new SpotterEngine { Language = Language };
+                _engine.Clear();
+                _engine.IgnoreCase = Data.IgnoreCase;
+
+                Data.Hashes              = null;
+                Data.MultiGramHashes     = null;
+                Data.TokenizerExceptions = null;
+                Data.EntriesPayload      = null;
+                Data.EntriesBlockOffsets = null;
+                Data.EntriesCount        = 0;
+                Data.ExceptionBuckets    = null;
+                Data.ExceptionLows       = null;
+                Data.ExceptionCount      = 0;
+                Data.MinTokenLength      = 0;
+                Data.MaxTokenLength      = 0;
+            }
         }
 
-        public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
+        /// <summary>The entries this model recognises, in sorted order.</summary>
+        public IEnumerable<string> GetEntries()
         {
-            var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
-            var tokens = pooledTokens.AsSpan(0, actualLength);
+            Initialize();
+            return _legacy is object ? Enumerable.Empty<string>() : _engine.Entries();
+        }
 
-            int N = tokens.Length;
-            bool hasMultiGram = HasMultiGram();
-            bool foundAny = false;
-            for (int i = 0; i < N; i++)
+        public CompactHash32Set GetSimpleSpecialCases()
+        {
+            Initialize();
+            EnsureFrozen();
+            return _legacy is object ? _legacy.Exceptions : _engine.Exceptions;
+        }
+
+        public void AddEntry(string entry)
+        {
+            Initialize();
+
+            if (_legacy is object) { _legacy.AddEntry(entry, Data, Language); return; }
+
+            _engine.IgnoreCase = Data.IgnoreCase;
+            _engine.Add(entry, Data.IgnoreOnlyNumeric);
+            Data.MinTokenLength = _engine.MinTokenLength;
+            Data.MaxTokenLength = _engine.MaxTokenLength;
+        }
+
+        public void AppendList(IEnumerable<string> words)
+        {
+            foreach (var word in words)
             {
-                var tk = tokens[i];
-                //if (tk.POS != PartOfSpeechEnum.NOUN && tk.POS != PartOfSpeechEnum.ADJ && tk.POS != PartOfSpeechEnum.PROPN) { continue; }
-
-                if (!CouldMatchLength(tk.Length)) { continue; } //Length pre-filter: skip hashing tokens that cannot match any stored entry
-
-                var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
-
-                if (hasMultiGram && MultiGramContains(0, tokenHash))
-                {
-                    int window = Math.Min(N - i, MultiGramCount());
-                    ulong hash = tokenHash;
-                    bool someTokenHasReplacements = tk.Replacement is object;
-                    int i_final = i;
-
-                    for (int n = 1; n < window; n++)
-                    {
-                        var next = tokens[n + i];
-                        someTokenHasReplacements |= (next.Replacement is object);
-
-                        if (!CouldMatchLength(next.Length)) { break; } //Out-of-range token cannot extend the multi-gram, so stop before hashing
-
-                        var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
-                        if (MultiGramContains(n, nextHash))
-                        {
-                            hash = HashCombine64(hash, nextHash);
-                            if (HashesContains(hash))
-                            {
-                                i_final = i + n;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    if (i_final > i)
-                    {
-                        foundAny = true;
-                        if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
-                        tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Begin));
-                        tokens[i_final].AddEntityType(new EntityType(CaptureTag, EntityTag.End));
-
-                        for (int m = i + 1; m < (i_final); m++)
-                        {
-                            tokens[m].AddEntityType(new EntityType(CaptureTag, EntityTag.Inside));
-                        }
-                    }
-
-                    i = i_final;
-                }
-
-                if (HashesContains(tokenHash))
-                {
-                    foundAny = true;
-                    if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
-                    tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Single));
-                }
+                AddEntry(word);
             }
-
-            ArrayPool<Token>.Shared.Return(pooledTokens); 
-            
-            return foundAny;
         }
 
         private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
 
         public void TrainWord2Sense(IEnumerable<IDocument> documents, ParallelOptions parallelOptions, int ngrams = 3, double tooRare = 1E-5, double tooCommon = 0.1, Word2SenseTrainingData trainingData = null)
         {
-            if (_frozen) { Unfreeze(); }
+            Initialize();
 
             var hashCount          = new ConcurrentDictionary<ulong, int>(trainingData?.HashCount           ?? new Dictionary<ulong, int>());
             var senses             = new ConcurrentDictionary<ulong, ulong[]>(trainingData?.Senses          ?? new Dictionary<ulong, ulong[]>());
@@ -402,7 +411,7 @@ namespace Catalyst.Models
                         if (doc.TokensCount < ngrams) { return; } //Ignore too small documents
 
                         Interlocked.Add(ref tkCount, doc.TokensCount);
-                        
+
                         foreach (var span in doc)
                         {
                             var tokens = span.GetCapturedTokens().ToArray();
@@ -510,24 +519,28 @@ namespace Catalyst.Models
             var toKeep = hashCount.Where(kv => kv.Value >= thresholdRare && kv.Value <= thresholdCommon).OrderByDescending(kv => kv.Value)
                                                 .Select(kv => kv.Key).ToArray();
 
+            // A sense is the sequence of words that produced it, so it is stored as the entry it stands for
+            // rather than as the combined hash - which is what lets the model be read back and re-exported.
+            var sense = new StringBuilder();
+
             foreach (var key in toKeep)
             {
-                if (senses.TryGetValue(key, out var hashes) && hashCount.TryGetValue(key, out var count))
+                if (!senses.TryGetValue(key, out var hashes)) { continue; }
+
+                sense.Clear();
+                bool complete = true;
+
+                for (int i = 0; i < hashes.Length; i++)
                 {
-                    Data.Hashes.Add(key);
-                    for (int i = 0; i < hashes.Length; i++)
-                    {
-                        if (Data.MultiGramHashes.Count <= i)
-                        {
-                            Data.MultiGramHashes.Add(new HashSet<ulong>());
-                        }
-                        Data.MultiGramHashes[i].Add(hashes[i]);
-                        if (words.TryGetValue(hashes[i], out var word)) { ObserveTokenLength(word.Length); }
-                    }
+                    if (!words.TryGetValue(hashes[i], out var word)) { complete = false; break; }
+                    if (i > 0) { sense.Append(' '); }
+                    sense.Append(word);
                 }
+
+                if (complete) { AddEntry(sense.ToString()); }
             }
 
-            if(trainingData is object)
+            if (trainingData is object)
             {
                 trainingData.HashCount = new Dictionary<ulong, int>(hashCount);
                 trainingData.Senses = new Dictionary<ulong, ulong[]>(senses);
@@ -539,79 +552,6 @@ namespace Catalyst.Models
             }
 
             Logger.LogInformation("Finish training Word2Sense model");
-        }
-
-        public IEnumerable<KeyValuePair<int, TokenizationException>> GetSpecialCases()
-        {
-            if (Data.TokenizerExceptions is object)
-            {
-                foreach (var sc in Data.TokenizerExceptions)
-                {
-                    yield return sc;
-                }
-            }
-        }
-
-        public void AddEntry(string entry)
-        {
-            void AddSingleTokenConcept(ulong entryHash)
-            {
-                Data.Hashes.Add(entryHash);
-            }
-
-            if (string.IsNullOrWhiteSpace(entry)) { return; }
-
-
-            if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
-
-            if (_frozen) { Unfreeze(); }
-
-            var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (words.Length == 1)
-            {
-                var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[0].AsSpan()) : Spotter.Hash64(words[0].AsSpan());
-                AddSingleTokenConcept(hash);
-                ObserveTokenLength(words[0].Length);
-
-                if (!words[0].AsSpan().IsAllLetterOrDigit())
-                {
-                    Data.TokenizerExceptions[words[0].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
-                }
-
-                return;
-            }
-
-            ulong combinedHash = 0;
-            for (int n = 0; n < words.Length; n++)
-            {
-                var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(words[n].AsSpan()) : Spotter.Hash64(words[n].AsSpan());
-                ObserveTokenLength(words[n].Length);
-                if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
-                if (Data.MultiGramHashes.Count < n + 1)
-                {
-                    Data.MultiGramHashes.Add(new HashSet<ulong>());
-                }
-
-                if (!Data.MultiGramHashes[n].Contains(word_hash))
-                {
-                    Data.MultiGramHashes[n].Add(word_hash);
-                }
-
-                if (!words[n].AsSpan().IsAllLetterOrDigit())
-                {
-                    Data.TokenizerExceptions[words[n].CaseSensitiveHash32()] = new TokenizationException(null); //Null means don't replace by anything - keep token as is
-                }
-            }
-
-            AddSingleTokenConcept(combinedHash);
-        }
-
-        public void AppendList(IEnumerable<string> words)
-        {
-            foreach (var word in words)
-            {
-                AddEntry(word);
-            }
         }
     }
 

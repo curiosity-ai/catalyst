@@ -1,12 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
 using Mosaik.Core;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UID;
@@ -15,48 +11,76 @@ namespace Catalyst.Models
 {
     public class LinkedSpotterModel : StorableObjectData
     {
-        public Dictionary<ulong, UID128> Hashes { get; set; } = new Dictionary<ulong, UID128>();
-        public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
         public string CaptureTag { get; set; }
-        public HashSet<int> TokenizerExceptionsSet { get; set; } = new HashSet<int>();
         public bool IgnoreOnlyNumeric { get; set; }
         public bool IgnoreCase { get; set; }
 
-        /// <summary>Smallest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        /// <summary>Smallest character length among the individual words stored in the model, or 0 when the model is empty.</summary>
         public int MinTokenLength { get; set; }
-        /// <summary>Largest character length among the individual tokens stored in the model, or 0 when the model is empty.</summary>
+        /// <summary>Largest character length among the individual words stored in the model, or 0 when the model is empty.</summary>
         public int MaxTokenLength { get; set; }
+
+        // The entries as one sorted prefix-compressed dictionary, plus the values laid out densely by the rank
+        // a lookup returns - so nothing stores a key alongside its value.
+        public byte[] EntriesPayload { get; set; }
+        public byte[] EntriesBlockOffsets { get; set; }
+        public int EntriesCount { get; set; }
+        public int EntriesBlockSize { get; set; }
+        public int EntriesMaxBytes { get; set; }
+        public UID128[] EntryValues { get; set; }
+
+        public byte[] ExceptionBuckets { get; set; }
+        public byte[] ExceptionLows { get; set; }
+        public int ExceptionCount { get; set; }
+
+        // Superseded by the entry dictionary, kept so models stored before it still load and match. Never written.
+        public Dictionary<ulong, UID128> Hashes { get; set; } = new Dictionary<ulong, UID128>();
+        public List<HashSet<ulong>> MultiGramHashes { get; set; } = new List<HashSet<ulong>>();
+        public HashSet<int> TokenizerExceptionsSet { get; set; } = new HashSet<int>();
     }
 
     public class LinkedSpotter : StorableObjectV2<LinkedSpotter, LinkedSpotterModel>, IEntityRecognizer, IProcess, IHasSimpleSpecialCases, ICanOptimizeMemory
     {
         public string CaptureTag => Data.CaptureTag;
 
-        public bool IgnoreCase { get { return Data.IgnoreCase; } set { Data.IgnoreCase = value; } }
+        public bool IgnoreCase
+        {
+            get { return Data.IgnoreCase; }
+            set { Data.IgnoreCase = value; if (_engine is object) { _engine.IgnoreCase = value; } }
+        }
 
         public const string Separator = "_";
 
-        private ICompactHashMap64   _frozenHashes;
-        private ICompactHashSet64[] _frozenMultiGram;
-        private bool                _frozen;
+        private readonly object _syncRoot = new object();
+        private SpotterEngine   _engine;
+        private bool            _initialized;
 
-        /// <summary>True once the model's hash tables have been compacted into their read-only in-memory form.</summary>
-        public bool IsMemoryOptimized => _frozen;
+        private UID128[] _values;        // by rank, once frozen
+        private UID128[] _pending;       // by insertion index, while building
+        private int      _pendingCount;
 
-        /// <summary>Estimated bytes held by the compacted hash tables, or 0 when the model is not compacted.</summary>
+        private LegacyLinkedSpotterTables _legacy;
+
+        /// <summary>True once the model's entries have been compacted into their read-only in-memory form.</summary>
+        public bool IsMemoryOptimized
+        {
+            get { Initialize(); return _legacy is object ? _legacy.IsFrozen : _engine.IsFrozen; }
+        }
+
+        /// <summary>Estimated bytes held by the compacted tables, or 0 when the model is not compacted.</summary>
         public long OptimizedMemoryBytes
         {
             get
             {
-                if (!_frozen) { return 0; }
-                long mem = _frozenHashes?.EstimatedBytes ?? 0;
-                if (_frozenMultiGram is object)
-                {
-                    foreach (var s in _frozenMultiGram) { mem += s.EstimatedBytes; }
-                }
-                return mem;
+                Initialize();
+                if (_legacy is object) { return _legacy.EstimatedBytes; }
+                if (!_engine.IsFrozen) { return 0; }
+                return _engine.EstimatedBytes + 24L + (long)(_values?.Length ?? 0) * 16;
             }
         }
+
+        /// <summary>True when this model was loaded from a store written before the entry dictionary existed.</summary>
+        public bool IsLegacyModel { get { Initialize(); return _legacy is object; } }
 
         private LinkedSpotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
@@ -75,125 +99,129 @@ namespace Catalyst.Models
             return a;
         }
 
+        private void Initialize()
+        {
+            if (_initialized) { return; }
+
+            lock (_syncRoot)
+            {
+                if (_initialized) { return; }
+
+                if (Data.EntriesCount > 0 && Data.EntriesPayload is object)
+                {
+                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                    _engine.LoadFrom(Data.EntriesPayload, Data.EntriesBlockOffsets, Data.EntriesCount, Data.EntriesBlockSize, Data.EntriesMaxBytes,
+                                     Data.ExceptionBuckets, Data.ExceptionLows, Data.ExceptionCount);
+                    _values = Data.EntryValues ?? Array.Empty<UID128>();
+                }
+                else if ((Data.Hashes?.Count ?? 0) > 0 || (Data.MultiGramHashes?.Count ?? 0) > 0)
+                {
+                    _legacy = new LegacyLinkedSpotterTables(Data);
+                }
+                else
+                {
+                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                }
+
+                _initialized = true;
+            }
+        }
+
+        private void EnsureFrozen()
+        {
+            if (_legacy is object)
+            {
+                if (!_legacy.IsFrozen) { lock (_syncRoot) { _legacy.Freeze(); } }
+                return;
+            }
+
+            if (!_engine.IsFrozen)
+            {
+                lock (_syncRoot)
+                {
+                    if (_engine.IsFrozen) { return; }
+
+                    var order = _engine.Freeze();
+
+                    if (order is object)
+                    {
+                        var values = new UID128[order.Length];
+                        for (int rank = 0; rank < order.Length; rank++)
+                        {
+                            int insertion = order[rank];
+                            values[rank]  = insertion < _pendingCount ? _pending[insertion] : default;
+                        }
+                        _values = values;
+                    }
+
+                    _values ??= Array.Empty<UID128>();
+                    _pending      = null;
+                    _pendingCount = 0;
+
+                    Data.MinTokenLength = _engine.MinTokenLength;
+                    Data.MaxTokenLength = _engine.MaxTokenLength;
+                }
+            }
+        }
+
+        // Entries come back from the dictionary in rank order, so the values array - which is indexed by rank -
+        // becomes the by-insertion-index array the builder needs, unchanged.
+        private void Reopen()
+        {
+            if (!_engine.IsFrozen) { return; }
+
+            _engine.Unfreeze();
+            _pending      = _values ?? Array.Empty<UID128>();
+            _pendingCount = _pending.Length;
+            _values       = null;
+        }
+
         public void TrimExcess()
         {
-            if (Data is null) return;
-
-            if (Data.MultiGramHashes is object)
-            {
-
-                Data.MultiGramHashes.TrimExcess();
-
-                foreach (var v in Data.MultiGramHashes)
-                {
-                    v.TrimExcess();
-                }
-            }
-            Data.TokenizerExceptionsSet?.TrimExcess();
-            Data.Hashes?.TrimExcess();
-
-            Freeze();
+            if (Data is null) { return; }
+            Initialize();
+            EnsureFrozen();
         }
 
-        // Replaces the trained Dictionary/HashSet lookups with compact, read-only equivalents and releases
-        // the originals. Keeps TokenizerExceptionsSet intact - the model may still be imported into further pipelines.
-        private void Freeze()
-        {
-            if (_frozen || Data is null || Data.Hashes is null) { return; }
-
-            _frozenHashes = CompactHash.BuildMap(Data.Hashes);
-
-            var multi = Data.MultiGramHashes;
-            _frozenMultiGram = new ICompactHashSet64[multi?.Count ?? 0];
-            for (int i = 0; i < _frozenMultiGram.Length; i++)
-            {
-                _frozenMultiGram[i] = CompactHash.BuildSet(multi[i]);
-            }
-
-            _frozen              = true;
-            Data.Hashes          = null;
-            Data.MultiGramHashes = null;
-        }
-
-        // Rebuilds the mutable Dictionary/HashSet representation from the compact tables so the model can be
-        // mutated or re-stored. Only possible for lossless (exact) compaction.
-        private void Unfreeze()
-        {
-            if (!_frozen) { return; }
-
-            if (_frozenHashes is object && !_frozenHashes.CanEnumerateKeys)
-            {
-                throw new InvalidOperationException("This LinkedSpotter was loaded with fingerprint compression (SpotterCompaction.UseFingerprint32) and cannot be modified or re-stored losslessly. Reload it with fingerprint compression disabled to modify it.");
-            }
-
-            var hashes = new Dictionary<ulong, UID128>(_frozenHashes?.Count ?? 0);
-            if (_frozenHashes is object)
-            {
-                foreach (var kv in _frozenHashes.Entries()) { hashes[kv.Key] = kv.Value; }
-            }
-            Data.Hashes = hashes;
-
-            var multi = new List<HashSet<ulong>>(_frozenMultiGram?.Length ?? 0);
-            if (_frozenMultiGram is object)
-            {
-                foreach (var s in _frozenMultiGram)
-                {
-                    var hs = new HashSet<ulong>(s.Count);
-                    foreach (var k in s.Keys()) { hs.Add(k); }
-                    multi.Add(hs);
-                }
-            }
-            Data.MultiGramHashes = multi;
-
-            Data.TokenizerExceptionsSet ??= new HashSet<int>();
-
-            _frozen          = false;
-            _frozenHashes    = null;
-            _frozenMultiGram = null;
-        }
+        /// <summary>Compacts the in-memory tables. Idempotent with the compaction <see cref="TrimExcess"/> does on load.</summary>
+        public void OptimizeMemory() => TrimExcess();
 
         public override async Task StoreAsync(System.IO.Stream stream)
         {
-            bool wasFrozen = _frozen;
-            Unfreeze();
+            Initialize();
+
+            if (_legacy is object)
+            {
+                bool wasFrozen = _legacy.IsFrozen;
+                _legacy.Unfreeze();
+                await base.StoreAsync(stream);
+                if (wasFrozen) { _legacy.Freeze(); }
+                return;
+            }
+
+            EnsureFrozen();
+
+            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = _engine.Dictionary.ToBlobs();
+            var (buckets, lows, exceptionCount)                         = _engine.Exceptions.ToBlobs();
+
+            Data.EntriesPayload          = count > 0 ? payload : null;
+            Data.EntriesBlockOffsets     = count > 0 ? blockOffsets : null;
+            Data.EntriesCount            = count;
+            Data.EntriesBlockSize        = blockSize;
+            Data.EntriesMaxBytes         = maxEntryBytes;
+            Data.EntryValues             = count > 0 ? _values : null;
+            Data.ExceptionBuckets        = exceptionCount > 0 ? buckets : null;
+            Data.ExceptionLows           = exceptionCount > 0 ? lows : null;
+            Data.ExceptionCount          = exceptionCount;
+            Data.MinTokenLength          = _engine.MinTokenLength;
+            Data.MaxTokenLength          = _engine.MaxTokenLength;
+
+            Data.Hashes                  = null;
+            Data.MultiGramHashes         = null;
+            Data.TokenizerExceptionsSet  = null;
+
             await base.StoreAsync(stream);
-            if (wasFrozen) { Freeze(); }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HasMultiGram() => _frozen ? _frozenMultiGram.Length > 0 : Data.MultiGramHashes.Count > 0;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int MultiGramCount() => _frozen ? _frozenMultiGram.Length : Data.MultiGramHashes.Count;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool MultiGramContains(int n, ulong hash) => _frozen ? _frozenMultiGram[n].Contains(hash) : Data.MultiGramHashes[n].Contains(hash);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HashesTryGetValue(ulong hash, out UID128 uid) => _frozen ? _frozenHashes.TryGetValue(hash, out uid) : Data.Hashes.TryGetValue(hash, out uid);
-
-        // Widens the tracked [MinTokenLength, MaxTokenLength] window to cover a newly stored token length.
-        private void ObserveTokenLength(int length)
-        {
-            if (length <= 0) { return; }
-            if (Data.MaxTokenLength == 0) // model was empty until now
-            {
-                Data.MinTokenLength = length;
-                Data.MaxTokenLength = length;
-            }
-            else
-            {
-                if (length < Data.MinTokenLength) { Data.MinTokenLength = length; }
-                if (length > Data.MaxTokenLength) { Data.MaxTokenLength = length; }
-            }
-        }
-
-        // Cheap length pre-filter applied before hashing a token: a token whose length falls outside the window
-        // of every stored token can never match any stored hash, so we skip computing its hash entirely.
-        // A MaxTokenLength of 0 means the window is unknown (an empty model, or a model stored before this
-        // optimization existed), in which case filtering is disabled to preserve the exact previous behavior.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool CouldMatchLength(int length) => Data.MaxTokenLength == 0 || (length >= Data.MinTokenLength && length <= Data.MaxTokenLength);
 
         public void Process(IDocument document, CancellationToken cancellationToken = default)
         {
@@ -227,230 +255,128 @@ namespace Catalyst.Models
             return false;
         }
 
-        // Compacts the in-memory hash tables (idempotent with the load-time compaction in TrimExcess).
-        // The tokenizer-exception set is intentionally kept: the same model can be imported into more
-        // than one pipeline, and each import needs the special cases. The set is already minimal -
-        // AddEntry only records an exception for words the tokenizer would otherwise split.
-        public void OptimizeMemory()
+        private readonly struct Sink : ISpotterMatchSink
         {
-            Freeze();
-        }
+            private readonly string   _captureTag;
+            private readonly UID128[] _values;
 
-        public static ulong HashCombine64(ulong rhs, ulong lhs)
-        {
-            lhs ^= rhs + 0x9e3779b97f492000 + (lhs << 6) + (lhs >> 2);
-            return lhs;
-        }
+            public Sink(string captureTag, UID128[] values) { _captureTag = captureTag; _values = values; }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong Hash64(ReadOnlySpan<char> key)
-        {
-            ulong hashedValue = 3074457345618258791ul;
-            for (int i = 0; i < key.Length; i++)
+            private UID128 ValueOf(int rank) => rank >= 0 && rank < _values.Length ? _values[rank] : default;
+
+            public void OnSingle(ref Token token, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single, ValueOf(rank)));
+
+            public void OnMultiGram(Span<Token> tokens, int begin, int end, int rank)
             {
-                hashedValue += key[i];
-                hashedValue *= 3074457345618258799ul;
+                var value = ValueOf(rank);
+
+                tokens[begin].AddEntityType(new EntityType(_captureTag, EntityTag.Begin, value));
+                tokens[end].AddEntityType(new EntityType(_captureTag, EntityTag.End, value));
+
+                for (int m = begin + 1; m < end; m++)
+                {
+                    tokens[m].AddEntityType(new EntityType(_captureTag, EntityTag.Inside, value));
+                }
             }
-            return hashedValue;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong IgnoreCaseHash64(ReadOnlySpan<char> key)
-        {
-            ulong hashedValue = 3074457345618258791ul;
-            for (int i = 0; i < key.Length; i++)
-            {
-                hashedValue += char.ToLowerInvariant(key[i]);
-                hashedValue *= 3074457345618258799ul;
-            }
-            return hashedValue;
-        }
-
-        public void ClearModel()
-        {
-            _frozen          = false;
-            _frozenHashes    = null;
-            _frozenMultiGram = null;
-
-            Data.Hashes                 = new Dictionary<ulong, UID128>();
-            Data.MultiGramHashes        = new List<HashSet<ulong>>();
-            Data.TokenizerExceptionsSet = new HashSet<int>();
-            Data.MinTokenLength         = 0;
-            Data.MaxTokenLength         = 0;
         }
 
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
+            Initialize();
+            EnsureFrozen();
+
             var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
-            var tokens = pooledTokens.AsSpan(0, actualLength);
 
-            int N = tokens.Length;
-            bool hasMultiGram = HasMultiGram();
-            bool foundAny = false;
-            for (int i = 0; i < N; i++)
+            try
             {
-                var tk = tokens[i];
-                //if (tk.POS != PartOfSpeechEnum.NOUN && tk.POS != PartOfSpeechEnum.ADJ && tk.POS != PartOfSpeechEnum.PROPN) { continue; }
+                var tokens = pooledTokens.AsSpan(0, actualLength);
 
-                if (!CouldMatchLength(tk.Length)) { continue; } //Length pre-filter: skip hashing tokens that cannot match any stored entry
+                if (_legacy is object) { return _legacy.Match(tokens, CaptureTag, stopOnFirstFound); }
 
-                var tokenHash = Data.IgnoreCase ? IgnoreCaseHash64(tk.ValueAsSpan) : Hash64(tk.ValueAsSpan);
-
-                if (hasMultiGram && MultiGramContains(0, tokenHash))
-                {
-                    int window = Math.Min(N - i, MultiGramCount());
-                    ulong hash = tokenHash;
-                    bool someTokenHasReplacements = tk.Replacement is object;
-                    int i_final = i;
-                    UID128 uid_final = default;
-
-                    for (int n = 1; n < window; n++)
-                    {
-                        var next = tokens[n + i];
-                        someTokenHasReplacements |= (next.Replacement is object);
-
-                        if (!CouldMatchLength(next.Length)) { break; } //Out-of-range token cannot extend the multi-gram, so stop before hashing
-
-                        var nextHash = Data.IgnoreCase ? IgnoreCaseHash64(next.ValueAsSpan) : Hash64(next.ValueAsSpan);
-                        if (MultiGramContains(n, nextHash))
-                        {
-                            //txt += " " + next.Value;
-                            //var hashTxt = Hash64(txt);
-                            hash = HashCombine64(hash, nextHash);
-                            if (HashesTryGetValue(hash, out var uid_multi))
-                            {
-                                i_final = i + n;
-                                uid_final = uid_multi;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    if (i_final > i)
-                    {
-                        foundAny = true;
-                        if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
-                        tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Begin, uid_final));
-                        tokens[i_final].AddEntityType(new EntityType(CaptureTag, EntityTag.End, uid_final));
-
-                        for (int m = i + 1; m < (i_final); m++)
-                        {
-                            tokens[m].AddEntityType(new EntityType(CaptureTag, EntityTag.Inside, uid_final));
-                        }
-                    }
-
-                    i = i_final;
-                }
-
-                if (HashesTryGetValue(tokenHash, out var uid))
-                {
-                    foundAny = true;
-                    if (stopOnFirstFound) { return foundAny; } //Used for checking if the document contains any entity
-                    tk.AddEntityType(new EntityType(CaptureTag, EntityTag.Single, uid));
-                }
+                var sink = new Sink(CaptureTag, _values ?? Array.Empty<UID128>());
+                return _engine.Match(tokens, stopOnFirstFound, ref sink);
             }
-            
-            ArrayPool<Token>.Shared.Return(pooledTokens);
-
-            return foundAny;
+            finally
+            {
+                ArrayPool<Token>.Shared.Return(pooledTokens);
+            }
         }
 
-        private ReaderWriterLockSlim TrainLock = new ReaderWriterLockSlim();
-
-        public IEnumerable<int> GetSimpleSpecialCases()
+        public CompactHash32Set GetSimpleSpecialCases()
         {
-            if (Data.TokenizerExceptionsSet is object)
+            Initialize();
+            EnsureFrozen();
+            return _legacy is object ? _legacy.Exceptions : _engine.Exceptions;
+        }
+
+        /// <summary>The entries this model recognises, in sorted order, paired with what they link to.</summary>
+        public IEnumerable<KeyValuePair<string, UID128>> GetEntries()
+        {
+            Initialize();
+            if (_legacy is object) { yield break; }
+
+            EnsureFrozen();
+            int rank = 0;
+            foreach (var entry in _engine.Entries())
             {
-                foreach (var sc in Data.TokenizerExceptionsSet)
-                {
-                    yield return sc;
-                }
+                yield return new KeyValuePair<string, UID128>(entry, rank < _values.Length ? _values[rank] : default);
+                rank++;
+            }
+        }
+
+        public void ClearModel()
+        {
+            Initialize();
+
+            lock (_syncRoot)
+            {
+                _legacy = null;
+                _engine ??= new SpotterEngine { Language = Language };
+                _engine.Clear();
+                _engine.IgnoreCase = Data.IgnoreCase;
+
+                _values       = null;
+                _pending      = null;
+                _pendingCount = 0;
+
+                Data.Hashes                 = null;
+                Data.MultiGramHashes        = null;
+                Data.TokenizerExceptionsSet = null;
+                Data.EntriesPayload         = null;
+                Data.EntriesBlockOffsets    = null;
+                Data.EntriesCount           = 0;
+                Data.EntryValues            = null;
+                Data.ExceptionBuckets       = null;
+                Data.ExceptionLows          = null;
+                Data.ExceptionCount         = 0;
+                Data.MinTokenLength         = 0;
+                Data.MaxTokenLength         = 0;
             }
         }
 
         public void AddEntry(string entry, UID128 uid)
         {
-            if (string.IsNullOrWhiteSpace(entry)) { return; }
+            Initialize();
 
-            if (_frozen) { Unfreeze(); }
+            if (_legacy is object) { _legacy.AddEntry(entry, uid, Data, Language); return; }
 
-            if (Data.IgnoreOnlyNumeric && int.TryParse(entry, out _)) { return; } //Ignore pure numerical entries
-
-            //The logic below uses SpanSplitEnumerator and is the allocation-free version of this:
-            //  var words = entry.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            var entrySpan = entry.AsSpan();
-            var partsEnumerator = entrySpan.Split(' ' );
-
-            int wordsLength = 0;
-            Range currentPart;
-            Range validCurrentPart = default;
-            while (partsEnumerator.MoveNext())
+            lock (_syncRoot)
             {
-                currentPart = partsEnumerator.Current;
+                if (_engine.IsFrozen) { Reopen(); }
 
-                if (currentPart.End.Value > currentPart.Start.Value) //Skip empty entries (i.e. 'Hello   World' would be split into: 'Hello', '', '', '', 'World')
-                {
-                    validCurrentPart = currentPart;
-                    wordsLength++;
-                }
+                _engine.IgnoreCase = Data.IgnoreCase;
+                int index = _engine.Add(entry, Data.IgnoreOnlyNumeric);
+                if (index < 0) { return; }
+
+                if (_pending is null) { _pending = new UID128[Math.Max(16, index + 1)]; }
+                if (index >= _pending.Length) { Array.Resize(ref _pending, Math.Max(_pending.Length * 2, index + 1)); }
+
+                _pending[index] = uid;
+                if (index >= _pendingCount) { _pendingCount = index + 1; }
+
+                Data.MinTokenLength = _engine.MinTokenLength;
+                Data.MaxTokenLength = _engine.MaxTokenLength;
             }
-
-            if (wordsLength == 1)
-            {
-                var wordSpan = entrySpan.Slice(validCurrentPart.Start.Value, validCurrentPart.End.Value - validCurrentPart.Start.Value);
-                var hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
-
-                Data.Hashes[hash] = uid;
-                ObserveTokenLength(wordSpan.Length);
-
-                if (!wordSpan.IsAllLetterOrDigit())
-                {
-                    Data.TokenizerExceptionsSet.Add(wordSpan.CaseSensitiveHash32());
-                }
-
-                return;
-            }
-
-            partsEnumerator = entrySpan.Split(' ');
-
-            ulong combinedHash = 0;
-            int n = 0;
-            while (partsEnumerator.MoveNext())
-            {
-                currentPart = partsEnumerator.Current;
-
-                if (currentPart.End.Value > currentPart.Start.Value) //Skip empty entries (i.e. 'Hello   World' would be split into: 'Hello', '', '', '', 'World')
-                {
-                    var wordSpan = entrySpan.Slice(currentPart.Start.Value, currentPart.End.Value - currentPart.Start.Value);
-
-                    var word_hash = Data.IgnoreCase ? Spotter.IgnoreCaseHash64(wordSpan) : Spotter.Hash64(wordSpan);
-                    ObserveTokenLength(wordSpan.Length);
-                    if (n == 0) { combinedHash = word_hash; } else { combinedHash = Spotter.HashCombine64(combinedHash, word_hash); }
-
-                    if (Data.MultiGramHashes.Count < n + 1)
-                    {
-                        Data.MultiGramHashes.Add(new HashSet<ulong>());
-                    }
-
-                    if (!Data.MultiGramHashes[n].Contains(word_hash))
-                    {
-                        Data.MultiGramHashes[n].Add(word_hash);
-                    }
-
-                    if (!wordSpan.IsAllLetterOrDigit())
-                    {
-                        Data.TokenizerExceptionsSet.Add(wordSpan.CaseSensitiveHash32());
-                    }
-                 
-                    n++;
-                }
-            }
-
-            Data.Hashes[combinedHash] = uid;
         }
 
         public void AppendList(IEnumerable<(string word, UID128 uid)> words)
