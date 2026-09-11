@@ -6,7 +6,7 @@ namespace Catalyst.Models
     public partial class FastText
     {
         [MessagePackObject]
-        public struct Entry
+        public partial struct Entry
         {
             [Key(0)] public string Word;
             [Key(1)] public long Count;

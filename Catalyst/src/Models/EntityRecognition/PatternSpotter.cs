@@ -240,7 +240,7 @@ namespace Catalyst.Models
     /// Represents a pattern composed of multiple sequences of pattern units.
     /// </summary>
     [MessagePackObject]
-    public class MatchingPattern
+    public partial class MatchingPattern
     {
         /// <summary>Gets or sets the list of alternative sequences of pattern units.</summary>
         [Key(0)] public List<PatternUnit[]> Patterns { get; set; } = new List<PatternUnit[]>();
@@ -516,7 +516,7 @@ namespace Catalyst.Models
     /// Represents a single unit in a pattern, which can match a token based on various criteria.
     /// </summary>
     [MessagePackObject]
-    public class PatternUnit
+    public partial class PatternUnit
     {
         /// <summary>Gets or sets the matching mode (Single, And, Or, ShouldNotMatch).</summary>
         [Key(0)] public PatternMatchingMode Mode { get; set; } = PatternMatchingMode.Single;
@@ -1257,7 +1257,7 @@ namespace Catalyst.Models
     /// Represents the serialized data for the PatternSpotter, intended for frontend use.
     /// </summary>
     [MessagePackObject(keyAsPropertyName: true)]
-    public class PatternSpotterData
+    public partial class PatternSpotterData
     {
         /// <summary>Gets or sets the model information.</summary>
         public StoredObjectInfo Model { get; set; }

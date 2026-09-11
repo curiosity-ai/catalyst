@@ -17,7 +17,8 @@ namespace Catalyst.Models
     /// <summary>
     /// Represents the data for an average perceptron part-of-speech tagger model.
     /// </summary>
-    public class AveragePerceptronTaggerModel : StorableObjectData
+    [MessagePackObject(keyAsPropertyName: true)]
+    public partial class AveragePerceptronTaggerModel : StorableObjectData
     {
         /// <summary>Gets or sets the weights of the perceptron model.</summary>
         public Dictionary<int, float[]> Weights { get; set; } = new Dictionary<int, float[]>();

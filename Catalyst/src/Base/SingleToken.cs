@@ -10,7 +10,7 @@ namespace Catalyst
     /// Represents a single token that is not part of a document.
     /// </summary>
     [MessagePackObject(AllowPrivate = true)]
-    public class SingleToken : IToken
+    public partial class SingleToken : IToken
     {
         /// <inheritdoc />
         [Key(0)] public string Value { get; set; }

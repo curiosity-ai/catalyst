@@ -10,7 +10,7 @@ namespace Catalyst
     /// </summary>
     [JsonObject]
     [MessagePackObject]
-    public struct EntityType
+    public partial struct EntityType
     {
         /// <summary>
         /// Gets or sets the type of the entity (e.g., PERSON, ORGANIZATION).

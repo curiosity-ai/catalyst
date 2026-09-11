@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Catalyst.Models
 {
     [MessagePackObject]
-    public class Lookups
+    public partial class Lookups
     {
         internal static readonly MessagePackSerializerOptions LZ4Standard = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4Block);
 
@@ -27,7 +27,7 @@ namespace Catalyst.Models
         [Key(3)] public Dictionary<ulong, Entry> Entries { get; set; }
 
         [MessagePackObject]
-        public struct Entry
+        public partial struct Entry
         {
             public Entry(byte length, uint begin)
             {
