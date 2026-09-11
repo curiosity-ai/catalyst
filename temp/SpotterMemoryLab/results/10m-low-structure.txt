@@ -1,0 +1,146 @@
+# Spotter memory lab - target 10,000,000 aviation part numbers, seed 20260911
+
+## Dataset
+entries                       : 9,999,899 distinct (101 generated duplicates removed)
+total characters              : 96,120,992
+length  min / avg / max       : 4 / 9.61 / 22
+alphabet                      : 38 distinct bytes -> " -/0123456789ABCDEFGHIJKLMNOPRSTUVWXYZ"
+average shared prefix (sorted): 7.00 chars  (72.8% of all characters)
+multi-token (contains space)  : 137,490 (1.37%)
+not all letter-or-digit       : 4,719,403 (47.2%)
+examples                      : 01196322-899  3939307U19  9G4FDBKU4D  BACC06WST2  DIN4175  KSP434Z  MIL2610V  ND331912  
+[26s]
+
+Distinct 64-bit entry hashes : 9,999,899  (collisions: 0)
+Entries needing a tokenizer exception (not all letter-or-digit): 4,719,403 (47.2%)
+Distinct 32-bit exception hashes: 4,734,379
+
+## Automaton
+trie states (no minimisation): 26,157,200
+DAFSA states                 : 4,813,003
+DAFSA transitions            : 12,576,607  (1.26 per entry)
+alphabet                     : 38 symbols, packs into 6 bits: True
+32-bit packed encoding usable: True
+built in                     : 4s
+
+## Mixed token stream (2% of tokens are catalogue entries, 98% are not)
+open-addressed hash set (today's shape)                      105.9 ns/token
+front-coded dictionary, block 64, alone                    1,079.7 ns/token
+DAFSA alone                                                  542.1 ns/token
+  bloom 8 bits/key: measured fp 2.336 %, probe  74.8 ns, + front-coded 212.3 ns, + DAFSA 192.0 ns  (9.5 MB)
+  bloom 10 bits/key: measured fp 0.964 %, probe  48.0 ns, + front-coded 187.8 ns, + DAFSA 186.3 ns  (11.9 MB)
+  bloom 12 bits/key: measured fp 0.417 %, probe  44.9 ns, + front-coded 169.0 ns, + DAFSA 170.0 ns  (14.3 MB)
+
+## n-grams
+k=3: 43,469 distinct grams, 76,121,778 postings (7.6 per entry), median rarest-gram posting list 1,941
+k=4: 1,072,682 distinct grams, 66,121,778 postings (6.6 per entry), median rarest-gram posting list 136
+gram coding: dictionary 32,768 grams -> 5.79 bytes/entry (0.60 bytes/char)
+
+
+## Results
+
+### Recommended
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+R1  packed DAFSA + 10-bit blocked Bloom prefilter             59.9 MB      6.28         3       186  exact                        replaces Hashes, MultiGramHashes and the whole tokenizer-exception table
+    - automaton (32-bit packed transitions)                   48.0 MB
+    - prefilter                                               11.9 MB
+R2  front-coded dictionary (block 64) + 10-bit prefilter      48.1 MB      5.04         5       188  exact                        same, and it can also enumerate / rebuild the stored strings
+    - front-coded strings                                     36.1 MB
+    - prefilter                                               11.9 MB
+R3  LinkedSpotter: DAFSA rank + dense UID128[] + prefilter     260.5 MB     27.31         5       186  exact                        
+    - automaton with rank counters                            96.0 MB
+    - dense UID128 values                                    152.6 MB
+    - prefilter                                               11.9 MB
+R4  LinkedSpotter: front-coded rank + dense UID128[] + prefilter     200.6 MB     21.04         6       188  exact                        
+    - front-coded strings                                     36.1 MB
+    - dense UID128 values                                    152.6 MB
+    - prefilter                                               11.9 MB
+
+### Spotter
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+S0' Spotter today (modelled)                                 425.3 MB     44.60        10         -  exact                        
+    - perfect-hash key table                                 104.9 MB
+    - TokenizerExceptions dictionary                         160.2 MB
+    - copy inside the pipeline tokenizer                     160.2 MB
+S1  Spotter, UseFingerprint32 (today, opt-in)                377.6 MB     39.60        10         -  lossy fp=2.328e-10           
+    - perfect-hash fingerprint table                          57.2 MB
+    - TokenizerExceptions dictionary                         160.2 MB
+    - copy inside the pipeline tokenizer                     160.2 MB
+S2  open-addressed ulong[] set (speed reference)             146.3 MB     15.34         4        67  lossy (hash only) fp=0e+0    
+    - slot array                                             128.0 MB
+    - exceptions as one sorted uint[]                         18.3 MB
+S3  Elias-Fano over the sorted 64-bit hashes                  71.2 MB      7.46         7       112  lossy (hash only) fp=0e+0    40 low bits/key; exact with respect to the 64-bit hash
+    - Elias-Fano                                              52.9 MB
+    - exceptions as one sorted uint[]                         18.3 MB
+S4  Elias-Fano over 40-bit truncated hashes                   42.6 MB      4.46         7         -  lossy fp=9.095e-6            16 low bits/key
+    - Elias-Fano                                              24.3 MB
+    - exceptions as one sorted uint[]                         18.3 MB
+S5  binary-fuse filter, 16-bit fingerprints (analytic)        39.8 MB      4.17         4         -  lossy fp=1.526e-5            
+    - filter                                                  21.5 MB
+    - exceptions as one sorted uint[]                         18.3 MB
+S5  binary-fuse filter, 32-bit fingerprints (analytic)        61.2 MB      6.42         4         -  lossy fp=2.328e-10           
+    - filter                                                  42.9 MB
+    - exceptions as one sorted uint[]                         18.3 MB
+S6  front-coded dictionary (membership only)                  41.1 MB      4.31         3       728  exact                        no exception table needed
+S7  DAFSA, plain arrays (membership)                          78.9 MB      8.27         4       401  exact fp=0e+0                no exception table needed - the automaton answers the tokenizer's prefix question directly
+S8  DAFSA, 32-bit packed transitions (membership)             48.0 MB      5.03         1       401  exact                        symbol 6 bits + target 24 bits + last + final; valid while transitions < 16.7M
+S9  plain trie (no suffix minimisation), for contrast        227.6 MB     23.87         4         -  exact                        26,157,200 states vs 4,813,003 minimised
+
+### LinkedSpotter
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+L0' LinkedSpotter today (modelled)                           478.7 MB     50.20        11         -  exact                        
+    - perfect-hash key+UID table                             295.6 MB
+    - TokenizerExceptionsSet                                  91.5 MB
+    - copy inside the pipeline tokenizer                      91.5 MB
+L1  LinkedSpotter, UseFingerprint32 (today, opt-in)          431.0 MB     45.20        11         -  lossy fp=2.328e-10           
+    - perfect-hash fingerprint+UID table                     248.0 MB
+    - TokenizerExceptionsSet                                  91.5 MB
+    - copy inside the pipeline tokenizer                      91.5 MB
+L2  MPH fingerprints + rank + dense UID array                229.7 MB     24.09         9         -  lossy fp=2.328e-10           removes the 20% perfect-hash slack from the 16-byte value array
+    - fingerprints + occupancy + rank + dense UIDs           211.4 MB
+    - exceptions as one sorted uint[] shared with the tokenizer      18.3 MB
+L3  front-coded dictionary + dense UID128[] by rank          193.7 MB     20.31         4       728  exact                        no exception table needed
+    - front-coded strings                                     41.1 MB
+    - dense UID128 values                                    152.6 MB
+L4  DAFSA + rank counters + dense UID128[]                   248.5 MB     26.06         3       401  exact                        the automaton is a minimal perfect hash, so the UID array is dense and needs no keys
+    - automaton                                               96.0 MB
+    - dense UID128 values                                    152.6 MB
+
+### Both
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+S6/L3  front-coded sorted dictionary, block 16                41.1 MB      4.31         3       728  exact fp=0e+0                4.06 payload bytes/entry; rank-addressable, so it also serves the tokenizer exceptions and a dense UID array
+
+### n-gram
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+S10 3-gram inverted index (candidate generator only)         142.7 MB     14.97         5         -  candidates only - still needs the exact keys to verify 7.6 postings/entry; a query still scans ~1,941 candidates
+S10b 3-gram inverted index, fixed 32-bit postings            291.9 MB     30.61         5         -  candidates only              
+S10 4-gram inverted index (candidate generator only)         182.4 MB     19.12         5         -  candidates only - still needs the exact keys to verify 6.6 postings/entry; a query still scans ~136 candidates
+S10b 4-gram inverted index, fixed 32-bit postings            291.5 MB     30.56         5         -  candidates only              
+S11 n-gram coded strings + perfect-hash index                150.8 MB     15.81         6         -  exact                        the compression works; the separate index is what makes it lose to front-coding
+    - coded payload                                           55.2 MB
+    - gram dictionary                                          0.2 MB
+    - entry offsets (uint32)                                  38.1 MB
+    - perfect-hash slot -> entry id                           57.2 MB
+
+### Exceptions
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+E0  exceptions today: Dictionary<int,TokenizationException> + tokenizer copy     320.4 MB     33.60         6         -  exact                        
+    - model                                                  160.2 MB
+    - tokenizer copy                                         160.2 MB
+E0b exceptions today: HashSet<int> + tokenizer copy (LinkedSpotter)     183.1 MB     19.20         6         -  exact                        
+    - model                                                   91.5 MB
+    - tokenizer copy                                          91.5 MB
+E1  exceptions as a sorted uint[] shared with the tokenizer      18.3 MB      1.92         2         -  exact                        
+E2  exceptions as a Bloom filter, 8 bits/key                   4.5 MB      0.47         2         -  lossy fp=2.158e-2            a false positive keeps a hyphenated word un-split; it never loses a match
+E2  exceptions as a Bloom filter, 10 bits/key                  5.6 MB      0.59         2         -  lossy fp=8.194e-3            a false positive keeps a hyphenated word un-split; it never loses a match
+E2  exceptions as a Bloom filter, 12 bits/key                  6.8 MB      0.71         2         -  lossy fp=3.142e-3            a false positive keeps a hyphenated word un-split; it never loses a match
+E2  exceptions as a Bloom filter, 16 bits/key                  9.0 MB      0.95         2         -  lossy fp=4.587e-4            a false positive keeps a hyphenated word un-split; it never loses a match
+E3  exceptions subsumed by a string dictionary (no separate table)       0.0 MB      0.00         0         -  exact                        only available to the front-coded / automaton designs, which can answer the prefix query directly
+
+### Front-coding sweep
+design                                                          total   B/entry   objects  ns/query  exactness                    notes
+S6/L3  front-coded sorted dictionary, block 8                 47.6 MB      5.00         3       680  exact fp=0e+0                4.50 payload bytes/entry; rank-addressable, so it also serves the tokenizer exceptions and a dense UID array
+S6/L3  front-coded sorted dictionary, block 32                37.8 MB      3.96         3       840  exact fp=0e+0                3.84 payload bytes/entry; rank-addressable, so it also serves the tokenizer exceptions and a dense UID array
+S6/L3  front-coded sorted dictionary, block 64                36.1 MB      3.79         3     1,071  exact fp=0e+0                3.73 payload bytes/entry; rank-addressable, so it also serves the tokenizer exceptions and a dense UID array
+# total lab time 60s
+EXIT=0
