@@ -121,8 +121,8 @@ namespace Catalyst
                 }
                 else
                 {
-                    var fixedVersion = CompatibilityData.Keys
-                                         .Where(k => k.StartsWith(version))
+                    var fixedVersion = CompatibilityData["spacy"].Keys
+                                         .Where(version.StartsWith)
                                          .Select((k) => (key: k, version: System.Version.TryParse(k, out var v) ? v : null))
                                          .Where(k => k.version is object)
                                          .OrderByDescending(k => k.version)
