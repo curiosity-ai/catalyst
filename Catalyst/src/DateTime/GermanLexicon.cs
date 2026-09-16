@@ -226,7 +226,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.AutumnStart,    "herbstanfang");
             b.Add(TermKind.Holiday, (int)HolidayKind.WinterStart,    "winteranfang");
 
-            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true);
+            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true, movableHolidayNamesItsDay: false);
         }
     }
 }

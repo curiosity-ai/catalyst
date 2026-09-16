@@ -75,7 +75,7 @@ namespace Catalyst.DateTimeRecognition
 
                         if (charEnd > charStart)
                         {
-                            resolver ??= new Resolver(nodes, reference);
+                            resolver ??= new Resolver(nodes, reference, _lexicon);
 
                             var entity = resolver.Resolve(node, text.Slice(charStart, charEnd - charStart).ToString());
 

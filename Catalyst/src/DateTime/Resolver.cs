@@ -11,11 +11,13 @@ namespace Catalyst.DateTimeRecognition
     {
         private readonly Node[]   _nodes;
         private readonly DateTime _reference;
+        private readonly Lexicon  _lexicon;
 
-        public Resolver(Node[] nodes, DateTime reference)
+        public Resolver(Node[] nodes, DateTime reference, Lexicon lexicon)
         {
             _nodes     = nodes;
             _reference = reference;
+            _lexicon   = lexicon;
         }
 
         private ref Node At(int index) => ref _nodes[index];
@@ -152,8 +154,11 @@ namespace Catalyst.DateTimeRecognition
                     if (d >= _reference.Date) { first = Holidays.Resolve(n.Holiday, holidayYear - 1); second = d; }
                     else                      { first = d; second = Holidays.Resolve(n.Holiday, holidayYear + 1); }
 
-                    // A holiday that moves is named by the reading that has gone, the way the fixed ones are
-                    timex     = $"XXXX-{first.Month:00}-{first.Day:00}";
+                    // A holiday on the same day every year is named by that day; one that moves has no
+                    // day to name, so the timex says only that the year is open
+                    timex     = Holidays.IsFixedDate(n.Holiday) || _lexicon.MovableHolidayNamesItsDay
+                              ? $"XXXX-{first.Month:00}-{first.Day:00}"
+                              : "XXXX";
                     hasSecond = true;
                     return true;
                 }

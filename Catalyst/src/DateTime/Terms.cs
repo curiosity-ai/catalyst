@@ -344,8 +344,16 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     OrdinalEndsInDot { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false)
+        /// <summary>
+        /// Whether a holiday that falls on a different day each year still names a day in its timex.
+        /// The suites disagree: English reports "easter monday" as XXXX-04-22, German reports
+        /// "Ostermontag" as XXXX. A fixed holiday always names its day, whatever this says.
+        /// </summary>
+        public bool     MovableHolidayNamesItsDay { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true)
         {
+            MovableHolidayNamesItsDay = movableHolidayNamesItsDay;
             OrdinalEndsInDot  = ordinalEndsInDot;
             PartNamedWithOf   = partNamedWithOf;
             MinutesFollowHour = minutesFollowHour;
