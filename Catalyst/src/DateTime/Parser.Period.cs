@@ -461,8 +461,10 @@ namespace Catalyst.DateTimeRecognition
                     else                                return -1;
                 }
             }
-            else if (AtTerm(i, TermKind.RangeStart, out int rangeKind) && rangeKind == 0 && !AtWord(i, "from"))
+            else if (AtTerm(i, TermKind.RangeStart, out int rangeKind) && rangeKind == 0 && !AtWord(i, "from")
+                     && !AtTerm(i, TermKind.Filler))
             {
+                // A word that is also glue is too weak to open one on its own: "2 de outubro" is a date
                 mod = ModKind.Since;   // "starting january 7th", "beginning on january 7th"
             }
             else
