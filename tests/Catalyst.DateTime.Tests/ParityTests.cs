@@ -6,22 +6,25 @@ namespace Catalyst.Tests.DateTimeRecognition
 {
     /// <summary>
     /// Scores the Catalyst date/time engine against the Microsoft.Recognizers.Text specification suite, and
-    /// against the Microsoft implementation itself, so a regression in capability is visible as a number.
+    /// against the Microsoft implementation itself, so a loss of capability shows up as a number.
+    ///
+    /// The floors below are what the engine reaches today. They exist to catch a regression, not to describe
+    /// a target: raise one whenever the engine beats it, and never lower one to make a change pass.
     /// </summary>
     public class ParityTests
     {
         private static string ReportPath(string name) => Path.Combine(AppContext.BaseDirectory, "parity", name + ".txt");
 
         [Theory]
-        [InlineData("English")]
-        [InlineData("EnglishOthers")]
-        [InlineData("German")]
-        [InlineData("French")]
-        [InlineData("Spanish")]
-        [InlineData("Portuguese")]
-        [InlineData("Italian")]
-        [InlineData("Dutch")]
-        public void CatalystIsScoredAgainstTheSpecSuite(string language)
+        [InlineData("English",       0.85, 0.66)]
+        [InlineData("EnglishOthers", 0.80, 0.54)]
+        [InlineData("French",        0.55, 0.50)]
+        [InlineData("Italian",       0.55, 0.46)]
+        [InlineData("Dutch",         0.44, 0.33)]
+        [InlineData("German",        0.39, 0.28)]
+        [InlineData("Portuguese",    0.37, 0.28)]
+        [InlineData("Spanish",       0.36, 0.27)]
+        public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);
             var microsoft = ParityReport.Run(language, Engines.RunMicrosoft);
@@ -33,6 +36,12 @@ namespace Catalyst.Tests.DateTimeRecognition
             Console.WriteLine(ParityReport.Format($"Microsoft / {language}", microsoft));
 
             Assert.True(catalyst.Overall.Expected > 0, "the spec suite did not load");
+
+            // The suite is Microsoft's own regression set, so its score is the ceiling this is measured against
+            Assert.True(microsoft.Overall.SpanRate > 0.98, $"the reference implementation scored {microsoft.Overall.SpanRate:P1}, so the comparison is not measuring what it should");
+
+            Assert.True(catalyst.Overall.SpanRate  >= minimumSpanRate,  $"span parity for {language} fell to {catalyst.Overall.SpanRate:P1}, below the {minimumSpanRate:P0} floor (see {ReportPath("catalyst-" + language)})");
+            Assert.True(catalyst.Overall.ValueRate >= minimumValueRate, $"resolution parity for {language} fell to {catalyst.Overall.ValueRate:P1}, below the {minimumValueRate:P0} floor (see {ReportPath("catalyst-" + language)})");
         }
     }
 }

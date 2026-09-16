@@ -106,7 +106,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "actual", "corriente", "mismo", "misma");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "hoy");
-            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow,           "mañana", "manana");
+            // "mañana" is both tomorrow and the morning; the grammar picks by context
+            b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "mañana", "manana");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Yesterday,          "ayer");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "pasado mañana");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "anteayer", "antes de ayer");
@@ -115,7 +116,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ago,     "hace", "atrás", "atras", "antes");
             b.Add(TermKind.FromNow, "después", "despues", "más tarde", "mas tarde", "a partir de ahora");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mañana", "manana", "mañanas", "madrugada");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mañanas", "madrugada");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "tarde", "tardes");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "atardecer", "anochecer");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mediodía", "mediodia");

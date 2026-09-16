@@ -85,6 +85,12 @@ namespace Catalyst.DateTimeRecognition
             if (end < 0) return -1;
             if (kind == PartOfDayKind.Noon || kind == PartOfDayKind.Midnight) return -1;
 
+            // A word that primarily names a day ("mañana") is a date, not a part of the day
+            for (int k = at; k < end; k++)
+            {
+                if (In(k) && _lex[k].Term.Kind == TermKind.SpecialDay) return -1;
+            }
+
             if (podMod != ModKind.None) mod = podMod;
 
             var n = Node.Create(NodeKind.TimeRange);

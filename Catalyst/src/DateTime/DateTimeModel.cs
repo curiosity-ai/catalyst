@@ -55,7 +55,8 @@ namespace Catalyst.DateTimeRecognition
                 int count = Lexer.Tokenize(text, _lexicon, lexemes.AsSpan(0, capacity));
                 if (count == 0) return;
 
-                var resolver = new Resolver(nodes, reference);
+                // Created on the first hit, so a scan that finds nothing allocates nothing at all
+                Resolver resolver = null;
 
                 int i = 0;
 
@@ -74,6 +75,8 @@ namespace Catalyst.DateTimeRecognition
 
                         if (charEnd > charStart)
                         {
+                            resolver ??= new Resolver(nodes, reference);
+
                             var entity = resolver.Resolve(node, text.Slice(charStart, charEnd - charStart).ToString());
 
                             if (entity is object)
