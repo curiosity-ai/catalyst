@@ -25,6 +25,10 @@ namespace Catalyst
     /// </remarks>
     public sealed class DocumentPool
     {
+        //Declared before Shared on purpose: static initializers run in order, and Shared's runs the
+        //constructor that adds to this. Weak, so the registry is never the reason a pool outlives its owner.
+        private static readonly List<WeakReference<DocumentPool>> m_allPools = new List<WeakReference<DocumentPool>>();
+
         /// <summary>The pool used when a caller does not bring its own.</summary>
         public static DocumentPool Shared { get; } = new DocumentPool();
 
@@ -101,6 +105,33 @@ namespace Catalyst
             //Serialization buffers are held for the length of one call, so what bounds them is how many threads
             //serialize at once - not how many documents a batch carries.
             m_bufferWriters     = new BoundedPool<ArrayBufferWriter<byte>>(Math.Max(8, Environment.ProcessorCount * 4), long.MaxValue);
+
+            lock (m_allPools) { m_allPools.Add(new WeakReference<DocumentPool>(this)); }
+        }
+
+        /// <summary>
+        /// Drops everything every Catalyst pool is holding - every pool still alive, <see cref="Shared"/>
+        /// included, and the string builders. Renting keeps working: it allocates until the pools refill.
+        /// </summary>
+        /// <remarks>
+        /// For a host shedding memory under pressure, which is the only time this is worth doing - a pool
+        /// emptied while a pipeline is running costs that pipeline every allocation the pool existed to
+        /// avoid. It lives here rather than on a class of its own because a public type named for pools in
+        /// general collides with the one a host is likely to have already. What it cannot reach is
+        /// <see cref="ArrayPool{T}"/>, which offers no such call and trims itself on a gen2 collection.
+        /// </remarks>
+        public static void TrimAll()
+        {
+            lock (m_allPools)
+            {
+                for (int i = m_allPools.Count - 1; i >= 0; i--)
+                {
+                    if (m_allPools[i].TryGetTarget(out var pool)) { pool.Trim(); } else { m_allPools.RemoveAt(i); }
+                }
+            }
+
+            Pools.StringBuilder.DrainPool();
+            StringExtensions.StringBuilderPool.DrainPool();
         }
 
         /// <summary>
