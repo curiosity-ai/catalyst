@@ -228,7 +228,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "from", "starting", "beginning", "commencing", "starting from", "beginning on", "starting on", "beginning from");
             b.Add(TermKind.RangeStart, 1, "between");
 
-            b.Add(TermKind.Filler, "of", "on", "in", "at", "the", "a", "an", "for", "during", "within", "into", "or", "s");
+            b.Add(TermKind.Filler, "of", "on", "in", "the", "a", "an", "for", "during", "within", "into", "or", "s");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "at");
         }
 
         private static void AddModifiers(LexiconBuilder b)

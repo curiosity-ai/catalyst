@@ -45,6 +45,7 @@ namespace Catalyst.DateTimeRecognition
         QuarterMarker,      // the "q" of q1, or "h" of h2 (Value = periods per year)
         WeekMarker,         // the "week" of "week 27"
         Decade,             // "the nineties", Value = the first year of the decade
+        ClockPrefix,        // the word that introduces a clock: "at 5", "a las 5", "um 8"
     }
 
     public enum TimeUnit : byte
@@ -298,9 +299,16 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     PartNamedWithOf { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false)
+        /// <summary>
+        /// Whether the minutes are spoken after the hour and joined to it ("siete y media" is half past
+        /// seven). English and the Germanic languages say it the other way round.
+        /// </summary>
+        public bool     MinutesFollowHour { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false)
         {
-            PartNamedWithOf = partNamedWithOf;
+            PartNamedWithOf   = partNamedWithOf;
+            MinutesFollowHour = minutesFollowHour;
             Language      = language;
             DayMonthOrder = dayMonthOrder;
             DecimalComma  = decimalComma;

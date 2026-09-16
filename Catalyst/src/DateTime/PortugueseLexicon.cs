@@ -133,6 +133,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "da", "do", "das", "dos", "o", "a", "os", "as", "em", "no", "na", "por", "para", "um", "uma");
+            b.Add(TermKind.ClockPrefix, "às", "as", "à", "da", "das");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes do", "no máximo até");
             b.Add(TermKind.Mod, (int)ModKind.After,  "depois de", "depois do", "após");
@@ -168,7 +169,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "dia dos pais");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "dia do trabalho", "dia do trabalhador");
 
-            return b.Build(Language.Portuguese, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: true, relativeAfterUnit: true);
+            return b.Build(Language.Portuguese, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: true, relativeAfterUnit: true, minutesFollowHour: true);
         }
     }
 }

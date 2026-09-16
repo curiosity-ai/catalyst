@@ -251,8 +251,8 @@ namespace Catalyst.DateTimeRecognition
                 dottedMinutes   = true;
                 at              = at + 2;
             }
-            // spelled-out minutes — "three thirty", "two forty five"
-            else if (AtTerm(i, TermKind.Cardinal) && TryWordNumber(At(at, LexKind.Dash) ? at + 1 : at, out int spokenMinutes, out int afterSpoken) && spokenMinutes > 0 && spokenMinutes < 60)
+            // spelled-out minutes — "three thirty", "two forty five", "siete y media", "dos cuarenta y dos"
+            else if (AtTerm(i, TermKind.Cardinal) && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken))
             {
                 minute          = spokenMinutes;
                 explicitMinutes = true;
@@ -291,6 +291,37 @@ namespace Catalyst.DateTimeRecognition
             if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
 
             return at;
+        }
+
+        /// <summary>
+        /// The minutes spoken after the hour: "three thirty", and where the language joins them to it,
+        /// "siete y media" and "dos cuarenta y dos".
+        /// </summary>
+        private readonly bool TrySpokenMinutes(int i, out int minutes, out int end)
+        {
+            minutes = Node.Unspecified;
+            end     = i;
+
+            int at = At(i, LexKind.Dash) ? i + 1 : i;
+
+            if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.Connector) && !AtTerm(at, TermKind.ToWord))
+            {
+                int joined = After(at);
+
+                if (AtTerm(joined, TermKind.HalfWord))         { minutes = 30; end = After(joined); return true; }
+                if (AtTerm(joined, TermKind.QuarterWord))      { minutes = 15; end = After(joined); return true; }
+
+                at = joined;
+            }
+
+            if (TryWordNumber(at, out int spoken, out int afterSpoken) && spoken > 0 && spoken < 60)
+            {
+                minutes = spoken;
+                end     = afterSpoken;
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -453,7 +484,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 // Only a lead-in when a clock reading follows: "in the morning at 7"
                 int probe = podEnd;
-                probe = SkipWords(probe, "at", "around");
+                probe = SkipClockPrefix(SkipWords(probe, "at", "around"));
 
                 int test = TryClock(probe, out _, out _, out _, out _, out _, out _, out _);
                 if (test > 0)
@@ -486,12 +517,12 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // A bare number is only a time when something marks it as one
-            if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !AtWord(i - 1, "at")) return -1;
+            if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !ClockPrefixEndsAt(i)) return -1;
 
             var n = Node.Create(NodeKind.Time);
 
             // "at 6.45" reads as a clock because of the "at", so the "at" belongs to it
-            n.LexStart  = dottedMinutes && AtWord(i - 1, "at") ? i - 1 : i;
+            n.LexStart  = dottedMinutes && AtWord(i - 1, "at") ? i - 1 : i;   // English writes "at 6.45", and keeps the "at"
             n.LexEnd    = at;
             n.Hour      = hour;
             n.Minute    = minute;

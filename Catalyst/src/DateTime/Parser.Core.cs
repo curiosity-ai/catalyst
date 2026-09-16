@@ -89,6 +89,22 @@ namespace Catalyst.DateTimeRecognition
         /// Skips a leading definite article. English reports "next week" without its "the", so there the
         /// article is only stepped over; the other languages keep theirs inside the match.
         /// </summary>
+        /// <summary>A word that introduces a clock reading: "at 5", "a las 5", "um 8 Uhr".</summary>
+        private readonly bool AtClockPrefix(int i) => AtTerm(i, TermKind.ClockPrefix);
+
+        private readonly int SkipClockPrefix(int i) => AtClockPrefix(i) ? After(i) : i;
+
+        /// <summary>Whether a clock introducer ends where <paramref name="i"/> begins, phrase or single word.</summary>
+        private readonly bool ClockPrefixEndsAt(int i)
+        {
+            for (int k = i - 1; k >= 0 && k >= i - 3; k--)
+            {
+                if (AtClockPrefix(k) && After(k) == i) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>Whether the word at <paramref name="i"/> reads as a plural, where the language shows it.</summary>
         private readonly bool LooksPlural(int i)
         {
@@ -183,8 +199,13 @@ namespace Catalyst.DateTimeRecognition
                     continue;
                 }
 
+                // "cuarenta y dos" / "vierzig und zwei" — tens and units joined by the language's "and"
+                bool joinsUnits = AtTerm(at, TermKind.Connector) && !AtTerm(at, TermKind.ToWord)
+                                  && current >= 20 && current % 10 == 0
+                                  && AtTerm(at + 1, TermKind.Cardinal, out int units) && units < 10;
+
                 // "two thousand and fifteen" / "twenty-five"
-                if (any && (At(at, LexKind.Dash) || AtWord(at, "and")) && In(at + 1) && (AtTerm(at + 1, TermKind.Cardinal) || AtTerm(at + 1, TermKind.Multiplier)))
+                if (any && (At(at, LexKind.Dash) || AtWord(at, "and") || joinsUnits) && In(at + 1) && (AtTerm(at + 1, TermKind.Cardinal) || AtTerm(at + 1, TermKind.Multiplier)))
                 {
                     at++;
                     continue;

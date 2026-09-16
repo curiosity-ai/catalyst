@@ -444,17 +444,17 @@ namespace Catalyst.DateTimeRecognition
             {
                 int dateEnd = dateEnds[c];
                 int at      = dateEnd;
-                bool marker = AtWord(at, "at") || At(at, LexKind.At);
+                bool marker = AtClockPrefix(at) || At(at, LexKind.At);
 
-                at = SkipWords(at, "at", "on");
-                if (At(at, LexKind.Comma)) { at++; if (AtWord(at, "at")) marker = true; at = SkipWord(at, "at"); }
+                at = SkipClockPrefix(SkipWords(at, "at", "on"));
+                if (At(at, LexKind.Comma)) { at++; if (AtClockPrefix(at)) marker = true; at = SkipClockPrefix(at); }
                 if (At(at, LexKind.At))    { at++; marker = true; }
                 // "for 2 nights" is how long, not what time
                 bool forDuration = AtWord(at, "for") && TryDuration(at + 1, out _) > 0;
 
-                if (!forDuration && (AtWord(at, "at") || AtWord(at, "for") || AtTerm(at, TermKind.Approx))) marker = true;
+                if (!forDuration && (AtClockPrefix(at) || AtWord(at, "for") || AtTerm(at, TermKind.Approx))) marker = true;
 
-                at = SkipWords(at, "at", "around");
+                at = SkipClockPrefix(SkipWords(at, "at", "around"));
                 if (!forDuration) at = SkipWord(at, "for");
 
                 int timeEnd = TryTime(at, out int time, allowBareHour: marker);
