@@ -230,8 +230,8 @@ namespace Catalyst.DateTimeRecognition
 
             if (hour < 0 || hour > 24) return -1;
 
-            // ":mm[:ss]"
-            if (At(at, LexKind.Colon) && AtNumber(at + 1) && DigitsAt(at + 1) <= 2 && NumberAt(at + 1) < 60)
+            // ":mm[:ss]" — a clock writes its minutes with two digits, so "1:1" and "4:3" are not times
+            if (At(at, LexKind.Colon) && AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60)
             {
                 minute          = NumberAt(at + 1);
                 explicitMinutes = true;

@@ -57,6 +57,23 @@ namespace Catalyst.DateTimeRecognition
                 return true;
             }
 
+            // ---- a day cut into hours: "mid today", "later in today", "early in the day wednesday"
+            if (n.PartOfDay == PartOfDayKind.None && n.Left < 0 && n.Hour < 0 && n.Kind == NodeKind.DateTimeRange
+                && Parser.IsDaySlice(n.Mod))
+            {
+                (range.StartHour, range.EndHour) = n.Mod switch
+                {
+                    ModKind.Start or ModKind.Early or ModKind.Earlier => (0, 12),
+                    ModKind.Mid                                       => (10, 14),
+                    _                                                 => (12, 24),
+                };
+
+                range.Timex      = null;
+                range.StartTimex = null;
+                range.EndTimex   = null;
+                return true;
+            }
+
             // ---- a time plus a duration: "for 2 hours from 2pm"
             if (n.Left >= 0 && n.RangeDuration >= 0 && At(n.RangeDuration).Kind == NodeKind.Duration)
             {
@@ -502,7 +519,11 @@ namespace Catalyst.DateTimeRecognition
             {
                 string timex;
 
-                if ((n.PartOfDay != PartOfDayKind.None && n.Left < 0) || r.Open)
+                if (r.StartTimex is null)
+                {
+                    timex = dayTimex;   // "mid today" is named by the day it cuts
+                }
+                else if ((n.PartOfDay != PartOfDayKind.None && n.Left < 0) || r.Open)
                 {
                     timex = dayTimex + r.Timex;
                 }

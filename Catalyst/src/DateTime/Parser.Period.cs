@@ -460,10 +460,13 @@ namespace Catalyst.DateTimeRecognition
 
             int at = After(i);
 
-            if (mod == ModKind.Later || mod == ModKind.Earlier)
+            if (IsDaySlice(mod))
             {
                 at = SkipWords(at, "in", "on");
                 at = SkipArticle(at);
+
+                // "early in the day wednesday" says which day after saying which part of it
+                if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Day) && TryDate(at + 1, out _) > 0) at++;
             }
 
             at = SkipWords(at, "the", "of");
@@ -499,6 +502,23 @@ namespace Catalyst.DateTimeRecognition
             var n = target;
             n.LexStart = i;
             n.LexEnd   = inner;
+
+            // "mid today", "later in today", "early in the day wednesday" — narrowing a day names its hours
+            if (target.Kind == NodeKind.Date && IsDaySlice(mod))
+            {
+                n.Kind = NodeKind.DateTimeRange;
+                n.Mod  = mod switch
+                {
+                    ModKind.Later   => ModKind.End,
+                    ModKind.Earlier => ModKind.Start,
+                    ModKind.Late    => ModKind.End,
+                    ModKind.Early   => ModKind.Start,
+                    var other       => other,
+                };
+                SetSpan(ref n);
+                node = Alloc(n);
+                return inner;
+            }
 
             // "after mid may" narrows first and bounds second, so both modifiers have to survive
             if (IsBounding(mod) && IsNarrowing(target.Mod)) n.InnerMod = target.Mod;
@@ -774,6 +794,10 @@ namespace Catalyst.DateTimeRecognition
             node = Alloc(n);
             return at;
         }
+
+        /// <summary>Modifiers that cut a single day into hours rather than a period into smaller periods.</summary>
+        internal static bool IsDaySlice(ModKind mod) =>
+            mod is ModKind.Start or ModKind.Early or ModKind.Mid or ModKind.End or ModKind.Late or ModKind.Later or ModKind.Earlier;
 
         private static bool IsBounding(ModKind mod)  => mod is ModKind.Before or ModKind.After or ModKind.Since or ModKind.Until;
 
