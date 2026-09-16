@@ -276,7 +276,11 @@ namespace Catalyst.DateTimeRecognition
                 at              = at + 2;
             }
             // spelled-out minutes — "three thirty", "two forty five", "siete y media", "dos cuarenta y dos"
-            else if (AtTerm(i, TermKind.Cardinal) && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken))
+            // A spoken hour takes spoken minutes. A written one does too where the language joins them with
+            // a word of its own — "5 e 45", "8pm e meia" — but only when what follows the joiner cannot be
+            // read as the far end of a range instead.
+            else if ((AtTerm(i, TermKind.Cardinal) || (_lexicon.MinutesFollowHour && JoinsWrittenHour(at)))
+                     && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken))
             {
                 // "siete menos cuarto" counts backwards from the hour it just named
                 if (spokenMinutes < 0)
@@ -331,6 +335,18 @@ namespace Catalyst.DateTimeRecognition
             }
 
             return at;
+        }
+
+        /// <summary>Whether the joiner at <paramref name="i"/> introduces minutes a written hour can take.</summary>
+        private readonly bool JoinsWrittenHour(int i)
+        {
+            if (!AtTerm(i, TermKind.Connector) || AtTerm(i, TermKind.ToWord)) return false;
+
+            int joined = After(i);
+
+            if (AtTerm(joined, TermKind.HalfWord) || AtTerm(joined, TermKind.QuarterWord)) return true;
+
+            return TryWordNumber(joined, out int spoken, out _) && spoken > 24 && spoken < 60;
         }
 
         /// <summary>

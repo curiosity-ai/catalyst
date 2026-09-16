@@ -133,7 +133,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.AmPm, 1, "da tarde", "da noite", "pm", "p.m.");
             b.Add(TermKind.OClock, "em ponto");
 
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao", "até", "ate", "até o");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "até", "ate", "até o", "até a");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
             b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");

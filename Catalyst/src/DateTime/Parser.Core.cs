@@ -229,7 +229,7 @@ namespace Catalyst.DateTimeRecognition
                                   && AtTerm(at + 1, TermKind.Cardinal, out int units) && units < 10;
 
                 // "two thousand and fifteen" / "twenty-five"
-                if (any && (At(at, LexKind.Dash) || AtWord(at, "and") || joinsUnits) && In(at + 1) && (AtTerm(at + 1, TermKind.Cardinal) || AtTerm(at + 1, TermKind.Multiplier)))
+                if (any && (At(at, LexKind.Dash) || AtTerm(at, TermKind.AndWord) || joinsUnits) && In(at + 1) && (AtTerm(at + 1, TermKind.Cardinal) || AtTerm(at + 1, TermKind.Multiplier)))
                 {
                     at++;
                     continue;
