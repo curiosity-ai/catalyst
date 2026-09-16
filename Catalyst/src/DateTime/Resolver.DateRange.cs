@@ -801,7 +801,10 @@ namespace Catalyst.DateTimeRecognition
 
                 case ModKind.Start:
                 case ModKind.Early:
-                    (start, end) = Slice(start, end, 0);
+                    // The opening half, mirroring the closing one — unless a middle was asked for too,
+                    // where the period reads as three
+                    if (thirds) { (start, end) = Slice(start, end, 0); break; }
+                    end = Nearer(start, end, first: true, reference: end);
                     break;
 
                 case ModKind.Mid:
