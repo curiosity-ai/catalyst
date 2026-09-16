@@ -311,6 +311,29 @@ namespace Catalyst.DateTimeRecognition
                     explicitMinutes = true;
                     at++;
                 }
+                // "sept heures dix", "sept heures moins dix" — the minutes follow the unit word, with
+                // nothing between them or with the word for "and" or for "less"; a range's own connector
+                // is excluded, because that is what "de 14h à 16h" is made of
+                else if (minute < 0 && _lexicon.MinutesFollowHour && !AtTerm(at, TermKind.OClock)
+                         && (!AtTerm(at, TermKind.Connector) || AtTerm(at, TermKind.AndWord))
+                         && !AtClockPrefix(at)
+                         && TrySpokenMinutes(at, out int spokenAfterUnit, out int afterUnitEnd))
+                {
+                    if (spokenAfterUnit < 0)
+                    {
+                        minute = 60 + spokenAfterUnit;
+                        hour   = hour == 1 ? 12 : hour - 1;
+                    }
+                    else
+                    {
+                        minute = spokenAfterUnit;
+                    }
+
+                    explicitMinutes = true;
+                    at              = afterUnitEnd;
+
+                    if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Minute)) at = After(at);
+                }
             }
 
             if (At(at, LexKind.Dot) && AtTerm(at + 1, TermKind.AmPm)) at++;   // "9.am"
