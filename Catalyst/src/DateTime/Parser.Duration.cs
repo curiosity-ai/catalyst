@@ -180,6 +180,13 @@ namespace Catalyst.DateTimeRecognition
                 at++;
             }
 
+            // "eine Viertelstunde", "ein Dreiviertelstunde" — a fraction between the number and the unit
+            if (!double.IsNaN(amount) && AtTerm(at, TermKind.Unit) == false)
+            {
+                if (AtTerm(at, TermKind.HalfWord))                     { amount *= 0.5; at = After(at); }
+                else if (AtTerm(at, TermKind.QuarterWord, out int qw)) { amount *= qw == 3 ? 0.75 : 0.25; at = After(at); }
+            }
+
             if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
             // "the second week of 2021" counts weeks; "second" is the ordinal, not the unit
@@ -206,6 +213,10 @@ namespace Catalyst.DateTimeRecognition
         private readonly int TryFractionSuffix(int i, out double extra)
         {
             extra = 0;
+
+            // "zweieinhalb Stunden" — the half written onto the number it follows needs no joiner
+            if (In(i) && !_lex[i].SpaceBefore && AtTerm(i, TermKind.HalfWord))    { extra = 0.5;  return After(i); }
+            if (In(i) && !_lex[i].SpaceBefore && AtTerm(i, TermKind.QuarterWord)) { extra = 0.25; return After(i); }
 
             if (!AtTerm(i, TermKind.AndWord)) return -1;
 

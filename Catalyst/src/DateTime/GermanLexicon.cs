@@ -99,7 +99,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.BusinessDay, "arbeits", "werk", "geschäfts", "werktag", "werktage", "arbeitstag", "arbeitstage");
             b.Add(TermKind.Several, 3, "einige", "mehrere", "ein paar", "manche");
             b.Add(TermKind.Several, 2, "paar");
-            b.Add(TermKind.HalfWord, "halbe", "halb", "halben");
+            b.Add(TermKind.HalfWord, "halbe", "halb", "halben", "einhalb");
+            b.Add(TermKind.Several, 2, "beiden", "beide");   // "die nächsten beiden Tage"
             b.Add(TermKind.QuarterWord, 1, "viertel");
             b.Add(TermKind.QuarterWord, 3, "dreiviertel", "drei viertel");
 

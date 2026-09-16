@@ -426,9 +426,12 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (!_wordsBySpan.TryGetValue(word[..k], out head))  continue;
                 if (!_wordsBySpan.TryGetValue(word[k..], out tail))  continue;
-                // "spätabends" qualifies its tail; every other compound is two things written as one
-                if (!NamesSomething(head) && head.Kind != TermKind.Mod)  continue;
-                if (!NamesSomething(tail))                              continue;
+                // "spätabends" qualifies its tail, "zweieinhalb" counts its fraction; every other
+                // compound is two things written as one
+                bool fraction = head.Kind == TermKind.Cardinal && tail.Kind is TermKind.HalfWord or TermKind.QuarterWord;
+
+                if (!NamesSomething(head) && head.Kind != TermKind.Mod && !fraction) continue;
+                if (!NamesSomething(tail) && !fraction)                              continue;
 
                 cut = k;
                 return true;
@@ -507,7 +510,8 @@ namespace Catalyst.DateTimeRecognition
         }
 
         private static bool NamesSomething(TermInfo info) => info.Kind is TermKind.Weekday or TermKind.Month
-            or TermKind.SpecialDay or TermKind.PartOfDay or TermKind.Unit or TermKind.Relative or TermKind.Season;
+            or TermKind.SpecialDay or TermKind.PartOfDay or TermKind.Unit or TermKind.Relative or TermKind.Season
+            or TermKind.HalfWord or TermKind.QuarterWord;
 
         public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info)
         {
