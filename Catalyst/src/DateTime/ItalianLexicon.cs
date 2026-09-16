@@ -131,7 +131,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.AmPm, 1, "del pomeriggio", "di sera", "pm", "p.m.");
             b.Add(TermKind.OClock, "in punto");
 
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "alle", "fino a", "fino al");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "fino a", "fino al");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a", "al", "alle");   // "alle 10" as well as "dalle 5 alle 6"
             b.Add(TermKind.Connector, "e");
             b.Add(TermKind.RangeStart, 0, "a partire da", "a partire dal");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "da", "dal", "dalle");

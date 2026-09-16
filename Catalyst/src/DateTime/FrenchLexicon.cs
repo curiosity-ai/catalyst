@@ -130,7 +130,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.AmPm, 1, "de l'après-midi", "du soir", "pm", "p.m.");
             b.Add(TermKind.OClock, "heures pile");
 
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "à", "a", "au", "jusqu'à", "jusqu'au", "jusque");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "jusqu'à", "jusqu'au", "jusque");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "à", "a", "au");   // "à 10h" as well as "de 5 à 6"
             b.Add(TermKind.Connector, "et");
             b.Add(TermKind.RangeStart, 0, "depuis", "dès", "des", "à partir de", "à partir du", "commençant");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");

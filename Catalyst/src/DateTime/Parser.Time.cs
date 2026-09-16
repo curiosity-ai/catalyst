@@ -543,7 +543,8 @@ namespace Catalyst.DateTimeRecognition
                 // "2 nights" is a duration; only a marked clock or an introduced phrase takes a part of the day
                 bool introduced = AtTerm(at, TermKind.Filler) || AtTerm(at, TermKind.Mod);
 
-                if (ampm >= 0 || explicitMinutes || marked || introduced)
+                // Inside a range each side is already known to be a clock, so "et 6 après-midi" qualifies it
+                if (ampm >= 0 || explicitMinutes || marked || introduced || allowBareHour)
                 {
                     int trailing = TryPartOfDay(at, out var trailingPod, out _);
                     if (trailing > 0)
