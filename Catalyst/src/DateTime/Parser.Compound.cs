@@ -430,9 +430,13 @@ namespace Catalyst.DateTimeRecognition
                 at = SkipWords(at, "at", "on");
                 if (At(at, LexKind.Comma)) { at++; if (AtWord(at, "at")) marker = true; at = SkipWord(at, "at"); }
                 if (At(at, LexKind.At))    { at++; marker = true; }
-                if (AtWord(at, "at") || AtWord(at, "for") || AtTerm(at, TermKind.Approx)) marker = true;
+                // "for 2 nights" is how long, not what time
+                bool forDuration = AtWord(at, "for") && TryDuration(at + 1, out _) > 0;
+
+                if (!forDuration && (AtWord(at, "at") || AtWord(at, "for") || AtTerm(at, TermKind.Approx))) marker = true;
+
                 at = SkipWords(at, "at", "around");
-                at = SkipWord(at, "for");
+                if (!forDuration) at = SkipWord(at, "for");
 
                 int timeEnd = TryTime(at, out int time, allowBareHour: marker);
 
@@ -705,7 +709,7 @@ namespace Catalyst.DateTimeRecognition
                 ref var p = ref NodeAt(leadPeriod);
 
                 // A part of the day on its own resolves against today
-                if (p.PartOfDay == PartOfDayKind.Tonight)
+                if (p.PartOfDay == PartOfDayKind.Tonight && p.Kind == NodeKind.TimeRange)
                 {
                     var tonight = p;
                     tonight.Kind     = NodeKind.DateTimeRange;

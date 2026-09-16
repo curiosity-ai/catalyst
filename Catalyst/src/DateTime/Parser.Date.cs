@@ -99,9 +99,11 @@ namespace Catalyst.DateTimeRecognition
                 n.Year = year;
                 end    = yearEnd;
             }
-            else if (AtTermValue(afterYear, TermKind.Relative, (int)RelativeKind.This) && AtTermValue(afterYear + 1, TermKind.Unit, (int)TimeUnit.Year))
+            else if (AtTerm(afterYear, TermKind.Relative, out int yearRel) && AtTermValue(afterYear + 1, TermKind.Unit, (int)TimeUnit.Year))
             {
-                end = afterYear + 2;
+                // "independence day of this year" names one year, so it names one day
+                n.Relative = (RelativeKind)yearRel;
+                end        = afterYear + 2;
             }
 
             n.LexEnd = end;
@@ -212,8 +214,10 @@ namespace Catalyst.DateTimeRecognition
                     n.DefiniteDay = theDay;
                     end           = ordEnd;
                 }
-                else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore)
+                else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore
+                         && !AtTerm(probe + 1, TermKind.AmPm))
                 {
+                    // "mon 9 am" is nine o'clock on a monday, not the ninth
                     n.Day = NumberAt(probe);
                     end   = probe + 1;
                 }

@@ -742,7 +742,8 @@ namespace Catalyst.DateTimeRecognition
 
             at++;
 
-            if (relative == RelativeKind.None && unit != TimeUnit.Weekend && (!hadThe || count >= 0)) return -1;
+            // "the weekend" and "weekend" name a period; "three weekends" is how long something lasts
+            if (relative == RelativeKind.None && (unit != TimeUnit.Weekend || count >= 0) && (!hadThe || count >= 0)) return -1;
             if (unit == TimeUnit.Hour || unit == TimeUnit.Minute || unit == TimeUnit.Second) return -1;
             if (unit == TimeUnit.Day && count < 0) return -1;   // "the day" and "next day" name a day, not a period
 

@@ -146,14 +146,14 @@ namespace Catalyst.DateTimeRecognition
                     }
                 }
 
-                if (n.Year < 0 && n.Relative == RelativeKind.None && Holidays.IsFixedDate(n.Holiday))
+                if (n.Year < 0 && n.Relative == RelativeKind.None)
                 {
                     // "before independence day" — the same two nearest readings a year-less date has
-                    timex = $"XXXX-{d.Month:00}-{d.Day:00}";
-
                     if (d >= _reference.Date) { first = Holidays.Resolve(n.Holiday, holidayYear - 1); second = d; }
                     else                      { first = d; second = Holidays.Resolve(n.Holiday, holidayYear + 1); }
 
+                    // A holiday that moves is named by the reading that has gone, the way the fixed ones are
+                    timex     = $"XXXX-{first.Month:00}-{first.Day:00}";
                     hasSecond = true;
                     return true;
                 }

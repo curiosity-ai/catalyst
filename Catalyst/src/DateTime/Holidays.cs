@@ -23,7 +23,7 @@ namespace Catalyst.DateTimeRecognition
                 case HolidayKind.StPatricksDay:           return new DateTime(year,  3, 17);
                 case HolidayKind.EarthDay:                return new DateTime(year,  4, 22);
                 case HolidayKind.Juneteenth:              return new DateTime(year,  6, 19);
-                case HolidayKind.FreedomDay:              return new DateTime(year,  2,  1);
+                case HolidayKind.FreedomDay:              return new DateTime(year,  6, 19);   // the other name for Juneteenth
                 case HolidayKind.JubileeDay:              return new DateTime(year,  6, 19);
                 case HolidayKind.InternationalWorkersDay: return new DateTime(year,  5,  1);
                 case HolidayKind.VeteransDay:             return new DateTime(year, 11, 11);
