@@ -97,7 +97,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.BusinessDay, "útil", "úteis", "uteis", "trabalho");
             b.Add(TermKind.Several, 3, "alguns", "algumas", "vários", "varias", "poucos");
             b.Add(TermKind.Several, 2, "par");
-            b.Add(TermKind.HalfWord, "meia", "meio", "e meia");
+            b.Add(TermKind.HalfWord, "meia", "meio");
+            b.Add(TermKind.ToWord, "menos");   // "sete menos um quarto"
             b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "quarto");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "este", "esta", "estes", "estas", "esse", "essa");

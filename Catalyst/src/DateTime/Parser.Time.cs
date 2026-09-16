@@ -278,7 +278,17 @@ namespace Catalyst.DateTimeRecognition
             // spelled-out minutes — "three thirty", "two forty five", "siete y media", "dos cuarenta y dos"
             else if (AtTerm(i, TermKind.Cardinal) && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken))
             {
-                minute          = spokenMinutes;
+                // "siete menos cuarto" counts backwards from the hour it just named
+                if (spokenMinutes < 0)
+                {
+                    minute = 60 + spokenMinutes;
+                    hour   = hour == 1 ? 12 : hour - 1;
+                }
+                else
+                {
+                    minute = spokenMinutes;
+                }
+
                 explicitMinutes = true;
                 at              = afterSpoken;
 
@@ -333,6 +343,24 @@ namespace Catalyst.DateTimeRecognition
             end     = i;
 
             int at = At(i, LexKind.Dash) ? i + 1 : i;
+
+            // "siete menos cuarto", "sette meno un quarto" — the minutes come off the hour just read
+            if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.ToWord) && !AtTerm(at, TermKind.Connector))
+            {
+                int back = SkipArticle(After(at));
+
+                if (AtTerm(back, TermKind.QuarterWord)) { minutes = -15; end = After(back); return true; }
+                if (AtTerm(back, TermKind.HalfWord))    { minutes = -30; end = After(back); return true; }
+
+                if (TryWordNumber(back, out int off, out int afterOff) && off > 0 && off < 60)
+                {
+                    minutes = -off;
+                    end     = afterOff;
+                    return true;
+                }
+
+                return false;
+            }
 
             if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.Connector) && !AtTerm(at, TermKind.ToWord))
             {

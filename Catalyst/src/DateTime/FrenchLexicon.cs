@@ -94,7 +94,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.BusinessDay, "ouvrable", "ouvrables", "ouvré", "ouvrés");
             b.Add(TermKind.Several, 3, "quelques", "plusieurs", "certains");
             b.Add(TermKind.Several, 2, "couple");
-            b.Add(TermKind.HalfWord, "demi", "demie", "et demie");
+            b.Add(TermKind.HalfWord, "demi", "demie");
+            b.Add(TermKind.ToWord, "moins");   // "sept heures moins le quart"
             b.Add(TermKind.QuarterWord, "quart");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, "lendemain");
 
