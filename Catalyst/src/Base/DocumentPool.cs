@@ -53,7 +53,7 @@ namespace Catalyst
 
         private readonly BoundedPool<PooledDocument>                               m_documents;
         private readonly BoundedPool<List<List<TokenData>>>                        m_tokensDataLists;
-        private readonly BoundedPool<List<TokenData>>                              m_tokenDataLists;
+        private readonly SizeClassedPool<TokenData>                                m_tokenDataLists;
         private readonly BoundedPool<List<int[]>>                                  m_spanBoundsLists;
         private readonly BoundedPool<int[]>                                        m_spanBounds;
         private readonly BoundedPool<List<string>>                                 m_labelsLists;
@@ -83,7 +83,7 @@ namespace Catalyst
             m_labelsLists       = new BoundedPool<List<string>>(maximumPooledDocuments,                             METADATA_ELEMENT_BUDGET);
             m_entityDataMaps    = new BoundedPool<Dictionary<long, List<EntityType>>>(maximumPooledDocuments,       ENTITY_TYPE_ELEMENT_BUDGET);
             m_tokenMetadataMaps = new BoundedPool<Dictionary<long, Dictionary<string, string>>>(maximumPooledDocuments, METADATA_ELEMENT_BUDGET);
-            m_tokenDataLists    = new BoundedPool<List<TokenData>>(perSpanCapacity,                                 TOKEN_DATA_ELEMENT_BUDGET);
+            m_tokenDataLists    = new SizeClassedPool<TokenData>(perSpanCapacity,                                   TOKEN_DATA_ELEMENT_BUDGET);
             m_spanBounds        = new BoundedPool<int[]>(perSpanCapacity,                                           SPAN_ELEMENT_BUDGET);
             m_entityTypeLists   = new BoundedPool<List<EntityType>>(perSpanCapacity,                                ENTITY_TYPE_ELEMENT_BUDGET);
             m_metadataMaps      = new BoundedPool<Dictionary<string, string>>(perSpanCapacity,                      METADATA_ELEMENT_BUDGET);
@@ -150,9 +150,10 @@ namespace Catalyst
                 document.AddSpan(bounds[0], bounds[1]);
 
                 var from = source.TokensData[i];
-                var to   = document.TokensData[i];
 
-                if (to.Capacity < from.Count) { to.Capacity = from.Count; }
+                document.ReserveTokens(i, from.Count);
+
+                var to = document.TokensData[i];
 
                 for (int j = 0; j < from.Count; j++)
                 {
@@ -243,12 +244,13 @@ namespace Catalyst
                 {
                     //An immutable whose two span arrays disagree is malformed, but copying it must still not walk
                     //off the end of the list the spans above created.
-                    if (i >= document.TokensData.Count) { document.TokensData.Add(RentTokenData()); }
+                    if (i >= document.TokensData.Count) { document.TokensData.Add(RentTokenData(source.TokensData[i].Length)); }
 
                     var from = source.TokensData[i];
-                    var to   = document.TokensData[i];
 
-                    if (to.Capacity < from.Length) { to.Capacity = from.Length; }
+                    document.ReserveTokens(i, from.Length);
+
+                    var to = document.TokensData[i];
 
                     for (int j = 0; j < from.Length; j++)
                     {
@@ -396,8 +398,8 @@ namespace Catalyst
 
                             for (int i = 0; i < spans; i++)
                             {
-                                var tokens = RentTokenData();
                                 int count  = reader.ReadArrayHeader();
+                                var tokens = RentTokenData(count);
 
                                 if (tokens.Capacity < count) { tokens.Capacity = count; }
 
@@ -667,7 +669,24 @@ namespace Catalyst
         /// pooled document from its own storage format rather than through the span API.
         /// </summary>
         /// <returns>An empty list the pool takes back with the document.</returns>
-        public List<TokenData> RentTokenData() => m_tokenDataLists.Rent() ?? new List<TokenData>();
+        public List<TokenData> RentTokenData() => RentTokenData(0);
+
+        /// <summary>
+        /// Rents a token list that can already hold <paramref name="minimumCapacity"/> tokens. A caller that
+        /// knows how many tokens it is about to write - a deserializer reading a span's token count, a
+        /// tokenizer that has counted its split points - should say so: growing a list the pool handed back
+        /// too small is one allocation the pool exists to avoid.
+        /// </summary>
+        /// <param name="minimumCapacity">The number of tokens the caller is about to add.</param>
+        /// <returns>An empty list the pool takes back with the document.</returns>
+        public List<TokenData> RentTokenData(int minimumCapacity)
+        {
+            var tokens = m_tokenDataLists.Rent(minimumCapacity);
+
+            if (tokens is object) return tokens;
+
+            return minimumCapacity > 0 ? new List<TokenData>(minimumCapacity) : new List<TokenData>();
+        }
 
         /// <summary>Gives a token list back. Returning the document it belongs to does this for you.</summary>
         /// <param name="tokens">The list to return. Null is ignored.</param>
@@ -775,6 +794,64 @@ namespace Catalyst
         /// ten thousand token lists are nothing, and ten thousand token lists that each grew to a hundred
         /// thousand tokens are tens of gigabytes.
         /// </remarks>
+        /// <summary>
+        /// A <see cref="BoundedPool{T}"/> per capacity band, so a caller that knows how many elements it is
+        /// about to write gets a list that already holds them. One undifferentiated pool hands a span of
+        /// five thousand tokens whichever list came back last, and growing that list allocates exactly what
+        /// the pool was there to save.
+        /// </summary>
+        private sealed class SizeClassedPool<T>
+        {
+            //Capacity bands, in elements. The last one ends at MAXIMUM_POOLED_COLLECTION_SIZE, past which
+            //BoundedPool drops the list anyway.
+            private static readonly int[] BANDS = new[] { 64, 256, 1_024, 4_096, 16_384, MAXIMUM_POOLED_COLLECTION_SIZE };
+
+            private readonly BoundedPool<List<T>>[] m_bands;
+
+            internal SizeClassedPool(long capacity, long elementBudget)
+            {
+                m_bands = new BoundedPool<List<T>>[BANDS.Length];
+
+                for (int i = 0; i < m_bands.Length; i++)
+                {
+                    m_bands[i] = new BoundedPool<List<T>>(capacity, elementBudget / BANDS.Length);
+                }
+            }
+
+            private static int BandFor(int capacity)
+            {
+                for (int i = 0; i < BANDS.Length; i++)
+                {
+                    if (capacity <= BANDS[i]) return i;
+                }
+
+                return BANDS.Length - 1;
+            }
+
+            /// <summary>Takes a list holding at least <paramref name="minimumCapacity"/>, or null.</summary>
+            internal List<T> Rent(int minimumCapacity)
+            {
+                for (int band = BandFor(minimumCapacity); band < m_bands.Length; band++)
+                {
+                    var item = m_bands[band].Rent();
+
+                    if (item is object) return item;
+                }
+
+                return null;
+            }
+
+            internal void Return(List<T> item, int capacity) => m_bands[BandFor(capacity)].Return(item, capacity);
+
+            internal void Trim()
+            {
+                for (int i = 0; i < m_bands.Length; i++)
+                {
+                    m_bands[i].Trim();
+                }
+            }
+        }
+
         private sealed class BoundedPool<T> where T : class
         {
             private readonly ConcurrentQueue<Pooled> m_items = new ConcurrentQueue<Pooled>();

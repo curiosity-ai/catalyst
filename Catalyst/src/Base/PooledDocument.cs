@@ -61,6 +61,25 @@ namespace Catalyst
         }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// An empty list the pool handed back too small is swapped for one of the right size rather than
+        /// grown - growing it allocates the array the pool exists to hand over.
+        /// </remarks>
+        public override void ReserveTokens(int spanIndex, int expectedTokenCount)
+        {
+            var current = TokensData[spanIndex];
+
+            if (current.Count == 0 && current.Capacity < expectedTokenCount)
+            {
+                TokensData[spanIndex] = m_pool.RentTokenData(expectedTokenCount);
+                m_pool.ReturnTokenData(current);
+                return;
+            }
+
+            base.ReserveTokens(spanIndex, expectedTokenCount);
+        }
+
+        /// <inheritdoc />
         public override Span AddSpan(int begin, int end)
         {
             SpanBounds.Add(m_pool.RentSpanBounds(begin, end));

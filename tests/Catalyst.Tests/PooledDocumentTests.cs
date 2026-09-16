@@ -375,6 +375,64 @@ namespace Catalyst.Tests
         }
 
         [Fact]
+        public void ARentedTokenListHoldsWhatTheCallerAskedFor()
+        {
+            var pool = new DocumentPool();
+
+            //Fill the pool with lists of every band, so a large request has small lists to skip past
+            var returned = new List<List<TokenData>>();
+
+            foreach (var capacity in new[] { 8, 8, 8, 200, 200, 3_000, 20_000 })
+            {
+                var list = pool.RentTokenData(capacity);
+
+                Assert.True(list.Capacity >= capacity);
+
+                returned.Add(list);
+            }
+
+            foreach (var list in returned)
+            {
+                pool.ReturnTokenData(list);
+            }
+
+            //Each of these has to come back able to hold what was asked for, without growing
+            foreach (var capacity in new[] { 4, 150, 2_500, 18_000 })
+            {
+                var list = pool.RentTokenData(capacity);
+
+                Assert.Empty(list);
+                Assert.True(list.Capacity >= capacity, $"a list rented for {capacity} came back holding {list.Capacity}");
+
+                pool.ReturnTokenData(list);
+            }
+        }
+
+        [Fact]
+        public void ReservingTokensOnAnEmptySpanDoesNotGrowTheRentedList()
+        {
+            var pool = new DocumentPool();
+
+            //A deep list the pool can hand back for the reservation below
+            pool.ReturnTokenData(pool.RentTokenData(5_000));
+
+            var document = pool.Rent(TEXT, Language.English);
+            var span     = document.AddSpan(0, TEXT.Length - 1);
+
+            span.ReserveTokens(5_000);
+
+            Assert.True(document.TokensData[0].Capacity >= 5_000);
+            Assert.Equal(0, document.TokensData[0].Count);
+
+            //And the span still works through the ordinary API afterwards
+            span.AddTokenAsStruct(0, 8);
+
+            Assert.Equal(1, document.TokensCount);
+
+            pool.Return(document);
+        }
+
+        [Fact]
         public void TrimDropsWhatThePoolIsHoldingAndRentingStillWorks()
         {
             var pool = new DocumentPool();

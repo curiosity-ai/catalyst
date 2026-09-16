@@ -221,7 +221,13 @@ namespace Catalyst
             return new Token(this, index, spanIndex, hasReplacement: false, begin, end);
         }
 
-        internal void ReserveTokens(int spanIndex, int expectedTokenCount)
+        /// <summary>
+        /// Makes room for <paramref name="expectedTokenCount"/> tokens in a span, so filling it does not grow
+        /// the backing array a power of two at a time.
+        /// </summary>
+        /// <param name="spanIndex">The index of the span.</param>
+        /// <param name="expectedTokenCount">The number of tokens the caller is about to add.</param>
+        public virtual void ReserveTokens(int spanIndex, int expectedTokenCount)
         {
             var sd = TokensData[spanIndex];
             sd.Capacity = Math.Max(1, Math.Max(sd.Capacity, expectedTokenCount));
