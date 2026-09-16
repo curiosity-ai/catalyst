@@ -15,7 +15,7 @@ trigger:
     - azure-devops/build-models.yml
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-22.04'
 
 steps:
 - checkout: self
