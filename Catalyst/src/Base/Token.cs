@@ -153,10 +153,10 @@ namespace Catalyst
         public float Frequency { get { return Parent.GetTokenFrequency(SpanIndex, _index); } set { Parent.SetTokenFrequency(SpanIndex, _index, value); } }
 
         /// <inheritdoc />
-        public string Lemma => LemmatizerStore.Get(Parent.Language).GetLemma(this);
+        public string Lemma => LemmatizerStore.Get(Parent.Language).GetLemma(ValueAsSpan);
 
         /// <inheritdoc />
-        public ReadOnlySpan<char> LemmaAsSpan => LemmatizerStore.Get(Parent.Language).GetLemmaAsSpan(this);
+        public ReadOnlySpan<char> LemmaAsSpan => LemmatizerStore.Get(Parent.Language).GetLemmaAsSpan(ValueAsSpan);
 
         /// <inheritdoc />
         public char? PreviousChar => Parent.GetPreviousChar(_index, SpanIndex);

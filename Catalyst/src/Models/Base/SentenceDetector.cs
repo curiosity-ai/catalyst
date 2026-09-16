@@ -148,6 +148,9 @@ namespace Catalyst.Models
                                 var span = document.AddSpan(b, e);
                                 var spanBegin = span.Begin;
                                 var spanEnd   = span.End;
+
+                                span.ReserveTokens(EstimateTokens(spanBegin, spanEnd));
+
                                 for (int itoken = lastBegin; itoken < tokens.Length; itoken++)
                                 {
                                     var tb = tokensBegins[itoken];
@@ -189,6 +192,9 @@ namespace Catalyst.Models
                         var span = document.AddSpan(b, e);
                         var spanBegin = span.Begin;
                         var spanEnd = span.End;
+
+                        span.ReserveTokens(EstimateTokens(spanBegin, spanEnd));
+
                         for (int itoken = lastBegin; itoken < tokens.Length; itoken++)
                         {
                             var tb = tokensBegins[itoken];
@@ -220,6 +226,9 @@ namespace Catalyst.Models
                 var span = document.AddSpan(b, e);
                 var spanBegin = span.Begin;
                 var spanEnd = span.End;
+
+                span.ReserveTokens(EstimateTokens(spanBegin, spanEnd));
+
                 for (int itoken = 0; itoken < tokens.Length; itoken++)
                 {
                     var tb = tokensBegins[itoken];
@@ -392,6 +401,18 @@ namespace Catalyst.Models
 
             return correct;
         }
+
+        /// <summary>
+        /// Roughly how many tokens a sentence of this length holds, so the span is sized before its tokens are
+        /// re-added into it rather than grown a power of two at a time while they go in.
+        /// </summary>
+        /// <remarks>
+        /// An estimate off the character count rather than a count of the tokens that fall inside the sentence:
+        /// counting them means a second pass over the document's tokens for every sentence in it, which measured
+        /// as about a tenth of the pipeline's time - far more than the allocation it saves. Three characters per
+        /// token errs on the generous side, so the common case reserves once and never grows.
+        /// </remarks>
+        private static int EstimateTokens(int spanBegin, int spanEnd) => ((spanEnd - spanBegin + 1) / 3) + 4;
 
         private void UpdateModel(bool correctTag, bool predictedTag, ReadOnlySpan<int> features)
         {
