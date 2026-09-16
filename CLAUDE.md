@@ -1,4 +1,4 @@
-# Catalyst
+﻿# Catalyst
 
 C# natural language processing library (tokenization, tagging, entity recognition, embeddings).
 
@@ -6,8 +6,12 @@ C# natural language processing library (tokenization, tagging, entity recognitio
 
 ```bash
 dotnet build Catalyst/Catalyst.csproj -c Release
-dotnet test tests/Catalyst.Tests/Catalyst.Tests.csproj -c Release
+dotnet test --project tests/Catalyst.Tests/Catalyst.Tests.csproj -c Release
 ```
+
+The tests are xunit.v3, which runs on Microsoft.Testing.Platform rather than VSTest. The
+repo's `global.json` opts `dotnet test` into that runner; the .NET 10 SDK then wants the
+project passed as `--project`, and `dotnet test <csproj>` is rejected.
 
 ## Git LFS required for tests (model files)
 
