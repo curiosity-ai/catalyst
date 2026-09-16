@@ -194,15 +194,15 @@ namespace Catalyst.Models
             Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = (int)PartOfSpeech.NONE; int prev2Tag = (int)PartOfSpeech.NONE; int currTag = (int)PartOfSpeech.NONE;
 
-            int i = 0, correct = 0;
+            int i = 0, correct = 0, read = 0;
             int TP = 0, FN = 0, FP = 0;
 
-            var en = span.GetStructEnumerator();
+            var tokensCount = span.TokensCount;
 
             while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
+                next2 = (read < tokensCount) ? span.GetTokenAsStruct(read++) : Token.EndToken;
                 if (!curr.IsBeginToken)
                 {
                     int tokenTag = (int)curr.POS;
@@ -265,16 +265,15 @@ namespace Catalyst.Models
             Token prev = Token.BeginToken; Token prev2 = Token.BeginToken; Token curr = Token.BeginToken; Token next = Token.BeginToken; Token next2 = Token.BeginToken;
             int prevTag = (int)PartOfSpeech.NONE; int prev2Tag = (int)PartOfSpeech.NONE; int currTag = (int)PartOfSpeech.NONE;
 
-            int i = 0;
+            int i = 0, read = 0;
 
-            var en = span.GetStructEnumerator();
-            
+            var tokensCount      = span.TokensCount;
             var tokenToSingleTag = Data.TokenToSingleTag;
 
             while (!next.IsEndToken)
             {
                 prev2 = prev; prev = curr; curr = next; next = next2; prev2Tag = prevTag; prevTag = currTag;
-                if (en.MoveNext()) { next2 = en.Current; } else { next2 = Token.EndToken; }
+                next2 = (read < tokensCount) ? span.GetTokenAsStruct(read++) : Token.EndToken;
 
                 if (!curr.IsBeginToken)
                 {
@@ -414,7 +413,15 @@ namespace Catalyst.Models
         private static readonly int _HashTagIm2TagIm1WordI = GetHash("i-2 tag i-1 tag i word");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void GetFeatures(Span<int> features, IToken current, IToken prev, IToken prev2, IToken next, IToken next2, int prevTag, int prev2Tag)
+        private void GetFeatures(
+            Span<int> features,
+            Token     current,
+            Token     prev,
+            Token     prev2,
+            Token     next,
+            Token     next2,
+            int       prevTag,
+            int       prev2Tag)
         {
             int k = 0;
 
