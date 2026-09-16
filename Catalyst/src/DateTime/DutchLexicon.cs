@@ -134,7 +134,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "tot", "tot en met", "t/m", "naar");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "en");
-            b.Add(TermKind.RangeStart, 0, "van", "vanaf", "beginnend");
+            b.Add(TermKind.RangeStart, 0, "vanaf", "beginnend");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "van");   // "de 9e van mei" and "van 4-23"
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "sinds");
             b.Add(TermKind.RangeStart, 1, "tussen");
 
