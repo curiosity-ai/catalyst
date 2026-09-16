@@ -10,8 +10,8 @@ namespace Catalyst.DateTimeRecognition
             int best     = -1;
             int bestNode = Node.Unspecified;
 
-            Consider(TryExplicitDateRange(i, out int n1),  n1, ref best, ref bestNode);
             Consider(TryDayRangeInMonth(i, out int n10),  n10, ref best, ref bestNode);
+            Consider(TryExplicitDateRange(i, out int n1),  n1, ref best, ref bestNode);
             Consider(TryModDatePeriod(i, out int n2),      n2, ref best, ref bestNode);
             Consider(TryNthPeriodOf(i, out int n3),        n3, ref best, ref bestNode);
             Consider(TryWeekOfDate(i, out int n14),       n14, ref best, ref bestNode);

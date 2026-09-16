@@ -142,61 +142,14 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (!ComputePeriod(n.Left, out var host, out var hostAlternate, out bool hostHasAlternate)) return false;
 
-                var unit  = n.PeriodUnit;
-                int count = Math.Max(1, n.PeriodCount);
+                ref var host2 = ref At(n.Left);
 
-                if (n.OrdinalFromEnd)
-                {
-                    var end = host.End;
-
-                    // ISO names the first week of a year as the one containing its 4th day; the last week is
-                    // the mirror of that — the one containing the 4th day from the end.
-                    if (unit == TimeUnit.Week || unit == TimeUnit.WorkWeek) end = StartOfIsoWeek(end.AddDays(-4)).AddDays(7);
-
-                    var start = SubtractUnits(end, unit, count);
-                    period.Start = start;
-                    period.End   = end;
-                }
-                else
-                {
-                    var start = host.Start;
-
-                    // The first week of a period is the ISO week its first day falls in, even when that
-                    // week began in the period before.
-                    if (unit == TimeUnit.Week || unit == TimeUnit.WorkWeek) start = StartOfIsoWeek(host.Start);
-
-                    start = AddUnits(start, unit, n.OrdinalInPeriod - 1);
-                    period.Start = start;
-                    period.End   = AddUnits(start, unit, count);
-                }
-
-                if ((unit == TimeUnit.Week || unit == TimeUnit.WorkWeek) && count == 1)
-                {
-                    ref var host2 = ref At(n.Left);
-
-                    if (host2.Month >= 0)
-                    {
-                        int weekInMonth = n.OrdinalFromEnd ? (host.End.AddDays(-1).Day - 1) / 7 + 1 : n.OrdinalInPeriod;
-
-                        string yearPart = host2.Year >= 0 ? $"{host2.Year:0000}" : "XXXX";
-                        period.Timex = $"{yearPart}-{host2.Month:00}-W{weekInMonth:00}";
-                    }
-                    else
-                    {
-                        period.Timex = $"{IsoYear(period.Start):0000}-W{IsoWeekOfYear(period.Start):00}";
-                    }
-                }
-                else
-                {
-                    period.Timex = $"({FormatDate(period.Start)},{FormatDate(period.End)},{DurationTimexOf(unit, count)})";
-                }
+                period = NthOf(host, n, host2.Year < 0 && host2.Month >= 0);
 
                 if (hostHasAlternate)
                 {
-                    alternate       = period;
-                    alternate.Start = period.Start.AddYears(1);
-                    alternate.End   = period.End.AddYears(1);
-                    hasAlternate    = true;
+                    alternate    = NthOf(hostAlternate, n, host2.Year < 0 && host2.Month >= 0);
+                    hasAlternate = true;
                 }
 
                 return true;
@@ -240,7 +193,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // ---- a century
-            if (n.Century > 0)
+            if (n.Century > 0 && n.Decade <= 0)
             {
                 int startYear = (n.Century - 1) * 100;
                 period.Start  = new DateTime(startYear == 0 ? 1 : startYear, 1, 1);
@@ -415,6 +368,15 @@ namespace Catalyst.DateTimeRecognition
                         period.Start = monday;
                         period.End   = unit == TimeUnit.WorkWeek ? monday.AddDays(5) : monday.AddDays(7);
                         period.Timex = n.Mod == ModKind.RefUndef ? "XXXX-WXX" : $"{IsoYear(monday):0000}-W{IsoWeekOfYear(monday):00}";
+                        return true;
+                    }
+
+                    case TimeUnit.Fortnight:
+                    {
+                        var monday = StartOfIsoWeek(today).AddDays(shift * 14);
+                        period.Start = monday;
+                        period.End   = monday.AddDays(14);
+                        period.Timex = $"({FormatDate(period.Start)},{FormatDate(period.End)},P2W)";
                         return true;
                     }
 
@@ -862,6 +824,65 @@ namespace Catalyst.DateTimeRecognition
             ModKind.Late                   => Nearer(start, end, first: false, reference: start),
             _                              => start,
         };
+
+        /// <summary>
+        /// The nth week, month or day of a period: "the third month of 2021", "the last week of july",
+        /// "the first 2 weeks of 2021".
+        /// </summary>
+        private Period NthOf(Period host, in Node n, bool yearUnknown)
+        {
+            var unit   = n.PeriodUnit;
+            int count  = Math.Max(1, n.PeriodCount);
+            bool weeks = unit == TimeUnit.Week || unit == TimeUnit.WorkWeek;
+            var result = new Period();
+
+            if (n.OrdinalFromEnd)
+            {
+                var end = host.End;
+
+                // ISO names the first week of a year as the one containing its 4th day; the last week is
+                // the mirror of that — the one containing the 4th day from the end.
+                if (weeks) end = StartOfIsoWeek(end.AddDays(-4)).AddDays(7);
+
+                result.End   = end;
+                result.Start = SubtractUnits(end, unit, count);
+            }
+            else
+            {
+                var start = host.Start;
+
+                // A year's first week is the ISO one, which can begin in december; a month's is the week
+                // its first day falls in
+                if (weeks) start = StartOfIsoWeek(host.Start.AddDays(3));
+
+                result.Start = AddUnits(start, unit, n.OrdinalInPeriod - 1);
+                result.End   = AddUnits(result.Start, unit, count);
+            }
+
+            string yearPart = yearUnknown ? "XXXX" : $"{host.Start.Year:0000}";
+
+            if (weeks && count == 1 && IsOneMonth(host))
+            {
+                int weekInMonth = n.OrdinalFromEnd ? (host.End.AddDays(-1).Day - 1) / 7 + 1 : n.OrdinalInPeriod;
+                result.Timex    = $"{yearPart}-{host.Start.Month:00}-W{weekInMonth:00}";
+            }
+            else if (weeks && count == 1)
+            {
+                result.Timex = $"{IsoYear(result.Start):0000}-W{IsoWeekOfYear(result.Start):00}";
+            }
+            else if (unit == TimeUnit.Month && count == 1)
+            {
+                result.Timex = $"{yearPart}-{result.Start.Month:00}";
+            }
+            else
+            {
+                result.Timex = $"({FormatDate(result.Start)},{FormatDate(result.End)},{DurationTimexOf(unit, count)})";
+            }
+
+            return result;
+        }
+
+        private static bool IsOneMonth(Period p) => p.End == p.Start.AddMonths(1);
 
         /// <summary>Splits a period into its early / middle / late thirds, in the shapes a calendar actually uses.</summary>
         private static (DateTime, DateTime) Slice(DateTime start, DateTime end, int which)
