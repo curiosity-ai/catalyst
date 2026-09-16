@@ -1182,7 +1182,17 @@ namespace Catalyst.DateTimeRecognition
                 at  = After(at);
             }
 
-            if (!AtTerm(at, TermKind.Fiscal, out int fiscalKind)) return -1;
+            bool qualifierFollows = false;
+
+            if (!AtTerm(at, TermKind.Fiscal, out int fiscalKind))
+            {
+                // "año fiscal 2008", "année scolaire" — the qualifier follows the noun it qualifies
+                if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Year)) return -1;
+                if (!AtTerm(After(at), TermKind.Fiscal, out fiscalKind)) return -1;
+
+                at               = After(at);
+                qualifierFollows = true;
+            }
 
             int end = at + 1;
 
@@ -1199,15 +1209,18 @@ namespace Catalyst.DateTimeRecognition
                 return n2.LexEnd;
             }
 
-            if (AtTermValue(end, TermKind.Unit, (int)TimeUnit.Year)) end++;
-            else if (fiscalKind >= 0 && !AtNumber(end)) return -1;
+            if (qualifierFollows)                                        { /* the unit came first */ }
+            else if (AtTermValue(end, TermKind.Unit, (int)TimeUnit.Year)) { end++; }
+            else if (fiscalKind >= 0 && !AtNumber(end))                   return -1;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart   = i;
             n.FiscalKind = fiscalKind;
             n.Relative   = rel;
 
-            if (TryYear(end, out int year, out int yearEnd))
+            int yearAt = SkipGlue(end, 1);   // "año fiscal de 2016"
+
+            if (TryYear(yearAt, out int year, out int yearEnd))
             {
                 n.Year = year;
                 end    = yearEnd;

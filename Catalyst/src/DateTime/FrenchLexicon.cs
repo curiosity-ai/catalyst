@@ -178,6 +178,12 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Season, (int)SeasonKind.Fall,   "automne");
             b.Add(TermKind.Season, (int)SeasonKind.Winter, "hiver");
 
+                        b.Add(TermKind.Fiscal, 0, "civile", "calendaire");
+            b.Add(TermKind.Fiscal, 1, "fiscale", "fiscal");
+            b.Add(TermKind.Fiscal, 2, "scolaire", "universitaire");
+            b.Add(TermKind.QuarterMarker, 4, "t");
+            b.Add(TermKind.QuarterMarker, 2, "s");
+
             b.Add(TermKind.Holiday, (int)HolidayKind.NewYear,      "nouvel an", "jour de l'an", "premier de l'an");
             b.Add(TermKind.Holiday, (int)HolidayKind.NewYearEve,   "réveillon du nouvel an", "saint-sylvestre");
             b.Add(TermKind.Holiday, (int)HolidayKind.Christmas,    "noël", "noel", "jour de noël");
