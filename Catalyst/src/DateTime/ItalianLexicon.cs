@@ -117,6 +117,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Ordinal, 1), "prima");
             b.Add(TermKind.FromNow, "dopo", "da adesso");
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "più tardi", "piu tardi");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "prima nel", "più presto", "piu presto");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mattina", "mattino", "mattinata");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "pomeriggio");

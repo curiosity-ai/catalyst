@@ -118,7 +118,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "jetzt", "sofort", "gerade", "im moment", "momentan");
 
             b.Add(TermKind.Ago,     "vor", "davor", "früher", "frueher");
-            b.Add(TermKind.FromNow, "später", "spaeter", "danach", "ab jetzt");
+            b.Add(TermKind.FromNow, "danach", "ab jetzt");
+            b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "später", "spaeter");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "früher", "frueher");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "früh", "frueh", "vormittagszeit");
             b.Add(TermKind.PastWord, "nach");
