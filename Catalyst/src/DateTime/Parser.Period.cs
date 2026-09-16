@@ -870,7 +870,8 @@ namespace Catalyst.DateTimeRecognition
                 if (AtWord(k, "same") || AtWord(k, "that") || AtWord(k, "selbe") || AtWord(k, "selben") || AtWord(k, "même") || AtWord(k, "meme")
                     || AtWord(k, "mismo") || AtWord(k, "misma") || AtWord(k, "mesmo") || AtWord(k, "mesma")
                     || AtWord(k, "ese") || AtWord(k, "esa") || AtWord(k, "esos") || AtWord(k, "esas")
-                    || AtWord(k, "stesso") || AtWord(k, "stessa") || AtWord(k, "zelfde") || AtWord(k, "dezelfde")) return true;
+                    || AtWord(k, "stesso") || AtWord(k, "stessa") || AtWord(k, "zelfde") || AtWord(k, "dezelfde")
+                    || AtWord(k, "dat") || AtWord(k, "die")) return true;
             }
 
             return false;

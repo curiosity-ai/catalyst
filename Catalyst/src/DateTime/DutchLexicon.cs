@@ -104,7 +104,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend", "aankomende");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "afgelopen", "laatste");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "voorgaande", "voorafgaande");
-            b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde");
+            b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde", "dat", "die");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "vandaag");
             b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "morgen");
@@ -113,14 +113,17 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "eergisteren");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "nu", "op dit moment", "meteen");
 
-            b.Add(TermKind.Ago,     "geleden", "eerder");
-            b.Add(TermKind.FromNow, "later", "vanaf nu", "daarna");
+            b.Add(TermKind.Ago,     "geleden");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "eerder");
+            b.Add(TermKind.FromNow, "vanaf nu", "daarna");
+            b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "later");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "ochtend", "ochtenden", "'s ochtends", "'s morgens", "vanmorgen", "vanochtend", "voormiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "middag", "namiddag", "'s middags", "vanmiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "avond", "avonden", "'s avonds");
             b.Add(new TermInfo(TermKind.PastWord, 0, TermKind.InPrefix, 0), "over");
-            b.Add(new TermInfo(TermKind.ToWord, 0, TermKind.Filler, 0), "voor");
+            // "voor 2010" is before 2010, and "10 voor half negen" counts off the hour
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "middaguur", "twaalf uur 's middags");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "middernacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "vanavond", "vannacht");
