@@ -198,6 +198,8 @@ namespace Catalyst.DateTimeRecognition
                 {
                     n.Relative    = (RelativeKind)tailRel;
                     n.OffsetWeeks = WeekShiftOf((RelativeKind)tailRel);
+                    // "on monday of the following week" keeps its preposition; "on friday 7.6" does not
+                    if (AtWord(n.LexStart - 1, "on")) n.LexStart--;
                     end           = probe + 2;
                     n.LexEnd      = end;
                     SetSpan(ref n);

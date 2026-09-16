@@ -416,7 +416,7 @@ namespace Catalyst.DateTimeRecognition
                         var saturday = monday.AddDays(5);
                         period.Start = saturday;
                         period.End   = saturday.AddDays(2);
-                        period.Timex = $"{IsoYear(monday):0000}-W{IsoWeekOfYear(monday):00}-WE";
+                        period.Timex = n.Mod == ModKind.RefUndef ? "XXXX-WXX-WE" : $"{IsoYear(monday):0000}-W{IsoWeekOfYear(monday):00}-WE";
                         return true;
                     }
 

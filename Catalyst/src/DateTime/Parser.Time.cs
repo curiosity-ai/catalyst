@@ -449,7 +449,7 @@ namespace Catalyst.DateTimeRecognition
             bool podLeading = false;
 
             int podEnd = TryPartOfDay(at, out var leadingPod, out _);
-            if (podEnd > 0)
+            if (podEnd > 0 && !IsMealTime(leadingPod))
             {
                 // Only a lead-in when a clock reading follows: "in the morning at 7"
                 int probe = podEnd;

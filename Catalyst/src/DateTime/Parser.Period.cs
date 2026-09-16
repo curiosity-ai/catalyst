@@ -34,7 +34,8 @@ namespace Catalyst.DateTimeRecognition
                 var k = (ModKind)trailing;
 
                 // "2018 or later" closes the period; "before 2010 or after 2018" is two periods
-                if ((k == ModKind.OrLater || k == ModKind.OrEarlier) && NodeAt(bestNode).Mod == ModKind.None && TryRangeEndpoint(After(best), out _) < 0)
+                if ((k == ModKind.OrLater || k == ModKind.OrEarlier) && NodeAt(bestNode).Mod == ModKind.None
+                    && !AtWord(After(best), "than") && TryRangeEndpoint(After(best), out _) < 0 && TryTime(After(best), out _) < 0)
                 {
                     ref var n = ref NodeAt(bestNode);
                     n.Mod    = k == ModKind.OrLater ? ModKind.Since : ModKind.Before;
@@ -132,6 +133,9 @@ namespace Catalyst.DateTimeRecognition
 
             var k = (ModKind)trailing;
             if (k != ModKind.OrLater && k != ModKind.OrEarlier) return -1;
+
+            // "1/1/2016 and after 6PM" is a date and a time; the modifier belongs to the time
+            if (TryTime(After(dateEnd), out _) > 0) return -1;
 
             var n = NodeAt(date);
             n.Kind     = NodeKind.DateRange;
@@ -847,7 +851,7 @@ namespace Catalyst.DateTimeRecognition
         {
             for (int k = i; k >= 0 && k > i - 3; k--)
             {
-                if (AtWord(k, "same") || AtWord(k, "selbe") || AtWord(k, "selben") || AtWord(k, "même") || AtWord(k, "meme")
+                if (AtWord(k, "same") || AtWord(k, "that") || AtWord(k, "selbe") || AtWord(k, "selben") || AtWord(k, "même") || AtWord(k, "meme")
                     || AtWord(k, "mismo") || AtWord(k, "misma") || AtWord(k, "mesmo") || AtWord(k, "mesma")
                     || AtWord(k, "stesso") || AtWord(k, "stessa") || AtWord(k, "zelfde") || AtWord(k, "dezelfde")) return true;
             }

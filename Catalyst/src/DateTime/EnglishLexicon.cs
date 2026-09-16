@@ -169,7 +169,8 @@ namespace Catalyst.DateTimeRecognition
 
         private static void AddRelatives(LexiconBuilder b)
         {
-            b.Add(TermKind.Relative, (int)RelativeKind.This,      "this", "that");
+            b.Add(TermKind.Relative, (int)RelativeKind.This,      "this");
+            b.Add(TermKind.Relative, (int)RelativeKind.Current,   "that");   // "that weekend" names no particular one
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "next");
             b.Add(TermKind.Relative, (int)RelativeKind.Coming,    "coming", "upcoming");
             b.Add(TermKind.Relative, (int)RelativeKind.Following, "following");
