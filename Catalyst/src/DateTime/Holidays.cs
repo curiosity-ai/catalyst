@@ -45,9 +45,29 @@ namespace Catalyst.DateTimeRecognition
                 case HolidayKind.BlackFriday:             return NthWeekdayOfMonth(year, 11, DayOfWeek.Thursday, 4).AddDays(1);
                 case HolidayKind.CyberMonday:             return NthWeekdayOfMonth(year, 11, DayOfWeek.Thursday, 4).AddDays(4);
 
+                case HolidayKind.Epiphany:                return new DateTime(year,  1,  6);
+                case HolidayKind.StBarbara:               return new DateTime(year, 12,  4);
+                case HolidayKind.StJohn:                  return new DateTime(year,  6, 24);
+                case HolidayKind.PeterAndPaul:            return new DateTime(year,  6, 29);
+                case HolidayKind.ChildrensDay:            return new DateTime(year,  6,  1);
+                case HolidayKind.AugsburgPeace:           return new DateTime(year,  8,  8);
+                case HolidayKind.KingsDay:                return new DateTime(year,  4, 27);
+                case HolidayKind.SpringStart:             return new DateTime(year,  3, 20);
+                case HolidayKind.SummerStart:             return new DateTime(year,  6, 21);
+                case HolidayKind.AutumnStart:             return new DateTime(year,  9, 22);
+                case HolidayKind.WinterStart:             return new DateTime(year, 12, 21);
+
+                case HolidayKind.HarvestThanksgiving:     return NthWeekdayOfMonth(year, 10, DayOfWeek.Sunday, 1);
+                case HolidayKind.EternitySunday:          return FirstAdvent(year).AddDays(-7);
+
                 case HolidayKind.Easter:                  return Easter(year);
                 case HolidayKind.EasterMonday:            return Easter(year).AddDays(1);
                 case HolidayKind.GoodFriday:              return Easter(year).AddDays(-2);
+                case HolidayKind.HolySaturday:            return Easter(year).AddDays(-1);
+                case HolidayKind.PalmSunday:              return Easter(year).AddDays(-7);
+                case HolidayKind.Pentecost:               return Easter(year).AddDays(49);
+                case HolidayKind.CarnivalSunday:          return Easter(year).AddDays(-49);
+                case HolidayKind.CarnivalSaturday:        return Easter(year).AddDays(-50);
 
                 // Lunar feasts are approximated by their Gregorian date in recent years
                 case HolidayKind.EidAlFitr:               return EidAlFitr(year);
@@ -62,6 +82,13 @@ namespace Catalyst.DateTimeRecognition
             var a = Resolve(kind, 2020);
             var b = Resolve(kind, 2021);
             return a.Month == b.Month && a.Day == b.Day;
+        }
+
+        /// <summary>The first Sunday of Advent: three weeks before the last Sunday on or before Christmas Eve.</summary>
+        private static DateTime FirstAdvent(int year)
+        {
+            var eve = new DateTime(year, 12, 24);
+            return eve.AddDays(-(int)eve.DayOfWeek).AddDays(-21);
         }
 
         private static DateTime NthWeekdayOfMonth(int year, int month, DayOfWeek weekday, int n)

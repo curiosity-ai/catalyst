@@ -190,6 +190,19 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.MothersDay,   "moederdag");
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "vaderdag");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "dag van de arbeid");
+            b.Add(TermKind.Holiday, (int)HolidayKind.KingsDay,     "koningsdag", "koninginnedag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.IndependenceDay, "onafhankelijkheidsdag", "onafhankelijksdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.BlackFriday,  "black friday", "zwarte vrijdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.CyberMonday,  "cyber monday");
+            b.Add(TermKind.Holiday, (int)HolidayKind.EarthDay,     "dag van de aarde", "wereldaarddag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Juneteenth,   "juneteenth");
+            b.Add(TermKind.Holiday, (int)HolidayKind.FreedomDay,   "vrijheidsdag", "bevrijdingsdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.JubileeDay,   "jubilee day", "jubileumdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.StPatricksDay, "sint-patricksdag", "st patricksdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Thanksgiving, "thanksgiving", "dankdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Pentecost,    "pinksteren", "eerste pinksterdag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.PalmSunday,   "palmzondag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Epiphany,     "driekoningen");
 
             return b.Build(Language.Dutch, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true);
         }

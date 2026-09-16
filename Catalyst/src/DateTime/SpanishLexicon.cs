@@ -205,7 +205,17 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.Halloween,    "halloween");
             b.Add(TermKind.Holiday, (int)HolidayKind.MothersDay,   "día de la madre");
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "día del padre");
-            b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "día del trabajo", "día del trabajador");
+            b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "día del trabajo", "día del trabajador",
+                                                                              "día internacional de los trabajadores", "día internacional del trabajo");
+            b.Add(TermKind.Holiday, (int)HolidayKind.IndependenceDay, "día de independencia", "día de la independencia");
+            b.Add(TermKind.Holiday, (int)HolidayKind.EarthDay,     "día de la tierra");
+            b.Add(TermKind.Holiday, (int)HolidayKind.StPatricksDay, "día de san patricio", "san patricio");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Juneteenth,   "juneteenth");
+            b.Add(TermKind.Holiday, (int)HolidayKind.BlackFriday,  "viernes negro", "black friday");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Thanksgiving, "día de acción de gracias", "acción de gracias");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Epiphany,     "día de reyes", "reyes magos", "epifanía");
+            b.Add(TermKind.Holiday, (int)HolidayKind.PalmSunday,   "domingo de ramos");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Pentecost,    "pentecostés", "pentecostes");
 
             return b.Build(Language.Spanish, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, relativeAfterUnit: true, minutesFollowHour: true);
         }

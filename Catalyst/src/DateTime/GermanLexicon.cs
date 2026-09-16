@@ -191,12 +191,14 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Holiday, (int)HolidayKind.NewYear,        "neujahr", "neujahrstag");
             b.Add(TermKind.Holiday, (int)HolidayKind.NewYearEve,     "silvester");
-            b.Add(TermKind.Holiday, (int)HolidayKind.Christmas,      "weihnachten", "weihnachtstag", "erster weihnachtstag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Christmas,      "weihnachten", "weihnachtstag", "erster weihnachtstag",
+                                                                     "weihnachtsfeiertag", "erster weihnachtsfeiertag", "ersten weihnachtsfeiertag");
             b.Add(TermKind.Holiday, (int)HolidayKind.ChristmasEve,   "heiligabend", "heiliger abend");
             b.Add(TermKind.Holiday, (int)HolidayKind.Easter,         "ostern", "ostersonntag");
             b.Add(TermKind.Holiday, (int)HolidayKind.EasterMonday,   "ostermontag");
             b.Add(TermKind.Holiday, (int)HolidayKind.GoodFriday,     "karfreitag");
-            b.Add(TermKind.Holiday, (int)HolidayKind.Boxing,         "zweiter weihnachtstag", "stephanstag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Boxing,         "zweiter weihnachtstag", "stephanstag",
+                                                                     "zweiter weihnachtsfeiertag", "zweiten weihnachtsfeiertag");
             b.Add(TermKind.Holiday, (int)HolidayKind.GermanUnityDay, "tag der deutschen einheit");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "tag der arbeit");
             b.Add(TermKind.Holiday, (int)HolidayKind.AllSaints,      "allerheiligen");
@@ -204,6 +206,23 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.Halloween,      "halloween");
             b.Add(TermKind.Holiday, (int)HolidayKind.MothersDay,     "muttertag");
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,     "vatertag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Epiphany,       "heilige drei könige", "heilige drei koenige", "dreikönigstag", "epiphanias");
+            b.Add(TermKind.Holiday, (int)HolidayKind.PalmSunday,     "palmsonntag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.HolySaturday,   "karsamstag", "ostersamstag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Pentecost,      "pfingsten", "pfingstsonntag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.CarnivalSaturday, "fastnachtssamstag", "karnevalssamstag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.CarnivalSunday, "fastnachtssonntag", "karnevalssonntag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.HarvestThanksgiving, "erntedankfest", "erntedank");
+            b.Add(TermKind.Holiday, (int)HolidayKind.EternitySunday, "ewigkeitssonntag", "totensonntag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.StBarbara,      "barbaratag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.StJohn,         "johannistag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.PeterAndPaul,   "peter und paul", "peter-und-paul");
+            b.Add(TermKind.Holiday, (int)HolidayKind.ChildrensDay,   "weltkindertag", "kindertag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.AugsburgPeace,  "augsburger friedensfest", "friedensfest");
+            b.Add(TermKind.Holiday, (int)HolidayKind.SpringStart,    "frühlingsanfang", "fruehlingsanfang");
+            b.Add(TermKind.Holiday, (int)HolidayKind.SummerStart,    "sommeranfang");
+            b.Add(TermKind.Holiday, (int)HolidayKind.AutumnStart,    "herbstanfang");
+            b.Add(TermKind.Holiday, (int)HolidayKind.WinterStart,    "winteranfang");
 
             return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true);
         }
