@@ -1042,21 +1042,54 @@ namespace Catalyst.DateTimeRecognition
                 return nd.LexEnd;
             }
 
-            if (AtNumber(i) && (DigitsAt(i) == 4 || DigitsAt(i) == 2) && NumberAt(i) % 10 == 0)
+            // "década de 1990", "de jaren '90" — the unit names the decade and the number says which
+            if (AtTerm(worded, TermKind.Unit, out int decadeUnit))
             {
-                int at = i + 1;
+                int at        = After(worded);
+                at            = SkipArticle(at);
+                bool quoted   = At(at, LexKind.Other);
+                if (quoted) at++;
+
+                bool namesOne = (TimeUnit)decadeUnit == TimeUnit.Decade
+                                || ((TimeUnit)decadeUnit == TimeUnit.Year && quoted);
+
+                if (namesOne && AtNumber(at) && (DigitsAt(at) == 4 || DigitsAt(at) == 2) && NumberAt(at) % 10 == 0)
+                {
+                    var nu = Node.Create(NodeKind.DateRange);
+                    nu.LexStart = i;
+                    nu.LexEnd   = at + 1;
+
+                    if (DigitsAt(at) == 4)
+                    {
+                        nu.Decade = NumberAt(at);
+                    }
+                    else
+                    {
+                        nu.Decade  = NumberAt(at) < 30 ? 2000 + NumberAt(at) : 1900 + NumberAt(at);
+                        nu.Century = 1;
+                    }
+
+                    SetSpan(ref nu);
+                    node = Alloc(nu);
+                    return nu.LexEnd;
+                }
+            }
+
+            if (AtNumber(worded) && (DigitsAt(worded) == 4 || DigitsAt(worded) == 2) && NumberAt(worded) % 10 == 0)
+            {
+                int at = worded + 1;
 
                 if (!AtWord(at, "s")) return -1;
 
                 at++;
 
-                int decade = NumberAt(i);
+                int decade = NumberAt(worded);
 
                 var n = Node.Create(NodeKind.DateRange);
                 n.LexStart = i;
                 n.LexEnd   = at;
 
-                if (DigitsAt(i) == 4)
+                if (DigitsAt(worded) == 4)
                 {
                     n.Decade = decade;
                 }
