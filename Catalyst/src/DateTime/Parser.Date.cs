@@ -534,6 +534,7 @@ namespace Catalyst.DateTimeRecognition
             n.Year     = year;
             n.Month    = month;
             n.Day      = day;
+
             SetSpan(ref n);
             node = Alloc(n);
             return end;
@@ -758,7 +759,9 @@ namespace Catalyst.DateTimeRecognition
             }
             else if (AtTermValue(tail, TermKind.Unit, (int)TimeUnit.Month))
             {
-                n.LexEnd = tail + 1;
+                // "the twenty-sixth day of the month" is this month's
+                n.Relative = RelativeKind.This;
+                n.LexEnd   = tail + 1;
             }
             else
             {

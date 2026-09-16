@@ -107,7 +107,9 @@ namespace Catalyst.DateTimeRecognition
         {
             // The Islamic year drifts about 11 days a year against the Gregorian one; anchored on 2020.
             var anchor = new DateTime(2020, 5, 24);
-            return anchor.AddDays((year - 2020) * 354.367).Date;
+
+            // The mean lunar year runs a little long against the observed sightings, so the day is floored
+            return anchor.AddDays((year - 2020) * 354.367 - 0.5).Date;
         }
     }
 }

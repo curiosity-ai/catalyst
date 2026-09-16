@@ -605,6 +605,10 @@ namespace Catalyst.DateTimeRecognition
 
             at = SkipWord(at, "for");
 
+            // "for the week beginning february 4" names a week by a date; it is not a duration
+            int afterArticle = SkipWord(at, "the");
+            if (afterArticle != at && AtTerm(afterArticle, TermKind.Unit)) return -1;
+
             bool within = AtWord(at, "within");
             if (within)
             {
@@ -1090,8 +1094,9 @@ namespace Catalyst.DateTimeRecognition
                 n.Year = year;
                 end    = yearEnd;
             }
-            else if (rel == RelativeKind.None)
+            else if (rel == RelativeKind.None && fiscalKind == 0)
             {
+                // A calendar year needs one; a fiscal or school year with none named stays FYXXXX
                 n.Relative = RelativeKind.This;
             }
 

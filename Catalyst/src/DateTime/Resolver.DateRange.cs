@@ -39,6 +39,9 @@ namespace Catalyst.DateTimeRecognition
                 if (!EndpointOf(n.Left,  out var leftStart,  out var leftTimex,  out bool leftYearUnknown))  return false;
                 if (!EndpointOf(n.Right, out var rightStart, out var rightTimex, out bool rightYearUnknown)) return false;
 
+                // "between now and november 15th" — "now" names no year, so the other end keeps its own
+                bool anchoredToNow = IsNow(n.Left) || IsNow(n.Right);
+
                 // A year written on one side applies to both: "nov-feb 2017" starts in 2016
                 if (leftYearUnknown && !rightYearUnknown)
                 {
@@ -71,13 +74,13 @@ namespace Catalyst.DateTimeRecognition
                     rightYearUnknown = false;
                 }
 
-                string span = SpanTimex(leftStart, rightStart, months);
+                string span = SpanTimex(leftStart, rightStart, months, daysOnly: anchoredToNow);
 
                 period.Start = leftStart;
                 period.End   = rightStart;
                 period.Timex = $"({leftTimex},{rightTimex},{span})";
 
-                if (leftYearUnknown && rightYearUnknown)
+                if (leftYearUnknown && rightYearUnknown && !anchoredToNow)
                 {
                     // "from sep to nov" is this year's and last year's while this year's has not gone by
                     int shift = period.End > _reference.Date ? -1 : 0;
@@ -671,15 +674,27 @@ namespace Catalyst.DateTimeRecognition
             return false;
         }
 
+        /// <summary>Whether the endpoint is the reference moment rather than a date of its own.</summary>
+        private bool IsNow(int nodeIndex)
+        {
+            ref var n = ref At(nodeIndex);
+            return n.PresentRef || (n.Relative == RelativeKind.Current && n.Year < 0 && n.Month < 0 && n.Day < 0
+                                                                       && n.Weekday < 0 && n.Holiday == HolidayKind.None
+                                                                       && n.OffsetDays == 0 && n.OffsetWeeks == 0
+                                                                       && n.OffsetMonths == 0 && n.OffsetYears == 0);
+        }
+
         private bool PrefersMonths(int nodeIndex)
         {
             ref var n = ref At(nodeIndex);
             return n.Quarter > 0 || n.HalfOfYear > 0 || (n.Month >= 0 && n.Day < 0);
         }
 
-        private static string SpanTimex(DateTime from, DateTime to, bool preferMonths = false)
+        private static string SpanTimex(DateTime from, DateTime to, bool preferMonths = false, bool daysOnly = false)
         {
             if (to < from) (from, to) = (to, from);
+
+            if (daysOnly) return $"P{(int)(to - from).TotalDays}D";
 
             if (preferMonths)
             {
@@ -848,7 +863,7 @@ namespace Catalyst.DateTimeRecognition
         {
             ModKind.Start or ModKind.Early => start,
             ModKind.End                    => forward ? Slice(start, end, 2).Item1 : end,
-            ModKind.Mid                    => halfForMid ? Nearer(start, end, first: false, reference: start) : Slice(start, end, 1).Item2,
+            ModKind.Mid                    => halfForMid ? start.AddDays((int)((end - start).TotalDays / 2)) : Slice(start, end, 1).Item2,
             ModKind.Late                   => Nearer(start, end, first: false, reference: start),
             _                              => start,
         };
