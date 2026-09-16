@@ -129,7 +129,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Earlier), "más temprano", "mas temprano", "más pronto");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mañanas", "madrugada");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "tarde", "tardes");
+            // "la tarde" runs from four to eight in the suite, which is the evening slot
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "tarde", "tardes");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "atardecer", "anochecer");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mediodía", "mediodia");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "medianoche");
