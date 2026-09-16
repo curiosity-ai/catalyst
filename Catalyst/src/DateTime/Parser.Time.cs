@@ -320,9 +320,9 @@ namespace Catalyst.DateTimeRecognition
                 ampm = ampmValue;
                 at   = ampmEnd;
             }
-            else if (AtTerm(at, TermKind.Approx) && !_lex[at].SpaceBefore)
+            else if (AtTerm(at, TermKind.Approx) && (!_lex[at].SpaceBefore || _lex[at].Length > 3))
             {
-                at++;   // "11ish"
+                at = After(at);   // "11ish", "11 circa"
                 marked = true;
             }
 
@@ -480,6 +480,8 @@ namespace Catalyst.DateTimeRecognition
 
             if (AtTerm(at, TermKind.PastWord))      { direction =  1; at = After(at); }
             else if (AtTerm(at, TermKind.ToWord))   { direction = -1; at = After(at); }
+            // "5 minuti alle 4" — where the minutes say they are minutes, the clock introducer is the to-word
+            else if (explicitUnit && AtClockPrefix(at)) { direction = -1; at = After(at); }
             else                                    { return -1; }
 
             // "5 to 6pm" is a range, not five minutes to six: only a reading that cannot be an hour,

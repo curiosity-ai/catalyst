@@ -102,7 +102,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "questo", "questa", "questi", "queste");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "prossimo", "prossima", "prossimi", "próssimo", "seguente", "venturo");
-            b.Add(TermKind.Relative, (int)RelativeKind.Last,     "scorso", "scorsa", "scorsi", "ultimo", "ultima", "passato", "passata");
+            b.Add(TermKind.Relative, (int)RelativeKind.Last,     "scorso", "scorsa", "scorsi", "scorse", "ultimo", "ultima", "ultimi", "ultime", "passato", "passata");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "precedente", "precedenti");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,  "corrente", "attuale", "stesso", "stessa");
 
@@ -134,8 +134,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "in punto");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "fino a", "fino al");
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a", "al", "alle");   // "alle 10" as well as "dalle 5 alle 6"
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a", "ad", "al", "alle", "allo", "alla", "ai", "agli");   // "alle 10" as well as "dalle 5 alle 6"
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e", "ed");
             b.Add(TermKind.RangeStart, 0, "da", "dalle", "a partire da", "a partire dal");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "dal");
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
