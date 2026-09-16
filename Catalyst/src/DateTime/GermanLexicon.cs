@@ -199,7 +199,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.MothersDay,     "muttertag");
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,     "vatertag");
 
-            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true);
+            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true);
         }
     }
 }

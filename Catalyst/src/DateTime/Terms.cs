@@ -320,8 +320,14 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     HalfIsBeforeTheHour { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false)
+        /// <summary>
+        /// Whether an ordinal is written as its number and a full stop: German's "22. April".
+        /// </summary>
+        public bool     OrdinalEndsInDot { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false)
         {
+            OrdinalEndsInDot  = ordinalEndsInDot;
             PartNamedWithOf   = partNamedWithOf;
             MinutesFollowHour = minutesFollowHour;
             SplitsCompounds   = splitsCompounds;

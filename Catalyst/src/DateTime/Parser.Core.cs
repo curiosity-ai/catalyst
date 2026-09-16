@@ -244,12 +244,16 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>An ordinal, as "1st" / "21st" / "first" / "twenty third" / "thirty-first".</summary>
+        /// <summary>"22." — where the language writes an ordinal as its number and a full stop.</summary>
+        private readonly bool AtDottedOrdinal(int i)
+            => _lexicon.OrdinalEndsInDot && AtNumber(i) && At(i + 1, LexKind.Dot) && !_lex[i + 1].SpaceBefore;
+
         private readonly bool TryOrdinal(int i, out int value, out int end)
         {
             value = 0;
             end   = i;
 
-            if (AtNumber(i) && AtTerm(i + 1, TermKind.OrdinalSuffix) && !_lex[i + 1].SpaceBefore)
+            if (AtNumber(i) && (AtTerm(i + 1, TermKind.OrdinalSuffix) || AtDottedOrdinal(i)) && !_lex[i + 1].SpaceBefore)
             {
                 value = NumberAt(i);
                 end   = i + 2;
