@@ -46,6 +46,10 @@
 
   <ItemGroup>
     <PackageReference Include="Catalyst" Version="26.9.5311" />
+    <PackageReference Include="NuGet.CommandLine" Version="7.9.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
