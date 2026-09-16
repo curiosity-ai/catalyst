@@ -35,6 +35,6 @@
 
   <ItemGroup>
     
-    <PackageReference Include="Catalyst" Version="26.9.*" />
+    <PackageReference Include="Catalyst" Version="26.9.5306" />
   </ItemGroup>
 </Project>
