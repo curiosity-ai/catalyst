@@ -75,7 +75,7 @@ namespace Catalyst.DateTimeRecognition
                 range.EndSecond   = end.Second;
                 range.StartTimex  = TimexOfTime(h1, m1, s1);
                 range.EndTimex    = TimexOfTime(end.Hour, end.Minute, end.Second);
-                range.Timex       = $"({range.StartTimex},{range.EndTimex},{parts.ToTimex()})";
+                range.Timex       = $"({range.StartTimex},{range.EndTimex},{ClockSpanTimex(range)})";
                 return true;
             }
 

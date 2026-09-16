@@ -143,6 +143,8 @@ namespace Catalyst.DateTimeRecognition
         OrLater,        // "2018 or later"
         OrEarlier,      // "2018 or earlier"
         RefUndef,       // "the same week" — the period the reference moment falls in
+        Earlier,        // "earlier this month" — the first part of the period
+        Later,          // "later this month" — the last part of the period
     }
 
     public enum HolidayKind : byte

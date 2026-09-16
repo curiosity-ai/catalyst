@@ -65,6 +65,26 @@ namespace Catalyst.DateTimeRecognition
                 return true;
             }
 
+            // ---- "the week of april 10th": the week the date falls in, named by that date
+            if (n.PeriodUnit == TimeUnit.Week && n.Anchor >= 0 && n.Left < 0)
+            {
+                if (!ComputeDate(n.Anchor, out var anchorTimex, out var anchorFirst, out var anchorSecond, out bool anchorTwo)) return false;
+
+                period.Start = StartOfIsoWeek(anchorFirst);
+                period.End   = period.Start.AddDays(7);
+                period.Timex = anchorTimex;
+
+                if (anchorTwo)
+                {
+                    alternate.Start = StartOfIsoWeek(anchorSecond);
+                    alternate.End   = alternate.Start.AddDays(7);
+                    alternate.Timex = anchorTimex;
+                    hasAlternate    = true;
+                }
+
+                return true;
+            }
+
             // ---- a duration measured from a date: "2 weeks starting may 20th", "within 9 months"
             if (n.Left >= 0 && At(n.Left).Kind == NodeKind.Duration)
             {
@@ -437,13 +457,7 @@ namespace Catalyst.DateTimeRecognition
             }
             else if (rel == RelativeKind.Next || rel == RelativeKind.Coming || rel == RelativeKind.Following)
             {
-                start = unit switch
-                {
-                    TimeUnit.Day                        => today.AddDays(1),
-                    TimeUnit.BusinessDay                => NextBusinessDay(today),
-                    TimeUnit.Week or TimeUnit.Fortnight => today.AddDays(7),
-                    _                                   => today,
-                };
+                start = unit == TimeUnit.BusinessDay ? NextBusinessDay(today) : today.AddDays(1);
 
                 end = AddUnits(start, unit, count);
             }
@@ -665,7 +679,9 @@ namespace Catalyst.DateTimeRecognition
 
                 case ModKind.Start:
                 case ModKind.Early:
-                    (start, end) = Slice(start, end, 0);
+                case ModKind.Earlier:
+                    (start, end) = Half(start, end, first: true);
+                    if (mod != ModKind.Earlier) (start, end) = Slice(start, end, 0);
                     break;
 
                 case ModKind.Mid:
@@ -674,9 +690,23 @@ namespace Catalyst.DateTimeRecognition
 
                 case ModKind.End:
                 case ModKind.Late:
-                    (start, end) = Slice(start, end, 2);
+                case ModKind.Later:
+                    if (mod == ModKind.Later) { (start, end) = Half(start, end, first: false); }
+                    else                      { (start, end) = Slice(start, end, 2); }
                     break;
             }
+        }
+
+        /// <summary>Keeps the first or the last half of a period, which is what "earlier"/"later this month" mean.</summary>
+        private static (DateTime, DateTime) Half(DateTime start, DateTime end, bool first)
+        {
+            var span = end - start;
+
+            if (span.TotalDays >= 300) return first ? (start, start.AddMonths(6)) : (start.AddMonths(6), end);
+
+            int days = (int)(span.TotalDays / 2);
+
+            return first ? (start, start.AddDays(days)) : (start.AddDays(days), end);
         }
 
         /// <summary>Splits a period into its early / middle / late thirds, in the shapes a calendar actually uses.</summary>
@@ -699,7 +729,7 @@ namespace Catalyst.DateTimeRecognition
                 return which switch
                 {
                     0 => (start, start.AddDays(10)),
-                    1 => (start.AddDays(10), start.AddDays(20)),
+                    1 => (start.AddDays(9), start.AddDays(20)),
                     _ => (start.AddDays(20), end),
                 };
             }

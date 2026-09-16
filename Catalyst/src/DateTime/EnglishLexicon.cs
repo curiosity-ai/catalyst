@@ -181,8 +181,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "right now", "at the moment", "at the minute", "at present", "at this time", "at the present time");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.EndOfDay,           "end of day", "end of the day", "eod", "the eod");
 
-            b.Add(TermKind.Ago,     "ago", "before now", "earlier");
-            b.Add(TermKind.FromNow, "later", "hence", "afterwards", "after now", "from now", "in the future");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "earlier");
+            b.Add(TermKind.Ago,     "ago", "before now");
+            b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "later");
+            b.Add(TermKind.FromNow, "hence", "afterwards", "after now", "from now", "in the future");
         }
 
         private static void AddPartsOfDay(LexiconBuilder b)
@@ -226,9 +228,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Less,      "less than", "fewer than");
             b.Add(TermKind.Mod, (int)ModKind.More,      "more than", "greater than");
             b.Add(TermKind.Mod, (int)ModKind.Since,     "since", "since then", "as of");
-            b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of", "the beginning of", "start", "beginning");
-            b.Add(TermKind.Mod, (int)ModKind.End,       "end of", "the end of", "end", "eoy", "eom", "eow");
-            b.Add(TermKind.Mod, (int)ModKind.Mid,       "mid", "middle of", "the middle of", "mid of");
+            b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of", "start", "beginning");
+            b.Add(TermKind.Mod, (int)ModKind.End,       "end of", "end");
+            b.Add(TermKind.Mod, (int)ModKind.Mid,       "mid", "middle of", "mid of");
             b.Add(TermKind.Mod, (int)ModKind.Early,     "early", "as early as");
             b.Add(TermKind.Mod, (int)ModKind.Late,      "late", "as late as");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "or later", "and later", "and after", "and greater", "or greater", "or after");

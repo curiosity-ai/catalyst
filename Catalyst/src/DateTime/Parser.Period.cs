@@ -16,6 +16,9 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryNthPeriodOf(i, out int n3),        n3, ref best, ref bestNode);
             Consider(TryDurationFromDate(i, out int n4),   n4, ref best, ref bestNode);
             Consider(TryShorthandPeriod(i, out int n11),  n11, ref best, ref bestNode);
+            Consider(TryComparisonPeriod(i, out int n13), n13, ref best, ref bestNode);
+            Consider(TryWeekOfDate(i, out int n14),       n14, ref best, ref bestNode);
+            Consider(TryTrailingModDate(i, out int n15),  n15, ref best, ref bestNode);
             Consider(TryHolidayWeekend(i, out int n12),  n12, ref best, ref bestNode);
             Consider(TrySimplePeriod(i, out int n5),       n5, ref best, ref bestNode);
 
@@ -43,6 +46,95 @@ namespace Catalyst.DateTimeRecognition
 
             node = bestNode;
             return best;
+        }
+
+        /// <summary>"&lt;=2019", "=2019", "&gt; = 2019" — a year written as a comparison.</summary>
+        private int TryComparisonPeriod(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            int at  = i;
+            var mod = ModKind.None;
+
+            if (At(at, LexKind.Less))         { mod = ModKind.Before; at++; }
+            else if (At(at, LexKind.Greater)) { mod = ModKind.After;  at++; }
+            else if (!At(at, LexKind.Equal))  { return -1; }
+
+            if (At(at, LexKind.Equal)) at++;
+            else if (mod == ModKind.None)     { return -1; }
+
+            if (at == i) return -1;
+
+            int inner = TryRangeEndpoint(at, out int child);
+            if (inner < 0) return -1;
+
+            var n = NodeAt(child);
+            n.Kind     = NodeKind.DateRange;
+            n.LexStart = i;
+            n.LexEnd   = inner;
+            n.Mod      = mod;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return inner;
+        }
+
+        /// <summary>"the week of april 10th", "the week of the 18th", "w/c feb 4", "the week beginning february 4".</summary>
+        private int TryWeekOfDate(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            int at = SkipWord(i, "the");
+
+            if (AtWord(at, "w") && At(at + 1, LexKind.Slash) && AtWord(at + 2, "c"))
+            {
+                at += 3;
+            }
+            else
+            {
+                if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Week)) return -1;
+
+                at++;
+
+                if (AtWord(at, "of"))                                                                  { at++; }
+                else if (AtWord(at, "beginning") || AtWord(at, "commencing") || AtWord(at, "starting")) { at++; at = SkipWord(at, "on"); }
+                else                                                                                   { return -1; }
+            }
+
+            int dateEnd = TryDate(at, out int date);
+            if (dateEnd < 0) return -1;
+
+            var n = Node.Create(NodeKind.DateRange);
+            n.LexStart     = i;
+            n.LexEnd       = dateEnd;
+            n.Anchor       = date;
+            n.PeriodUnit   = TimeUnit.Week;
+            n.PeriodCount  = 1;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return dateEnd;
+        }
+
+        /// <summary>"1/1/2016 and after" — a plain date that a trailing modifier opens into a period.</summary>
+        private int TryTrailingModDate(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            int dateEnd = TryDate(i, out int date);
+            if (dateEnd < 0) return -1;
+
+            if (!AtTerm(dateEnd, TermKind.Mod, out int trailing)) return -1;
+
+            var k = (ModKind)trailing;
+            if (k != ModKind.OrLater && k != ModKind.OrEarlier) return -1;
+
+            var n = NodeAt(date);
+            n.Kind     = NodeKind.DateRange;
+            n.LexStart = i;
+            n.LexEnd   = After(dateEnd);
+            n.Mod      = k == ModKind.OrLater ? ModKind.Since : ModKind.Before;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return n.LexEnd;
         }
 
         /// <summary>"eoy", "end of year", "to date", "year to date" — periods written as a fixed phrase.</summary>
@@ -119,6 +211,13 @@ namespace Catalyst.DateTimeRecognition
                 if (holidayEnd < 0) return -1;
                 if (!AtTermValue(holidayEnd, TermKind.Unit, (int)TimeUnit.Weekend)) return -1;
                 holidayEnd++;
+            }
+
+            if (TryYear(holidayEnd, out int weekendYear, out int weekendYearEnd))
+            {
+                ref var h = ref NodeAt(holiday);
+                h.Year    = weekendYear;
+                holidayEnd = weekendYearEnd;
             }
 
             var n = Node.Create(NodeKind.DateRange);
@@ -234,6 +333,14 @@ namespace Catalyst.DateTimeRecognition
             int best     = -1;
             int bestNode = Node.Unspecified;
 
+            if (_modDepth == 0)
+            {
+                _modDepth++;
+                Consider(TryModDatePeriod(i, out int nm), nm, ref best, ref bestNode);
+                Consider(TryShorthandPeriod(i, out int ns), ns, ref best, ref bestNode);
+                _modDepth--;
+            }
+
             Consider(TryNthPeriodOf(i, out int n1),  n1, ref best, ref bestNode);
             Consider(TrySimplePeriod(i, out int n2), n2, ref best, ref bestNode);
             Consider(TryDate(i, out int n3),         n3, ref best, ref bestNode);
@@ -313,12 +420,20 @@ namespace Catalyst.DateTimeRecognition
                 return -1;
             }
 
-            if (mod == ModKind.OrLater || mod == ModKind.OrEarlier) return -1;
+            if (mod == ModKind.OrLater || mod == ModKind.OrEarlier || mod == ModKind.Less || mod == ModKind.More) return -1;
 
             int at = After(i);
+
+            if (mod == ModKind.Later || mod == ModKind.Earlier)
+            {
+                at = SkipWords(at, "in", "on");
+                at = SkipWord(at, "the");
+            }
+
             at = SkipWords(at, "the", "of");
             at = SkipWords(at, "the", "on");
             at = SkipWord(at, "the");
+            if (At(at, LexKind.Dash)) at++;   // "mid-november"
 
             // "> = 2019", "< =2019", "=2019"
             if (At(at, LexKind.Equal)) at++;
@@ -413,6 +528,8 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
             var unit = (TimeUnit)unitValue;
+            if (unit == TimeUnit.Day) return -1;   // "the 15th day of next month" names a day
+
             at++;
 
             int ofAt = at;
@@ -485,7 +602,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             var n = Node.Create(NodeKind.DateRange);
-            n.LexStart = i;
+            n.LexStart = sawFor && anchor >= 0 && !At(durationEnd, LexKind.Comma) ? i + 1 : i;
             n.LexEnd   = end;
             n.Left     = duration;
             n.Anchor   = anchor;
@@ -564,6 +681,8 @@ namespace Catalyst.DateTimeRecognition
             if (!hadThe && count >= 0 && (relative == RelativeKind.Last || relative == RelativeKind.Previous) && !AtNumber(i)) return -1;
 
             var unit = (TimeUnit)unitValue;
+            if (business && unit == TimeUnit.Day) unit = TimeUnit.BusinessDay;
+
             at++;
 
             if (relative == RelativeKind.None && (!hadThe || count >= 0)) return -1;
@@ -592,6 +711,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int at    = SkipWord(i, "the");
+            if (AtTerm(at, TermKind.QuarterMarker)) i = at;
             int year  = Node.Unspecified;
             int index = Node.Unspecified;
             int perYear = 4;
@@ -833,6 +953,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int at  = SkipWord(i, "the");
+            i       = at;
             var rel = RelativeKind.None;
 
             if (AtTerm(at, TermKind.Relative, out int relValue))
@@ -930,10 +1051,29 @@ namespace Catalyst.DateTimeRecognition
                 return -1;
             }
 
-            if (!AtTerm(at, TermKind.Month, out int month)) return -1;
+            if (!AtTerm(at, TermKind.Month, out int month))
+            {
+                // "12-2015"
+                if (AtNumber(at) && DigitsAt(at) <= 2 && NumberAt(at) >= 1 && NumberAt(at) <= 12
+                    && (At(at + 1, LexKind.Dash) || At(at + 1, LexKind.Slash)) && TryYear(at + 2, out int pairedYear, out int pairedEnd))
+                {
+                    var nm = Node.Create(NodeKind.DateRange);
+                    nm.LexStart = i;
+                    nm.LexEnd   = pairedEnd;
+                    nm.Year     = pairedYear;
+                    nm.Month    = NumberAt(at);
+                    SetSpan(ref nm);
+                    node = Alloc(nm);
+                    return pairedEnd;
+                }
+
+                return -1;
+            }
 
             int end = at + 1;
-            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore) end++;
+
+            // Only an abbreviation carries a full stop: "dec." but not "april."
+            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4) end++;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart = i;

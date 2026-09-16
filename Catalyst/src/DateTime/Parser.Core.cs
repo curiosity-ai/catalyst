@@ -13,6 +13,7 @@ namespace Catalyst.DateTimeRecognition
         private readonly Lexicon              _lexicon;
         private          Span<Node>           _nodes;
         private          int                  _nodeCount;
+        private          int                  _modDepth;
 
         public Parser(ReadOnlySpan<char> text, ReadOnlySpan<Lexeme> lexemes, Lexicon lexicon, Span<Node> nodes)
         {
@@ -21,6 +22,7 @@ namespace Catalyst.DateTimeRecognition
             _lexicon   = lexicon;
             _nodes     = nodes;
             _nodeCount = 0;
+            _modDepth  = 0;
         }
 
         public int Count => _lex.Length;

@@ -103,6 +103,8 @@ namespace Catalyst.DateTimeRecognition
             ModKind.More    => "more",
             ModKind.Early   => "start",
             ModKind.Late    => "end",
+            ModKind.Earlier => null,
+            ModKind.Later   => null,
             _               => null,
         };
 
@@ -222,16 +224,35 @@ namespace Catalyst.DateTimeRecognition
             {
                 month = _reference.Month;
                 timex = $"XXXX-XX-{day:00}";
-                first = SafeDate(_reference.Year, month, day);
 
-                if (n.Relative == RelativeKind.Next)      first = SafeDate(_reference.Year, month, day).AddMonths(1);
-                else if (n.Relative == RelativeKind.Last) first = SafeDate(_reference.Year, month, day).AddMonths(-1);
+                var thisMonth = SafeDate(_reference.Year, month, day);
 
-                if (n.Relative == RelativeKind.Next || n.Relative == RelativeKind.Last)
+                if (n.Relative == RelativeKind.Next)
                 {
+                    first = thisMonth.AddMonths(1);
                     timex = FormatDate(first);
+                    return true;
                 }
 
+                if (n.Relative == RelativeKind.Last)
+                {
+                    first = thisMonth.AddMonths(-1);
+                    timex = FormatDate(first);
+                    return true;
+                }
+
+                if (thisMonth >= _reference.Date)
+                {
+                    first  = thisMonth.AddMonths(-1);
+                    second = thisMonth;
+                }
+                else
+                {
+                    first  = thisMonth;
+                    second = thisMonth.AddMonths(1);
+                }
+
+                hasSecond = true;
                 return true;
             }
 
@@ -501,7 +522,7 @@ namespace Catalyst.DateTimeRecognition
             else if (n.Hour >= 0)
             {
                 ComputeTime(nodeIndex, out int hour, out _, out _, out int minute, out int second);
-                timex = "XXXX-XX-XX" + TimexOfTime(hour, minute, second);
+                timex = TimexOfTime(hour, minute, second);
             }
             else
             {

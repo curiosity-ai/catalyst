@@ -673,6 +673,8 @@ namespace Catalyst.DateTimeRecognition
             int at = SkipWord(i, "the");
 
             if (!TryOrdinal(at, out int ordinal, out int end)) return -1;
+
+            if (at != i && AtTerm(at, TermKind.Cardinal)) i = at;   // "the twenty third day of september"
             if (ordinal < 1 || ordinal > 31) return -1;
 
             if (!AtTermValue(end, TermKind.Unit, (int)TimeUnit.Day)) return -1;

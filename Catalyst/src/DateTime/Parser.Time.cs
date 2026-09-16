@@ -191,10 +191,6 @@ namespace Catalyst.DateTimeRecognition
                 return tail;
             }
 
-            if (!TryHourValue(at, out hour, out int afterHour)) return -1;
-
-            at = afterHour;
-
             // "1140 a.m." — a four-digit military reading
             if (AtNumber(i) && DigitsAt(i) == 4 && NumberAt(i) <= 2359 && (NumberAt(i) % 100) < 60)
             {
@@ -203,7 +199,7 @@ namespace Catalyst.DateTimeRecognition
 
                 if (candidateHour <= 23)
                 {
-                    int probe = i + 1;
+                    int probe    = i + 1;
                     bool hasAmPm = TryAmPm(probe, out int ap, out int apEnd);
 
                     if (hasAmPm || IsInClockRangeContext(i))
@@ -211,11 +207,18 @@ namespace Catalyst.DateTimeRecognition
                         hour            = candidateHour;
                         minute          = candidateMinute;
                         explicitMinutes = true;
+                        marked          = true;
                         if (hasAmPm) { ampm = ap; return apEnd; }
                         return probe;
                     }
                 }
+
+                return -1;
             }
+
+            if (!TryHourValue(at, out hour, out int afterHour)) return -1;
+
+            at = afterHour;
 
             if (hour < 0 || hour > 24) return -1;
 
@@ -277,13 +280,6 @@ namespace Catalyst.DateTimeRecognition
                 hour = NumberAt(i);
                 end  = i + 1;
                 return hour >= 0 && hour <= 24;
-            }
-
-            if (AtNumber(i) && DigitsAt(i) == 4)
-            {
-                hour = NumberAt(i) / 100;
-                end  = i + 1;
-                return true;
             }
 
             if (AtTerm(i, TermKind.Cardinal, out int spoken) && spoken >= 1 && spoken <= 24)
