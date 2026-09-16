@@ -100,11 +100,25 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Week)) return -1;
 
-                at++;
+                at = After(at);
 
-                if (AtWord(at, "of"))                                                                  { at++; }
-                else if (AtWord(at, "beginning") || AtWord(at, "commencing") || AtWord(at, "starting")) { at++; at = SkipWord(at, "on"); }
-                else                                                                                   { return -1; }
+                // "the week of april 10th", "la semana de 10 de abril", "de week van 10 april" — whatever
+                // the language puts between the unit and the date it names
+                if (AtTerm(at, TermKind.Filler) || AtTerm(at, TermKind.RangeStart))
+                {
+                    at = After(at);
+                    at = SkipArticle(at);
+                }
+                else if (AtWord(at, "beginning") || AtWord(at, "commencing") || AtWord(at, "starting")
+                         || AtTermValue(at, TermKind.Mod, (int)ModKind.Start))
+                {
+                    at = After(at);
+                    at = SkipWord(at, "on");
+                }
+                else
+                {
+                    return -1;
+                }
             }
 
             int dateEnd = TryDate(at, out int date);
