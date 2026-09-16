@@ -390,9 +390,11 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // "end of tomorrow", "the end of today", "end of this sunday"
-            if (AtTerm(i, TermKind.Mod, out int endMod) && (ModKind)endMod == ModKind.End)
+            int endModAt = SkipWord(i, "the");
+
+            if (AtTerm(endModAt, TermKind.Mod, out int endMod) && (ModKind)endMod == ModKind.End)
             {
-                int inner = After(i);
+                int inner = After(endModAt);
                 inner = SkipWords(inner, "of", "the");
                 inner = SkipWord(inner, "the");
 
@@ -556,7 +558,8 @@ namespace Catalyst.DateTimeRecognition
             int  end  = durationEnd;
 
             if (AtTerm(durationEnd, TermKind.Ago))          { sign = -1; end = After(durationEnd); }
-            else if (AtTerm(durationEnd, TermKind.FromNow)) { sign =  1; end = After(durationEnd); }
+            // "30 minutes later this week" is half an hour and a week, not a moment
+            else if (AtTerm(durationEnd, TermKind.FromNow) && !AtTerm(After(durationEnd), TermKind.Relative)) { sign = 1; end = After(durationEnd); }
             else if (AtWord(durationEnd, "from") && AtTermValue(durationEnd + 1, TermKind.SpecialDay, (int)SpecialDayKind.Now))
             {
                 sign = 1;
@@ -1033,7 +1036,7 @@ namespace Catalyst.DateTimeRecognition
                 // "every day at 7:13 p.m." — the clock is what repeats
                 int clockAt  = SkipWord(freq.LexEnd, "at");
                 int clock    = Node.Unspecified;
-                int clockEnd = clockAt != freq.LexEnd ? TryTime(clockAt, out clock, allowBareHour: true) : -1;
+                int clockEnd = TryTime(clockAt, out clock, allowBareHour: clockAt != freq.LexEnd);
 
                 if (clockEnd > 0)
                 {

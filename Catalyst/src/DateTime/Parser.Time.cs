@@ -169,13 +169,15 @@ namespace Catalyst.DateTimeRecognition
 
             int at = i;
 
-            // "noon" / "midnight" / "noonish"
-            if (AtTerm(at, TermKind.PartOfDay, out int podValue))
+            // "noon" / "midnight" / "noonish", and "12 noon" / "12 midnight", where the hour repeats the word
+            int spoken = AtNumber(at) && (NumberAt(at) == 12 || NumberAt(at) == 0) && AtTerm(at + 1, TermKind.PartOfDay) ? at + 1 : at;
+
+            if (AtTerm(spoken, TermKind.PartOfDay, out int podValue))
             {
                 var pod = (PartOfDayKind)podValue;
 
-                if (pod == PartOfDayKind.Noon)     { hour = 12; ampm = 1; marked = true; return After(at); }
-                if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(at); }
+                if (pod == PartOfDayKind.Noon)     { hour = 12; ampm = 1; marked = true; return After(spoken); }
+                if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(spoken); }
             }
 
             // "half past seven", "quarter to five", "ten past nine", "twenty minutes past eight"

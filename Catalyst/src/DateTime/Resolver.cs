@@ -336,6 +336,20 @@ namespace Catalyst.DateTimeRecognition
                 // "feb 30" is a day no year has
                 if (!IsPossibleDayOfMonth(month, day)) { first = default; return true; }
 
+                // "next 6th of april" names one year, and so one day
+                if (n.Relative != RelativeKind.None)
+                {
+                    int shift = n.Relative switch
+                    {
+                        RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following  =>  1,
+                        RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
+                        _                                                                   =>  0,
+                    };
+
+                    first = SafeDate(_reference.Year + shift, month, day);
+                    return true;
+                }
+
                 bool haveBack = false;
                 bool haveNext = false;
 

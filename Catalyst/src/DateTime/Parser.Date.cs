@@ -18,9 +18,37 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryNumericDate(i, out int n6),   n6, ref best, ref bestNode);
             Consider(TryNthDayOfDate(i, out int n7),  n7, ref best, ref bestNode);
             Consider(TryOrdinalDay(i, out int n8),    n8, ref best, ref bestNode);
+            Consider(TryRelativeYearDate(i, out int n9), n9, ref best, ref bestNode);
 
             node = bestNode;
             return best;
+        }
+
+        /// <summary>"next 6th of april", "this 5/12" — a qualifier in front picks which year's is meant.</summary>
+        private int TryRelativeYearDate(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            if (!AtTerm(i, TermKind.Relative, out int relValue)) return -1;
+            if (AtTerm(i, TermKind.Weekday) || AtTerm(i, TermKind.Unit)) return -1;
+
+            var rel = (RelativeKind)relValue;
+            if (rel != RelativeKind.Next && rel != RelativeKind.This && rel != RelativeKind.Last && rel != RelativeKind.Coming) return -1;
+
+            int at  = After(i);
+            int end = TryDate(at, out int inner);
+            if (end < 0) return -1;
+
+            ref var d = ref NodeAt(inner);
+            if (d.Year >= 0 || d.Month < 0 || d.Day < 0 || d.Relative != RelativeKind.None) return -1;
+
+            var n = d;
+            n.LexStart = i;
+            n.LexEnd   = end;
+            n.Relative = rel;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return end;
         }
 
         private static void Consider(int end, int node, ref int best, ref int bestNode)
