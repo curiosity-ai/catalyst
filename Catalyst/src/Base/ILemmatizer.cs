@@ -7,6 +7,11 @@ namespace Catalyst
     /// <summary>
     /// Defines an interface for a lemmatizer.
     /// </summary>
+    /// <remarks>
+    /// Lemmatizing takes the token's value rather than the token: <see cref="Token"/> is a struct, so a
+    /// lemmatizer that asked for an <see cref="IToken"/> boxed one on every call - and a search index asks once
+    /// per token it writes. Every implementation only ever read the value, so nothing was lost in narrowing it.
+    /// </remarks>
     public interface ILemmatizer
     {
         /// <summary>
@@ -15,24 +20,24 @@ namespace Catalyst
         Language Language { get; }
      
         /// <summary>
-        /// Check if the token is an uninflected paradigm, so we can avoid lemmatization entirely.
+        /// Check if the value is an uninflected paradigm, so we can avoid lemmatization entirely.
         /// </summary>
-        /// <param name="token">The token to check.</param>
-        /// <returns>True if the token is in its base form, false otherwise.</returns>
-        bool IsBaseForm(IToken token);
-        
+        /// <param name="value">The token's value.</param>
+        /// <returns>True if the value is in its base form, false otherwise.</returns>
+        bool IsBaseForm(ReadOnlySpan<char> value);
+
         /// <summary>
-        /// Gets the lemma for the specified token.
+        /// Gets the lemma for the specified token value.
         /// </summary>
-        /// <param name="token">The token to lemmatize.</param>
-        /// <returns>The lemma of the token.</returns>
-        string GetLemma(IToken token);
-        
+        /// <param name="value">The token's value.</param>
+        /// <returns>The lemma of the value.</returns>
+        string GetLemma(ReadOnlySpan<char> value);
+
         /// <summary>
-        /// Gets the lemma for the specified token as a read-only span of characters.
+        /// Gets the lemma for the specified token value as a read-only span of characters.
         /// </summary>
-        /// <param name="token">The token to lemmatize.</param>
+        /// <param name="value">The token's value.</param>
         /// <returns>A read-only span containing the lemma.</returns>
-        ReadOnlySpan<char> GetLemmaAsSpan(IToken token);
+        ReadOnlySpan<char> GetLemmaAsSpan(ReadOnlySpan<char> value);
     }
 }

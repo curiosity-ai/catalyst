@@ -192,17 +192,17 @@ namespace Catalyst.Models
         {
             public Language Language => Language.English;
 
-            public string GetLemma(IToken token)
+            public string GetLemma(ReadOnlySpan<char> value)
             {
-                return token.Value;
+                return new string(value);
             }
 
-            public ReadOnlySpan<char> GetLemmaAsSpan(IToken token)
+            public ReadOnlySpan<char> GetLemmaAsSpan(ReadOnlySpan<char> value)
             {
-                return token.ValueAsSpan;
+                return value;
             }
 
-            public bool IsBaseForm(IToken token)
+            public bool IsBaseForm(ReadOnlySpan<char> value)
             {
                 return false;
             }

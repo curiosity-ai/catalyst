@@ -14,12 +14,12 @@ namespace Catalyst.Models
 
             private static Lazy<Lookups> _lookup = new Lazy<Lookups>(() => Lookups.FromStream(ResourceLoader.OpenResource(typeof(Lemmatizer).Assembly, "es_lemma_lookup.bin")).WaitResult(), isThreadSafe:true);
 
-            public string GetLemma(IToken token) => new string(GetLemmaAsSpan(token));
+            public string GetLemma(ReadOnlySpan<char> value) => new string(GetLemmaAsSpan(value));
 
-            public ReadOnlySpan<char> GetLemmaAsSpan(IToken token) => _lookup.Value.Get(token);
+            public ReadOnlySpan<char> GetLemmaAsSpan(ReadOnlySpan<char> value) => _lookup.Value.Get(value);
 
 
-            public bool IsBaseForm(IToken token)
+            public bool IsBaseForm(ReadOnlySpan<char> value)
             {
                 return false;
             }

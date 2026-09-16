@@ -7,10 +7,10 @@ namespace Catalyst
     {
         public Language Language => Language.Any;
 
-        public string GetLemma(IToken token) => token.Value;
+        public string GetLemma(ReadOnlySpan<char> value) => new string(value);
 
-        public ReadOnlySpan<char> GetLemmaAsSpan(IToken token) => token.ValueAsSpan;
+        public ReadOnlySpan<char> GetLemmaAsSpan(ReadOnlySpan<char> value) => value;
 
-        public bool IsBaseForm(IToken token) => false;
+        public bool IsBaseForm(ReadOnlySpan<char> value) => false;
     }
 }
