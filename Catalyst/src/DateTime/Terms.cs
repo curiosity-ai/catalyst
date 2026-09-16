@@ -513,6 +513,18 @@ namespace Catalyst.DateTimeRecognition
             or TermKind.SpecialDay or TermKind.PartOfDay or TermKind.Unit or TermKind.Relative or TermKind.Season
             or TermKind.HalfWord or TermKind.QuarterWord;
 
+        /// <summary>
+        /// Whether the word reads as the plural of another word this lexicon knows. Spanish and French name
+        /// most of their weekdays with a final -s that is not one — "martes" is a Tuesday, not Tuesdays —
+        /// so the letter alone cannot say, but "marte" being no word of theirs can.
+        /// </summary>
+        public bool IsPluralOfKnownWord(ReadOnlySpan<char> word)
+        {
+            if (word.Length < 2 || (word[^1] != 's' && word[^1] != 'S')) return false;
+
+            return _wordsBySpan.ContainsKey(word[..^1]) || (word.Length > 2 && _wordsBySpan.ContainsKey(word[..^2]));
+        }
+
         public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info)
         {
             if (_wordsBySpan.TryGetValue(word, out info)) return true;

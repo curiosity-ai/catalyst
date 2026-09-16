@@ -112,8 +112,7 @@ namespace Catalyst.DateTimeRecognition
         {
             if (!_lexicon.PluralEndsInS || !In(i)) return false;
 
-            var word = _text.Slice(_lex[i].Start, _lex[i].Length);
-            return word.Length > 1 && (word[^1] == 's' || word[^1] == 'S');
+            return _lexicon.IsPluralOfKnownWord(_text.Slice(_lex[i].Start, _lex[i].Length));
         }
 
         /// <summary>Whether the word at <paramref name="i"/> reads as a plural, where the language shows it.</summary>
