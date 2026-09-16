@@ -146,7 +146,9 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTerm(at, TermKind.Weekday, out int weekday)) return -1;
 
             int end = at + 1;
-            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore) end++;
+
+            // Only an abbreviation carries a full stop: "mer." but not "tuesday."
+            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4 && (AtNumber(end + 1) || At(end + 1, LexKind.Word))) end++;
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart    = i;
@@ -416,6 +418,24 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
+            // "this 5/12" / "next 5/12" — the relative word chooses which occurrence is meant
+            if (AtTerm(i, TermKind.Relative, out int leadingRelative) && !AtTerm(i, TermKind.Weekday))
+            {
+                int inner = TryNumericDate(After(i), out int plain);
+
+                if (inner > 0)
+                {
+                    var shifted = NodeAt(plain);
+                    shifted.LexStart = i;
+                    shifted.Relative = (RelativeKind)leadingRelative;
+                    SetSpan(ref shifted);
+                    node = Alloc(shifted);
+                    return inner;
+                }
+
+                return -1;
+            }
+
             // ---- compact ISO: 20200701
             if (AtNumber(i) && DigitsAt(i) == 8)
             {
@@ -656,6 +676,9 @@ namespace Catalyst.DateTimeRecognition
 
             // A bare ordinal without "the" is only a date when it is written with its suffix ("29th")
             if (!hadThe && !(AtNumber(at) && AtTerm(at + 1, TermKind.OrdinalSuffix))) return -1;
+
+            // "3rd week of 2018" counts weeks; the ordinal belongs to the period, not to a day
+            if (AtTerm(end, TermKind.Unit) || AtTerm(end, TermKind.BusinessDay)) return -1;
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;

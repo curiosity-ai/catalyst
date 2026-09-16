@@ -98,10 +98,13 @@ namespace Catalyst.DateTimeRecognition
         // ------------------------------------------------------------------ part of the day
 
         /// <summary>"in the morning", "early afternoon", "at lunchtime", "later in the evening".</summary>
-        private readonly int TryPartOfDay(int i, out PartOfDayKind kind, out ModKind mod)
+        private readonly int TryPartOfDay(int i, out PartOfDayKind kind, out ModKind mod) => TryPartOfDay(i, out kind, out mod, out _);
+
+        private readonly int TryPartOfDay(int i, out PartOfDayKind kind, out ModKind mod, out int spanStart)
         {
-            kind = PartOfDayKind.None;
-            mod  = ModKind.None;
+            kind      = PartOfDayKind.None;
+            mod       = ModKind.None;
+            spanStart = i;
 
             int at = i;
 
@@ -113,9 +116,11 @@ namespace Catalyst.DateTimeRecognition
                 var k = (ModKind)modValue;
                 if (k == ModKind.Early || k == ModKind.Late || k == ModKind.Mid)
                 {
-                    mod = k;
-                    at  = After(at);
-                    at  = SkipWords(at, "in", "the");
+                    // "in late afternoon" is reported from the modifier, where "in the morning" keeps its lead-in
+                    mod       = k;
+                    spanStart = at;
+                    at        = After(at);
+                    at        = SkipWords(at, "in", "the");
                 }
             }
             else if (AtTerm(at, TermKind.FromNow) && AtWord(at + 1, "in"))
@@ -386,17 +391,36 @@ namespace Catalyst.DateTimeRecognition
             return false;
         }
 
+        /// <summary>
+        /// A four-digit number reads as a clock only inside an explicit range, and only when neither side of
+        /// that range could be a year: "between 0730-0930" is a pair of clocks, "from 2015 and 2016" is not.
+        /// </summary>
         private readonly bool IsInClockRangeContext(int i)
         {
-            // "between 0730-0930" — a bare four-digit reading counts as a clock only inside an explicit range
-            for (int k = Math.Max(0, i - 2); k < i; k++)
+            int other = -1;
+
+            if ((At(i + 1, LexKind.Dash) || AtTerm(i + 1, TermKind.Connector)) && AtNumber(i + 2) && DigitsAt(i + 2) == 4)      other = i + 2;
+            else if ((At(i - 1, LexKind.Dash) || AtTerm(i - 1, TermKind.Connector)) && AtNumber(i - 2) && DigitsAt(i - 2) == 4) other = i - 2;
+
+            if (other < 0)
             {
-                if (AtTerm(k, TermKind.RangeStart)) return true;
+                for (int k = Math.Max(0, i - 2); k < i; k++)
+                {
+                    if (AtTerm(k, TermKind.RangeStart)) return LooksLikeClock(i);
+                }
+
+                return false;
             }
 
-            if ((At(i + 1, LexKind.Dash) || AtTerm(i + 1, TermKind.Connector)) && AtNumber(i + 2) && DigitsAt(i + 2) == 4) return true;
+            return LooksLikeClock(i) && LooksLikeClock(other);
+        }
 
-            return (At(i - 1, LexKind.Dash) || AtTerm(i - 1, TermKind.Connector)) && AtNumber(i - 2) && DigitsAt(i - 2) == 4;
+        /// <summary>A written year has no leading zero and sits in the calendar range; a clock reading does not.</summary>
+        private readonly bool LooksLikeClock(int i)
+        {
+            if (_text[_lex[i].Start] == '0') return true;
+
+            return NumberAt(i) < 1000 || NumberAt(i) > 3000;
         }
 
         // ------------------------------------------------------------------ a time

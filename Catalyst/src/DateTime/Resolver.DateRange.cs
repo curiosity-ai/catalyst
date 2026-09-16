@@ -67,6 +67,34 @@ namespace Catalyst.DateTimeRecognition
                 return true;
             }
 
+            // ---- "labor day weekend": the weekend nearest the holiday, stretched to take the holiday in
+            if (n.PeriodUnit == TimeUnit.Weekend && n.Left >= 0 && At(n.Left).Holiday != HolidayKind.None)
+            {
+                ref var holiday = ref At(n.Left);
+
+                if (holiday.Year >= 0)
+                {
+                    period = HolidayWeekend(Holidays.Resolve(holiday.Holiday, holiday.Year));
+                    return true;
+                }
+
+                var thisYear = Holidays.Resolve(holiday.Holiday, _reference.Year);
+
+                if (thisYear >= _reference.Date)
+                {
+                    period    = HolidayWeekend(Holidays.Resolve(holiday.Holiday, _reference.Year - 1));
+                    alternate = HolidayWeekend(thisYear);
+                }
+                else
+                {
+                    period    = HolidayWeekend(thisYear);
+                    alternate = HolidayWeekend(Holidays.Resolve(holiday.Holiday, _reference.Year + 1));
+                }
+
+                hasAlternate = true;
+                return true;
+            }
+
             // ---- "the week of april 10th": the week the date falls in, named by that date
             if (n.PeriodUnit == TimeUnit.Week && n.Anchor >= 0 && n.Left < 0)
             {
@@ -93,7 +121,7 @@ namespace Catalyst.DateTimeRecognition
                 var parts  = At(n.Left).Duration;
                 DateTime start = _reference.Date;
 
-                if (n.Anchor >= 0 && ComputeDate(n.Anchor, out _, out var anchorDate, out _, out _)) start = anchorDate;
+                if (n.Anchor >= 0 && ComputeAnchorDateInReferenceYear(n.Anchor, out var anchorDate)) start = anchorDate;
 
                 var end = AddParts(start, parts);
 
@@ -452,6 +480,40 @@ namespace Catalyst.DateTimeRecognition
                 }
             }
 
+            // A run of quarters or decades is aligned to the calendar boundary, not to the reference day
+            if (unit == TimeUnit.Quarter || unit == TimeUnit.Decade || unit == TimeUnit.Century)
+            {
+                var current = unit switch
+                {
+                    TimeUnit.Quarter => new DateTime(today.Year, (today.Month - 1) / 3 * 3 + 1, 1),
+                    TimeUnit.Decade  => new DateTime(today.Year / 10  * 10,  1, 1),
+                    _                => new DateTime(today.Year / 100 * 100, 1, 1),
+                };
+
+                DateTime alignedStart, alignedEnd;
+
+                if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast)
+                {
+                    alignedEnd   = current;
+                    alignedStart = AddUnits(current, unit, -count);
+                }
+                else if (rel == RelativeKind.Next || rel == RelativeKind.Coming || rel == RelativeKind.Following)
+                {
+                    alignedStart = AddUnits(current, unit, 1);
+                    alignedEnd   = AddUnits(alignedStart, unit, count);
+                }
+                else
+                {
+                    alignedStart = current;
+                    alignedEnd   = AddUnits(current, unit, count);
+                }
+
+                period.Start = alignedStart;
+                period.End   = alignedEnd;
+                period.Timex = $"({FormatDate(alignedStart)},{FormatDate(alignedEnd)},{DurationTimexOf(unit, count)})";
+                return true;
+            }
+
             // A run of N units, anchored at the reference date
             DateTime start;
             DateTime end;
@@ -477,6 +539,28 @@ namespace Catalyst.DateTimeRecognition
             period.End   = end;
             period.Timex = $"({FormatDate(start)},{FormatDate(end)},{DurationTimexOf(n.BusinessDays ? TimeUnit.BusinessDay : unit, count)})";
             return true;
+        }
+
+        /// <summary>
+        /// The weekend a holiday makes long: the nearest saturday and sunday, widened to cover the holiday
+        /// itself when it falls on the monday before or the thursday or friday after.
+        /// </summary>
+        private static Period HolidayWeekend(DateTime holiday)
+        {
+            var saturday = StartOfIsoWeek(holiday).AddDays(5);
+
+            // A monday or tuesday holiday belongs to the weekend that has just gone
+            if ((holiday - saturday).TotalDays < -2.5) saturday = saturday.AddDays(-7);
+
+            var start = holiday < saturday          ? holiday          : saturday;
+            var end   = holiday >= saturday.AddDays(2) ? holiday.AddDays(1) : saturday.AddDays(2);
+
+            return new Period
+            {
+                Start = start,
+                End   = end,
+                Timex = $"{IsoYear(saturday):0000}-W{IsoWeekOfYear(saturday):00}-WE",
+            };
         }
 
         internal static int WeekShift(RelativeKind rel) => rel switch

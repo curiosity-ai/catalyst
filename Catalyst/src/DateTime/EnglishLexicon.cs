@@ -123,6 +123,16 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.OrdinalSuffix, "st", "nd", "rd", "th");
 
+            // Decades named as a word: "the nineties"
+            b.Add(TermKind.Decade, 1920, "twenties");
+            b.Add(TermKind.Decade, 1930, "thirties");
+            b.Add(TermKind.Decade, 1940, "forties");
+            b.Add(TermKind.Decade, 1950, "fifties");
+            b.Add(TermKind.Decade, 1960, "sixties");
+            b.Add(TermKind.Decade, 1970, "seventies");
+            b.Add(TermKind.Decade, 1980, "eighties");
+            b.Add(TermKind.Decade, 1990, "nineties");
+
             b.Add(TermKind.HalfWord,    "half");
             b.Add(new TermInfo(TermKind.QuarterWord, 0, TermKind.Unit, (int)TimeUnit.Quarter), "quarter", "quarters");
             b.Add(TermKind.Several, 3, "few", "several", "some", "many");
@@ -224,9 +234,9 @@ namespace Catalyst.DateTimeRecognition
         {
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "before", "by", "no later than", "not later than", "earlier than", "prior to");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.After,  TermKind.PastWord), "after");
-            b.Add(TermKind.Mod, (int)ModKind.After,     "later than", "starting after", "no earlier than");
+            b.Add(TermKind.Mod, (int)ModKind.After,     "later than", "greater than", "starting after", "no earlier than");
             b.Add(TermKind.Mod, (int)ModKind.Less,      "less than", "fewer than");
-            b.Add(TermKind.Mod, (int)ModKind.More,      "more than", "greater than");
+            b.Add(TermKind.Mod, (int)ModKind.More,      "more than");
             b.Add(TermKind.Mod, (int)ModKind.Since,     "since", "since then", "as of");
             b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of", "start", "beginning");
             b.Add(TermKind.Mod, (int)ModKind.End,       "end of", "end");
@@ -236,7 +246,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "or later", "and later", "and after", "and greater", "or greater", "or after");
             b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "or earlier", "and earlier", "or before", "and before");
 
-            b.Add(TermKind.Approx, "around", "circa", "about", "approximately", "roughly", "nearly", "almost", "ish", "sometime around");
+            // "about" is not read as an approximation by the suite; "around" and "circa" are
+            b.Add(TermKind.Approx, "around", "circa", "approximately", "roughly", "nearly", "almost", "ish", "sometime around");
         }
 
         private static void AddSets(LexiconBuilder b)
@@ -250,9 +261,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "yearly", "annually", "annual");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Hour,    "hourly");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "quarterly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "bi-monthly", "bimonthly", "semi-monthly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "bi-weekly", "biweekly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semi-annually", "semiannually", "semiannual", "semi-annual", "biannual", "biannually");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "bi monthly", "bimonthly", "semi monthly");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "bi weekly", "biweekly");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semi annually", "semiannually", "semiannual", "semi annual", "biannual", "biannually");
         }
 
         private static void AddSeasons(LexiconBuilder b)

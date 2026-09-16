@@ -22,6 +22,9 @@ namespace Catalyst.DateTimeRecognition
 
         // ------------------------------------------------------------------ formatting
 
+        /// <summary>What a date whose calendar day does not exist resolves to, matching the reference implementation.</summary>
+        internal const string NotResolved = "not resolved";
+
         internal static string FormatDate(DateTime d)     => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         internal static string FormatTime(DateTime d)     => d.ToString("HH:mm:ss",   CultureInfo.InvariantCulture);
         internal static string FormatDateTime(DateTime d) => d.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -165,7 +168,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 DateTime anchor = _reference.Date;
 
-                if (n.Anchor >= 0 && ComputeDate(n.Anchor, out _, out var anchorDate, out _, out _))
+                if (n.Anchor >= 0 && ComputeAnchorDate(n.Anchor, out var anchorDate))
                 {
                     anchor = anchorDate;
                 }
@@ -269,19 +272,35 @@ namespace Catalyst.DateTimeRecognition
                     return true;
                 }
 
-                // "monday 21" — the weekday picks which of the candidate months is meant, and names the reading
+                // "monday 21" — the weekday picks which months can be meant: the nearest one behind and the nearest ahead
                 if (n.Weekday >= 0)
                 {
                     timex = $"XXXX-WXX-{TimexWeekday(n.Weekday)}";
 
-                    for (int step = 0; step <= 12; step++)
-                    {
-                        var forward = thisMonth.AddMonths(step);
-                        var back    = thisMonth.AddMonths(-step);
+                    var  anchor   = new DateTime(_reference.Year, _reference.Month, 1);
+                    bool haveBack = false;
+                    bool haveNext = false;
 
-                        if (forward.Day == day && (int)forward.DayOfWeek == n.Weekday) { first = forward; return true; }
-                        if (back.Day    == day && (int)back.DayOfWeek    == n.Weekday) { first = back;    return true; }
+                    for (int step = 0; step <= 120 && (!haveBack || !haveNext); step++)
+                    {
+                        if (!haveNext && TryExactDate(anchor.AddMonths(step), day, out var ahead)
+                            && ahead >= _reference.Date && (int)ahead.DayOfWeek == n.Weekday)
+                        {
+                            second   = ahead;
+                            haveNext = true;
+                        }
+
+                        if (!haveBack && TryExactDate(anchor.AddMonths(-step), day, out var behind)
+                            && behind < _reference.Date && (int)behind.DayOfWeek == n.Weekday)
+                        {
+                            first    = behind;
+                            haveBack = true;
+                        }
                     }
+
+                    if (haveBack && haveNext) { hasSecond = true; return true; }
+                    if (haveNext)             { first = second;   return true; }
+                    if (haveBack)             { return true; }
 
                     first = thisMonth;
                     return true;
@@ -304,28 +323,101 @@ namespace Catalyst.DateTimeRecognition
 
             if (year < 0)
             {
-                var thisYear = SafeDate(_reference.Year, month, day);
-
                 timex = $"XXXX-{month:00}-{day:00}";
 
-                if (thisYear >= _reference.Date)
+                // "feb 30" is a day no year has
+                if (!IsPossibleDayOfMonth(month, day)) { first = default; return true; }
+
+                bool haveBack = false;
+                bool haveNext = false;
+
+                // "feb 29" skips the years that do not have the day
+                for (int step = 0; step <= 8 && (!haveBack || !haveNext); step++)
                 {
-                    first  = SafeDate(_reference.Year - 1, month, day);
-                    second = thisYear;
-                }
-                else
-                {
-                    first  = thisYear;
-                    second = SafeDate(_reference.Year + 1, month, day);
+                    if (!haveNext && TryExactDate(new DateTime(_reference.Year + step, month, 1), day, out var ahead)
+                        && ahead >= _reference.Date)
+                    {
+                        second   = ahead;
+                        haveNext = true;
+                    }
+
+                    if (!haveBack && TryExactDate(new DateTime(_reference.Year - step, month, 1), day, out var behind)
+                        && behind < _reference.Date)
+                    {
+                        first    = behind;
+                        haveBack = true;
+                    }
                 }
 
-                hasSecond = true;
+                if (haveBack && haveNext) { hasSecond = true; return true; }
+                if (haveNext)             { first = second;   return true; }
+                if (haveBack)             { return true; }
+
+                first = default;
                 return true;
             }
 
             timex = $"{year:0000}-{month:00}-{day:00}";
-            first = SafeDate(year, month, day);
+            first = TryExactDate(new DateTime(year, month, 1), day, out var exact) ? exact : default;
             return true;
+        }
+
+        /// <summary>Whether any year at all has this day in this month — "feb 30" has none.</summary>
+        private static bool IsPossibleDayOfMonth(int month, int day)
+        {
+            if (month < 1 || month > 12) return false;
+            return day >= 1 && day <= (month == 2 ? 29 : DateTime.DaysInMonth(2001, month));
+        }
+
+        /// <summary>The day in <paramref name="month"/>, or false when that month is too short for it.</summary>
+        private static bool TryExactDate(DateTime month, int day, out DateTime date)
+        {
+            date = default;
+            if (day < 1 || day > DateTime.DaysInMonth(month.Year, month.Month)) return false;
+            date = new DateTime(month.Year, month.Month, day);
+            return true;
+        }
+
+        /// <summary>
+        /// The date an offset counts from. "2 weeks before christmas" means the christmas that is coming,
+        /// and "3 days from tuesday" the tuesday that is coming — never the one that has gone.
+        /// </summary>
+        private bool ComputeAnchorDate(int nodeIndex, out DateTime anchor)
+        {
+            anchor = default;
+
+            if (!ComputeDate(nodeIndex, out _, out var first, out var second, out bool hasSecond)) return false;
+
+            anchor = hasSecond ? second : first;
+
+            if (!hasSecond && anchor < _reference.Date)
+            {
+                ref var a = ref At(nodeIndex);
+
+                if (a.Holiday != HolidayKind.None && a.Year < 0 && a.Relative == RelativeKind.None)
+                {
+                    anchor = Holidays.Resolve(a.Holiday, _reference.Year + 1);
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The date a duration is measured from. "for 1 week, from 20th dec" means this year's december,
+        /// whether that has gone or is still coming.
+        /// </summary>
+        private bool ComputeAnchorDateInReferenceYear(int nodeIndex, out DateTime anchor)
+        {
+            ref var a = ref At(nodeIndex);
+
+            if (a.Year < 0 && a.Month >= 0 && a.Day >= 0 && a.Holiday == HolidayKind.None && a.Anchor < 0)
+            {
+                anchor = SafeDate(_reference.Year, a.Month, a.Day);
+                return true;
+            }
+
+            return ComputeAnchorDate(nodeIndex, out anchor);
         }
 
         internal static DateTime SafeDate(int year, int month, int day)
@@ -362,7 +454,7 @@ namespace Catalyst.DateTimeRecognition
 
             string mod = ModName(n.Mod);
 
-            values.Add(new DateTimeResolutionValue { Timex = timex, Type = "date", Value = FormatDate(first), Mod = mod });
+            values.Add(new DateTimeResolutionValue { Timex = timex, Type = "date", Value = first == default ? NotResolved : FormatDate(first), Mod = mod });
 
             if (hasSecond)
             {

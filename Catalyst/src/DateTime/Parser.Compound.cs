@@ -29,7 +29,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 var k = (ModKind)trailing;
 
-                if ((k == ModKind.OrLater || k == ModKind.OrEarlier) && NodeAt(bestNode).Mod == ModKind.None)
+                if ((k == ModKind.OrLater || k == ModKind.OrEarlier) && NodeAt(bestNode).Mod == ModKind.None && TryTime(After(best), out _) < 0 && TryRangeEndpoint(After(best), out _) < 0)
                 {
                     ref var n = ref NodeAt(bestNode);
                     n.Mod    = k == ModKind.OrLater ? ModKind.Since : ModKind.Before;
@@ -81,8 +81,9 @@ namespace Catalyst.DateTimeRecognition
                 at  = After(at);
             }
 
-            int end = TryPartOfDay(at, out var kind, out var podMod);
+            int end = TryPartOfDay(at, out var kind, out var podMod, out int podStart);
             if (end < 0) return -1;
+            if (podMod != ModKind.None && podStart > at) at = podStart;
             if (kind == PartOfDayKind.Noon || kind == PartOfDayKind.Midnight) return -1;
 
             // A word that primarily names a day ("mañana") is a date, not a part of the day
@@ -93,8 +94,24 @@ namespace Catalyst.DateTimeRecognition
 
             if (podMod != ModKind.None) mod = podMod;
 
+            int spanStart = podMod != ModKind.None && podStart > i ? podStart : i;
+
+            // "this evening from 7 to 9" — the part of the day says which of the two clock readings is meant
+            int rangeEnd = TryExplicitTimeRange(SkipWord(end, "at"), out int range, allowBareHours: true);
+
+            if (rangeEnd > 0)
+            {
+                ref var r = ref NodeAt(range);
+                r.LexStart  = spanStart;
+                r.LexEnd    = rangeEnd;
+                r.PartOfDay = kind;
+                SetSpan(ref r);
+                node = range;
+                return rangeEnd;
+            }
+
             var n = Node.Create(NodeKind.TimeRange);
-            n.LexStart  = i;
+            n.LexStart  = spanStart;
             n.LexEnd    = end;
             n.PartOfDay = kind;
             n.Mod       = mod;
@@ -242,7 +259,10 @@ namespace Catalyst.DateTimeRecognition
             bool narrowing = mod == ModKind.Early || mod == ModKind.Late || mod == ModKind.Mid;
 
             int time    = Node.Unspecified;
-            int timeEnd = narrowing ? -1 : TryTime(at, out time);
+            int timeEnd = TryTime(at, out time);
+
+            // A narrowing word in front of a part of the day keeps its own meaning
+            if (narrowing && timeEnd < 0) time = Node.Unspecified;
             if (timeEnd < 0)
             {
                 int podEnd = TryPartOfDayPeriod(at, out time);
@@ -668,6 +688,14 @@ namespace Catalyst.DateTimeRecognition
 
                 if (trailingDateEnd > 0)
                 {
+                    // "from 3-8pm yesterday afternoon" — the part of the day only repeats what the clock said
+                    var tailKind    = PartOfDayKind.None;
+                    int trailingPod = p.PartOfDay == PartOfDayKind.None
+                                    ? TryPartOfDay(SkipWords(trailingDateEnd, "in", "the"), out tailKind, out _)
+                                    : -1;
+
+                    if (trailingPod > 0 && !IsMealTime(tailKind)) trailingDateEnd = trailingPod;
+
                     var n = NodeAt(trailingDate);
                     n.Kind      = NodeKind.DateTimeRange;
                     n.LexStart  = i;
@@ -793,9 +821,22 @@ namespace Catalyst.DateTimeRecognition
                 _                                                                  =>  0,
             };
             n.Mod = mod;
+
+            // "next evening from 7 to 9" — the part of the day says which of the two clock readings is meant
+            int rangeEnd = TryExplicitTimeRange(SkipWord(podEnd, "at"), out int range, allowBareHours: true);
+
+            if (rangeEnd > 0)
+            {
+                ref var r = ref NodeAt(range);
+                n.Left          = r.Left;
+                n.Right         = r.Right;
+                n.RangeDuration = r.RangeDuration;
+                n.LexEnd        = rangeEnd;
+            }
+
             SetSpan(ref n);
             node = Alloc(n);
-            return podEnd;
+            return n.LexEnd;
         }
 
         /// <summary>"next hour", "last minute", "within 2h", "5 coming minutes", "13 last minutes".</summary>
@@ -804,6 +845,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int at    = SkipArticle(i);
+            if (at != i && !_lexicon.ArticleInPeriodSpan) i = at;
             int count = Node.Unspecified;
             var rel   = RelativeKind.None;
             bool within = false;
@@ -844,6 +886,9 @@ namespace Catalyst.DateTimeRecognition
             var unit = (TimeUnit)unitValue;
             if (unit != TimeUnit.Hour && unit != TimeUnit.Minute && unit != TimeUnit.Second) return -1;
             if (rel == RelativeKind.None && !within) return -1;
+
+            // "last two hours" is the verb "last"; a period written that way says "the" or uses digits
+            if (count >= 0 && (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast) && !AtWord(i, "the") && !AtNumber(i)) return -1;
 
             at++;
 

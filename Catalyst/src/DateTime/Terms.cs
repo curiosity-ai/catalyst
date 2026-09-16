@@ -44,6 +44,7 @@ namespace Catalyst.DateTimeRecognition
         Fiscal,             // fiscal / calendar / school, qualifying "year"
         QuarterMarker,      // the "q" of q1, or "h" of h2 (Value = periods per year)
         WeekMarker,         // the "week" of "week 27"
+        Decade,             // "the nineties", Value = the first year of the decade
     }
 
     public enum TimeUnit : byte
@@ -329,7 +330,18 @@ namespace Catalyst.DateTimeRecognition
             _phrasesBySpan = _phrases.GetAlternateLookup<ReadOnlySpan<char>>();
         }
 
-        public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info) => _wordsBySpan.TryGetValue(word, out info);
+        public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info)
+        {
+            if (_wordsBySpan.TryGetValue(word, out info)) return true;
+
+            // "this week's" is the same word as "this week"
+            if (word.Length > 2 && (word[^1] == 's' || word[^1] == 'S') && (word[^2] == '\'' || word[^2] == '\u2019'))
+            {
+                return _wordsBySpan.TryGetValue(word[..^2], out info);
+            }
+
+            return false;
+        }
 
         public bool TryGetPhrases(ReadOnlySpan<char> firstWord, out Phrase[] phrases) => _phrasesBySpan.TryGetValue(firstWord, out phrases);
     }

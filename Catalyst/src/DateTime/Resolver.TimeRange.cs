@@ -82,7 +82,24 @@ namespace Catalyst.DateTimeRecognition
             // ---- an explicit "A to B"
             if (n.Left >= 0 && n.Right >= 0)
             {
-                return ComputeExplicitClockRange(n.Left, n.Right, out range, out alternate, out hasAlternate);
+                if (!ComputeExplicitClockRange(n.Left, n.Right, out range, out alternate, out hasAlternate)) return false;
+
+                // "this evening from 7 to 9" — the part of the day settles which of the two readings is meant
+                if (hasAlternate && n.PartOfDay != PartOfDayKind.None)
+                {
+                    bool afternoon = n.PartOfDay is PartOfDayKind.Afternoon or PartOfDayKind.Evening
+                                                 or PartOfDayKind.Night     or PartOfDayKind.Tonight
+                                                 or PartOfDayKind.Dinner;
+
+                    if (afternoon == (alternate.StartHour >= 12) && afternoon != (range.StartHour >= 12))
+                    {
+                        range = alternate;
+                    }
+
+                    hasAlternate = false;
+                }
+
+                return true;
             }
 
             // ---- a single time carrying a modifier ("after 3pm")

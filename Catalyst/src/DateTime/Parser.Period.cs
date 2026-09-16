@@ -14,10 +14,10 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryDayRangeInMonth(i, out int n10),  n10, ref best, ref bestNode);
             Consider(TryModDatePeriod(i, out int n2),      n2, ref best, ref bestNode);
             Consider(TryNthPeriodOf(i, out int n3),        n3, ref best, ref bestNode);
+            Consider(TryWeekOfDate(i, out int n14),       n14, ref best, ref bestNode);
             Consider(TryDurationFromDate(i, out int n4),   n4, ref best, ref bestNode);
             Consider(TryShorthandPeriod(i, out int n11),  n11, ref best, ref bestNode);
             Consider(TryComparisonPeriod(i, out int n13), n13, ref best, ref bestNode);
-            Consider(TryWeekOfDate(i, out int n14),       n14, ref best, ref bestNode);
             Consider(TryTrailingModDate(i, out int n15),  n15, ref best, ref bestNode);
             Consider(TryHolidayWeekend(i, out int n12),  n12, ref best, ref bestNode);
             Consider(TrySimplePeriod(i, out int n5),       n5, ref best, ref bestNode);
@@ -147,6 +147,8 @@ namespace Catalyst.DateTimeRecognition
         private int TryShorthandPeriod(int i, out int node)
         {
             node = Node.Unspecified;
+
+            if (!_lexicon.ArticleInPeriodSpan) i = SkipArticle(i);   // "the year to date" is "year to date"
 
             var  unit = TimeUnit.None;
             var  mod  = ModKind.None;
@@ -560,7 +562,7 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
             var unit = (TimeUnit)unitValue;
-            if (unit == TimeUnit.Day) return -1;   // "the 15th day of next month" names a day
+            if (unit == TimeUnit.Day && count == 1) return -1;   // "the 15th day of next month" names a day
 
             at++;
 
@@ -734,11 +736,11 @@ namespace Catalyst.DateTimeRecognition
 
             at++;
 
-            if (relative == RelativeKind.None && (!hadThe || count >= 0)) return -1;
+            if (relative == RelativeKind.None && unit != TimeUnit.Weekend && (!hadThe || count >= 0)) return -1;
             if (unit == TimeUnit.Hour || unit == TimeUnit.Minute || unit == TimeUnit.Second) return -1;
             if (unit == TimeUnit.Day && count < 0) return -1;   // "the day" and "next day" name a day, not a period
 
-            if (hadThe && !_lexicon.ArticleInPeriodSpan && (relative != RelativeKind.None || count >= 0)) start = i + 1;
+            if (hadThe && !_lexicon.ArticleInPeriodSpan && unit != TimeUnit.Decade && unit != TimeUnit.Century && (relative != RelativeKind.None || count >= 0)) start = i + 1;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart     = start;
@@ -884,6 +886,7 @@ namespace Catalyst.DateTimeRecognition
             int at = SkipArticle(i);
 
             if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Week)) return -1;
+            if (!_lexicon.ArticleInPeriodSpan) i = at;   // "the week 31" is reported as "week 31"
 
             at++;
 
@@ -921,6 +924,20 @@ namespace Catalyst.DateTimeRecognition
         private int TryDecadePeriod(int i, out int node)
         {
             node = Node.Unspecified;
+
+            int worded = SkipArticle(i);
+
+            if (AtTerm(worded, TermKind.Decade, out int namedDecade))
+            {
+                var nd = Node.Create(NodeKind.DateRange);
+                nd.LexStart = i;
+                nd.LexEnd   = worded + 1;
+                nd.Decade   = namedDecade;
+                nd.Century  = 1;   // the century is not written, so both readings stand
+                SetSpan(ref nd);
+                node = Alloc(nd);
+                return nd.LexEnd;
+            }
 
             if (AtNumber(i) && (DigitsAt(i) == 4 || DigitsAt(i) == 2) && NumberAt(i) % 10 == 0)
             {
@@ -1140,7 +1157,7 @@ namespace Catalyst.DateTimeRecognition
             int end = at + 1;
 
             // Only an abbreviation carries a full stop: "dec." but not "april."
-            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4) end++;
+            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4 && (AtNumber(end + 1) || At(end + 1, LexKind.Word))) end++;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart = i;
@@ -1185,6 +1202,7 @@ namespace Catalyst.DateTimeRecognition
             if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Year) && !AtTerm(at, TermKind.Relative))
             {
                 marked = true;
+                if (!_lexicon.ArticleInPeriodSpan) i = at;   // "the year 2008" is reported as "year 2008"
                 at++;
             }
 
