@@ -86,10 +86,16 @@ namespace Catalyst.DateTimeRecognition
             if (podMod != ModKind.None && podStart > at) at = podStart;
             if (kind == PartOfDayKind.Noon || kind == PartOfDayKind.Midnight) return -1;
 
-            // A word that primarily names a day ("mañana") is a date, not a part of the day
-            for (int k = at; k < end; k++)
+            // A word that primarily names a day ("mañana", "Morgen") is a date, not a part of the day —
+            // unless something introduced it, where "por la mañana" and "Dienstag Morgen" name the morning
+            bool introduced = _lex[at].Term.Kind != TermKind.SpecialDay || AtTerm(i - 1, TermKind.Weekday);
+
+            if (!introduced)
             {
-                if (In(k) && _lex[k].Term.Kind == TermKind.SpecialDay) return -1;
+                for (int k = at; k < end; k++)
+                {
+                    if (In(k) && _lex[k].Term.Kind == TermKind.SpecialDay) return -1;
+                }
             }
 
             if (podMod != ModKind.None) mod = podMod;
@@ -1066,6 +1072,7 @@ namespace Catalyst.DateTimeRecognition
                     freq.Minute = c.Minute;
                     freq.Second = c.Second;
                     freq.AmPm   = c.AmPm;
+                    if (c.PartOfDay != PartOfDayKind.None) freq.PartOfDay = c.PartOfDay;
                     freq.LexEnd = clockEnd;
                 }
 
@@ -1155,6 +1162,7 @@ namespace Catalyst.DateTimeRecognition
                 n.Minute = t.Minute;
                 n.Second = t.Second;
                 n.AmPm   = t.AmPm;
+                if (t.PartOfDay != PartOfDayKind.None) n.PartOfDay = t.PartOfDay;
                 end      = timeEnd;
             }
             else
@@ -1193,6 +1201,7 @@ namespace Catalyst.DateTimeRecognition
             n.Minute   = t.Minute;
             n.Second   = t.Second;
             n.AmPm     = t.AmPm;
+            if (t.PartOfDay != PartOfDayKind.None) n.PartOfDay = t.PartOfDay;
             SetSpan(ref n);
             node = Alloc(n);
             return setEnd;
