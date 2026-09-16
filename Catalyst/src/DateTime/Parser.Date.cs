@@ -146,6 +146,7 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTerm(at, TermKind.Weekday, out int weekday)) return -1;
 
             int end = at + 1;
+            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore) end++;
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart    = i;
@@ -158,7 +159,7 @@ namespace Catalyst.DateTimeRecognition
                 // "tuesday of next week", "on monday of the following week"
                 int probe = end;
                 probe = SkipWord(probe, "of");
-                probe = SkipWord(probe, "the");
+                probe = SkipArticle(probe);
 
                 if (AtTerm(probe, TermKind.Relative, out int tailRel) && AtTermValue(probe + 1, TermKind.Unit, (int)TimeUnit.Week))
                 {
@@ -174,6 +175,7 @@ namespace Catalyst.DateTimeRecognition
 
             // "friday 5/12", "tuesday march 7", "friday 2018-7-6"
             int tail = end;
+            tail = SkipGlue(tail, 1);
             if (At(tail, LexKind.Comma)) tail++;
             if (At(tail, LexKind.Dash) && sawWeek) tail++;
 
@@ -192,7 +194,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 // "fri 14th", "tuesday the eleventh", "monday 21"
                 int probe = tail;
-                probe = SkipWord(probe, "the");
+                probe = SkipArticle(probe);
 
                 if (TryOrdinal(probe, out int ord, out int ordEnd) && ord >= 1 && ord <= 31)
                 {
@@ -293,7 +295,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             // ---- "<month> <day> [, <year>]"
             if (AtTerm(at, TermKind.Month, out int month))
@@ -302,7 +304,7 @@ namespace Catalyst.DateTimeRecognition
                 if (At(afterMonth, LexKind.Dot) && !_lex[afterMonth].SpaceBefore)   afterMonth++;
                 if (At(afterMonth, LexKind.Comma))                                  afterMonth++;
                 if ((At(afterMonth, LexKind.Slash) || At(afterMonth, LexKind.Dash)) && !_lex[afterMonth].SpaceBefore) afterMonth++;
-                afterMonth = SkipWord(afterMonth, "the");
+                afterMonth = SkipArticle(afterMonth);
 
                 // Reject "april 2017" and "december" — those are month periods, not dates
                 if (TryDayNumber(afterMonth, out int day, out int dayEnd))
@@ -316,8 +318,7 @@ namespace Catalyst.DateTimeRecognition
                     int yearAt = end;
                     if (At(yearAt, LexKind.Comma)) yearAt++;
                     if ((At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore) yearAt++;
-                    yearAt = SkipWords(yearAt, "of", "in");
-                    yearAt = SkipWord(yearAt, "the");
+                    yearAt = SkipGlue(yearAt);
 
                     if (TryYearLoose(yearAt, out int year, out int yearEnd))
                     {
@@ -336,8 +337,8 @@ namespace Catalyst.DateTimeRecognition
             if (TryDayNumber(at, out int day2, out int day2End))
             {
                 int afterDay = day2End;
-                afterDay = SkipWords(afterDay, "of", "day");
-                afterDay = SkipWord(afterDay, "of");
+                afterDay = SkipWord(afterDay, "day");
+                afterDay = SkipGlue(afterDay);
                 if ((At(afterDay, LexKind.Slash) || At(afterDay, LexKind.Dash)) && !_lex[afterDay].SpaceBefore) afterDay++;
 
                 if (AtTerm(afterDay, TermKind.Month, out int month2))
@@ -352,8 +353,7 @@ namespace Catalyst.DateTimeRecognition
                     if (At(yearAt, LexKind.Dot) && !_lex[yearAt].SpaceBefore) yearAt++;
                     if (At(yearAt, LexKind.Comma)) yearAt++;
                     if ((At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore) yearAt++;
-                    yearAt = SkipWords(yearAt, "of", "in");
-                    yearAt = SkipWord(yearAt, "the");
+                    yearAt = SkipGlue(yearAt);
 
                     if (TryYearLoose(yearAt, out int year2, out int year2End))
                     {
@@ -444,8 +444,13 @@ namespace Catalyst.DateTimeRecognition
 
             if (sepKind != LexKind.Slash && sepKind != LexKind.Dash && sepKind != LexKind.Dot)
             {
-                // "2016 10 16"
-                if (s0.Digits == 4 && AtNumber(after0) && DigitsAt(after0) <= 2 && AtNumber(after0 + 1) && DigitsAt(after0 + 1) <= 2)
+                // "2016 10 16" and, where the day comes first, "18 08 1978"
+                bool yearFirst = s0.Digits == 4 && AtNumber(after0) && DigitsAt(after0) <= 2 && AtNumber(after0 + 1) && DigitsAt(after0 + 1) <= 2;
+                bool dayFirst  = _lexicon.DayMonthOrder && s0.Digits <= 2 && AtNumber(after0) && DigitsAt(after0) <= 2
+                                 && AtNumber(after0 + 1) && (DigitsAt(after0 + 1) == 4 || DigitsAt(after0 + 1) == 2)
+                                 && _lex[after0].SpaceBefore && _lex[after0 + 1].SpaceBefore;
+
+                if (yearFirst || dayFirst)
                 {
                     spaced = true;
                 }
@@ -632,7 +637,7 @@ namespace Catalyst.DateTimeRecognition
                 at  = After(at);
 
                 int beforeArticle = at;
-                at     = SkipWord(at, "the");
+                at     = SkipArticle(at);
                 hadThe = hadThe || at != beforeArticle;
             }
 
@@ -659,7 +664,7 @@ namespace Catalyst.DateTimeRecognition
             // "around the 21st this month" / "the 4th of next month"
             int tail = end;
             tail = SkipWords(tail, "of", "in");
-            tail = SkipWord(tail, "the");
+            tail = SkipArticle(tail);
 
             if (AtTerm(tail, TermKind.Relative, out int relValue) && AtTermValue(tail + 1, TermKind.Unit, (int)TimeUnit.Month))
             {
@@ -678,7 +683,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             if (!TryOrdinal(at, out int ordinal, out int end)) return -1;
 
@@ -689,7 +694,7 @@ namespace Catalyst.DateTimeRecognition
 
             int tail = end + 1;
             tail = SkipWords(tail, "of", "in");
-            tail = SkipWord(tail, "the");
+            tail = SkipArticle(tail);
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;

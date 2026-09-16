@@ -15,6 +15,12 @@ namespace Catalyst.Tests.DateTimeRecognition
         [Theory]
         [InlineData("English")]
         [InlineData("EnglishOthers")]
+        [InlineData("German")]
+        [InlineData("French")]
+        [InlineData("Spanish")]
+        [InlineData("Portuguese")]
+        [InlineData("Italian")]
+        [InlineData("Dutch")]
         public void CatalystIsScoredAgainstTheSpecSuite(string language)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);

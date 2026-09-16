@@ -263,13 +263,22 @@ namespace Catalyst.DateTimeRecognition
         private readonly FrozenDictionary<string, Phrase[]>                                              _phrases;
         private readonly FrozenDictionary<string, Phrase[]>.AlternateLookup<ReadOnlySpan<char>>          _phrasesBySpan;
 
-        public Language Language     { get; }
+        public Language Language      { get; }
         public bool     DayMonthOrder { get; }
+        /// <summary>True where a fraction is written with a comma ("123,45 sec").</summary>
+        public bool     DecimalComma  { get; }
+        /// <summary>
+        /// True where a leading article belongs to the expression ("la semaine prochaine"). English reports
+        /// "next week" without its "the", so it is the exception.
+        /// </summary>
+        public bool     ArticleInSpan { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases)
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInSpan = false)
         {
             Language      = language;
             DayMonthOrder = dayMonthOrder;
+            DecimalComma  = decimalComma;
+            ArticleInSpan = articleInSpan;
 
             var singles = new Dictionary<string, TermInfo>(StringComparer.OrdinalIgnoreCase);
             var multi   = new Dictionary<string, List<Phrase>>(StringComparer.OrdinalIgnoreCase);

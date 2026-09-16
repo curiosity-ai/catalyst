@@ -16,6 +16,8 @@ namespace Catalyst.Tests.DateTimeRecognition
         public List<SpecResult>      Results      { get; set; } = new List<SpecResult>();
 
         public DateTime ReferenceDateTime => Context?.ReferenceDateTime ?? new DateTime(2016, 11, 7);
+
+        public bool NotSupportedOnDotNet => NotSupported is object && NotSupported.Contains("dotnet", StringComparison.OrdinalIgnoreCase);
     }
 
     public sealed class SpecContext
@@ -59,8 +61,9 @@ namespace Catalyst.Tests.DateTimeRecognition
             var json = File.ReadAllText(path);
             var all  = JsonSerializer.Deserialize<List<SpecCase>>(json, Options) ?? new List<SpecCase>();
 
-            // The suite marks a handful of cases as unsupported outside .NET; those still run here.
-            return all.Where(c => !string.IsNullOrEmpty(c.Input)).ToList();
+            // Cases the suite marks as unsupported on .NET are expectations the Microsoft implementation
+            // does not meet either, so scoring against them would measure nothing.
+            return all.Where(c => !string.IsNullOrEmpty(c.Input) && !c.NotSupportedOnDotNet).ToList();
         }
     }
 }

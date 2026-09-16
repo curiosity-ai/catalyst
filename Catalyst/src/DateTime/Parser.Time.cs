@@ -105,8 +105,8 @@ namespace Catalyst.DateTimeRecognition
 
             int at = i;
 
-            if (AtWord(at, "in") || AtWord(at, "at") || AtWord(at, "during")) at++;
-            if (AtWord(at, "the")) at++;
+            // "in the morning", "dans la soiree", "am Nachmittag" — one or two connective words, whatever they are
+            at = SkipGlue(at, 2);
 
             if (AtTerm(at, TermKind.Mod, out int modValue))
             {
@@ -252,7 +252,19 @@ namespace Catalyst.DateTimeRecognition
                 if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Minute)) at++;
             }
 
-            if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
+            if (AtTerm(at, TermKind.OClock) && IsClockMarker(at, i, hour))
+            {
+                at     = After(at);
+                marked = true;
+
+                // "12h00" / "10h30" — the minutes follow the marker
+                if (minute < 0 && AtNumber(at) && DigitsAt(at) == 2 && NumberAt(at) < 60)
+                {
+                    minute          = NumberAt(at);
+                    explicitMinutes = true;
+                    at++;
+                }
+            }
 
             if (At(at, LexKind.Dot) && AtTerm(at + 1, TermKind.AmPm)) at++;   // "9.am"
 
@@ -270,6 +282,23 @@ namespace Catalyst.DateTimeRecognition
             if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
 
             return at;
+        }
+
+        /// <summary>
+        /// Whether the o'clock word at <paramref name="at"/> really marks a clock. In several languages the
+        /// word is also the duration unit ("2 heures", "2 ore"), so it only reads as a clock when the reading
+        /// cannot be a plain count: a value past noon, minutes after it, or a preposition in front.
+        /// </summary>
+        private readonly bool IsClockMarker(int at, int hourAt, int hour)
+        {
+            if (_lex[at].Term.Kind != TermKind.Unit) return true;
+
+            if (hour > 12) return true;
+            if (AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60) return true;
+
+            int before = hourAt - 1;
+
+            return AtTerm(before, TermKind.Connector) || AtTerm(before, TermKind.Approx) || AtTerm(before, TermKind.RangeStart);
         }
 
         /// <summary>An hour, as digits or spelled out.</summary>
@@ -415,7 +444,7 @@ namespace Catalyst.DateTimeRecognition
             if (!podLeading)
             {
                 // "2 nights" is a duration; only a marked clock or an introduced phrase takes a part of the day
-                bool introduced = AtWord(at, "in") || AtWord(at, "at") || AtWord(at, "during") || AtTerm(at, TermKind.Mod);
+                bool introduced = AtTerm(at, TermKind.Filler) || AtTerm(at, TermKind.Mod);
 
                 if (ampm >= 0 || explicitMinutes || marked || introduced)
                 {

@@ -82,6 +82,41 @@ namespace Catalyst.DateTimeRecognition
 
         private readonly int SkipComma(int i) => At(i, LexKind.Comma) ? i + 1 : i;
 
+        /// <summary>
+        /// Skips a leading definite article. English reports "next week" without its "the", so there the
+        /// article is only stepped over; the other languages keep theirs inside the match.
+        /// </summary>
+        private readonly int SkipArticle(int i)
+        {
+            if (AtWord(i, "the")) return i + 1;
+
+            if (_lexicon.ArticleInSpan
+                && AtTerm(i, TermKind.Filler)
+                && !AtTerm(i, TermKind.Month) && !AtTerm(i, TermKind.Weekday) && !AtTerm(i, TermKind.Unit)
+                && !AtTerm(i, TermKind.Relative) && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal))
+            {
+                return i + 1;
+            }
+
+            return i;
+        }
+
+        /// <summary>
+        /// Skips the small connective words a date is written with — English "of"/"the", Spanish "de"/"del",
+        /// German "im"/"am", … . They are all <see cref="TermKind.Filler"/>, so the grammar stays language-neutral.
+        /// </summary>
+        private readonly int SkipGlue(int i, int max = 2)
+        {
+            int at = i;
+
+            for (int k = 0; k < max && AtTerm(at, TermKind.Filler) && !AtTerm(at, TermKind.Month) && !AtTerm(at, TermKind.Weekday) && !AtTerm(at, TermKind.Unit); k++)
+            {
+                at++;
+            }
+
+            return at;
+        }
+
         private readonly bool IsRangeConnector(int i)
         {
             if (AtTerm(i, TermKind.Connector)) return true;

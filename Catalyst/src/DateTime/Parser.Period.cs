@@ -83,7 +83,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             if (AtWord(at, "w") && At(at + 1, LexKind.Slash) && AtWord(at + 2, "c"))
             {
@@ -154,7 +154,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 int at = After(i);
                 at = SkipWords(at, "of", "the");
-                at = SkipWord(at, "the");
+                at = SkipArticle(at);
 
                 if (AtTerm(at, TermKind.Unit, out int unitValue) && !AtTerm(at, TermKind.Relative))
                 {
@@ -195,7 +195,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
             int holidayEnd;
             int holiday;
 
@@ -248,7 +248,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             at = SkipWord(at, "on");
-            at = SkipWord(at, "the");
+            at = SkipArticle(at);
 
             int month = Node.Unspecified;
             int leadingMonthAt = Node.Unspecified;
@@ -258,7 +258,7 @@ namespace Catalyst.DateTimeRecognition
                 month          = leadMonth;
                 leadingMonthAt = at;
                 at++;
-                at = SkipWord(at, "the");
+                at = SkipArticle(at);
             }
 
             if (!TryDayNumber(at, out int firstDay, out int afterFirst)) return -1;
@@ -272,7 +272,7 @@ namespace Catalyst.DateTimeRecognition
 
             if (!connector) return -1;
 
-            mid = SkipWord(mid, "the");
+            mid = SkipArticle(mid);
 
             if (!TryDayNumber(mid, out int secondDay, out int afterSecond)) return -1;
 
@@ -281,7 +281,7 @@ namespace Catalyst.DateTimeRecognition
             if (month < 0)
             {
                 int ofAt = SkipWords(end, "of", "in");
-                ofAt = SkipWord(ofAt, "the");
+                ofAt = SkipArticle(ofAt);
 
                 if (!AtTerm(ofAt, TermKind.Month, out month)) return -1;
 
@@ -386,7 +386,7 @@ namespace Catalyst.DateTimeRecognition
                 sawFrom    = rangeKind == 0;
                 sawBetween = rangeKind == 1;
                 at         = After(at);
-                at         = SkipWord(at, "the");
+                at         = SkipArticle(at);
             }
 
             int leftEnd = TryRangeEndpoint(at, out int left);
@@ -403,7 +403,7 @@ namespace Catalyst.DateTimeRecognition
 
             if (!connector) return -1;
 
-            mid = SkipWord(mid, "the");
+            mid = SkipArticle(mid);
 
             int rightEnd = TryRangeEndpoint(mid, out int right);
             if (rightEnd < 0) return -1;
@@ -449,12 +449,12 @@ namespace Catalyst.DateTimeRecognition
             if (mod == ModKind.Later || mod == ModKind.Earlier)
             {
                 at = SkipWords(at, "in", "on");
-                at = SkipWord(at, "the");
+                at = SkipArticle(at);
             }
 
             at = SkipWords(at, "the", "of");
             at = SkipWords(at, "the", "on");
-            at = SkipWord(at, "the");
+            at = SkipArticle(at);
             if (At(at, LexKind.Dash)) at++;   // "mid-november"
 
             // "> = 2019", "< =2019", "=2019"
@@ -507,7 +507,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             int  ordinal = Node.Unspecified;
             int  count   = 1;
@@ -556,7 +556,7 @@ namespace Catalyst.DateTimeRecognition
 
             int ofAt = at;
             ofAt = SkipWords(ofAt, "of", "in");
-            ofAt = SkipWord(ofAt, "the");
+            ofAt = SkipArticle(ofAt);
 
             int anchorEnd = TryRangeEndpoint(ofAt, out int anchor);
             if (anchorEnd < 0) return -1;
@@ -591,7 +591,7 @@ namespace Catalyst.DateTimeRecognition
             if (within)
             {
                 at++;
-                at = SkipWord(at, "the");
+                at = SkipArticle(at);
                 if (AtTermValue(at, TermKind.Relative, (int)RelativeKind.Next)) at++;
             }
 
@@ -611,7 +611,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 int afterStart = After(startAt);
                 afterStart = SkipWords(afterStart, "from", "on");
-                afterStart = SkipWord(afterStart, "the");
+                afterStart = SkipArticle(afterStart);
 
                 int anchorEnd = TryRangeEndpoint(afterStart, out anchor);
                 if (anchorEnd < 0) return -1;
@@ -661,7 +661,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int start    = i;
-            int at       = SkipWord(i, "the");
+            int at       = SkipArticle(i);
             bool hadThe  = at != i;
             var relative = RelativeKind.None;
             int count    = Node.Unspecified;
@@ -699,6 +699,23 @@ namespace Catalyst.DateTimeRecognition
 
             if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
+            // Romance and Germanic languages put the qualifier after the unit: "la semaine prochaine"
+            if (relative == RelativeKind.None && AtTerm(at + 1, TermKind.Relative, out int trailingRel))
+            {
+                relative = (RelativeKind)trailingRel;
+
+                var n2 = Node.Create(NodeKind.DateRange);
+                n2.LexStart     = hadThe && (count < 0 || _lexicon.ArticleInSpan) ? i : start;
+                n2.LexEnd       = at + 2;
+                n2.PeriodUnit   = (TimeUnit)unitValue;
+                n2.PeriodCount  = count < 0 ? 1 : count;
+                n2.Relative     = relative;
+                n2.BusinessDays = business;
+                SetSpan(ref n2);
+                node = Alloc(n2);
+                return n2.LexEnd;
+            }
+
             // "last three weekends" is the verb "last"; a period written that way says "the"
             if (!hadThe && count >= 0 && (relative == RelativeKind.Last || relative == RelativeKind.Previous) && !AtNumber(i)) return -1;
 
@@ -711,7 +728,7 @@ namespace Catalyst.DateTimeRecognition
             if (unit == TimeUnit.Hour || unit == TimeUnit.Minute || unit == TimeUnit.Second) return -1;
             if (unit == TimeUnit.Day && count < 0) return -1;   // "the day" and "next day" name a day, not a period
 
-            if (hadThe && (relative != RelativeKind.None || count >= 0)) start = i + 1;
+            if (hadThe && !_lexicon.ArticleInSpan && (relative != RelativeKind.None || count >= 0)) start = i + 1;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart     = start;
@@ -732,7 +749,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at    = SkipWord(i, "the");
+            int at    = SkipArticle(i);
             if (AtTerm(at, TermKind.QuarterMarker)) i = at;
             int year  = Node.Unspecified;
             int index = Node.Unspecified;
@@ -759,7 +776,7 @@ namespace Catalyst.DateTimeRecognition
                 at    = afterOrdinal + 1;
 
                 int ofAt = SkipWords(at, "of", "in");
-                ofAt = SkipWord(ofAt, "the");
+                ofAt = SkipArticle(ofAt);
 
                 if (TryYear(ofAt, out int tailYear, out int tailEnd))
                 {
@@ -836,7 +853,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Week)) return -1;
 
@@ -852,7 +869,7 @@ namespace Catalyst.DateTimeRecognition
             n.WeekOfYear = week;
 
             int ofAt = SkipWords(at, "of", "in");
-            ofAt = SkipWord(ofAt, "the");
+            ofAt = SkipArticle(ofAt);
 
             if (TryYear(ofAt, out int year, out int yearEnd))
             {
@@ -915,7 +932,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
 
             if (!TryOrdinal(at, out int ordinal, out int end) || ordinal < 1 || ordinal > 30) return -1;
             if (!AtTermValue(end, TermKind.Unit, (int)TimeUnit.Century)) return -1;
@@ -934,7 +951,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at  = SkipWord(i, "the");
+            int at  = SkipArticle(i);
             var rel = RelativeKind.None;
 
             if (AtTerm(at, TermKind.Relative, out int relValue))
@@ -974,7 +991,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at  = SkipWord(i, "the");
+            int at  = SkipArticle(i);
             i       = at;
             var rel = RelativeKind.None;
 
@@ -1030,8 +1047,8 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at  = SkipWord(i, "the");
-            i       = at;                 // "the april 2017" is reported as "april 2017"
+            int at  = SkipArticle(i);
+            if (!_lexicon.ArticleInSpan) i = at;   // English reports "the april 2017" as "april 2017"
             var rel = RelativeKind.None;
 
             if (AtTerm(at, TermKind.Relative, out int relValue) && AtTerm(at + 1, TermKind.Month))
@@ -1109,7 +1126,7 @@ namespace Catalyst.DateTimeRecognition
             if (At(yearAt, LexKind.Dash) || At(yearAt, LexKind.Slash)) yearAt++;
             int beforeWords = yearAt;
             yearAt = SkipWords(yearAt, "of", "in");
-            yearAt = SkipWord(yearAt, "the");
+            yearAt = SkipArticle(yearAt);
             if (yearAt != beforeWords) spelled = true;
 
             if (TryYear(yearAt, out int year, out int yearEnd))
@@ -1134,7 +1151,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipWord(i, "the");
+            int at = SkipArticle(i);
             bool marked = false;
 
             if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Year) && !AtTerm(at, TermKind.Relative))

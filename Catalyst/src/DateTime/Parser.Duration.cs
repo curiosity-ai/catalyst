@@ -204,7 +204,7 @@ namespace Catalyst.DateTimeRecognition
                 value = NumberAt(i);
                 end   = i + 1;
 
-                if (At(i + 1, LexKind.Dot) && AtNumber(i + 2) && !_lex[i + 1].SpaceBefore && !_lex[i + 2].SpaceBefore)
+                if ((At(i + 1, LexKind.Dot) || (_lexicon.DecimalComma && At(i + 1, LexKind.Comma))) && AtNumber(i + 2) && !_lex[i + 1].SpaceBefore && !_lex[i + 2].SpaceBefore)
                 {
                     int digits = DigitsAt(i + 2);
                     value += NumberAt(i + 2) / Math.Pow(10, digits);

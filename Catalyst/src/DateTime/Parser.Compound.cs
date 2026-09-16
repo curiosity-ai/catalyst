@@ -800,7 +800,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at    = SkipWord(i, "the");
+            int at    = SkipArticle(i);
             int count = Node.Unspecified;
             var rel   = RelativeKind.None;
             bool within = false;
@@ -809,7 +809,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 within = true;
                 at++;
-                at = SkipWord(at, "the");
+                at = SkipArticle(at);
 
                 if (AtTerm(at, TermKind.Relative, out int wRel))
                 {
@@ -884,6 +884,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 marked = true;
                 at     = After(at);
+                at     = SkipGlue(at, 1);
 
                 if (AtWord(at, "other"))
                 {

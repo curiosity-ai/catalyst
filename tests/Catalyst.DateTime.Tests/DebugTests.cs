@@ -17,6 +17,7 @@ namespace Catalyst.Tests.DateTimeRecognition
             var raw = Environment.GetEnvironmentVariable("CATALYST_DT_DEBUG");
             if (string.IsNullOrWhiteSpace(raw)) return;
 
+            var language  = Environment.GetEnvironmentVariable("CATALYST_DT_LANG") ?? "English";
             var inputs    = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
             var reference = DateTime.TryParse(Environment.GetEnvironmentVariable("CATALYST_DT_REF"), out var r) ? r : new DateTime(2016, 11, 7);
             var sb        = new StringBuilder();
@@ -26,8 +27,8 @@ namespace Catalyst.Tests.DateTimeRecognition
                 var input = line.TrimEnd('\r');
                 sb.AppendLine($"INPUT  \"{input}\"   (ref {reference:yyyy-MM-dd HH:mm})");
 
-                foreach (var hit in Engines.RunMicrosoft("English", input, reference)) sb.AppendLine("   MS  " + hit.Describe());
-                foreach (var hit in Engines.RunCatalyst("English", input, reference))  sb.AppendLine("   CA  " + hit.Describe());
+                foreach (var hit in Engines.RunMicrosoft(language, input, reference)) sb.AppendLine("   MS  " + hit.Describe());
+                foreach (var hit in Engines.RunCatalyst(language, input, reference))  sb.AppendLine("   CA  " + hit.Describe());
 
                 sb.AppendLine();
             }

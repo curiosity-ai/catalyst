@@ -5,6 +5,12 @@ using Catalyst.DateTimeRecognition;
 using Microsoft.Recognizers.Text;
 using Microsoft.Recognizers.Text.DateTime;
 using Microsoft.Recognizers.Text.DateTime.English;
+using Microsoft.Recognizers.Text.DateTime.German;
+using Microsoft.Recognizers.Text.DateTime.French;
+using Microsoft.Recognizers.Text.DateTime.Spanish;
+using Microsoft.Recognizers.Text.DateTime.Portuguese;
+using Microsoft.Recognizers.Text.DateTime.Italian;
+using Microsoft.Recognizers.Text.DateTime.Dutch;
 using Mosaik.Core;
 using MsDateTimeModel = Microsoft.Recognizers.Text.DateTime.DateTimeModel;
 
@@ -110,16 +116,58 @@ namespace Catalyst.Tests.DateTimeRecognition
         {
             var options = DateTimeOptions.None;
 
-            var culture = language switch
+            switch (language)
             {
-                "English"       => Culture.English,
-                "EnglishOthers" => Culture.EnglishOthers,
-                _               => Culture.English,
-            };
+                case "German":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.German, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new GermanMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new GermanMergedExtractorConfiguration(config)));
+                }
 
-            return new MsDateTimeModel(
-                new BaseMergedDateTimeParser(new EnglishMergedParserConfiguration(new BaseDateTimeOptionsConfiguration(culture, options, dmyDateFormat: false))),
-                new BaseMergedDateTimeExtractor(new EnglishMergedExtractorConfiguration(new BaseDateTimeOptionsConfiguration(culture, options, dmyDateFormat: false))));
+                case "French":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.French, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new FrenchMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new FrenchMergedExtractorConfiguration(config)));
+                }
+
+                case "Spanish":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.Spanish, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new SpanishMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new SpanishMergedExtractorConfiguration(config)));
+                }
+
+                case "Portuguese":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.Portuguese, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new PortugueseMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new PortugueseMergedExtractorConfiguration(config)));
+                }
+
+                case "Italian":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.Italian, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new ItalianMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new ItalianMergedExtractorConfiguration(config)));
+                }
+
+                case "Dutch":
+                {
+                    var config = new BaseDateTimeOptionsConfiguration(Culture.Dutch, options);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new DutchMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new DutchMergedExtractorConfiguration(config)));
+                }
+
+                default:
+                {
+                    var culture = language == "EnglishOthers" ? Culture.EnglishOthers : Culture.English;
+                    var config  = new BaseDateTimeOptionsConfiguration(culture, options, dmyDateFormat: false);
+                    return new MsDateTimeModel(new BaseMergedDateTimeParser(new EnglishMergedParserConfiguration(config)),
+                                               new BaseMergedDateTimeExtractor(new EnglishMergedExtractorConfiguration(config)));
+                }
+            }
         }
 
         public static List<Hit> FromSpec(SpecCase c)
