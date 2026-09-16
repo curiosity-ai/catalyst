@@ -94,7 +94,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Weekend, "weekend", "weekenden");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Night, TermKind.PartOfDay, (int)PartOfDayKind.Night), "nacht", "nachten");
             b.Add(TermKind.BusinessDay, "werk", "werkdag", "werkdagen");
-            b.Add(TermKind.Several, 3, "enkele", "een paar", "verscheidene", "sommige");
+            b.Add(TermKind.Several, 3, "enkele", "enige", "wat", "een paar", "verscheidene", "sommige", "meerdere");
             b.Add(TermKind.Several, 2, "paar");
             b.Add(TermKind.HalfWord, "halve");
             b.Add(TermKind.QuarterWord, "kwartier", "kwart");

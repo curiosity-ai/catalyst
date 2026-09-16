@@ -1083,7 +1083,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             bool bareWeekends = !marked && AtTermValue(at, TermKind.Unit, (int)TimeUnit.Weekend)
-                                && _text.Slice(_lex[at].Start, _lex[at].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
+                                && ShowsPlural(at);
 
             if (bareWeekends)
             {
@@ -1108,8 +1108,8 @@ namespace Catalyst.DateTimeRecognition
 
             if (AtTerm(at, TermKind.Weekday, out int weekday))
             {
-                bool plural     = _text.Slice(_lex[at].Start, _lex[at].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
-                bool pluralPart = AtTerm(After(at), TermKind.PartOfDay) && _text.Slice(_lex[After(at)].Start, _lex[After(at)].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
+                bool plural     = ShowsPlural(at);
+                bool pluralPart = AtTerm(After(at), TermKind.PartOfDay) && ShowsPlural(After(at));
 
                 if (!marked && !plural && !pluralPart) return -1;
 
@@ -1122,7 +1122,7 @@ namespace Catalyst.DateTimeRecognition
                 if (!marked) return -1;
 
                 var unit = (TimeUnit)unitValue;
-                bool plural = _text.Slice(_lex[at].Start, _lex[at].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
+                bool plural = ShowsPlural(at);
 
                 // "all day" / "all month" are durations; only "every"/"each" turn a bare unit into a recurrence
                 if (prefixKind != 0 && unit != TimeUnit.Weekend && unit != TimeUnit.Year && !plural) return -1;
@@ -1132,7 +1132,7 @@ namespace Catalyst.DateTimeRecognition
             }
             else if (AtTerm(at, TermKind.PartOfDay, out int podValue))
             {
-                bool plural = _text.Slice(_lex[at].Start, _lex[at].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
+                bool plural = ShowsPlural(at);
                 if (!marked && !plural) return -1;
 
                 n.PartOfDay = (PartOfDayKind)podValue;

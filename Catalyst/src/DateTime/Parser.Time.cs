@@ -363,7 +363,7 @@ namespace Catalyst.DateTimeRecognition
         {
             if (_lex[at].Term.Kind != TermKind.Unit) return true;
 
-            if (hour > 12) return true;
+            if (hour > 12 && hour < 24) return true;   // "24 uur" is a day's worth, not midnight
             if (AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60) return true;
 
             int before = hourAt - 1;

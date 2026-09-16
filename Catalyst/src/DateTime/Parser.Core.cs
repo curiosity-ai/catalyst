@@ -105,6 +105,17 @@ namespace Catalyst.DateTimeRecognition
             return false;
         }
 
+        /// <summary>Whether the word at <paramref name="i"/> is written as a plural. Dutch names its parts
+        /// of the day with a trailing -s that is not one, so a language that does not mark plurals this
+        /// way never answers true.</summary>
+        private readonly bool ShowsPlural(int i)
+        {
+            if (!_lexicon.PluralEndsInS || !In(i)) return false;
+
+            var word = _text.Slice(_lex[i].Start, _lex[i].Length);
+            return word.Length > 1 && (word[^1] == 's' || word[^1] == 'S');
+        }
+
         /// <summary>Whether the word at <paramref name="i"/> reads as a plural, where the language shows it.</summary>
         private readonly bool LooksPlural(int i)
         {
