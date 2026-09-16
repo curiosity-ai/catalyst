@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Microsoft.Recognizers.Text 1.8.13 declares a dependency on the NuGet.CommandLine *tool*, so every
+    project that consumes the Catalyst package resolves NuGet.CommandLine 5.11.5 transitively - which
+    carries a critical advisory (GHSA-68w7-72jg-6qpp). Catalyst itself pins it the same way; the pin
+    does not travel through the package, so the model packages have to repeat it.
+
+    PrivateAssets=all keeps it out of every Catalyst.Models.* nuspec: it is a restore-graph artifact,
+    not something a consumer of a language package should be handed.
+  -->
+  <ItemGroup>
+    <PackageReference Include="NuGet.CommandLine" Version="7.9.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
