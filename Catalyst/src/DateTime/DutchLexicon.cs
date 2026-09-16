@@ -99,7 +99,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.HalfWord, "halve");
             b.Add(TermKind.QuarterWord, "kwartier", "kwart");
 
-            b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit", "komende", "aanstaande");
+            b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit");
+            b.Add(TermKind.Relative, (int)RelativeKind.Coming,   "komende", "komend", "aanstaande", "aanstaand");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend", "aankomende");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "afgelopen", "laatste");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "voorgaande", "voorafgaande");
