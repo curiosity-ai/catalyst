@@ -636,6 +636,51 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Processes a single document through only the entity recognition steps of the pipeline (any <see cref="IEntityRecognizer"/>
+        /// process plus the registered neuralyzers), skipping normalizers, tokenizers, sentence detectors and taggers.
+        /// </summary>
+        /// <remarks>
+        /// The document must already be tokenized by the caller - nothing here creates spans or tokens. Recognizers that use
+        /// part-of-speech features (such as <see cref="Catalyst.Models.AveragePerceptronEntityRecognizer"/>) see whatever tags the
+        /// document carries, so a document that was not tagged gives them less to work with.
+        /// </remarks>
+        /// <param name="document">The document to process.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The processed document.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IDocument ProcessSingleEntityRecognitionOnly(IDocument document, CancellationToken cancellationToken = default)
+        {
+            RWLock.EnterReadLock();
+            try
+            {
+                return ProcessSingleEntityRecognitionOnlyWithoutLocking(document, cancellationToken);
+            }
+            finally
+            {
+                RWLock.ExitReadLock();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private IDocument ProcessSingleEntityRecognitionOnlyWithoutLocking(IDocument document, CancellationToken cancellationToken = default)
+        {
+            if (document.Length > 0)
+            {
+                foreach (var p in Processes)
+                {
+                    if (!(p is IEntityRecognizer)) { continue; }
+                    if (p.Language != Language.Any && document.Language != Language.Any && p.Language != document.Language) { continue; }
+                    p.Process(document, cancellationToken);
+                }
+
+                //Apply any neuralizer registered for any language, or the document language
+                if (Neuralyzers.TryGetValue(Language.Any, out var neuralyzerAny)) { neuralyzerAny.Process(document); }
+                if (Neuralyzers.TryGetValue(document.Language, out var neuralyzerLang)) { neuralyzerLang.Process(document); }
+            }
+            return document;
+        }
+
+        /// <summary>
         /// Processes a collection of documents using a single thread.
         /// </summary>
         /// <param name="documents">The documents to process.</param>

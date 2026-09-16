@@ -176,6 +176,50 @@ namespace Catalyst.Tests
             nlp.ProcessSingle(doc);
         }
 
+        [Fact]
+        public void EntityRecognitionOnlyRunsOnlyTheEntityRecognizers()
+        {
+            var spotter = new Spotter(Language.Any, 0, "", "Entity");
+            spotter.AddEntry("TEST");
+
+            var nlp = new Pipeline(Language.Any);
+            nlp.Add(new LowerCaseNormalizer());
+            nlp.Add(new FastTokenizer(Language.Any));
+            nlp.Add(spotter);
+
+            var doc = new Document("This is a TEST", Language.Any);
+
+            new SpaceTokenizer().Process(doc); //The caller tokenizes, as the special-case file types in Curiosity do
+
+            nlp.ProcessSingleEntityRecognitionOnly(doc);
+
+            Assert.Equal("This is a TEST", doc.Value); //The normalizer did not run
+            Assert.Equal(4, doc.TokensCount);          //And neither did the tokenizer, so the tokens are the caller's
+
+            var entities = doc.SelectMany(span => span.GetEntities()).ToArray();
+
+            Assert.Single(entities);
+            Assert.Equal("TEST", entities[0].Value);
+        }
+
+        [Fact]
+        public void EntityRecognitionOnlyFindsNothingOnAnUntokenizedDocument()
+        {
+            var spotter = new Spotter(Language.Any, 0, "", "Entity");
+            spotter.AddEntry("TEST");
+
+            var nlp = new Pipeline(Language.Any);
+            nlp.Add(new FastTokenizer(Language.Any));
+            nlp.Add(spotter);
+
+            var doc = new Document("This is a TEST", Language.Any);
+
+            nlp.ProcessSingleEntityRecognitionOnly(doc);
+
+            Assert.Equal(0, doc.TokensCount);
+            Assert.Empty(doc.SelectMany(span => span.GetEntities()));
+        }
+
         [Theory]
         [InlineData("This is a very spec1fic Test")]
         public async Task PatternSpotterFuzzy(string text) {
