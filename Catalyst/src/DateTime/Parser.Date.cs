@@ -354,6 +354,10 @@ namespace Catalyst.DateTimeRecognition
 
             int at = SkipArticleOfDate(i, out i);
 
+            // "el día 9 mayo" — the word for "day" in front of the number it introduces
+            int dayNoun = SkipDayNoun(at);
+            if (dayNoun > at) at = dayNoun;
+
             // ---- "<month> <day> [, <year>]"
             if (AtTerm(at, TermKind.Month, out int month))
             {
@@ -716,6 +720,10 @@ namespace Catalyst.DateTimeRecognition
             int at      = i;
             bool hadThe = AtWord(at, "the");
             if (hadThe) at++;
+
+            // "el día 21", "dia 12" — the word for "day" licenses the bare number the way "the" does
+            int dayNoun = SkipDayNoun(at);
+            if (dayNoun > at) { hadThe = true; at = dayNoun; }
 
             var mod = ModKind.None;
             if (AtTerm(at, TermKind.Approx))

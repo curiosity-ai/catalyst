@@ -244,6 +244,21 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>An ordinal, as "1st" / "21st" / "first" / "twenty third" / "thirty-first".</summary>
+        /// <summary>
+        /// Steps over the word for "day" when it introduces a day of the month — "el día 21", "dia 12",
+        /// "o dia 4". It does for those languages what "the" does in "the 21st", so the number that follows
+        /// reads as a date rather than as a bare number.
+        /// </summary>
+        private readonly int SkipDayNoun(int i)
+        {
+            int at = SkipArticle(i);
+
+            if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Day)) return i;
+
+            at = After(at);
+            return AtNumber(at) && DigitsAt(at) <= 2 && NumberAt(at) >= 1 && NumberAt(at) <= 31 ? at : i;
+        }
+
         /// <summary>"22." — where the language writes an ordinal as its number and a full stop.</summary>
         private readonly bool AtDottedOrdinal(int i)
             => _lexicon.OrdinalEndsInDot && AtNumber(i) && At(i + 1, LexKind.Dot) && !_lex[i + 1].SpaceBefore;
