@@ -421,6 +421,9 @@ namespace Catalyst.DateTimeRecognition
             // or one that says "minutes", counts backwards from the hour.
             if (direction < 0 && !explicitUnit && minutes <= 12) return -1;
 
+            // "17 bis 18 Uhr" is a range too — a right-hand side past noon says both sides are hours
+            if (direction < 0 && !explicitUnit && TryInteger(at, out int rightHour, out _) && rightHour > 12 && rightHour <= 24) return -1;
+
             end = at;
             return at;
         }
