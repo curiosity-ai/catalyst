@@ -142,7 +142,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "en punto");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "hasta", "hasta el");
-            b.Add(TermKind.Connector, "y", "e");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "y", "e");
             b.Add(TermKind.RangeStart, 0, "desde", "desde el", "a partir de", "a partir del", "comenzando");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "del");   // "de 1/10 a 11/7"
             b.Add(TermKind.RangeStart, 1, "entre");

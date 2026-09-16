@@ -145,7 +145,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "uhr");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "bis", "zu", "zum", "bis zum", "bis zu");
-            b.Add(TermKind.Connector, "und");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "und");
             b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "seit", "beginnend");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 

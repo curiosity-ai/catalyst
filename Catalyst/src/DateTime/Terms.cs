@@ -23,6 +23,7 @@ namespace Catalyst.DateTimeRecognition
         PartOfDay,          // Value = (int)PartOfDayKind
         AmPm,               // Value = 0 (am) or 1 (pm)
         Connector,          // to / till / until / through / and
+        AndWord,            // the language's "and" - joins a between-range, but cannot open one alone
         RangeStart,         // from / between
         Mod,                // Value = (int)ModKind
         SetFrequency,       // Value = (int)TimeUnit, from daily / weekly / ...

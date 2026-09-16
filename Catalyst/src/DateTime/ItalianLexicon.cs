@@ -133,7 +133,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "fino a", "fino al");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a", "al", "alle");   // "alle 10" as well as "dalle 5 alle 6"
-            b.Add(TermKind.Connector, "e");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
             b.Add(TermKind.RangeStart, 0, "da", "dal", "dalle", "a partire da", "a partire dal");
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 

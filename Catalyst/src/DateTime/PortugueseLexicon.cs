@@ -132,7 +132,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "em ponto");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao", "até", "ate", "até o");
-            b.Add(TermKind.Connector, "e");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
             b.Add(TermKind.RangeStart, 0, "desde", "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");
 

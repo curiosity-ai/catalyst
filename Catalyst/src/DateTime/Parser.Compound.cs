@@ -175,9 +175,9 @@ namespace Catalyst.DateTimeRecognition
             int mid = leftEnd;
             bool connector = false;
 
-            if (sawBetween && AtWord(mid, "and"))                     { connector = true; mid++; }
+            if (sawBetween && AtTerm(mid, TermKind.AndWord))                     { connector = true; mid = After(mid); }
             else if (AtTerm(mid, TermKind.Connector))                 { connector = true; mid = After(mid); }
-            else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde)) { connector = true; mid++; }
+            else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde)) { connector = true; mid = After(mid); }
 
             if (!connector) return -1;
 
@@ -635,9 +635,9 @@ namespace Catalyst.DateTimeRecognition
             int mid = leftEnd;
             bool connector = false;
 
-            if (sawBetween && AtWord(mid, "and"))                            { connector = true; mid++; }
-            else if (AtTerm(mid, TermKind.Connector) && !AtWord(mid, "and")) { connector = true; mid = After(mid); }
-            else if (At(mid, LexKind.Dash))                                  { connector = true; mid++; }
+            if (sawBetween && AtTerm(mid, TermKind.AndWord))                            { connector = true; mid = After(mid); }
+            else if (AtTerm(mid, TermKind.Connector) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
+            else if (At(mid, LexKind.Dash))                                  { connector = true; mid = After(mid); }
 
             if (!connector) return -1;
 

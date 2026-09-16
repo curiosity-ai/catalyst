@@ -133,7 +133,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "uur precies");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "tot", "tot en met", "t/m", "naar");
-            b.Add(TermKind.Connector, "en");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "en");
             b.Add(TermKind.RangeStart, 0, "van", "vanaf", "sinds", "beginnend");
             b.Add(TermKind.RangeStart, 1, "tussen");
 

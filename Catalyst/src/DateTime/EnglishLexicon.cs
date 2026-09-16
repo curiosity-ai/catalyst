@@ -223,7 +223,7 @@ namespace Catalyst.DateTimeRecognition
         {
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "to", "til");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.Mod, (int)ModKind.Before), "till", "until", "untill", "thru", "through");
-            b.Add(TermKind.Connector, "and", "&");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "and", "&");
 
             b.Add(TermKind.RangeStart, 0, "from", "starting", "beginning", "commencing", "starting from", "beginning on", "starting on", "beginning from");
             b.Add(TermKind.RangeStart, 1, "between");
