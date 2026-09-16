@@ -24,8 +24,12 @@ namespace Catalyst.DateTimeRecognition
         {
             foreach (var w in words)
             {
-                if (w.IndexOf(' ') >= 0) { _phrases.Add(new KeyValuePair<string, TermInfo>(w, info)); }
-                else                     { _words.Add(new KeyValuePair<string, TermInfo>(w, info)); }
+                // The lexer never produces a word containing a hyphen, so "sexta-feira" is a phrase the
+                // phrase folder matches across the dash - which also makes the spaced spelling work.
+                var normalized = w.IndexOf('-') >= 0 ? w.Replace('-', ' ') : w;
+
+                if (normalized.IndexOf(' ') >= 0) { _phrases.Add(new KeyValuePair<string, TermInfo>(normalized, info)); }
+                else                              { _words.Add(new KeyValuePair<string, TermInfo>(normalized, info)); }
             }
         }
 

@@ -176,10 +176,10 @@ namespace Catalyst.DateTimeRecognition
 
             if (!AtTerm(at, TermKind.Weekday, out int weekday)) return -1;
 
-            int end = at + 1;
+            int end = After(at);
 
             // Only an abbreviation carries a full stop: "mer." but not "tuesday."
-            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4 && (AtNumber(end + 1) || At(end + 1, LexKind.Word))) end++;
+            if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[at].Length <= 4) end++;
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart    = i;
@@ -287,7 +287,7 @@ namespace Catalyst.DateTimeRecognition
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;
-            n.LexEnd   = at + 1;
+            n.LexEnd   = After(at);
             n.Weekday  = weekday;
             n.Relative = rel;
             SetSpan(ref n);
@@ -826,7 +826,7 @@ namespace Catalyst.DateTimeRecognition
             // "saturday 3 days from now", "thursday, two year from now", "monday two weeks from now"
             if (AtTerm(at, TermKind.Weekday, out int wd) && !AtTerm(at, TermKind.Month))
             {
-                int probe = at + 1;
+                int probe = After(at);
                 if (At(probe, LexKind.Comma)) probe++;
 
                 if (LooksLikeOffsetStart(probe))
@@ -949,7 +949,7 @@ namespace Catalyst.DateTimeRecognition
             if (AtTerm(onAt, TermKind.Weekday, out int trailingWeekday))
             {
                 n.Weekday = trailingWeekday;
-                end       = onAt + 1;
+                end       = After(onAt);
             }
             else if (leadWeekday >= 0)
             {

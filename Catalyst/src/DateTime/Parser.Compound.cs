@@ -1097,13 +1097,13 @@ namespace Catalyst.DateTimeRecognition
             if (AtTerm(at, TermKind.Weekday, out int weekday))
             {
                 bool plural     = _text.Slice(_lex[at].Start, _lex[at].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
-                bool pluralPart = AtTerm(at + 1, TermKind.PartOfDay) && _text.Slice(_lex[at + 1].Start, _lex[at + 1].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
+                bool pluralPart = AtTerm(After(at), TermKind.PartOfDay) && _text.Slice(_lex[After(at)].Start, _lex[After(at)].Length).EndsWith("s", StringComparison.OrdinalIgnoreCase);
 
                 if (!marked && !plural && !pluralPart) return -1;
 
                 n.Weekday = weekday;
                 n.SetUnit = TimeUnit.Week;
-                end       = at + 1;
+                end       = After(at);
             }
             else if (AtTerm(at, TermKind.Unit, out int unitValue))
             {
