@@ -312,7 +312,13 @@ namespace Catalyst.DateTimeRecognition
                 marked = true;
             }
 
-            if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
+            // "7 en punto", "5 pm o'clock" — a trailing marker on a reading that is already a clock.
+            // "tres horas" is a duration, so the hour unit alone does not make one.
+            if (AtTerm(at, TermKind.OClock) && (ampm >= 0 || marked || explicitMinutes || IsClockMarker(at, i, hour)))
+            {
+                at     = After(at);
+                marked = true;
+            }
 
             return at;
         }

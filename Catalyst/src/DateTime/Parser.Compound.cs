@@ -161,6 +161,8 @@ namespace Catalyst.DateTimeRecognition
                 at         = After(at);
             }
 
+            at = SkipClockPrefix(at);   // "entre las 5 y las 6"
+
             int leftEnd = TryTime(at, out int left, allowBareHour: true);
             if (leftEnd < 0) return -1;
 
@@ -172,6 +174,8 @@ namespace Catalyst.DateTimeRecognition
             else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde)) { connector = true; mid++; }
 
             if (!connector) return -1;
+
+            mid = SkipClockPrefix(mid);
 
             int rightEnd = TryTime(mid, out int right, allowBareHour: true);
             if (rightEnd < 0) return -1;
