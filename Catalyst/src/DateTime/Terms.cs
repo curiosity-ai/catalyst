@@ -292,8 +292,15 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     PluralEndsInS { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true)
+        /// <summary>
+        /// Whether naming part of a period needs a preposition ("the end of may"). Where it does, a bare
+        /// "start" or "end" in front of something else is the verb; where it does not ("Anfang Mai"), it is not.
+        /// </summary>
+        public bool     PartNamedWithOf { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false)
         {
+            PartNamedWithOf = partNamedWithOf;
             Language      = language;
             DayMonthOrder = dayMonthOrder;
             DecimalComma  = decimalComma;

@@ -446,6 +446,16 @@ namespace Catalyst.DateTimeRecognition
             if (AtTerm(i, TermKind.Mod, out int modValue))
             {
                 mod = (ModKind)modValue;
+
+                // "beginning of january" names a part of it; "beginning january 7th" opens a period,
+                // and a bare "start"/"end" in front of anything else is the verb
+                bool namesAPart = _lex[i].PhraseLength > 1 || AtWord(After(i), "of");
+
+                if (_lexicon.PartNamedWithOf && (mod == ModKind.Start || mod == ModKind.End) && !namesAPart)
+                {
+                    if (AtTerm(i, TermKind.RangeStart)) mod = ModKind.Since;
+                    else                                return -1;
+                }
             }
             else if (AtTerm(i, TermKind.RangeStart, out int rangeKind) && rangeKind == 0 && !AtWord(i, "from"))
             {
@@ -460,7 +470,7 @@ namespace Catalyst.DateTimeRecognition
 
             int at = After(i);
 
-            if (IsDaySlice(mod))
+            if (IsDaySlice(mod) && mod != ModKind.Start && mod != ModKind.End)
             {
                 at = SkipWords(at, "in", "on");
                 at = SkipArticle(at);
@@ -498,6 +508,9 @@ namespace Catalyst.DateTimeRecognition
 
             // "end of tomorrow" / "end of this sunday" name a moment, not a period
             if (mod == ModKind.End && target.Kind == NodeKind.Date) return -1;
+
+            // "start more than 2 weeks after today" is the verb: the period already says where it opens
+            if (mod == ModKind.Since && AtWord(i, "start") && IsBounding(target.Mod)) return -1;
 
             var n = target;
             n.LexStart = i;

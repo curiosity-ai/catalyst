@@ -28,7 +28,7 @@ namespace Catalyst.DateTimeRecognition
             AddSeasons(b);
             AddHolidays(b);
 
-            return b.Build(Language.English, dayMonthOrder);
+            return b.Build(Language.English, dayMonthOrder, partNamedWithOf: true);
         }
 
         private static void AddMonths(LexiconBuilder b)
@@ -221,7 +221,7 @@ namespace Catalyst.DateTimeRecognition
         private static void AddConnectors(LexiconBuilder b)
         {
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "to", "til");
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.Mod, (int)ModKind.Until), "till", "until", "untill", "thru", "through");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.Mod, (int)ModKind.Before), "till", "until", "untill", "thru", "through");
             b.Add(TermKind.Connector, "and", "&");
 
             b.Add(TermKind.RangeStart, 0, "from", "starting", "beginning", "commencing", "starting from", "beginning on", "starting on", "beginning from");
@@ -238,7 +238,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Less,      "less than", "fewer than");
             b.Add(TermKind.Mod, (int)ModKind.More,      "more than");
             b.Add(TermKind.Mod, (int)ModKind.Since,     "since", "since then", "as of");
-            b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of", "start", "beginning");
+            b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Start, TermKind.RangeStart, 0), "start", "beginning");
             b.Add(TermKind.Mod, (int)ModKind.End,       "end of", "end");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mid", "middle of", "mid of");
             b.Add(TermKind.Mod, (int)ModKind.Early,     "early");

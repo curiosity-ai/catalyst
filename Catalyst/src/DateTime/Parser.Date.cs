@@ -40,7 +40,7 @@ namespace Catalyst.DateTimeRecognition
             if (end < 0) return -1;
 
             ref var d = ref NodeAt(inner);
-            if (d.Year >= 0 || d.Month < 0 || d.Day < 0 || d.Relative != RelativeKind.None) return -1;
+            if (d.Year >= 0 || d.Month < 0 || d.Day < 0 || d.Weekday >= 0 || d.Relative != RelativeKind.None) return -1;
 
             var n = d;
             n.LexStart = i;

@@ -408,7 +408,8 @@ namespace Catalyst.DateTimeRecognition
             // "end of tomorrow", "the end of today", "end of this sunday"
             int endModAt = SkipWord(i, "the");
 
-            if (AtTerm(endModAt, TermKind.Mod, out int endMod) && (ModKind)endMod == ModKind.End)
+            if (AtTerm(endModAt, TermKind.Mod, out int endMod) && (ModKind)endMod == ModKind.End
+                && (!_lexicon.PartNamedWithOf || _lex[endModAt].PhraseLength > 1 || AtWord(After(endModAt), "of")))
             {
                 int inner = After(endModAt);
                 inner = SkipWords(inner, "of", "the");
