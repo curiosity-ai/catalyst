@@ -116,7 +116,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at       = i;
+            int at       = SkipArticleOfDate(i, out i);
             var relative = RelativeKind.None;
             int weekShift = 0;
             bool sawWeek  = false;
@@ -247,6 +247,7 @@ namespace Catalyst.DateTimeRecognition
             RelativeKind.Following =>  1,
             RelativeKind.Last      => -1,
             RelativeKind.Previous  => -1,
+            RelativeKind.JustPast  => -1,
             _                      =>  0,
         };
 
@@ -295,7 +296,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipArticle(i);
+            int at = SkipArticleOfDate(i, out i);
 
             // ---- "<month> <day> [, <year>]"
             if (AtTerm(at, TermKind.Month, out int month))
@@ -626,8 +627,8 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at        = i;
-            bool hadThe   = AtWord(at, "the");
+            int at      = i;
+            bool hadThe = AtWord(at, "the");
             if (hadThe) at++;
 
             var mod = ModKind.None;
@@ -683,7 +684,7 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipArticle(i);
+            int at = SkipArticleOfDate(i, out i);
 
             if (!TryOrdinal(at, out int ordinal, out int end)) return -1;
 

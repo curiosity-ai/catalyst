@@ -75,6 +75,17 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>
+        /// Skips a leading definite article, and says whether it should be left outside the match. A date
+        /// keeps its article in English and drops it everywhere else; a period is the other way round.
+        /// </summary>
+        private readonly int SkipArticleOfDate(int i, out int spanStart)
+        {
+            int at    = SkipArticle(i);
+            spanStart = _lexicon.ArticleInDateSpan ? i : at;
+            return at;
+        }
+
+        /// <summary>
         /// Skips a leading definite article. English reports "next week" without its "the", so there the
         /// article is only stepped over; the other languages keep theirs inside the match.
         /// </summary>
@@ -82,7 +93,7 @@ namespace Catalyst.DateTimeRecognition
         {
             if (AtWord(i, "the")) return i + 1;
 
-            if (_lexicon.ArticleInSpan
+            if ((!_lexicon.ArticleInDateSpan || _lexicon.ArticleInPeriodSpan)
                 && AtTerm(i, TermKind.Filler)
                 && !AtTerm(i, TermKind.Month) && !AtTerm(i, TermKind.Weekday) && !AtTerm(i, TermKind.Unit)
                 && !AtTerm(i, TermKind.Relative) && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal))

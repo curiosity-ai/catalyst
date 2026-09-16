@@ -173,7 +173,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "día del padre");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "día del trabajo", "día del trabajador");
 
-            return b.Build(Language.Spanish, dayMonthOrder: true, decimalComma: true, articleInSpan: true);
+            return b.Build(Language.Spanish, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: true);
         }
     }
 }

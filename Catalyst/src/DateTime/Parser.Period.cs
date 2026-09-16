@@ -60,8 +60,14 @@ namespace Catalyst.DateTimeRecognition
             else if (At(at, LexKind.Greater)) { mod = ModKind.After;  at++; }
             else if (!At(at, LexKind.Equal))  { return -1; }
 
-            if (At(at, LexKind.Equal)) at++;
-            else if (mod == ModKind.None)     { return -1; }
+            if (At(at, LexKind.Equal))
+            {
+                // "≥ 2019" takes in 2019 itself, where "> 2019" starts after it
+                if (mod == ModKind.After)       mod = ModKind.Since;
+                else if (mod == ModKind.Before) mod = ModKind.Until;
+                at++;
+            }
+            else if (mod == ModKind.None) { return -1; }
 
             if (at == i) return -1;
 
@@ -485,7 +491,11 @@ namespace Catalyst.DateTimeRecognition
             var n = target;
             n.LexStart = i;
             n.LexEnd   = inner;
-            n.Mod      = mod;
+
+            // "after mid may" narrows first and bounds second, so both modifiers have to survive
+            if (IsBounding(mod) && IsNarrowing(target.Mod)) n.InnerMod = target.Mod;
+
+            n.Mod = mod;
 
             if (n.Kind == NodeKind.Date)
             {
@@ -705,7 +715,7 @@ namespace Catalyst.DateTimeRecognition
                 relative = (RelativeKind)trailingRel;
 
                 var n2 = Node.Create(NodeKind.DateRange);
-                n2.LexStart     = hadThe && (count < 0 || _lexicon.ArticleInSpan) ? i : start;
+                n2.LexStart     = hadThe && (count < 0 || _lexicon.ArticleInPeriodSpan) ? i : start;
                 n2.LexEnd       = at + 2;
                 n2.PeriodUnit   = (TimeUnit)unitValue;
                 n2.PeriodCount  = count < 0 ? 1 : count;
@@ -728,7 +738,7 @@ namespace Catalyst.DateTimeRecognition
             if (unit == TimeUnit.Hour || unit == TimeUnit.Minute || unit == TimeUnit.Second) return -1;
             if (unit == TimeUnit.Day && count < 0) return -1;   // "the day" and "next day" name a day, not a period
 
-            if (hadThe && !_lexicon.ArticleInSpan && (relative != RelativeKind.None || count >= 0)) start = i + 1;
+            if (hadThe && !_lexicon.ArticleInPeriodSpan && (relative != RelativeKind.None || count >= 0)) start = i + 1;
 
             var n = Node.Create(NodeKind.DateRange);
             n.LexStart     = start;
@@ -738,10 +748,28 @@ namespace Catalyst.DateTimeRecognition
             n.Relative     = relative == RelativeKind.None ? RelativeKind.This : relative;
             n.BusinessDays = business;
 
-            if (relative == RelativeKind.Current) n.Mod = ModKind.RefUndef;
+            // Only "same" leaves the period unanchored; "current" names the one the reference sits in
+            if (relative == RelativeKind.Current && IsSameWord(at - 1)) n.Mod = ModKind.RefUndef;
             SetSpan(ref n);
             node = Alloc(n);
             return at;
+        }
+
+        private static bool IsBounding(ModKind mod)  => mod is ModKind.Before or ModKind.After or ModKind.Since or ModKind.Until;
+
+        private static bool IsNarrowing(ModKind mod) => mod is ModKind.Start or ModKind.Mid or ModKind.End or ModKind.Early or ModKind.Late;
+
+        /// <summary>True when the relative word at <paramref name="i"/> is the "same" of "the same week".</summary>
+        private readonly bool IsSameWord(int i)
+        {
+            for (int k = i; k >= 0 && k > i - 3; k--)
+            {
+                if (AtWord(k, "same") || AtWord(k, "selbe") || AtWord(k, "selben") || AtWord(k, "même") || AtWord(k, "meme")
+                    || AtWord(k, "mismo") || AtWord(k, "misma") || AtWord(k, "mesmo") || AtWord(k, "mesma")
+                    || AtWord(k, "stesso") || AtWord(k, "stessa") || AtWord(k, "zelfde") || AtWord(k, "dezelfde")) return true;
+            }
+
+            return false;
         }
 
         /// <summary>"q1", "2019 q1", "q3 2019", "1st quarter of 2013", "2019 h2".</summary>
@@ -1048,7 +1076,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int at  = SkipArticle(i);
-            if (!_lexicon.ArticleInSpan) i = at;   // English reports "the april 2017" as "april 2017"
+            if (!_lexicon.ArticleInPeriodSpan) i = at;   // English reports "the april 2017" as "april 2017"
             var rel = RelativeKind.None;
 
             if (AtTerm(at, TermKind.Relative, out int relValue) && AtTerm(at + 1, TermKind.Month))

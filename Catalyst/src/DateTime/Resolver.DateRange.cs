@@ -36,12 +36,14 @@ namespace Catalyst.DateTimeRecognition
                     leftStart = SafeDate(rightStart.Year, leftStart.Month, leftStart.Day);
                     if (leftStart > rightStart) leftStart = leftStart.AddYears(-1);
                     leftYearUnknown = false;
+                    leftTimex       = FormatDate(leftStart);
                 }
                 else if (rightYearUnknown && !leftYearUnknown)
                 {
                     rightStart = SafeDate(leftStart.Year, rightStart.Month, rightStart.Day);
                     if (rightStart < leftStart) rightStart = rightStart.AddYears(1);
                     rightYearUnknown = false;
+                    rightTimex       = FormatDate(rightStart);
                 }
                 else if (rightStart < leftStart && leftYearUnknown && rightYearUnknown)
                 {
@@ -117,7 +119,12 @@ namespace Catalyst.DateTimeRecognition
 
                 if (n.OrdinalFromEnd)
                 {
-                    var end   = host.End;
+                    var end = host.End;
+
+                    // ISO names the first week of a year as the one containing its 4th day; the last week is
+                    // the mirror of that — the one containing the 4th day from the end.
+                    if (unit == TimeUnit.Week || unit == TimeUnit.WorkWeek) end = StartOfIsoWeek(end.AddDays(-4)).AddDays(7);
+
                     var start = SubtractUnits(end, unit, count);
                     period.Start = start;
                     period.End   = end;
@@ -126,11 +133,9 @@ namespace Catalyst.DateTimeRecognition
                 {
                     var start = host.Start;
 
-                    if (unit == TimeUnit.Week || unit == TimeUnit.WorkWeek)
-                    {
-                        start = StartOfIsoWeek(host.Start);
-                        if (start < host.Start) start = start.AddDays(7);
-                    }
+                    // The first week of a period is the ISO week its first day falls in, even when that
+                    // week began in the period before.
+                    if (unit == TimeUnit.Week || unit == TimeUnit.WorkWeek) start = StartOfIsoWeek(host.Start);
 
                     start = AddUnits(start, unit, n.OrdinalInPeriod - 1);
                     period.Start = start;
@@ -143,8 +148,7 @@ namespace Catalyst.DateTimeRecognition
 
                     if (host2.Month >= 0)
                     {
-                        int weekInMonth = (period.Start.Day - 1) / 7 + 1;
-                        if (n.OrdinalFromEnd) weekInMonth = (host.End.AddDays(-1).Day - 1) / 7 + 1;
+                        int weekInMonth = n.OrdinalFromEnd ? (host.End.AddDays(-1).Day - 1) / 7 + 1 : n.OrdinalInPeriod;
 
                         string yearPart = host2.Year >= 0 ? $"{host2.Year:0000}" : "XXXX";
                         period.Timex = $"{yearPart}-{host2.Month:00}-W{weekInMonth:00}";
@@ -201,7 +205,8 @@ namespace Catalyst.DateTimeRecognition
                     return true;
                 }
 
-                period.Timex    = n.FiscalKind == 1 ? $"FY{year:0000}" : $"SY{year:0000}";
+                string stamp = n.Year >= 0 || n.Relative != RelativeKind.None ? $"{year:0000}" : "XXXX";
+                period.Timex    = n.FiscalKind == 1 ? $"FY{stamp}" : $"SY{stamp}";
                 period.NoBounds = true;
                 return true;
             }
@@ -285,7 +290,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // ---- a calendar month or year
-            if (n.Month >= 0)
+            if (n.Month >= 0 && n.Day < 0)
             {
                 if (n.Year >= 0)
                 {
@@ -342,6 +347,7 @@ namespace Catalyst.DateTimeRecognition
                 period.Start = d1;
                 period.End   = d1.AddDays(1);
                 period.Timex = dateTimex;
+                period.YearUnknown = dateTimex is object && dateTimex.StartsWith("XXXX", StringComparison.Ordinal);
 
                 if (twoDates)
                 {
@@ -366,7 +372,7 @@ namespace Catalyst.DateTimeRecognition
             var rel   = n.Relative;
             var today = _reference.Date;
 
-            bool single = count == 1 && (rel == RelativeKind.This || rel == RelativeKind.Current || rel == RelativeKind.Next || rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.Coming || rel == RelativeKind.Following);
+            bool single = count == 1 && rel != RelativeKind.None;
 
             if (single)
             {
@@ -450,7 +456,7 @@ namespace Catalyst.DateTimeRecognition
             DateTime start;
             DateTime end;
 
-            if (rel == RelativeKind.Last || rel == RelativeKind.Previous)
+            if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast)
             {
                 end   = today;
                 start = SubtractUnits(today, unit, count);
@@ -476,7 +482,7 @@ namespace Catalyst.DateTimeRecognition
         internal static int WeekShift(RelativeKind rel) => rel switch
         {
             RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
-            RelativeKind.Last or RelativeKind.Previous                         => -1,
+            RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
             _                                                                  =>  0,
         };
 
@@ -486,16 +492,20 @@ namespace Catalyst.DateTimeRecognition
             return d;
         }
 
+        /// <summary>
+        /// Moves <paramref name="count"/> business days from <paramref name="d"/>, counting the day it starts
+        /// on: four business days from a Tuesday cover Tue-Fri and end on the Saturday.
+        /// </summary>
         private static DateTime AddBusinessDays(DateTime d, int count)
         {
             int step = count < 0 ? -1 : 1;
 
-            for (int k = 0; k < Math.Abs(count); k++)
+            for (int k = 0; k < Math.Abs(count) - 1; k++)
             {
                 do { d = d.AddDays(step); } while (d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday);
             }
 
-            return d;
+            return d.AddDays(step);
         }
 
         private static DateTime AddUnits(DateTime d, TimeUnit unit, int count) => unit switch
@@ -552,14 +562,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (ComputeDate(nodeIndex, out timex, out start, out var second, out bool hasSecond))
                 {
-                    if (timex is object && timex.StartsWith("XXXX-", StringComparison.Ordinal))
-                    {
-                        yearUnknown = true;
-
-                        // Inside a range both ends are read in the reference year
-                        if (hasSecond) start = start.Year == _reference.Year ? start : second;
-                        if (start.Year != _reference.Year && timex.Length == 10) start = SafeDate(_reference.Year, start.Month, start.Day);
-                    }
+                    if (timex is object && timex.StartsWith("XXXX-", StringComparison.Ordinal)) yearUnknown = true;
 
                     return true;
                 }
@@ -641,6 +644,8 @@ namespace Catalyst.DateTimeRecognition
                     var start = p.Start;
                     var end   = p.End;
 
+                    if (n.InnerMod != ModKind.None) ApplyMod(n.InnerMod, ref start, ref end, out _, out _);
+
                     ApplyMod(n.Mod, ref start, ref end, out bool dropStart, out bool dropEnd);
 
                     if (!dropStart) value.Start = FormatDate(start);
@@ -652,7 +657,7 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>Narrows or opens a period according to its modifier ("end of", "before", "since", "mid").</summary>
-        internal static void ApplyMod(ModKind mod, ref DateTime start, ref DateTime end, out bool dropStart, out bool dropEnd)
+        internal void ApplyMod(ModKind mod, ref DateTime start, ref DateTime end, out bool dropStart, out bool dropEnd)
         {
             dropStart = false;
             dropEnd   = false;
@@ -665,6 +670,8 @@ namespace Catalyst.DateTimeRecognition
                     break;
 
                 case ModKind.Until:
+                    // "as late as tomorrow" ends on that day, not at the start of the next
+                    if ((end - start).TotalDays <= 1) end = start;
                     dropStart = true;
                     break;
 
@@ -677,36 +684,46 @@ namespace Catalyst.DateTimeRecognition
                     dropEnd = true;
                     break;
 
+                case ModKind.Earlier:
+                    // "earlier this month" ends at the halfway point or at the reference, whichever comes first
+                    end = Nearer(start, end, first: true, reference: _reference.Date);
+                    break;
+
                 case ModKind.Start:
                 case ModKind.Early:
-                case ModKind.Earlier:
-                    (start, end) = Half(start, end, first: true);
-                    if (mod != ModKind.Earlier) (start, end) = Slice(start, end, 0);
+                    (start, end) = Slice(start, end, 0);
                     break;
 
                 case ModKind.Mid:
                     (start, end) = Slice(start, end, 1);
                     break;
 
+                case ModKind.Later:
+                    // ... and "later this month" starts at whichever of the two comes last
+                    start = Nearer(start, end, first: false, reference: _reference.Date);
+                    break;
+
                 case ModKind.End:
                 case ModKind.Late:
-                case ModKind.Later:
-                    if (mod == ModKind.Later) { (start, end) = Half(start, end, first: false); }
-                    else                      { (start, end) = Slice(start, end, 2); }
+                    start = Nearer(start, end, first: false, reference: start);   // the halfway point
                     break;
             }
         }
 
-        /// <summary>Keeps the first or the last half of a period, which is what "earlier"/"later this month" mean.</summary>
-        private static (DateTime, DateTime) Half(DateTime start, DateTime end, bool first)
+        /// <summary>
+        /// The cut "earlier"/"later" make in a period: the halfway point, moved to the reference moment when
+        /// that falls on the inside of it. "earlier this year" stops at today; "later this year" still starts
+        /// at midyear, because today is before it.
+        /// </summary>
+        private static DateTime Nearer(DateTime start, DateTime end, bool first, DateTime reference)
         {
             var span = end - start;
+            var half = span.TotalDays >= 300 ? start.AddMonths(6) : start.AddDays((int)(span.TotalDays / 2));
 
-            if (span.TotalDays >= 300) return first ? (start, start.AddMonths(6)) : (start.AddMonths(6), end);
+            if (reference <= start || reference >= end) return half;
 
-            int days = (int)(span.TotalDays / 2);
-
-            return first ? (start, start.AddDays(days)) : (start.AddDays(days), end);
+            return first ? (reference < half ? reference : half)
+                         : (reference > half ? reference : half);
         }
 
         /// <summary>Splits a period into its early / middle / late thirds, in the shapes a calendar actually uses.</summary>

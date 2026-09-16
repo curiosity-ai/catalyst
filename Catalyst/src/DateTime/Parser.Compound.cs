@@ -241,9 +241,6 @@ namespace Catalyst.DateTimeRecognition
 
             bool narrowing = mod == ModKind.Early || mod == ModKind.Late || mod == ModKind.Mid;
 
-            if (mod == ModKind.Early)      mod = ModKind.Since;
-            else if (mod == ModKind.Late)  mod = ModKind.Until;
-
             int time    = Node.Unspecified;
             int timeEnd = narrowing ? -1 : TryTime(at, out time);
             if (timeEnd < 0)

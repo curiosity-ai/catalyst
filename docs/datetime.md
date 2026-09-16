@@ -98,6 +98,23 @@ MIT licensed, copied under `Specs/`) and scores them. Cases the suite itself mar
 excluded, since the reference implementation does not meet them either — on what remains it scores 100%, which
 is the ceiling this is measured against.
 
+| Language | span + type | full resolution |
+|---|---:|---:|
+| English | 86.9% | 72.6% |
+| EnglishOthers | 82.9% | 70.7% |
+| French | 59.5% | 53.7% |
+| Italian | 59.1% | 50.4% |
+| Dutch | 48.7% | 39.8% |
+| Spanish | 42.2% | 35.8% |
+| German | 42.1% | 34.4% |
+| Portuguese | 40.6% | 33.3% |
+
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine
 beats them.
+
+A note on articles, because it is the one place the languages genuinely diverge. Whether a leading definite
+article belongs to the match depends on what is being matched, not only on the language: English keeps it on a
+date ("the 09th of may") and drops it from a qualified period ("the april 2017" is reported as "april 2017"),
+while French, Spanish, Portuguese, Italian and Dutch do the opposite. That is what `Lexicon.ArticleInDateSpan`
+and `ArticleInPeriodSpan` select between.

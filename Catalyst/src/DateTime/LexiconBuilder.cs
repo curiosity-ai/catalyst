@@ -29,6 +29,6 @@ namespace Catalyst.DateTimeRecognition
             }
         }
 
-        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInSpan = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInSpan);
+        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan);
     }
 }

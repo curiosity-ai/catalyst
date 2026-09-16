@@ -162,6 +162,8 @@ namespace Catalyst.DateTimeRecognition
         public bool ChildrenAreMoments;
 
         public ModKind Mod;
+        /// <summary>A narrowing modifier the bounding one wraps: the "mid" of "after mid may".</summary>
+        public ModKind InnerMod;
 
         // Set
         public int      SetInterval;

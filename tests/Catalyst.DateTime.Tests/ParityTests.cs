@@ -16,14 +16,14 @@ namespace Catalyst.Tests.DateTimeRecognition
         private static string ReportPath(string name) => Path.Combine(AppContext.BaseDirectory, "parity", name + ".txt");
 
         [Theory]
-        [InlineData("English",       0.85, 0.66)]
-        [InlineData("EnglishOthers", 0.80, 0.54)]
-        [InlineData("French",        0.55, 0.50)]
-        [InlineData("Italian",       0.55, 0.46)]
-        [InlineData("Dutch",         0.44, 0.33)]
-        [InlineData("German",        0.39, 0.28)]
-        [InlineData("Portuguese",    0.37, 0.28)]
-        [InlineData("Spanish",       0.36, 0.27)]
+        [InlineData("English",       0.85, 0.71)]
+        [InlineData("EnglishOthers", 0.80, 0.68)]
+        [InlineData("French",        0.57, 0.52)]
+        [InlineData("Italian",       0.57, 0.49)]
+        [InlineData("Dutch",         0.47, 0.38)]
+        [InlineData("German",        0.41, 0.33)]
+        [InlineData("Portuguese",    0.39, 0.32)]
+        [InlineData("Spanish",       0.41, 0.34)]
         public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);

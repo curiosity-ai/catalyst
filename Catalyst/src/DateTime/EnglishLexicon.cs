@@ -166,7 +166,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "previous", "prior", "preceding");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "current", "same", "present");
             b.Add(TermKind.Relative, (int)RelativeKind.Last, "last");
-            b.Add(new TermInfo(TermKind.Relative, (int)RelativeKind.Last, TermKind.PastWord), "past");
+            b.Add(new TermInfo(TermKind.Relative, (int)RelativeKind.JustPast, TermKind.PastWord), "past");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,     "today", "otd");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow,  "tomorrow", "tomorow", "tmr", "tmrw", "tomm", "tommorow", "tommorrow");
@@ -252,7 +252,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "quarterly");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "bi-monthly", "bimonthly", "semi-monthly");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "bi-weekly", "biweekly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "semi-annually", "semiannually", "semiannual", "semi-annual", "biannual", "biannually");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semi-annually", "semiannually", "semiannual", "semi-annual", "biannual", "biannually");
         }
 
         private static void AddSeasons(LexiconBuilder b)

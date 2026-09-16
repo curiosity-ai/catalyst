@@ -62,6 +62,7 @@ namespace Catalyst.DateTimeRecognition
         Century,
         Weekend,
         WorkWeek,
+        HalfYear,
         BusinessDay,
         Night,
     }
@@ -76,6 +77,7 @@ namespace Catalyst.DateTimeRecognition
         Following,  // following — Next
         Previous,   // previous — Last
         Current,    // current / same — This
+        JustPast,   // past — the most recent occurrence, which may be in this week
     }
 
     public enum SpecialDayKind : byte
@@ -266,17 +268,24 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>True where a fraction is written with a comma ("123,45 sec").</summary>
         public bool     DecimalComma  { get; }
         /// <summary>
-        /// True where a leading article belongs to the expression ("la semaine prochaine"). English reports
-        /// "next week" without its "the", so it is the exception.
+        /// Whether a leading definite article belongs to a date's span. English keeps it ("the 09th of may");
+        /// every other language reports the date without it ("le 4 janvier 2019" is "4 janvier 2019").
         /// </summary>
-        public bool     ArticleInSpan { get; }
+        public bool     ArticleInDateSpan { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInSpan = false)
+        /// <summary>
+        /// Whether a leading definite article belongs to a qualified period's span ("la semaine prochaine").
+        /// Most languages drop it, the way English reports "the april 2017" as "april 2017".
+        /// </summary>
+        public bool     ArticleInPeriodSpan { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false)
         {
             Language      = language;
             DayMonthOrder = dayMonthOrder;
             DecimalComma  = decimalComma;
-            ArticleInSpan = articleInSpan;
+            ArticleInDateSpan    = articleInDateSpan;
+            ArticleInPeriodSpan  = articleInPeriodSpan;
 
             var singles = new Dictionary<string, TermInfo>(StringComparer.OrdinalIgnoreCase);
             var multi   = new Dictionary<string, List<Phrase>>(StringComparer.OrdinalIgnoreCase);

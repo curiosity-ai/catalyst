@@ -174,6 +174,11 @@ namespace Catalyst.DateTimeRecognition
                 endHour = endHourAlt;
                 endTwo  = false;
             }
+            else if (endHour < leftHour && right.AmPm == 0 && endHour + 12 > leftHour)
+            {
+                // "10am-12am" runs forward to noon; midnight would put the range back to front
+                endHour += 12;
+            }
 
             range.StartHour   = leftHour;
             range.StartMinute = leftMinute < 0 ? 0 : leftMinute;
@@ -301,15 +306,29 @@ namespace Catalyst.DateTimeRecognition
             int mins  = (int)(span.TotalMinutes - hours * 60);
 
             string duration = mins > 0 ? $"PT{hours}H{mins}M" : $"PT{hours}H";
+            string timex    = $"({startTimex},{endTimex},{duration})";
 
             values.Add(new DateTimeResolutionValue
             {
-                Timex = $"({startTimex},{endTimex},{duration})",
+                Timex = timex,
                 Type  = "datetimerange",
                 Start = FormatDateTime(start),
                 End   = FormatDateTime(end),
                 Mod   = ModName(n.Mod),
             });
+
+            // A day neither end pinned to a year has the second reading a year on
+            if (timex.Contains("XXXX", StringComparison.Ordinal))
+            {
+                values.Add(new DateTimeResolutionValue
+                {
+                    Timex = timex,
+                    Type  = "datetimerange",
+                    Start = FormatDateTime(start.AddYears(1)),
+                    End   = FormatDateTime(end.AddYears(1)),
+                    Mod   = ModName(n.Mod),
+                });
+            }
         }
 
         private bool Moment(int nodeIndex, DateTime fallbackDay, out DateTime moment, out string timex)

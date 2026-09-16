@@ -56,6 +56,14 @@ namespace Catalyst.DateTimeRecognition
             }
         }
 
+        /// <summary>True when the holiday falls on the same calendar day every year.</summary>
+        public static bool IsFixedDate(HolidayKind kind)
+        {
+            var a = Resolve(kind, 2020);
+            var b = Resolve(kind, 2021);
+            return a.Month == b.Month && a.Day == b.Day;
+        }
+
         private static DateTime NthWeekdayOfMonth(int year, int month, DayOfWeek weekday, int n)
         {
             var first  = new DateTime(year, month, 1);

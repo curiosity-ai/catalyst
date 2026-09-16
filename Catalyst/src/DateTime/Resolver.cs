@@ -143,6 +143,18 @@ namespace Catalyst.DateTimeRecognition
                     }
                 }
 
+                if (n.Year < 0 && n.Relative == RelativeKind.None && Holidays.IsFixedDate(n.Holiday))
+                {
+                    // "before independence day" — the same two nearest readings a year-less date has
+                    timex = $"XXXX-{d.Month:00}-{d.Day:00}";
+
+                    if (d >= _reference.Date) { first = Holidays.Resolve(n.Holiday, holidayYear - 1); second = d; }
+                    else                      { first = d; second = Holidays.Resolve(n.Holiday, holidayYear + 1); }
+
+                    hasSecond = true;
+                    return true;
+                }
+
                 timex = FormatDate(d);
                 first = d;
                 return true;
@@ -159,6 +171,9 @@ namespace Catalyst.DateTimeRecognition
                 }
 
                 var d = anchor.AddYears(n.OffsetYears).AddMonths(n.OffsetMonths).AddDays(n.OffsetWeeks * 7 + n.OffsetDays);
+
+                // "the 15th day of next month" — the offset moves the month, the day is still named
+                if (n.Day >= 0 && n.Month < 0 && n.OffsetDays == 0 && n.OffsetWeeks == 0) d = SafeDate(d.Year, d.Month, n.Day);
 
                 if (n.Weekday >= 0)
                 {
@@ -184,6 +199,11 @@ namespace Catalyst.DateTimeRecognition
 
                     case RelativeKind.Coming:
                         if (d <= _reference.Date) d = d.AddDays(7);
+                        break;
+
+                    case RelativeKind.JustPast:
+                        // "past wednesday" is the most recent one, which may still be in this week
+                        if (d >= _reference.Date) d = d.AddDays(-7);
                         break;
 
                     case RelativeKind.Last:
@@ -238,6 +258,32 @@ namespace Catalyst.DateTimeRecognition
                 {
                     first = thisMonth.AddMonths(-1);
                     timex = FormatDate(first);
+                    return true;
+                }
+
+                // "around the 21st this month" names one day, not the two nearest
+                if (n.Relative == RelativeKind.This || n.Relative == RelativeKind.Current)
+                {
+                    first = thisMonth;
+                    timex = FormatDate(first);
+                    return true;
+                }
+
+                // "monday 21" — the weekday picks which of the candidate months is meant, and names the reading
+                if (n.Weekday >= 0)
+                {
+                    timex = $"XXXX-WXX-{TimexWeekday(n.Weekday)}";
+
+                    for (int step = 0; step <= 12; step++)
+                    {
+                        var forward = thisMonth.AddMonths(step);
+                        var back    = thisMonth.AddMonths(-step);
+
+                        if (forward.Day == day && (int)forward.DayOfWeek == n.Weekday) { first = forward; return true; }
+                        if (back.Day    == day && (int)back.DayOfWeek    == n.Weekday) { first = back;    return true; }
+                    }
+
+                    first = thisMonth;
                     return true;
                 }
 
@@ -524,6 +570,10 @@ namespace Catalyst.DateTimeRecognition
                 ComputeTime(nodeIndex, out int hour, out _, out _, out int minute, out int second);
                 timex = TimexOfTime(hour, minute, second);
             }
+            else if (n.BusinessDays)
+            {
+                timex = $"P{n.SetInterval}WD";
+            }
             else
             {
                 timex = DurationTimexOf(n.SetUnit, n.SetInterval);
@@ -547,6 +597,7 @@ namespace Catalyst.DateTimeRecognition
             TimeUnit.Night       => $"P{count}D",
             TimeUnit.Week        => $"P{count}W",
             TimeUnit.WorkWeek    => $"P{count}W",
+            TimeUnit.HalfYear    => $"P{count * 0.5}Y",
             TimeUnit.Fortnight   => $"P{count * 2}W",
             TimeUnit.Weekend     => $"P{count}WE",
             TimeUnit.Month       => $"P{count}M",
