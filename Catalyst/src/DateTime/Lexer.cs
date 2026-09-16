@@ -101,7 +101,11 @@ namespace Catalyst.DateTimeRecognition
                     continue;
                 }
 
-                if (IsWordChar(c))
+                // "'s ochtends", "'t", "o'clock" — a word may open on its apostrophe
+                bool opensOnApostrophe = IsApostrophe(c) && i + 1 < text.Length && IsWordChar(text[i + 1])
+                                         && (i == 0 || IsSpace(text[i - 1]));
+
+                if (IsWordChar(c) || opensOnApostrophe)
                 {
                     i++;
 
