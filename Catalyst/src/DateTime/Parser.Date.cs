@@ -568,6 +568,10 @@ namespace Catalyst.DateTimeRecognition
                 if (!AssignTwo(s0, s1, ref year, ref month, ref day)) return -1;
             }
 
+            // "22.04." — where the ordinal is written with a full stop, the date ends on one too
+            if (_lexicon.DayMonthOrder && sepKind == LexKind.Dot && year < 0
+                && At(end, LexKind.Dot) && !_lex[end].SpaceBefore) end++;
+
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;
             n.LexEnd   = end;

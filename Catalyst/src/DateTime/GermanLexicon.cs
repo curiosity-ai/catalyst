@@ -168,7 +168,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Late,      "spät im", "ende von", "spät", "spaet");
             b.Add(TermKind.Approx, "gegen", "etwa", "ungefähr", "ungefaehr", "circa", "ca");
 
-            b.Add(TermKind.SetPrefix, 0, "jeden", "jede", "jedes", "jedem", "alle");
+            b.Add(TermKind.SetPrefix, 0, "jeden", "jede", "jedes", "jedem", "alle", "immer", "stets");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Day,     "täglich", "taeglich");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "wöchentlich", "woechentlich");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "monatlich");
