@@ -278,10 +278,12 @@ namespace Catalyst.DateTimeRecognition
 
             int  at         = i;
             bool sawBetween = false;
+            bool sawFrom    = false;
 
             if (AtTerm(at, TermKind.RangeStart, out int rangeKind))
             {
                 sawBetween = rangeKind == 1;
+                sawFrom    = rangeKind == 0;
                 at         = After(at);
             }
 
@@ -305,7 +307,7 @@ namespace Catalyst.DateTimeRecognition
             bool connector = false;
 
             if (sawBetween && AtTerm(mid, TermKind.AndWord))                            { connector = true; mid = After(mid); }
-            else if (AtTerm(mid, TermKind.Connector) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
+            else if ((AtTerm(mid, TermKind.Connector) || ((sawFrom || sawBetween) && AtTerm(mid, TermKind.ToWord))) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
             else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde))        { connector = true; mid = After(mid); }
 
             if (!connector) return -1;
@@ -436,7 +438,7 @@ namespace Catalyst.DateTimeRecognition
             bool connector = false;
 
             if (sawBetween && AtTerm(mid, TermKind.AndWord))                       { connector = true; mid = After(mid); }
-            else if (AtTerm(mid, TermKind.Connector) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
+            else if ((AtTerm(mid, TermKind.Connector) || ((sawFrom || sawBetween) && AtTerm(mid, TermKind.ToWord))) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
             else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde))   { connector = true; mid = After(mid); }
 
             if (!connector) return -1;
