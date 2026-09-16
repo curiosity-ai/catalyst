@@ -569,6 +569,13 @@ namespace Catalyst.DateTimeRecognition
                 if (!AssignTwo(s0, s1, ref year, ref month, ref day)) return -1;
             }
 
+            // "12. Januar 2016" — the year stands apart from the dotted day and its month name
+            if (year < 0 && (s0.IsMonthName || s1.IsMonthName) && TryYearLoose(SkipGlue(end), out int tailYear, out int tailYearEnd))
+            {
+                year = tailYear;
+                end  = tailYearEnd;
+            }
+
             // "22.04." — where the ordinal is written with a full stop, the date ends on one too
             if (_lexicon.DayMonthOrder && sepKind == LexKind.Dot && year < 0
                 && At(end, LexKind.Dot) && !_lex[end].SpaceBefore) end++;
