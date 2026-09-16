@@ -740,7 +740,8 @@ namespace Catalyst.DateTimeRecognition
             var unit = (TimeUnit)unitValue;
             if (business && unit == TimeUnit.Day) unit = TimeUnit.BusinessDay;
 
-            at++;
+            int unitAt = at;
+            at = After(at);   // "working week" is two words
 
             // "the weekend" and "weekend" name a period; "three weekends" is how long something lasts
             if (relative == RelativeKind.None && (unit != TimeUnit.Weekend || count >= 0) && (!hadThe || count >= 0)) return -1;
@@ -758,7 +759,7 @@ namespace Catalyst.DateTimeRecognition
             n.BusinessDays = business;
 
             // Only "same" leaves the period unanchored; "current" names the one the reference sits in
-            if (relative == RelativeKind.Current && IsSameWord(at - 1)) n.Mod = ModKind.RefUndef;
+            if (relative == RelativeKind.Current && IsSameWord(unitAt)) n.Mod = ModKind.RefUndef;
             SetSpan(ref n);
             node = Alloc(n);
             return at;
