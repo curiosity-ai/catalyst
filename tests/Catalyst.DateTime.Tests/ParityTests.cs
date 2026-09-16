@@ -25,12 +25,12 @@ namespace Catalyst.Tests.DateTimeRecognition
         //                       reading  span  value
         [InlineData("English",       0.93, 0.95, 0.92)]
         [InlineData("EnglishOthers", 0.93, 0.95, 0.92)]
-        [InlineData("French",        0.70, 0.73, 0.69)]
-        [InlineData("Italian",       0.68, 0.71, 0.66)]
-        [InlineData("Dutch",         0.62, 0.63, 0.57)]
-        [InlineData("German",        0.57, 0.62, 0.55)]
-        [InlineData("Portuguese",    0.59, 0.60, 0.57)]
-        [InlineData("Spanish",       0.65, 0.65, 0.60)]
+        [InlineData("Italian",       0.80, 0.81, 0.77)]
+        [InlineData("Spanish",       0.78, 0.74, 0.71)]
+        [InlineData("French",        0.75, 0.75, 0.71)]
+        [InlineData("Dutch",         0.74, 0.72, 0.67)]
+        [InlineData("German",        0.68, 0.74, 0.66)]
+        [InlineData("Portuguese",    0.68, 0.68, 0.66)]
         public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumReadingRate, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);

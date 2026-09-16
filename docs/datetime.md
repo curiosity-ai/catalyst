@@ -98,16 +98,25 @@ MIT licensed, copied under `Specs/`) and scores them. Cases the suite itself mar
 excluded, since the reference implementation does not meet them either — on what remains it scores 100%, which
 is the ceiling this is measured against.
 
-| Language | span + type | full resolution |
-|---|---:|---:|
-| English | 96.2% | 93.5% |
-| EnglishOthers | 97.6% | 95.1% |
-| French | 74.2% | 70.5% |
-| Italian | 72.3% | 67.9% |
-| Spanish | 66.1% | 61.3% |
-| Dutch | 64.5% | 58.1% |
-| German | 62.9% | 56.6% |
-| Portuguese | 61.8% | 58.8% |
+Three rates, because a span disagreement and a wrong answer are not the same thing. **Same reading** is the
+one that says whether the engine understood the text: the resolution matches field for field, and the span is
+either identical or differs only by glue — an article, a preposition, a comma — which the reference
+implementation is not consistent about itself, reporting *am Wochenende* with its preposition and *am Freitag*
+without. The tolerance is narrow: it is reached only when the readings already match, and every word in the
+disagreement has to be one the language's own lexicon classes as glue, so a content word still counts as a
+miss. Those cases are listed as `GLUE` rather than `SPAN` in the report. The two strict rates are reported
+beside it, so the tolerance hides nothing.
+
+| Language | same reading | span + type | full resolution |
+|---|---:|---:|---:|
+| EnglishOthers | 95.1% | 97.6% | 95.1% |
+| English | 94.0% | 96.2% | 93.5% |
+| Italian | 81.8% | 82.5% | 78.1% |
+| Spanish | 79.1% | 75.7% | 72.2% |
+| French | 76.3% | 76.3% | 72.6% |
+| Dutch | 75.2% | 73.3% | 68.7% |
+| German | 69.7% | 75.1% | 67.9% |
+| Portuguese | 69.7% | 69.1% | 67.3% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine
@@ -135,16 +144,27 @@ written into it:
 - `SplitsCompounds` — whether the language writes compounds as one word (*dienstagmorgen*, *neunundzwanzig*),
   so an unknown word is worth splitting into two the lexicon does know.
 - `OrdinalEndsInDot` — whether an ordinal is written as its number and a full stop (*22. April*).
+- `MovableHolidayNamesItsDay` — whether a feast that falls on a different day each year still names a day in
+  its timex. The suites disagree: English reports *easter monday* as `XXXX-04-22`, German reports
+  *Ostermontag* as `XXXX`.
 - `DecimalComma`, `DayMonthOrder` — how a number and a numeric date are written.
 
 Two splits the scanner performs need no flag, because both halves have to be known words for them to happen at
 all: a word elided onto the next one (*un'ora*) is split at its apostrophe, and the tens and units run together
 (*ventinove*, *veinticuatro*) are read as one number.
 
-Two term kinds carry a distinction the flags cannot. `TermKind.Article` marks the glue that can *head* a
-phrase, as against a preposition that cannot — which is what makes "por una hora" report from the article while
-"den ganzen Tag" keeps its. `TermKind.Whole` marks the word for "whole", which is what lets that phrase count as
-one. A word may hold two roles at once (`TermInfo` carries a kind and an alternate), and that is how most of
-this is expressed: the Romance "de" is glue *and* a range opener, the German "nachmittags" is a part of the day
-*and* an am/pm marker, the French "à" joins a range *and* introduces a clock. Registering the same word twice
-does not add a role — the later entry replaces the earlier one.
+Four term kinds carry a distinction the flags cannot:
+
+- `TermKind.Article` marks the glue that can *head* a phrase, as against a preposition that cannot — which is
+  what makes *por una hora* report from the article while *den ganzen Tag* keeps its.
+- `TermKind.Whole` marks the word for "whole", which is what lets that phrase count as one.
+- `TermKind.AndWord` marks the language's "and". It closes a range that *between* opened and cannot open one
+  by itself, so *después de 2016 y antes de 2018* stays two ranges.
+- `TermKind.ClockPrefix` marks what introduces a reading — *at*, *a las*, *um*, *à*. It licenses a bare hour,
+  and an hour that follows one is a clock rather than a count of hours.
+
+A word may hold two roles at once (`TermInfo` carries a kind and an alternate), and that is how most of this is
+expressed: the Romance *de* is glue *and* a range opener, the German *nachmittags* is a part of the day *and*
+an am/pm marker, the French *à* joins a range *and* introduces a clock. Registering the same word twice does
+not add a role — the later entry replaces the earlier one, silently, which has been the single most common way
+for a language to lose a reading it looked like it had.
