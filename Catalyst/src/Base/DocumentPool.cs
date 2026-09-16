@@ -210,6 +210,111 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Rents a document holding a copy of <paramref name="source"/>, without going through
+        /// <see cref="ImmutableDocument.ToMutable"/> - which would allocate a whole second document on the way.
+        /// </summary>
+        /// <param name="source">The document to copy.</param>
+        /// <returns>A document the caller must hand back with <see cref="Return"/>.</returns>
+        public PooledDocument Rent(ImmutableDocument source)
+        {
+            if (source is null) throw new ArgumentNullException(nameof(source));
+
+            var document = RentEmpty();
+
+            document.Language = source.Language;
+            document.Value    = source.Value;
+            document.UID      = source.UID;
+
+            if (source.SpanBounds is object)
+            {
+                document.ReserveSpans(source.SpanBounds.Length);
+
+                for (int i = 0; i < source.SpanBounds.Length; i++)
+                {
+                    var packed = source.SpanBounds[i];
+
+                    document.AddSpan((int)(packed >> 32), (int)(packed & 0xFFFF_FFFFL));
+                }
+            }
+
+            if (source.TokensData is object)
+            {
+                for (int i = 0; i < source.TokensData.Length; i++)
+                {
+                    //An immutable whose two span arrays disagree is malformed, but copying it must still not walk
+                    //off the end of the list the spans above created.
+                    if (i >= document.TokensData.Count) { document.TokensData.Add(RentTokenData()); }
+
+                    var from = source.TokensData[i];
+                    var to   = document.TokensData[i];
+
+                    if (to.Capacity < from.Length) { to.Capacity = from.Length; }
+
+                    for (int j = 0; j < from.Length; j++)
+                    {
+                        to.Add(from[j]);
+                    }
+                }
+            }
+
+            if (source.Labels is object)
+            {
+                for (int i = 0; i < source.Labels.Length; i++)
+                {
+                    document.Labels.Add(source.Labels[i]);
+                }
+            }
+
+            if (source.Metadata is object)
+            {
+                foreach (var kv in source.Metadata)
+                {
+                    document.Metadata[kv.Key] = kv.Value;
+                }
+            }
+
+            if (source.EntityData is object)
+            {
+                foreach (var kv in source.EntityData)
+                {
+                    var entities = RentEntityTypes();
+
+                    if (entities.Capacity < kv.Value.Length) { entities.Capacity = kv.Value.Length; }
+
+                    for (int i = 0; i < kv.Value.Length; i++)
+                    {
+                        entities.Add(kv.Value[i]);
+                    }
+
+                    document.EntityData[kv.Key] = entities;
+                }
+            }
+
+            if (source.TokenMetadata is object)
+            {
+                foreach (var kv in source.TokenMetadata)
+                {
+                    var metadata = RentMetadata();
+
+                    foreach (var kv2 in kv.Value)
+                    {
+                        metadata[kv2.Key] = kv2.Value;
+                    }
+
+                    document.TokenMetadata[kv.Key] = metadata;
+                }
+            }
+
+            //A document whose spans were declared but whose token data was not still needs the two lists to line up
+            while (document.TokensData.Count < document.SpanBounds.Count)
+            {
+                document.TokensData.Add(RentTokenData());
+            }
+
+            return document;
+        }
+
+        /// <summary>
         /// Reads a document written by <see cref="PooledDocument.SerializeAsMessagePack(Stream, MessagePackSerializerOptions)"/>
         /// (or by the <see cref="Document"/> formatter) into a pooled document.
         /// </summary>

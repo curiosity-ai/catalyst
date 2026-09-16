@@ -307,6 +307,27 @@ namespace Catalyst.Tests
         }
 
         [Fact]
+        public void AnImmutableDocumentCopiesIntoThePool()
+        {
+            var pool      = new DocumentPool();
+            var immutable = NewDocument().ToImmutable();
+
+            var pooled = pool.Rent(immutable);
+
+            AssertSameContent(NewDocument(), pooled);
+
+            //And it serializes to the same bytes, so nothing was lost on the way in
+            var expected = MessagePackSerializer.Serialize(NewDocument());
+            var buffer   = new ArrayBufferWriter<byte>();
+
+            pooled.SerializeAsMessagePack(buffer);
+
+            Assert.Equal(expected, buffer.WrittenSpan.ToArray());
+
+            pool.Return(pooled);
+        }
+
+        [Fact]
         public void ADeepDocumentRoundTripsThroughThePool()
         {
             //A batch-shaped caller rents the whole batch before returning any of it, and the documents are deep -
