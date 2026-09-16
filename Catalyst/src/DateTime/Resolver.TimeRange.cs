@@ -173,7 +173,10 @@ namespace Catalyst.DateTimeRecognition
                 leftSecond = left.Second;
 
                 // "5 to 6pm" is 17-18, but "2:30 to 2:15 pm" crosses noon, so keep the morning reading when it must
-                if (leftHour > endHour && sharedAmPm == 1 && left.Hour <= 12)
+                int leftMinutes = leftHour * 60 + (leftMinute < 0 ? 0 : leftMinute);
+                int endMinutes  = endHour  * 60 + (endMinute  < 0 ? 0 : endMinute);
+
+                if (leftMinutes > endMinutes && sharedAmPm == 1 && left.Hour <= 12)
                 {
                     leftHour = left.Hour;
                 }
@@ -304,6 +307,22 @@ namespace Catalyst.DateTimeRecognition
             DateTime start, end;
             string   startTimex, endTimex;
 
+            // "from 5 to 6pm of april 22", "between 7 and 9:30 last night" — the marked end says which
+            // clock the bare one means
+            int marked = At(n.Right).AmPm >= 0 ? At(n.Right).AmPm : AmPmOfPart(At(n.Right).PartOfDay);
+            if (marked < 0) marked = AmPmOfPart(n.PartOfDay);
+
+            ref var left = ref At(n.Left);
+
+            int rightHour = At(n.Right).Hour;
+            if (marked == 1 && rightHour >= 0 && rightHour < 12) rightHour += 12;
+
+            if (marked == 1 && left.AmPm < 0 && left.PartOfDay == PartOfDayKind.None && left.Hour > 0 && left.Hour < 12
+                && (rightHour < 0 || left.Hour + 12 <= rightHour))
+            {
+                left.AmPm = 1;
+            }
+
             // Whichever end names a day sets the day for the other: "from 5 to 6pm of april 22"
             if (!At(n.Left).HasDate && At(n.Right).HasDate)
             {
@@ -347,6 +366,15 @@ namespace Catalyst.DateTimeRecognition
                 });
             }
         }
+
+        /// <summary>Which half of the day a part of the day falls in, or -1 where it says nothing.</summary>
+        private static int AmPmOfPart(PartOfDayKind part) => part switch
+        {
+            PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast => 0,
+            PartOfDayKind.Afternoon or PartOfDayKind.Evening or PartOfDayKind.Night
+                or PartOfDayKind.Tonight or PartOfDayKind.Dinner                           => 1,
+            _                                                                              => -1,
+        };
 
         private bool Moment(int nodeIndex, DateTime fallbackDay, out DateTime moment, out string timex)
         {

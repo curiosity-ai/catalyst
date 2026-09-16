@@ -195,13 +195,22 @@ namespace Catalyst.DateTimeRecognition
             else
             {
                 // "fri 14th", "tuesday the eleventh", "monday 21"
-                int probe = tail;
+                int probe   = tail;
+                bool theDay = false;
+
+                for (int k = end; k <= probe; k++)
+                {
+                    if (AtWord(k, "the")) { theDay = true; break; }
+                }
+
                 probe = SkipArticle(probe);
+                if (AtWord(tail, "the")) theDay = true;
 
                 if (TryOrdinal(probe, out int ord, out int ordEnd) && ord >= 1 && ord <= 31)
                 {
-                    n.Day = ord;
-                    end   = ordEnd;
+                    n.Day         = ord;
+                    n.DefiniteDay = theDay;
+                    end           = ordEnd;
                 }
                 else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore)
                 {

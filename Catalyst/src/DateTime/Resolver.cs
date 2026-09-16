@@ -298,6 +298,14 @@ namespace Catalyst.DateTimeRecognition
                         }
                     }
 
+                    // "monday the 26th" names one day; "monday 21" leaves both readings open
+                    if (n.DefiniteDay && haveNext)
+                    {
+                        first = second;
+                        timex = FormatDate(first);
+                        return true;
+                    }
+
                     if (haveBack && haveNext) { hasSecond = true; return true; }
                     if (haveNext)             { first = second;   return true; }
                     if (haveBack)             { return true; }
@@ -639,28 +647,36 @@ namespace Catalyst.DateTimeRecognition
 
             string timex;
 
+            string partOfDay = n.PartOfDay != PartOfDayKind.None ? Parser.RangeOf(n.PartOfDay).Timex
+                             : n.SetUnit == TimeUnit.Night       ? Parser.RangeOf(PartOfDayKind.Night).Timex
+                             : null;
+
             if (n.Weekday >= 0)
             {
                 timex = $"XXXX-WXX-{TimexWeekday(n.Weekday)}";
+
                 if (n.Hour >= 0)
                 {
                     ComputeTime(nodeIndex, out int hour, out _, out _, out int minute, out int second);
                     timex += TimexOfTime(hour, minute, second);
+                }
+                else if (partOfDay is object)
+                {
+                    timex += partOfDay;
                 }
             }
             else if (n.Day >= 0)
             {
                 timex = $"XXXX-XX-{n.Day:00}";
             }
-            else if (n.PartOfDay != PartOfDayKind.None)
-            {
-                var part = Parser.RangeOf(n.PartOfDay);
-                timex = part.Timex is object ? "XXXX-XX-XX" + part.Timex : DurationTimexOf(n.SetUnit, n.SetInterval);
-            }
             else if (n.Hour >= 0)
             {
                 ComputeTime(nodeIndex, out int hour, out _, out _, out int minute, out int second);
                 timex = TimexOfTime(hour, minute, second);
+            }
+            else if (partOfDay is object)
+            {
+                timex = partOfDay;
             }
             else if (n.BusinessDays)
             {

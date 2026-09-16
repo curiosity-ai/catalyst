@@ -161,6 +161,9 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>True when Left and Right are whole moments rather than two readings of the same clock.</summary>
         public bool ChildrenAreMoments;
 
+        /// <summary>True where the day was written with an article ("monday the 26th"), which names one day.</summary>
+        public bool DefiniteDay;
+
         public ModKind Mod;
         /// <summary>A narrowing modifier the bounding one wraps: the "mid" of "after mid may".</summary>
         public ModKind InnerMod;

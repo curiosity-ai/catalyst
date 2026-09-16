@@ -261,8 +261,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "yearly", "annually", "annual");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Hour,    "hourly");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "quarterly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "bi monthly", "bimonthly", "semi monthly");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "bi weekly", "biweekly");
+            b.Add(new TermInfo(TermKind.SetFrequency, (int)TimeUnit.Month, TermKind.Multiplier, 2), "bi monthly", "bimonthly");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "semi monthly");
+            b.Add(new TermInfo(TermKind.SetFrequency, (int)TimeUnit.Week,  TermKind.Multiplier, 2), "bi weekly", "biweekly");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semi annually", "semiannually", "semiannual", "semi annual", "biannual", "biannually");
         }
 

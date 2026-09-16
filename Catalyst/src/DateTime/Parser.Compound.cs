@@ -1000,7 +1000,23 @@ namespace Catalyst.DateTimeRecognition
                 freq.LexStart    = i;
                 freq.LexEnd      = After(at);
                 freq.SetUnit     = (TimeUnit)frequency;
-                freq.SetInterval = interval;
+                freq.SetInterval = _lex[at].Term.Is(TermKind.Multiplier, out int every) ? interval * every : interval;
+
+                // "every day at 7:13 p.m." — the clock is what repeats
+                int clockAt  = SkipWord(freq.LexEnd, "at");
+                int clock    = Node.Unspecified;
+                int clockEnd = clockAt != freq.LexEnd ? TryTime(clockAt, out clock, allowBareHour: true) : -1;
+
+                if (clockEnd > 0)
+                {
+                    ref var c = ref NodeAt(clock);
+                    freq.Hour   = c.Hour;
+                    freq.Minute = c.Minute;
+                    freq.Second = c.Second;
+                    freq.AmPm   = c.AmPm;
+                    freq.LexEnd = clockEnd;
+                }
+
                 SetSpan(ref freq);
                 node = Alloc(freq);
                 return freq.LexEnd;
