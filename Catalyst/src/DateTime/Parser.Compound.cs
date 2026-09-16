@@ -1051,7 +1051,7 @@ namespace Catalyst.DateTimeRecognition
                 freq.SetInterval = _lex[at].Term.Is(TermKind.Multiplier, out int every) ? interval * every : interval;
 
                 // "every day at 7:13 p.m." — the clock is what repeats
-                int clockAt  = SkipWord(freq.LexEnd, "at");
+                int clockAt  = SkipClockPrefix(SkipWord(freq.LexEnd, "at"));
                 int clock    = Node.Unspecified;
                 int clockEnd = TryTime(clockAt, out clock, allowBareHour: clockAt != freq.LexEnd);
 
@@ -1141,6 +1141,7 @@ namespace Catalyst.DateTimeRecognition
             // "every monday at 4pm", "tuesdays at 9am", "friday mornings"
             int tail = end;
             tail = SkipWords(tail, "at", "on");
+            tail = SkipClockPrefix(tail);
 
             int timeEnd = TryTime(tail, out int time);
             if (timeEnd > 0)
