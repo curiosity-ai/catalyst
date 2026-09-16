@@ -207,9 +207,9 @@ namespace Catalyst.DateTimeRecognition
         {
             extra = 0;
 
-            if (!AtWord(i, "and")) return -1;
+            if (!AtTerm(i, TermKind.AndWord)) return -1;
 
-            int at = i + 1;
+            int at = After(i);
             at = SkipWords(at, "a", "an");
 
             if (AtTerm(at, TermKind.HalfWord))

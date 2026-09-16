@@ -407,6 +407,10 @@ namespace Catalyst.DateTimeRecognition
         {
             if (_lex[at].Term.Kind != TermKind.Unit) return true;
 
+            // "2h", "14h", "3u" — the marker written onto its digits is a reading. Spaced, or following a
+            // word (an elided "un'ora", a split compound), it is the unit and the number counts them.
+            if (!_lex[at].SpaceBefore && AtNumber(at - 1)) return true;
+
             if (hour > 12 && hour < 24) return true;   // "24 uur" is a day's worth, not midnight
             if (AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60) return true;
 
