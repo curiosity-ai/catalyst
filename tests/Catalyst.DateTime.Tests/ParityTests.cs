@@ -18,12 +18,12 @@ namespace Catalyst.Tests.DateTimeRecognition
         [Theory]
         [InlineData("English",       0.95, 0.92)]
         [InlineData("EnglishOthers", 0.95, 0.92)]
-        [InlineData("French",        0.59, 0.56)]
-        [InlineData("Italian",       0.60, 0.56)]
-        [InlineData("Dutch",         0.48, 0.44)]
-        [InlineData("German",        0.42, 0.37)]
-        [InlineData("Portuguese",    0.39, 0.36)]
-        [InlineData("Spanish",       0.42, 0.38)]
+        [InlineData("French",        0.73, 0.69)]
+        [InlineData("Italian",       0.71, 0.66)]
+        [InlineData("Dutch",         0.63, 0.57)]
+        [InlineData("German",        0.62, 0.55)]
+        [InlineData("Portuguese",    0.60, 0.57)]
+        [InlineData("Spanish",       0.65, 0.60)]
         public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);

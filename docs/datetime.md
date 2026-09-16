@@ -102,12 +102,12 @@ is the ceiling this is measured against.
 |---|---:|---:|
 | English | 96.2% | 93.5% |
 | EnglishOthers | 97.6% | 95.1% |
-| Italian | 62.0% | 57.7% |
-| French | 60.5% | 57.9% |
-| Dutch | 49.8% | 45.5% |
-| German | 43.0% | 38.9% |
-| Spanish | 43.2% | 39.8% |
-| Portuguese | 40.0% | 37.0% |
+| French | 74.2% | 70.5% |
+| Italian | 72.3% | 67.9% |
+| Spanish | 66.1% | 61.3% |
+| Dutch | 64.5% | 58.1% |
+| German | 62.9% | 56.6% |
+| Portuguese | 61.8% | 58.8% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine
@@ -116,13 +116,35 @@ beats them.
 A note on articles, because it is the one place the languages genuinely diverge. Whether a leading definite
 article belongs to the match depends on what is being matched, not only on the language: English keeps it on a
 date ("the 09th of may") and drops it from a qualified period ("the april 2017" is reported as "april 2017"),
-while French, Spanish, Portuguese, Italian and Dutch do the opposite. That is what `Lexicon.ArticleInDateSpan`
-and `ArticleInPeriodSpan` select between.
+while French, Spanish, Portuguese, Italian, Dutch and German do the opposite. That is what
+`Lexicon.ArticleInDateSpan` and `ArticleInPeriodSpan` select between.
 
-Two more per-language flags exist for the same reason. `RelativeAfterUnit` says whether the qualifier may follow
-the unit (*la semaine prochaine*); English puts it in front, so reading it the other way round turns "2 hours
-next month" into a two-hour period. `PluralEndsInS` says whether a plural unit can be told from a singular one
-by its last letter, which is what makes "3 next week" the number three beside "next week" rather than three
-weeks; German and Dutch opt out. `PartNamedWithOf` says whether naming part of a period takes a
-preposition ("the end of may"); where it does, a bare "start" or "end" in front of anything else is the verb,
-and where it does not ("Anfang Mai") it is not.
+The other per-language flags exist for the same reason — a rule that would otherwise have an English word
+written into it:
+
+- `RelativeAfterUnit` — whether the qualifier may follow the unit (*la semaine prochaine*). English puts it in
+  front, so reading it the other way round turns "2 hours next month" into a two-hour period.
+- `PluralEndsInS` — whether a plural unit can be told from a singular one by its last letter, which is what
+  makes "3 next week" the number three beside "next week" rather than three weeks. German and Dutch opt out,
+  and Dutch needs to: it writes a single morning as *'s morgens*.
+- `PartNamedWithOf` — whether naming part of a period takes a preposition ("the end of may"). Where it does, a
+  bare "start" or "end" in front of anything else is the verb; where it does not (*Anfang Mai*) it is not.
+- `MinutesFollowHour` — whether the minutes are spoken after the hour and joined to it (*siete y media*).
+- `HalfIsBeforeTheHour` — whether "half" names the half hour *before* the hour it precedes, so *halb acht* and
+  *half acht* are half past seven. The same reading covers the quarters: *viertel acht*, *dreiviertel acht*.
+- `SplitsCompounds` — whether the language writes compounds as one word (*dienstagmorgen*, *neunundzwanzig*),
+  so an unknown word is worth splitting into two the lexicon does know.
+- `OrdinalEndsInDot` — whether an ordinal is written as its number and a full stop (*22. April*).
+- `DecimalComma`, `DayMonthOrder` — how a number and a numeric date are written.
+
+Two splits the scanner performs need no flag, because both halves have to be known words for them to happen at
+all: a word elided onto the next one (*un'ora*) is split at its apostrophe, and the tens and units run together
+(*ventinove*, *veinticuatro*) are read as one number.
+
+Two term kinds carry a distinction the flags cannot. `TermKind.Article` marks the glue that can *head* a
+phrase, as against a preposition that cannot — which is what makes "por una hora" report from the article while
+"den ganzen Tag" keeps its. `TermKind.Whole` marks the word for "whole", which is what lets that phrase count as
+one. A word may hold two roles at once (`TermInfo` carries a kind and an alternate), and that is how most of
+this is expressed: the Romance "de" is glue *and* a range opener, the German "nachmittags" is a part of the day
+*and* an am/pm marker, the French "à" joins a range *and* introduces a clock. Registering the same word twice
+does not add a role — the later entry replaces the earlier one.
