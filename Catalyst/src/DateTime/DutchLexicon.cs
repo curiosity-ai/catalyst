@@ -96,7 +96,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.BusinessDay, "werk", "werkdag", "werkdagen");
             b.Add(TermKind.Several, 3, "enkele", "een paar", "verscheidene", "sommige");
             b.Add(TermKind.Several, 2, "paar");
-            b.Add(TermKind.HalfWord, "half", "halve");
+            b.Add(TermKind.HalfWord, "halve");
             b.Add(TermKind.QuarterWord, "kwartier", "kwart");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit", "komende", "aanstaande");
@@ -149,7 +149,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.More,  "meer dan");
             b.Add(TermKind.Mod, (int)ModKind.Start, "begin", "begin van", "start van");
             b.Add(TermKind.Mod, (int)ModKind.End,   "eind", "einde", "eind van", "einde van");
-            b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van", "half");
+            b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van");
+            b.Add(new TermInfo(TermKind.HalfWord, 0, TermKind.Mod, (int)ModKind.Mid), "half");   // "half acht" and "half augustus"
             b.Add(TermKind.Approx, "rond", "omstreeks", "ongeveer", "circa");
 
             b.Add(TermKind.SetPrefix, 0, "elke", "elk", "iedere", "ieder", "alle");
