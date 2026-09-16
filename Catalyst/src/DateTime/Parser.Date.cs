@@ -905,6 +905,10 @@ namespace Catalyst.DateTimeRecognition
                 at    = After(at);
             }
 
+            // "il y a deux ans", "hace dos años" — the word for "ago" may come in front of the length
+            bool leadingAgo = !sawIn && AtTerm(at, TermKind.Ago) && !AtTerm(at, TermKind.Unit);
+            if (leadingAgo) at = After(at);
+
             int durationEnd = TryDuration(at, out int durationNode);
             if (durationEnd < 0) return -1;
 
@@ -918,7 +922,11 @@ namespace Catalyst.DateTimeRecognition
             int  anchor = Node.Unspecified;
             int  tail   = durationEnd;
 
-            if (AtTerm(tail, TermKind.Ago) || AtTerm(tail, TermKind.FromNow))
+            if (leadingAgo)
+            {
+                sign = -1;
+            }
+            else if (AtTerm(tail, TermKind.Ago) || AtTerm(tail, TermKind.FromNow))
             {
                 sign = AtTerm(tail, TermKind.Ago) ? -1 : 1;
                 end  = After(tail);

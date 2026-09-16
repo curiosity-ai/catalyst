@@ -462,10 +462,11 @@ namespace Catalyst.DateTimeRecognition
                 return hour >= 0 && hour <= 24;
             }
 
-            if (AtTerm(i, TermKind.Cardinal, out int spoken) && spoken >= 1 && spoken <= 24)
+            // "vingt-quatre heures", "vingt et un heures" — the hour may be spelled out in several words
+            if (TryWordNumber(i, out int spoken, out int spokenEnd) && spoken >= 1 && spoken <= 24)
             {
                 hour = spoken;
-                end  = i + 1;
+                end  = spokenEnd;
                 return true;
             }
 
