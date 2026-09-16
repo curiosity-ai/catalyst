@@ -82,6 +82,16 @@ namespace Catalyst.Models
         /// <inheritdoc />
         public void Parse(IDocument document, CancellationToken cancellationToken = default)
         {
+            //Tokenizing a span adds to what it already holds, which is what the sentence detector needs when it
+            //re-adds a document's tokens into the sentences it just cut. For a document that was tokenized
+            //before, the same behaviour means a second parse doubles its tokens, a third triples them, and the
+            //spans keep pointing at text they no longer describe. Re-tokenizing means replacing, so a document
+            //that already has tokens starts again from nothing.
+            if (document.TokensCount > 0)
+            {
+                document.Clear();
+            }
+
             if (document.SpansCount == 0)
             {
                 document.AddSpan(0, document.Length - 1);
