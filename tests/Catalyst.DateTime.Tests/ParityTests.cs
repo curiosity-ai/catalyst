@@ -8,6 +8,12 @@ namespace Catalyst.Tests.DateTimeRecognition
     /// Scores the Catalyst date/time engine against the Microsoft.Recognizers.Text specification suite, and
     /// against the Microsoft implementation itself, so a loss of capability shows up as a number.
     ///
+    /// Three rates per language, because a span disagreement and a wrong answer are not the same thing.
+    /// "Same reading" is the one that says whether the engine understood the text: the resolution matches
+    /// field for field, and the span is either identical or differs only by glue — an article, a preposition,
+    /// a comma — which the reference implementation itself is not consistent about. The two strict rates are
+    /// reported beside it so nothing is hidden by the tolerance.
+    ///
     /// The floors below are what the engine reaches today. They exist to catch a regression, not to describe
     /// a target: raise one whenever the engine beats it, and never lower one to make a change pass.
     /// </summary>
@@ -16,15 +22,16 @@ namespace Catalyst.Tests.DateTimeRecognition
         private static string ReportPath(string name) => Path.Combine(AppContext.BaseDirectory, "parity", name + ".txt");
 
         [Theory]
-        [InlineData("English",       0.95, 0.92)]
-        [InlineData("EnglishOthers", 0.95, 0.92)]
-        [InlineData("French",        0.73, 0.69)]
-        [InlineData("Italian",       0.71, 0.66)]
-        [InlineData("Dutch",         0.63, 0.57)]
-        [InlineData("German",        0.62, 0.55)]
-        [InlineData("Portuguese",    0.60, 0.57)]
-        [InlineData("Spanish",       0.65, 0.60)]
-        public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumSpanRate, double minimumValueRate)
+        //                       reading  span  value
+        [InlineData("English",       0.93, 0.95, 0.92)]
+        [InlineData("EnglishOthers", 0.93, 0.95, 0.92)]
+        [InlineData("French",        0.70, 0.73, 0.69)]
+        [InlineData("Italian",       0.68, 0.71, 0.66)]
+        [InlineData("Dutch",         0.62, 0.63, 0.57)]
+        [InlineData("German",        0.57, 0.62, 0.55)]
+        [InlineData("Portuguese",    0.59, 0.60, 0.57)]
+        [InlineData("Spanish",       0.65, 0.65, 0.60)]
+        public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumReadingRate, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);
             var microsoft = ParityReport.Run(language, Engines.RunMicrosoft);
@@ -40,8 +47,9 @@ namespace Catalyst.Tests.DateTimeRecognition
             // The suite is Microsoft's own regression set, so its score is the ceiling this is measured against
             Assert.True(microsoft.Overall.SpanRate > 0.98, $"the reference implementation scored {microsoft.Overall.SpanRate:P1}, so the comparison is not measuring what it should");
 
-            Assert.True(catalyst.Overall.SpanRate  >= minimumSpanRate,  $"span parity for {language} fell to {catalyst.Overall.SpanRate:P1}, below the {minimumSpanRate:P0} floor (see {ReportPath("catalyst-" + language)})");
-            Assert.True(catalyst.Overall.ValueRate >= minimumValueRate, $"resolution parity for {language} fell to {catalyst.Overall.ValueRate:P1}, below the {minimumValueRate:P0} floor (see {ReportPath("catalyst-" + language)})");
+            Assert.True(catalyst.Overall.ReadingRate >= minimumReadingRate, $"reading parity for {language} fell to {catalyst.Overall.ReadingRate:P1}, below the {minimumReadingRate:P0} floor (see {ReportPath("catalyst-" + language)})");
+            Assert.True(catalyst.Overall.SpanRate    >= minimumSpanRate,    $"span parity for {language} fell to {catalyst.Overall.SpanRate:P1}, below the {minimumSpanRate:P0} floor (see {ReportPath("catalyst-" + language)})");
+            Assert.True(catalyst.Overall.ValueRate   >= minimumValueRate,   $"resolution parity for {language} fell to {catalyst.Overall.ValueRate:P1}, below the {minimumValueRate:P0} floor (see {ReportPath("catalyst-" + language)})");
         }
     }
 }
