@@ -476,7 +476,7 @@ namespace Catalyst.DateTimeRecognition
                 var n = NodeAt(dateNodes[c]);
                 ref var t = ref NodeAt(time);
                 n.Kind      = NodeKind.DateTime;
-                n.LexStart  = i;
+                n.LexStart  = n.LexStart > i && n.LexStart < dateEnd ? n.LexStart : i;   // the date settled the article
                 n.LexEnd    = timeEnd;
                 n.Hour      = t.Hour;
                 n.Minute    = t.Minute;
@@ -704,7 +704,7 @@ namespace Catalyst.DateTimeRecognition
                 var n = NodeAt(dateNodes[c]);
                 ref var p = ref NodeAt(period);
                 n.Kind      = NodeKind.DateTimeRange;
-                n.LexStart  = i;
+                n.LexStart  = n.LexStart > i && n.LexStart < dateEnds[c] ? n.LexStart : i;   // the date settled the article
                 n.LexEnd    = periodEnd;
                 n.PartOfDay     = p.PartOfDay;
                 n.Left          = p.Left;

@@ -187,6 +187,14 @@ namespace Catalyst.DateTimeRecognition
             n.Relative    = relative;
             n.OffsetWeeks = weekShift;
 
+            // "miércoles pasado", "lunes próximo" — the qualifier follows the weekday
+            if (relative == RelativeKind.None && _lexicon.RelativeAfterUnit && AtTerm(end, TermKind.Relative, out int afterRel)
+                && !AtTerm(end, TermKind.Weekday) && !AtTerm(end, TermKind.Unit))
+            {
+                n.Relative = (RelativeKind)afterRel;
+                end        = After(end);
+            }
+
             if (!sawWeek)
             {
                 // "tuesday of next week", "on monday of the following week"

@@ -112,7 +112,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "adesso", "ora", "in questo momento");
 
             b.Add(TermKind.Ago,     "fa", "prima");
-            b.Add(TermKind.FromNow, "dopo", "più tardi", "da adesso");
+            b.Add(TermKind.FromNow, "dopo", "da adesso");
+            b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "più tardi", "piu tardi");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mattina", "mattino", "mattinata");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "pomeriggio");
@@ -131,12 +132,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "alle", "fino a", "fino al");
             b.Add(TermKind.Connector, "e");
             b.Add(TermKind.RangeStart, 0, "da", "dal", "dalle", "a partire da", "a partire dal");
-            b.Add(TermKind.RangeStart, 1, "tra", "fra");
+            b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 
             b.Add(TermKind.Filler, "di", "del", "della", "il", "lo", "la", "i", "gli", "le", "in", "nel", "nella", "per", "un", "una");
             b.Add(TermKind.Filler, "tutto", "tutta", "tutti", "tutte", "intero", "intera");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
-            b.Add(TermKind.InPrefix, 0, "tra", "fra");
             b.Add(TermKind.InPrefix, 1, "entro");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "prima di", "prima del", "entro");

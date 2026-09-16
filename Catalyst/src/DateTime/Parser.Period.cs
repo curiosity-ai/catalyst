@@ -797,7 +797,7 @@ namespace Catalyst.DateTimeRecognition
 
                 var n2 = Node.Create(NodeKind.DateRange);
                 n2.LexStart     = hadThe && (count < 0 || _lexicon.ArticleInPeriodSpan) ? i : start;
-                n2.LexEnd       = at + 2;
+                n2.LexEnd       = After(at + 1);   // "el mes que viene" ends past the whole phrase
                 n2.PeriodUnit   = (TimeUnit)unitValue;
                 n2.PeriodCount  = count < 0 ? 1 : count;
                 n2.Relative     = relative;

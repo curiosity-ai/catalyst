@@ -122,7 +122,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "ahora", "ahora mismo", "en este momento");
 
             b.Add(TermKind.Ago,     "hace", "atrás", "atras", "antes");
-            b.Add(TermKind.FromNow, "después", "despues", "más tarde", "mas tarde", "a partir de ahora");
+            b.Add(TermKind.FromNow, "después", "despues", "a partir de ahora");
+            b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later),   "más tarde", "mas tarde");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Earlier), "más temprano", "mas temprano", "más pronto");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mañanas", "madrugada");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "tarde", "tardes");
@@ -141,6 +143,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "hasta", "hasta el");
             b.Add(TermKind.Connector, "y", "e");
             b.Add(TermKind.RangeStart, 0, "desde", "desde el", "a partir de", "a partir del", "comenzando");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "del");   // "de 1/10 a 11/7"
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "de", "del", "el", "la", "los", "las", "en", "por", "para", "un", "una");
