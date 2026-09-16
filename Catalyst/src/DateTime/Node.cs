@@ -135,6 +135,8 @@ namespace Catalyst.DateTimeRecognition
         public int      PeriodCount;
         public int      OrdinalInPeriod;   // "first week of X" -> 1
         public bool     OrdinalFromEnd;    // "the last week of X"
+        /// <summary>Whole periods beyond the one the qualifier names: "the week after next" is one more.</summary>
+        public int      ExtraPeriods;
         public int      WeekOfYear;
         public int      Quarter;
         public int      HalfOfYear;

@@ -31,6 +31,13 @@ namespace Catalyst.DateTimeRecognition
                 i   = After(i);
             }
 
+            // "a ½ hour" is half an hour; the article is not part of the fraction
+            if ((AtWord(i, "a") || AtWord(i, "an")) && AtTerm(i + 1, TermKind.HalfWord))
+            {
+                i     = i + 1;
+                start = i;
+            }
+
             var parts = new DurationParts();
             int at    = i;
             bool any  = false;
@@ -144,13 +151,12 @@ namespace Catalyst.DateTimeRecognition
                 at++;
             }
 
-            if (!AtTerm(at, TermKind.Unit, out int unitValue))
-            {
-                if (business && amount >= 0) return -1;
-                return -1;
-            }
+            if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
-            at++;
+            // "the second week of 2021" counts weeks; "second" is the ordinal, not the unit
+            if (_lex[at].Term.Kind == TermKind.Ordinal && AtTerm(at + 1, TermKind.Unit)) return -1;
+
+            at = After(at);
 
             var unit = (TimeUnit)unitValue;
             if (business && unit == TimeUnit.Day) unit = TimeUnit.BusinessDay;

@@ -623,12 +623,15 @@ namespace Catalyst.DateTimeRecognition
 
             string mod = ModName(n.Mod);
 
+            // "around tomorrow 10am" is reported as the range it approximates
+            string type = n.Mod == ModKind.Approx ? "datetimerange" : "datetime";
+
             void Emit(DateTime date, int hour)
             {
                 values.Add(new DateTimeResolutionValue
                 {
                     Timex = dateTimex + TimexOfTime(hour, minute, second),
-                    Type  = "datetime",
+                    Type  = type,
                     Value = FormatDateTime(new DateTime(date.Year, date.Month, date.Day, hour, m, s)),
                     Mod   = mod,
                 });

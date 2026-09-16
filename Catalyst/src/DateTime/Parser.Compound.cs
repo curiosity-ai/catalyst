@@ -324,6 +324,22 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
+            // "around tomorrow 10am" — the approximation belongs to the moment it qualifies
+            if (AtTerm(i, TermKind.Approx))
+            {
+                int inner = TryDateTime(After(i), out int approx);
+
+                if (inner > 0 && NodeAt(approx).Mod == ModKind.None)
+                {
+                    ref var a = ref NodeAt(approx);
+                    a.LexStart = i;
+                    a.Mod      = ModKind.Approx;
+                    SetSpan(ref a);
+                    node = approx;
+                    return inner;
+                }
+            }
+
             // "now", "right now", "at the moment", "end of day"
             if (AtTerm(i, TermKind.SpecialDay, out int special))
             {

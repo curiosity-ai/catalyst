@@ -117,8 +117,9 @@ namespace Catalyst.DateTimeRecognition
             n.Holiday  = (HolidayKind)holidayValue;
             n.Relative = rel;
 
-            // "easter 2018" / "independence day of this year" / "saint patrick 2020"
+            // "easter 2018" / "fourth of july, 1995" / "independence day of this year"
             int afterYear = end;
+            if (At(afterYear, LexKind.Comma)) afterYear++;
             afterYear = SkipWords(afterYear, "of", "in");
             afterYear = SkipWord(afterYear, "the");
 

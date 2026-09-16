@@ -747,6 +747,32 @@ namespace Catalyst.DateTimeRecognition
             // "3 next week" is the number three beside "next week", not three weeks
             if (countLedTheUnit && count > 1 && !LooksPlural(at)) return -1;
 
+            // "the week after next" is two weeks on, and "the week before last" two back
+            if (relative == RelativeKind.None && count < 0
+                && (AtWord(at + 1, "after") || AtWord(at + 1, "before"))
+                && AtTerm(at + 2, TermKind.Relative, out int beyondRel))
+            {
+                bool forward = AtWord(at + 1, "after");
+                var  beyond  = (RelativeKind)beyondRel;
+
+                bool matches = forward ? beyond is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following
+                                       : beyond is RelativeKind.Last or RelativeKind.Previous;
+
+                if (matches)
+                {
+                    var n3 = Node.Create(NodeKind.DateRange);
+                    n3.LexStart    = start;
+                    n3.LexEnd      = at + 3;
+                    n3.PeriodUnit  = (TimeUnit)unitValue;
+                    n3.PeriodCount = 1;
+                    n3.Relative     = forward ? RelativeKind.Next : RelativeKind.Last;
+                    n3.ExtraPeriods = 1;
+                    SetSpan(ref n3);
+                    node = Alloc(n3);
+                    return n3.LexEnd;
+                }
+            }
+
             // Romance languages put the qualifier after the unit: "la semaine prochaine"
             if (_lexicon.RelativeAfterUnit && relative == RelativeKind.None && AtTerm(at + 1, TermKind.Relative, out int trailingRel))
             {

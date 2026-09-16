@@ -386,7 +386,8 @@ namespace Catalyst.DateTimeRecognition
 
             if (single)
             {
-                int shift = WeekShift(rel);
+                // "the week after next" is one period beyond the one the qualifier names
+                int shift = WeekShift(rel) * (1 + n.ExtraPeriods);
 
                 switch (unit)
                 {
