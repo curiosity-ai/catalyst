@@ -58,12 +58,12 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // ---- a time plus a duration: "for 2 hours from 2pm"
-            if (n.Left >= 0 && n.Anchor >= 0 && At(n.Anchor).Kind == NodeKind.Duration)
+            if (n.Left >= 0 && n.RangeDuration >= 0 && At(n.RangeDuration).Kind == NodeKind.Duration)
             {
                 ComputeTime(n.Left, out int h1, out _, out _, out int m1, out int s1);
                 if (h1 < 0) return false;
 
-                var parts = At(n.Anchor).Duration;
+                var parts = At(n.RangeDuration).Duration;
                 var start = new DateTime(2000, 1, 1, h1, m1 < 0 ? 0 : m1, s1 < 0 ? 0 : s1);
                 var end   = start.AddHours(parts.Hours).AddMinutes(parts.Minutes).AddSeconds(parts.Seconds);
 
@@ -274,6 +274,80 @@ namespace Catalyst.DateTimeRecognition
 
         // ------------------------------------------------------------------ datetime ranges
 
+        /// <summary>A range whose two ends are complete moments; a side that named no day borrows the other's.</summary>
+        private void ResolveMomentRange(int nodeIndex, List<DateTimeResolutionValue> values)
+        {
+            var n = At(nodeIndex);
+
+            DateTime start, end;
+            string   startTimex, endTimex;
+
+            // Whichever end names a day sets the day for the other: "from 5 to 6pm of april 22"
+            if (!At(n.Left).HasDate && At(n.Right).HasDate)
+            {
+                if (!Moment(n.Right, _reference, out end, out endTimex)) return;
+                if (!Moment(n.Left, end, out start, out startTimex)) return;
+            }
+            else
+            {
+                if (!Moment(n.Left, _reference, out start, out startTimex)) return;
+                if (!Moment(n.Right, start, out end, out endTimex)) return;
+            }
+
+            if (end < start) end = end.AddDays(1);
+
+            var span  = end - start;
+            int hours = (int)span.TotalHours;
+            int mins  = (int)(span.TotalMinutes - hours * 60);
+
+            string duration = mins > 0 ? $"PT{hours}H{mins}M" : $"PT{hours}H";
+
+            values.Add(new DateTimeResolutionValue
+            {
+                Timex = $"({startTimex},{endTimex},{duration})",
+                Type  = "datetimerange",
+                Start = FormatDateTime(start),
+                End   = FormatDateTime(end),
+                Mod   = ModName(n.Mod),
+            });
+        }
+
+        private bool Moment(int nodeIndex, DateTime fallbackDay, out DateTime moment, out string timex)
+        {
+            moment = default;
+            timex  = null;
+
+            if (nodeIndex < 0) return false;
+
+            ref var n = ref At(nodeIndex);
+
+            DateTime day = fallbackDay.Date;
+            string dayTimex = FormatDate(day);
+
+            if (n.HasDate && ComputeDate(nodeIndex, out var computedTimex, out var computedDay, out _, out _))
+            {
+                day      = computedDay;
+                dayTimex = computedTimex;
+            }
+
+            if (!n.HasAnyTime)
+            {
+                moment = day;
+                timex  = dayTimex;
+                return true;
+            }
+
+            ComputeTime(nodeIndex, out int hour, out _, out _, out int minute, out int second);
+            if (hour < 0) return false;
+
+            int m = minute < 0 ? 0 : minute;
+            int sec = second < 0 ? 0 : second;
+
+            moment = new DateTime(day.Year, day.Month, day.Day, hour, m, sec);
+            timex  = dayTimex + TimexOfTime(hour, minute, second);
+            return true;
+        }
+
         private void ResolveDateTimeRange(int nodeIndex, List<DateTimeResolutionValue> values)
         {
             var n = At(nodeIndex);
@@ -305,6 +379,12 @@ namespace Catalyst.DateTimeRecognition
                 return;
             }
 
+            if (n.ChildrenAreMoments)
+            {
+                ResolveMomentRange(nodeIndex, values);
+                return;
+            }
+
             DateTime day;
             DateTime secondDay;
             bool     twoDays;
@@ -327,9 +407,13 @@ namespace Catalyst.DateTimeRecognition
             if (!ComputeClockRange(nodeIndex, out var range, out var alternate, out bool hasAlternate)) return;
 
             Emit(range, day);
+            if (twoDays) Emit(range, secondDay);
 
-            if (hasAlternate)   Emit(alternate, day);
-            else if (twoDays)   Emit(range, secondDay);
+            if (hasAlternate)
+            {
+                Emit(alternate, day);
+                if (twoDays) Emit(alternate, secondDay);
+            }
 
             void Emit(ClockRange r, DateTime day)
             {

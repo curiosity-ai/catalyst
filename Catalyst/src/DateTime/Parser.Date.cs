@@ -279,7 +279,7 @@ namespace Catalyst.DateTimeRecognition
         {
             if (TryYear(i, out year, out end)) return true;
 
-            if (AtNumber(i) && DigitsAt(i) == 2)
+            if (AtNumber(i) && DigitsAt(i) == 2 && !At(i + 1, LexKind.Colon))
             {
                 year = ExpandTwoDigitYear(NumberAt(i));
                 end  = i + 1;
@@ -626,7 +626,15 @@ namespace Catalyst.DateTimeRecognition
             if (hadThe) at++;
 
             var mod = ModKind.None;
-            if (AtTerm(at, TermKind.Approx)) { mod = ModKind.Approx; at = After(at); at = SkipWord(at, "the"); hadThe = true; }
+            if (AtTerm(at, TermKind.Approx))
+            {
+                mod = ModKind.Approx;
+                at  = After(at);
+
+                int beforeArticle = at;
+                at     = SkipWord(at, "the");
+                hadThe = hadThe || at != beforeArticle;
+            }
 
             bool ordinal = TryOrdinal(at, out int day, out int end);
 

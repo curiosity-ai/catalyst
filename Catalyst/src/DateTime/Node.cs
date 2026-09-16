@@ -127,6 +127,8 @@ namespace Catalyst.DateTimeRecognition
         public SeasonKind   Season;
         /// <summary>The node this one is measured from ("3 days after january 12th"), or -1.</summary>
         public int          Anchor;
+        /// <summary>The duration a clock range runs for ("for 2 hours from 2pm"), or -1.</summary>
+        public int          RangeDuration;
 
         // Period
         public TimeUnit PeriodUnit;
@@ -155,8 +157,10 @@ namespace Catalyst.DateTimeRecognition
         public bool     DurationIsDateOnly;   // true when every component is a day or larger
 
         // Range
-        public int Left;
-        public int Right;
+        public int  Left;
+        public int  Right;
+        /// <summary>True when Left and Right are whole moments rather than two readings of the same clock.</summary>
+        public bool ChildrenAreMoments;
 
         public ModKind Mod;
 
@@ -178,6 +182,7 @@ namespace Catalyst.DateTimeRecognition
                 Second          = Unspecified,
                 AmPm            = Unspecified,
                 Anchor          = Unspecified,
+                RangeDuration   = Unspecified,
                 Left            = Unspecified,
                 Right           = Unspecified,
                 OrdinalInPeriod = Unspecified,

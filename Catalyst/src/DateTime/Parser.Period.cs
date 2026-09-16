@@ -344,9 +344,31 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryNthPeriodOf(i, out int n1),  n1, ref best, ref bestNode);
             Consider(TrySimplePeriod(i, out int n2), n2, ref best, ref bestNode);
             Consider(TryDate(i, out int n3),         n3, ref best, ref bestNode);
+            Consider(TryNowAsDate(i, out int n4),    n4, ref best, ref bestNode);
 
             node = bestNode;
             return best;
+        }
+
+        /// <summary>"now" / "today" used as the open end of a range: "between jan 22 and now".</summary>
+        private int TryNowAsDate(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            bool current = AtTermValue(i, TermKind.SpecialDay, (int)SpecialDayKind.Now);
+
+            if (!current && !(AtWord(i, "current") && AtWord(i + 1, "date")) && !AtWord(i, "date")) return -1;
+
+            int end = current ? After(i) : (AtWord(i, "date") ? i + 1 : i + 2);
+
+            var n = Node.Create(NodeKind.Date);
+            n.LexStart   = i;
+            n.LexEnd     = end;
+            n.Relative   = RelativeKind.Current;
+            n.OffsetDays = 0;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return end;
         }
 
         // ------------------------------------------------------------------ explicit ranges

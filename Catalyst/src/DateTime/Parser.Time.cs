@@ -243,7 +243,7 @@ namespace Catalyst.DateTimeRecognition
                 at              = at + 2;
             }
             // spelled-out minutes — "three thirty", "two forty five"
-            else if (AtTerm(i, TermKind.Cardinal) && TryWordNumber(at, out int spokenMinutes, out int afterSpoken) && spokenMinutes > 0 && spokenMinutes < 60)
+            else if (AtTerm(i, TermKind.Cardinal) && TryWordNumber(At(at, LexKind.Dash) ? at + 1 : at, out int spokenMinutes, out int afterSpoken) && spokenMinutes > 0 && spokenMinutes < 60)
             {
                 minute          = spokenMinutes;
                 explicitMinutes = true;
@@ -365,7 +365,9 @@ namespace Catalyst.DateTimeRecognition
                 if (AtTerm(k, TermKind.RangeStart)) return true;
             }
 
-            return (At(i + 1, LexKind.Dash) || AtTerm(i + 1, TermKind.Connector)) && AtNumber(i + 2) && DigitsAt(i + 2) == 4;
+            if ((At(i + 1, LexKind.Dash) || AtTerm(i + 1, TermKind.Connector)) && AtNumber(i + 2) && DigitsAt(i + 2) == 4) return true;
+
+            return (At(i - 1, LexKind.Dash) || AtTerm(i - 1, TermKind.Connector)) && AtNumber(i - 2) && DigitsAt(i - 2) == 4;
         }
 
         // ------------------------------------------------------------------ a time

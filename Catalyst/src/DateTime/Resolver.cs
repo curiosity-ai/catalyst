@@ -371,7 +371,7 @@ namespace Catalyst.DateTimeRecognition
                 else if (hour == 12)
                 {
                     secondHour = 0;
-                    hasSecond  = false;
+                    hasSecond  = true;
                 }
             }
         }

@@ -189,10 +189,10 @@ namespace Catalyst.DateTimeRecognition
             if (NodeAt(duration).Duration.IsDateOnly) return -1;
 
             var n = Node.Create(NodeKind.TimeRange);
-            n.LexStart = i;
-            n.LexEnd   = end;
-            n.Left     = time;
-            n.Anchor   = duration;
+            n.LexStart      = i;
+            n.LexEnd        = end;
+            n.Left          = time;
+            n.RangeDuration = duration;
             SetSpan(ref n);
             node = Alloc(n);
             return end;
@@ -233,10 +233,13 @@ namespace Catalyst.DateTimeRecognition
                 at     = After(at);
             }
 
+            bool narrowing = mod == ModKind.Early || mod == ModKind.Late || mod == ModKind.Mid;
+
             if (mod == ModKind.Early)      mod = ModKind.Since;
             else if (mod == ModKind.Late)  mod = ModKind.Until;
 
-            int timeEnd = TryTime(at, out int time);
+            int time    = Node.Unspecified;
+            int timeEnd = narrowing ? -1 : TryTime(at, out time);
             if (timeEnd < 0)
             {
                 int podEnd = TryPartOfDayPeriod(at, out time);
@@ -301,6 +304,35 @@ namespace Catalyst.DateTimeRecognition
                 }
             }
 
+            // "last night at 8"
+            int nightEnd = TryRelativeDayPartOfDay(i, out int nightNode);
+
+            if (nightEnd > 0)
+            {
+                int at = SkipWord(nightEnd, "at");
+
+                if (at != nightEnd)
+                {
+                    int timeEnd = TryTime(at, out int time, allowBareHour: true);
+
+                    if (timeEnd > 0)
+                    {
+                        var n = NodeAt(nightNode);
+                        ref var t = ref NodeAt(time);
+                        n.Kind     = NodeKind.DateTime;
+                        n.LexStart = i;
+                        n.LexEnd   = timeEnd;
+                        n.Hour     = t.Hour;
+                        n.Minute   = t.Minute;
+                        n.Second   = t.Second;
+                        n.AmPm     = t.AmPm >= 0 ? t.AmPm : (n.PartOfDay == PartOfDayKind.Night || n.PartOfDay == PartOfDayKind.Tonight || n.PartOfDay == PartOfDayKind.Evening ? 1 : 0);
+                        SetSpan(ref n);
+                        node = Alloc(n);
+                        return timeEnd;
+                    }
+                }
+            }
+
             // "in 5 minutes", "30 min later", "half an hour from now", "3 minutes from now"
             int offsetEnd = TryTimeOffset(i, out int offsetNode);
             if (offsetEnd > 0)
@@ -350,8 +382,9 @@ namespace Catalyst.DateTimeRecognition
                 at = SkipWords(at, "at", "on");
                 if (At(at, LexKind.Comma)) { at++; if (AtWord(at, "at")) marker = true; at = SkipWord(at, "at"); }
                 if (At(at, LexKind.At))    { at++; marker = true; }
-                if (AtWord(at, "at") || AtTerm(at, TermKind.Approx)) marker = true;
+                if (AtWord(at, "at") || AtWord(at, "for") || AtTerm(at, TermKind.Approx)) marker = true;
                 at = SkipWords(at, "at", "around");
+                at = SkipWord(at, "for");
 
                 int timeEnd = TryTime(at, out int time, allowBareHour: marker);
                 if (timeEnd <= 0) continue;
@@ -481,9 +514,82 @@ namespace Catalyst.DateTimeRecognition
 
         // ------------------------------------------------------------------ date + time period
 
+        /// <summary>"from 2pm till tomorrow 4:30pm", "between 2:00 tomorrow and 4:00", "between now and eight o'clock".</summary>
+        private int TryExplicitMomentRange(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            int at         = i;
+            bool sawFrom   = false;
+            bool sawBetween = false;
+
+            if (AtTerm(at, TermKind.RangeStart, out int rangeKind))
+            {
+                sawFrom    = rangeKind == 0;
+                sawBetween = rangeKind == 1;
+                at         = After(at);
+            }
+
+            if (!sawFrom && !sawBetween) return -1;
+
+            int leftEnd = TryMoment(at, out int left);
+            if (leftEnd < 0) return -1;
+
+            int mid = leftEnd;
+            bool connector = false;
+
+            if (sawBetween && AtWord(mid, "and"))                            { connector = true; mid++; }
+            else if (AtTerm(mid, TermKind.Connector) && !AtWord(mid, "and")) { connector = true; mid = After(mid); }
+            else if (At(mid, LexKind.Dash))                                  { connector = true; mid++; }
+
+            if (!connector) return -1;
+
+            int rightEnd = TryMoment(mid, out int right);
+            if (rightEnd < 0) return -1;
+
+            ref var l = ref NodeAt(left);
+            ref var r = ref NodeAt(right);
+
+            // Only when one end is a complete moment; two clock readings alone are a time range,
+            // and two days alone are a date range.
+            if (l.Kind != NodeKind.DateTime && r.Kind != NodeKind.DateTime) return -1;
+            if (!l.HasAnyTime && !r.HasAnyTime) return -1;
+
+            var n = Node.Create(NodeKind.DateTimeRange);
+            n.LexStart           = i;
+            n.LexEnd             = rightEnd;
+            n.Left               = left;
+            n.Right              = right;
+            n.ChildrenAreMoments = true;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return rightEnd;
+        }
+
+        /// <summary>One end of a moment range: a datetime, a clock reading, or a day.</summary>
+        private int TryMoment(int i, out int node)
+        {
+            int best     = -1;
+            int bestNode = Node.Unspecified;
+
+            Consider(TryDateTime(i, out int n1), n1, ref best, ref bestNode);
+            Consider(TryTime(i, out int n2, allowBareHour: true), n2, ref best, ref bestNode);
+            Consider(TryDate(i, out int n3),     n3, ref best, ref bestNode);
+
+            node = bestNode;
+            return best;
+        }
+
         private int TryDateTimePeriod(int i, out int node)
         {
             node = Node.Unspecified;
+
+            int momentRange = TryExplicitMomentRange(i, out int momentNode);
+            if (momentRange > 0)
+            {
+                node = momentNode;
+                return momentRange;
+            }
 
             // "within 2h", "next hour", "last minute", "5 coming minutes"
             int clockPeriodEnd = TryClockRelativePeriod(i, out int clockPeriod);
@@ -514,11 +620,11 @@ namespace Catalyst.DateTimeRecognition
                 n.Kind      = NodeKind.DateTimeRange;
                 n.LexStart  = i;
                 n.LexEnd    = periodEnd;
-                n.PartOfDay = p.PartOfDay;
-                n.Left      = p.Left;
-                n.Right     = p.Right;
-                n.Anchor    = p.Anchor;
-                n.Mod       = p.Mod;
+                n.PartOfDay     = p.PartOfDay;
+                n.Left          = p.Left;
+                n.Right         = p.Right;
+                n.RangeDuration = p.RangeDuration;
+                n.Mod           = p.Mod;
                 SetSpan(ref n);
                 bestEnd  = periodEnd;
                 bestNode = Alloc(n);
@@ -549,6 +655,8 @@ namespace Catalyst.DateTimeRecognition
                     return leadPeriodEnd;
                 }
 
+                if (IsMealTime(p.PartOfDay)) return -1;
+
                 int at = leadPeriodEnd;
                 if (At(at, LexKind.Comma)) at++;
                 at = SkipWords(at, "on", "of");
@@ -561,14 +669,32 @@ namespace Catalyst.DateTimeRecognition
                     n.Kind      = NodeKind.DateTimeRange;
                     n.LexStart  = i;
                     n.LexEnd    = trailingDateEnd;
-                    n.PartOfDay = p.PartOfDay;
-                    n.Left      = p.Left;
-                    n.Right     = p.Right;
-                    n.Anchor    = p.Anchor;
-                    n.Mod       = p.Mod;
+                    n.PartOfDay     = p.PartOfDay;
+                    n.Left          = p.Left;
+                    n.Right         = p.Right;
+                    n.RangeDuration = p.RangeDuration;
+                    n.Mod           = p.Mod;
                     SetSpan(ref n);
                     node = Alloc(n);
                     return trailingDateEnd;
+                }
+            }
+
+            // "today pm", "tomorrow am"
+            for (int c = 0; c < candidates; c++)
+            {
+                int at = dateEnds[c];
+
+                if (TryAmPm(at, out int half, out int halfEnd) && _lex[at].SpaceBefore)
+                {
+                    var n = NodeAt(dateNodes[c]);
+                    n.Kind      = NodeKind.DateTimeRange;
+                    n.LexStart  = i;
+                    n.LexEnd    = halfEnd;
+                    n.PartOfDay = half == 0 ? PartOfDayKind.Morning : PartOfDayKind.Afternoon;
+                    SetSpan(ref n);
+                    node = Alloc(n);
+                    return halfEnd;
                 }
             }
 
@@ -609,7 +735,9 @@ namespace Catalyst.DateTimeRecognition
         {
             int count = 0;
 
-            AddCandidate(TryDate(i, out int n1),          n1, ends, nodes, ref count);
+            int dateEnd = TryDate(i, out int n1);
+            if (dateEnd > 0 && NodeAt(n1).Holiday != HolidayKind.None) dateEnd = -1;
+            AddCandidate(dateEnd, n1, ends, nodes, ref count);
             AddCandidate(TryWeekdayDate(i, out int n2),   n2, ends, nodes, ref count);
             AddCandidate(TryWeekdayBare(i, out int n3),   n3, ends, nodes, ref count);
             AddCandidate(TrySpecialDay(i, out int n4),    n4, ends, nodes, ref count);
@@ -633,6 +761,9 @@ namespace Catalyst.DateTimeRecognition
             nodes[count] = node;
             count++;
         }
+
+        private static bool IsMealTime(PartOfDayKind kind) =>
+            kind is PartOfDayKind.Lunch or PartOfDayKind.Dinner or PartOfDayKind.Breakfast or PartOfDayKind.Brunch;
 
         private int TryRelativeDayPartOfDay(int i, out int node)
         {
