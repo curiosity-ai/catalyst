@@ -368,7 +368,8 @@ namespace Catalyst.DateTimeRecognition
 
             int before = hourAt - 1;
 
-            return AtTerm(before, TermKind.Connector) || AtTerm(before, TermKind.Approx) || AtTerm(before, TermKind.RangeStart);
+            return AtTerm(before, TermKind.Connector) || AtTerm(before, TermKind.Approx)
+                || AtTerm(before, TermKind.RangeStart) || AtTerm(before, TermKind.ClockPrefix);
         }
 
         /// <summary>An hour, as digits or spelled out.</summary>

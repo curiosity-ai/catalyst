@@ -153,7 +153,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Filler, "todo", "toda", "todos", "todas", "entero", "entera");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "en");
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro del");
-            b.Add(TermKind.ClockPrefix, "a las", "a la", "de las", "de la");
+            b.Add(TermKind.ClockPrefix, "de las", "de la");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a las", "a la");   // "de las 5 a las 6"
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de");
             b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "más tarde que");

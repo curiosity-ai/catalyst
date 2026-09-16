@@ -143,7 +143,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "em");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "da", "das", "as");
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro do");
-            b.Add(TermKind.ClockPrefix, "às", "à");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "às", "à");   // "às 5" as well as "de 23 às 4"
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes do", "no máximo até");
             b.Add(TermKind.Mod, (int)ModKind.After,  "depois de", "depois do", "após");
