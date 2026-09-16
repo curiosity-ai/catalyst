@@ -159,9 +159,9 @@ namespace Catalyst.DateTimeRecognition
                 weekShift = WeekShiftOf(relative);
                 sawWeek   = true;
                 at       += 2;
-                at        = SkipWords(at, "on", "of");
+                at        = SkipGlue(at, 1);   // "next week on monday", "volgende week op dinsdag"
                 if (At(at, LexKind.Dash) || At(at, LexKind.Comma)) at++;
-                at        = SkipWord(at, "on");
+                at        = SkipGlue(at, 1);
             }
             else
             {
