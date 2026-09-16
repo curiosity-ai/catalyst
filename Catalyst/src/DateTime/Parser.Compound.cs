@@ -94,6 +94,10 @@ namespace Catalyst.DateTimeRecognition
 
             if (podMod != ModKind.None) mod = podMod;
 
+            // "later in the afternoon" is its late half, and says so
+            if (mod == ModKind.Later)  mod = ModKind.Late;
+            if (mod == ModKind.Earlier) mod = ModKind.Early;
+
             int spanStart = podMod != ModKind.None && podStart > i ? podStart : i;
 
             // "early morning at 8:00" is one time, told apart from the evening by the part of the day
@@ -301,9 +305,13 @@ namespace Catalyst.DateTimeRecognition
             {
                 n.PartOfDay = inner.PartOfDay;
                 n.Left      = Node.Unspecified;
+
+                // "later in the afternoon" is its late half, and says so
+                if (n.Mod == ModKind.Later)  n.Mod = ModKind.Late;
+                if (n.Mod == ModKind.Earlier) n.Mod = ModKind.Early;
             }
 
-            if (approx) n.Mod = mod == ModKind.After ? ModKind.Approx : n.Mod;
+            if (approx) n.InnerMod = ModKind.Approx;
 
             SetSpan(ref n);
             node = Alloc(n);
@@ -504,7 +512,7 @@ namespace Catalyst.DateTimeRecognition
                     var n = NodeAt(trailingDate);
                     ref var t = ref NodeAt(leadingTime);
                     n.Kind      = NodeKind.DateTime;
-                    n.LexStart  = i;
+                    n.LexStart  = t.LexStart < i ? t.LexStart : i;   // "at 8.30pm today" keeps the "at"
                     n.LexEnd    = trailingDateEnd;
                     n.Hour      = t.Hour;
                     n.Minute    = t.Minute;
@@ -834,9 +842,25 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            if (!AtTerm(i, TermKind.Relative, out int relValue)) return -1;
+            // "later this afternoon", "early this evening"
+            int  relAt    = i;
+            var  leadMod  = ModKind.None;
 
-            int at = After(i);
+            if (AtTerm(relAt, TermKind.Mod, out int leadModValue) && AtTerm(After(relAt), TermKind.Relative))
+            {
+                leadMod = (ModKind)leadModValue switch
+                {
+                    ModKind.Later   => ModKind.Late,
+                    ModKind.Earlier => ModKind.Early,
+                    var other       => other,
+                };
+
+                relAt = After(relAt);
+            }
+
+            if (!AtTerm(relAt, TermKind.Relative, out int relValue)) return -1;
+
+            int at = After(relAt);
 
             int podEnd = TryPartOfDay(at, out var kind, out var mod);
             if (podEnd < 0) return -1;
@@ -854,7 +878,7 @@ namespace Catalyst.DateTimeRecognition
                 RelativeKind.Last or RelativeKind.Previous                         => -1,
                 _                                                                  =>  0,
             };
-            n.Mod = mod;
+            n.Mod = leadMod != ModKind.None ? leadMod : mod;
 
             // "next evening from 7 to 9" — the part of the day says which of the two clock readings is meant
             int rangeEnd = TryExplicitTimeRange(SkipWord(podEnd, "at"), out int range, allowBareHours: true);

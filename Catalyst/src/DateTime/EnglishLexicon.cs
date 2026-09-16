@@ -241,8 +241,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Start,     "start of", "beginning of", "start", "beginning");
             b.Add(TermKind.Mod, (int)ModKind.End,       "end of", "end");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mid", "middle of", "mid of");
-            b.Add(TermKind.Mod, (int)ModKind.Early,     "early", "as early as");
-            b.Add(TermKind.Mod, (int)ModKind.Late,      "late", "as late as");
+            b.Add(TermKind.Mod, (int)ModKind.Early,     "early");
+            b.Add(TermKind.Mod, (int)ModKind.Late,      "late");
+            b.Add(TermKind.Mod, (int)ModKind.Since,     "as early as");
+            b.Add(TermKind.Mod, (int)ModKind.Until,     "as late as");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "or later", "and later", "and after", "and greater", "or greater", "or after");
             b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "or earlier", "and earlier", "or before", "and before");
 

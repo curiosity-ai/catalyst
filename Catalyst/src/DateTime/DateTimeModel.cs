@@ -104,6 +104,9 @@ namespace Catalyst.DateTimeRecognition
 
         private static void Trim(ReadOnlySpan<char> text, ref int start, ref int end)
         {
+            // "this week's" is reported as "this week"
+            if (end - start > 2 && (text[end - 1] == 's' || text[end - 1] == 'S') && (text[end - 2] == '\'' || text[end - 2] == '\u2019')) end -= 2;
+
             while (end > start && IsTrimmable(text[end - 1])) end--;
             while (start < end && IsTrimmable(text[start]))   start++;
         }

@@ -256,7 +256,7 @@ namespace Catalyst.DateTimeRecognition
 
             void Emit(ClockRange r)
             {
-                var value = new DateTimeResolutionValue { Timex = r.Timex, Type = "timerange", Mod = ModName(n.Mod) };
+                var value = new DateTimeResolutionValue { Timex = r.Timex, Type = "timerange", Mod = CombinedModName(n.Mod, n.InnerMod) };
 
                 bool dropStart = false;
                 bool dropEnd   = false;
@@ -350,7 +350,7 @@ namespace Catalyst.DateTimeRecognition
                 Type  = "datetimerange",
                 Start = FormatDateTime(start),
                 End   = FormatDateTime(end),
-                Mod   = ModName(n.Mod),
+                Mod   = CombinedModName(n.Mod, n.InnerMod),
             });
 
             // A day neither end pinned to a year has the second reading a year on
@@ -362,7 +362,7 @@ namespace Catalyst.DateTimeRecognition
                     Type  = "datetimerange",
                     Start = FormatDateTime(start.AddYears(1)),
                     End   = FormatDateTime(end.AddYears(1)),
-                    Mod   = ModName(n.Mod),
+                    Mod   = CombinedModName(n.Mod, n.InnerMod),
                 });
             }
         }
@@ -438,7 +438,7 @@ namespace Catalyst.DateTimeRecognition
                     Type  = "datetimerange",
                     Start = FormatDateTime(start),
                     End   = FormatDateTime(end),
-                    Mod   = ModName(n.Mod),
+                    Mod   = CombinedModName(n.Mod, n.InnerMod),
                 });
                 return;
             }
@@ -495,7 +495,7 @@ namespace Catalyst.DateTimeRecognition
                 var start = day.AddHours(r.StartHour).AddMinutes(r.StartMinute).AddSeconds(r.StartSecond);
                 var end   = day.AddHours(r.EndHour).AddMinutes(r.EndMinute).AddSeconds(r.EndSecond);
 
-                var value = new DateTimeResolutionValue { Timex = timex, Type = "datetimerange", Mod = ModName(n.Mod) };
+                var value = new DateTimeResolutionValue { Timex = timex, Type = "datetimerange", Mod = CombinedModName(n.Mod, n.InnerMod) };
 
                 bool dropStart = n.Mod == ModKind.Before || n.Mod == ModKind.Until;
                 bool dropEnd   = n.Mod == ModKind.After  || n.Mod == ModKind.Since;

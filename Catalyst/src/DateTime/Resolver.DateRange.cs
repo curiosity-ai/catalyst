@@ -799,7 +799,7 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>"before the end of december" reports both halves of what it says: "before-end".</summary>
-        private static string CombinedModName(ModKind outer, ModKind inner)
+        internal static string CombinedModName(ModKind outer, ModKind inner)
         {
             string name = ModName(outer);
 

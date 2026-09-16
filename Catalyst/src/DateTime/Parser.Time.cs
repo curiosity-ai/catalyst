@@ -157,7 +157,7 @@ namespace Catalyst.DateTimeRecognition
         // ------------------------------------------------------------------ the clock itself
 
         /// <summary>Reads a wall-clock reading and leaves the am/pm decision to the caller.</summary>
-        private readonly int TryClock(int i, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked)
+        private readonly int TryClock(int i, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked, out bool dottedMinutes)
         {
             hour            = Node.Unspecified;
             minute          = Node.Unspecified;
@@ -165,6 +165,7 @@ namespace Catalyst.DateTimeRecognition
             ampm            = Node.Unspecified;
             explicitMinutes = false;
             marked          = false;
+            dottedMinutes   = false;
 
             int at = i;
 
@@ -245,6 +246,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 minute          = NumberAt(at + 1);
                 explicitMinutes = true;
+                dottedMinutes   = true;
                 at              = at + 2;
             }
             // spelled-out minutes — "three thirty", "two forty five"
@@ -451,7 +453,7 @@ namespace Catalyst.DateTimeRecognition
                 int probe = podEnd;
                 probe = SkipWords(probe, "at", "around");
 
-                int test = TryClock(probe, out _, out _, out _, out _, out _, out _);
+                int test = TryClock(probe, out _, out _, out _, out _, out _, out _, out _);
                 if (test > 0)
                 {
                     pod        = leadingPod;
@@ -460,7 +462,7 @@ namespace Catalyst.DateTimeRecognition
                 }
             }
 
-            int clockEnd = TryClock(at, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked);
+            int clockEnd = TryClock(at, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked, out bool dottedMinutes);
             if (clockEnd < 0) return -1;
 
             at = clockEnd;
@@ -485,7 +487,9 @@ namespace Catalyst.DateTimeRecognition
             if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !AtWord(i - 1, "at")) return -1;
 
             var n = Node.Create(NodeKind.Time);
-            n.LexStart  = i;
+
+            // "at 6.45" reads as a clock because of the "at", so the "at" belongs to it
+            n.LexStart  = dottedMinutes && AtWord(i - 1, "at") ? i - 1 : i;
             n.LexEnd    = at;
             n.Hour      = hour;
             n.Minute    = minute;
