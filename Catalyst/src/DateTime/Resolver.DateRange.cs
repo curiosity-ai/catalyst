@@ -24,6 +24,15 @@ namespace Catalyst.DateTimeRecognition
             alternate    = default;
             hasAlternate = false;
 
+            // ---- "to date": the reference moment itself
+            if (n.PresentRef)
+            {
+                period.Start = _reference.Date;
+                period.End   = _reference.Date;
+                period.Timex = "PRESENT_REF";
+                return true;
+            }
+
             // ---- explicit "A to B"
             if (n.Left >= 0 && n.Right >= 0)
             {
@@ -50,7 +59,19 @@ namespace Catalyst.DateTimeRecognition
                     rightStart = rightStart.AddYears(1);
                 }
 
-                string span = SpanTimex(leftStart, rightStart, PrefersMonths(n.Left) && PrefersMonths(n.Right));
+                bool months = (PrefersMonths(n.Left) && PrefersMonths(n.Right)) || NamesPartOfPeriod(At(n.Left).Mod) || NamesPartOfPeriod(At(n.Right).Mod);
+
+                // "from next monday to friday" — the closing weekday is the one that comes next
+                ref var right = ref At(n.Right);
+
+                if (right.Weekday >= 0 && right.Day < 0 && right.Month < 0 && right.Year < 0 && right.Relative == RelativeKind.None)
+                {
+                    rightStart       = leftStart.AddDays((right.Weekday - (int)leftStart.DayOfWeek + 7) % 7);
+                    rightTimex       = FormatDate(rightStart);
+                    rightYearUnknown = false;
+                }
+
+                string span = SpanTimex(leftStart, rightStart, months);
 
                 period.Start = leftStart;
                 period.End   = rightStart;
@@ -59,7 +80,7 @@ namespace Catalyst.DateTimeRecognition
                 if (leftYearUnknown && rightYearUnknown)
                 {
                     // "from sep to nov" is this year's and last year's while this year's has not gone by
-                    int shift = period.End >= _reference.Date ? -1 : 0;
+                    int shift = period.End > _reference.Date ? -1 : 0;
 
                     period.Start    = period.Start.AddYears(shift);
                     period.End      = period.End.AddYears(shift);
@@ -669,12 +690,6 @@ namespace Catalyst.DateTimeRecognition
 
             if (from.Day == to.Day && from.Month == to.Month && to.Year > from.Year) return $"P{to.Year - from.Year}Y";
 
-            if (from.Day == to.Day)
-            {
-                int months = (to.Year - from.Year) * 12 + (to.Month - from.Month);
-                if (months > 0) return $"P{months}M";
-            }
-
             int days = (int)(to - from).TotalDays;
 
             if (days > 0 && days % 7 == 0 && days >= 7 && from.DayOfWeek == to.DayOfWeek && days % 7 == 0 && days <= 28) return $"P{days / 7}W";
@@ -702,12 +717,15 @@ namespace Catalyst.DateTimeRecognition
                     var start = p.Start;
                     var end   = p.End;
 
+                    // "the year to date" runs only as far as today
+                    if (n.EndsAtReference && _reference.Date < end && _reference.Date > start) end = _reference.Date;
+
                     if (n.InnerMod != ModKind.None)
                     {
                         // "before the end of december" names the boundary itself, not the last part of it
                         if (IsPointMod(n.Mod))
                         {
-                            var point = BoundaryPoint(start, end, n.InnerMod, halfForMid: false);
+                            var point = BoundaryPoint(start, end, n.InnerMod, halfForMid: false, forward: n.Mod is ModKind.After or ModKind.Since);
                             start = point;
                             end   = point;
                         }
@@ -815,6 +833,10 @@ namespace Catalyst.DateTimeRecognition
             return part is null ? name : $"{name}-{part}";
         }
 
+        /// <summary>Whether the modifier names a part of the period it sits on ("the end of 2008").</summary>
+        private static bool NamesPartOfPeriod(ModKind mod) =>
+            mod is ModKind.Start or ModKind.Mid or ModKind.End or ModKind.Early or ModKind.Late;
+
         private static bool IsPointMod(ModKind mod) =>
             mod is ModKind.Before or ModKind.Until or ModKind.After or ModKind.Since;
 
@@ -822,10 +844,10 @@ namespace Catalyst.DateTimeRecognition
         /// Where inside a period a modifier points. "the end of december" is the first of january, "the
         /// beginning of march" the first of march, and "mid may" the day the middle of the month gives way.
         /// </summary>
-        private static DateTime BoundaryPoint(DateTime start, DateTime end, ModKind mod, bool halfForMid) => mod switch
+        private static DateTime BoundaryPoint(DateTime start, DateTime end, ModKind mod, bool halfForMid, bool forward = false) => mod switch
         {
             ModKind.Start or ModKind.Early => start,
-            ModKind.End                    => end,
+            ModKind.End                    => forward ? Slice(start, end, 2).Item1 : end,
             ModKind.Mid                    => halfForMid ? Nearer(start, end, first: false, reference: start) : Slice(start, end, 1).Item2,
             ModKind.Late                   => Nearer(start, end, first: false, reference: start),
             _                              => start,

@@ -164,6 +164,12 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>True where the day was written with an article ("monday the 26th"), which names one day.</summary>
         public bool DefiniteDay;
 
+        /// <summary>True for "to date" — the reference moment itself, reported as PRESENT_REF.</summary>
+        public bool PresentRef;
+
+        /// <summary>True where a period runs only as far as the reference moment ("the year to date").</summary>
+        public bool EndsAtReference;
+
         public ModKind Mod;
         /// <summary>A narrowing modifier the bounding one wraps: the "mid" of "after mid may".</summary>
         public ModKind InnerMod;

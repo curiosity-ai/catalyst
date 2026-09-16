@@ -339,18 +339,18 @@ namespace Catalyst.DateTimeRecognition
                 bool haveBack = false;
                 bool haveNext = false;
 
-                // "feb 29" skips the years that do not have the day
+                // "feb 29" skips the years that do not have the day; today itself is the reading behind
                 for (int step = 0; step <= 8 && (!haveBack || !haveNext); step++)
                 {
                     if (!haveNext && TryExactDate(new DateTime(_reference.Year + step, month, 1), day, out var ahead)
-                        && ahead >= _reference.Date)
+                        && ahead > _reference.Date)
                     {
                         second   = ahead;
                         haveNext = true;
                     }
 
                     if (!haveBack && TryExactDate(new DateTime(_reference.Year - step, month, 1), day, out var behind)
-                        && behind < _reference.Date)
+                        && behind <= _reference.Date)
                     {
                         first    = behind;
                         haveBack = true;

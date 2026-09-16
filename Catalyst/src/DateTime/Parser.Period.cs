@@ -12,11 +12,11 @@ namespace Catalyst.DateTimeRecognition
 
             Consider(TryDayRangeInMonth(i, out int n10),  n10, ref best, ref bestNode);
             Consider(TryExplicitDateRange(i, out int n1),  n1, ref best, ref bestNode);
+            Consider(TryShorthandPeriod(i, out int n11),  n11, ref best, ref bestNode);
             Consider(TryModDatePeriod(i, out int n2),      n2, ref best, ref bestNode);
             Consider(TryNthPeriodOf(i, out int n3),        n3, ref best, ref bestNode);
             Consider(TryWeekOfDate(i, out int n14),       n14, ref best, ref bestNode);
             Consider(TryDurationFromDate(i, out int n4),   n4, ref best, ref bestNode);
-            Consider(TryShorthandPeriod(i, out int n11),  n11, ref best, ref bestNode);
             Consider(TryComparisonPeriod(i, out int n13), n13, ref best, ref bestNode);
             Consider(TryTrailingModDate(i, out int n15),  n15, ref best, ref bestNode);
             Consider(TryHolidayWeekend(i, out int n12),  n12, ref best, ref bestNode);
@@ -173,26 +173,32 @@ namespace Catalyst.DateTimeRecognition
             }
             else if ((AtWord(i, "to") || AtWord(i, "till") || AtWord(i, "until")) && AtWord(i + 1, "date"))
             {
-                unit = TimeUnit.Year;
-                mod  = ModKind.Until;
-                end  = i + 2;
+                // "to date" on its own is everything up to now
+                var present = Node.Create(NodeKind.DateRange);
+                present.LexStart   = i;
+                present.LexEnd     = i + 2;
+                present.PresentRef = true;
+                present.Mod        = ModKind.Before;
+                SetSpan(ref present);
+                node = Alloc(present);
+                return present.LexEnd;
             }
             else if (AtTermValue(i, TermKind.Unit, (int)TimeUnit.Year) && AtWord(i + 1, "to") && AtWord(i + 2, "date"))
             {
                 unit = TimeUnit.Year;
-                mod  = ModKind.Until;
                 end  = i + 3;
             }
 
             if (unit == TimeUnit.None) return -1;
 
             var n = Node.Create(NodeKind.DateRange);
-            n.LexStart    = i;
-            n.LexEnd      = end;
-            n.PeriodUnit  = unit;
-            n.PeriodCount = 1;
-            n.Relative    = RelativeKind.This;
-            n.Mod         = mod;
+            n.LexStart       = i;
+            n.LexEnd         = end;
+            n.PeriodUnit     = unit;
+            n.PeriodCount    = 1;
+            n.Relative       = RelativeKind.This;
+            n.Mod            = mod;
+            n.EndsAtReference = mod == ModKind.None;
             SetSpan(ref n);
             node = Alloc(n);
             return end;
