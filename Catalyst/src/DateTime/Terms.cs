@@ -408,9 +408,48 @@ namespace Catalyst.DateTimeRecognition
         /// A number the language writes as one word from its units and tens: "neunundzwanzig" is
         /// nine-and-twenty. The joiner is the language's "and", which is a Connector in the lexicon.
         /// </summary>
+        /// <summary>
+        /// "un'ora", "l'altro" — a word elided onto the next one. The apostrophe belongs to the first
+        /// half, which is how the lexicon spells it ("l'", "un'"), and both halves must be known words.
+        /// </summary>
+        public bool TrySplitElision(ReadOnlySpan<char> word, out int cut, out TermInfo head, out TermInfo tail)
+        {
+            cut = 0; head = default; tail = default;
+
+            int mark = -1;
+            for (int k = 1; k < word.Length - 1; k++)
+            {
+                if (word[k] is '\'' or '\u2019' or 'ʼ') { mark = k; break; }
+            }
+
+            if (mark < 0) return false;
+
+            if (!_wordsBySpan.TryGetValue(word[..(mark + 1)], out head)) return false;
+            if (!_wordsBySpan.TryGetValue(word[(mark + 1)..], out tail)) return false;
+
+            cut = mark + 1;
+            return true;
+        }
+
         public bool TrySplitNumber(ReadOnlySpan<char> word, out TermInfo number)
         {
             number = default;
+
+            if (word.Length < 7) return false;
+
+            // "ventinove", "veinticuatro" — the tens and the units run together, with nothing between them
+            for (int k = 4; k <= word.Length - 3; k++)
+            {
+                if (!_wordsBySpan.TryGetValue(word[..k], out var leadTens))                                  continue;
+                if (leadTens.Kind != TermKind.Cardinal)                                                      continue;
+                if (leadTens.Value < 20 || leadTens.Value > 90 || leadTens.Value % 10 != 0)                   continue;
+                if (!_wordsBySpan.TryGetValue(word[k..], out var trailUnits))                                 continue;
+                if (trailUnits.Kind is not TermKind.Cardinal and not TermKind.Ordinal)                        continue;
+                if (trailUnits.Value < 1 || trailUnits.Value > 9)                                             continue;
+
+                number = new TermInfo(trailUnits.Kind, leadTens.Value + trailUnits.Value);
+                return true;
+            }
 
             if (!SplitsCompounds || word.Length < 8) return false;
 

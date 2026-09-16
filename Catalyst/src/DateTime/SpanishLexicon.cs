@@ -55,7 +55,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Cardinal, 17, "diecisiete");
             b.Add(TermKind.Cardinal, 18, "dieciocho");
             b.Add(TermKind.Cardinal, 19, "diecinueve");
-            b.Add(TermKind.Cardinal, 20, "veinte");
+            b.Add(TermKind.Cardinal, 20, "veinte", "veinti");   // "veinticuatro" elides the tens
             b.Add(TermKind.Cardinal, 21, "veintiuno", "veintiún", "veintiuna");
             b.Add(TermKind.Cardinal, 22, "veintidós", "veintidos");
             b.Add(TermKind.Cardinal, 23, "veintitrés", "veintitres");

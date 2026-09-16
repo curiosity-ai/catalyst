@@ -55,7 +55,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Cardinal, 17, "diciassette");
             b.Add(TermKind.Cardinal, 18, "diciotto");
             b.Add(TermKind.Cardinal, 19, "diciannove");
-            b.Add(TermKind.Cardinal, 20, "venti");
+            b.Add(TermKind.Cardinal, 20, "venti", "vent");   // "ventuno" elides the tens
             b.Add(TermKind.Cardinal, 30, "trenta");
             b.Add(TermKind.Cardinal, 40, "quaranta");
             b.Add(TermKind.Cardinal, 50, "cinquanta");
@@ -139,7 +139,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 
             b.Add(TermKind.Filler, "di", "del", "della", "in", "nel", "nella", "per");
-            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "il", "lo", "i", "gli");
+            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "il", "lo", "i", "gli", "l'", "un'", "dell'", "all'", "nell'");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "la", "le");   // "verso le tre"
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "un", "una");
             b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "tutto", "tutta", "tutti", "tutte", "intero", "intera");   // "the whole day" counts as one

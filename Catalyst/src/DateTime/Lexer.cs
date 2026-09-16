@@ -128,7 +128,8 @@ namespace Catalyst.DateTimeRecognition
                     if (info.Kind == TermKind.None && lexicon.TrySplitNumber(word, out var composed)) info = composed;
 
                     if (info.Kind == TermKind.None
-                        && lexicon.TrySplitCompound(word, out int cut, out var head, out var tail)
+                        && (lexicon.TrySplitElision(word, out int cut, out var head, out var tail)
+                            || lexicon.TrySplitCompound(word, out cut, out head, out tail))
                         && count + 1 < buffer.Length)
                     {
                         // "dienstagmorgen" is two words written as one
