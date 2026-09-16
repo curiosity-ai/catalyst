@@ -50,7 +50,7 @@ namespace Catalyst.DateTimeRecognition
                     rightStart = rightStart.AddYears(1);
                 }
 
-                string span = SpanTimex(leftStart, rightStart, PrefersMonths(n.Left) || PrefersMonths(n.Right));
+                string span = SpanTimex(leftStart, rightStart, PrefersMonths(n.Left) && PrefersMonths(n.Right));
 
                 period.Start = leftStart;
                 period.End   = rightStart;
@@ -666,6 +666,13 @@ namespace Catalyst.DateTimeRecognition
                     if (hasAlternate && alternate.Start.Year == _reference.Year) start = alternate.Start;
                 }
 
+                // "from the end of march to the middle of september" — an endpoint is the boundary it names
+                if (n.Mod is ModKind.Start or ModKind.Early or ModKind.End or ModKind.Mid or ModKind.Late)
+                {
+                    var from = start == period.Start ? period : alternate;
+                    start    = BoundaryPoint(from.Start, from.End, n.Mod, halfForMid: true);
+                }
+
                 // A period endpoint is reported by its first day
                 timex = yearUnknown ? $"XXXX-{start.Month:00}-{start.Day:00}" : FormatDate(start);
                 return true;
@@ -686,11 +693,11 @@ namespace Catalyst.DateTimeRecognition
         {
             if (to < from) (from, to) = (to, from);
 
-            if (from.Day == to.Day)
+            if (preferMonths)
             {
                 int wholeMonths = (to.Year - from.Year) * 12 + (to.Month - from.Month);
 
-                if (preferMonths && wholeMonths > 0) return $"P{wholeMonths}M";
+                if (wholeMonths > 0) return $"P{wholeMonths}M";
             }
 
             if (from.Day == to.Day && from.Month == to.Month && to.Year > from.Year) return $"P{to.Year - from.Year}Y";
@@ -719,7 +726,7 @@ namespace Catalyst.DateTimeRecognition
 
             void Emit(Period p)
             {
-                var value = new DateTimeResolutionValue { Timex = p.Timex, Type = "daterange", Mod = ModName(n.Mod) };
+                var value = new DateTimeResolutionValue { Timex = p.Timex, Type = "daterange", Mod = CombinedModName(n.Mod, n.InnerMod) };
 
                 if (p.NoBounds) value.Value = "not resolved";
 
@@ -728,9 +735,22 @@ namespace Catalyst.DateTimeRecognition
                     var start = p.Start;
                     var end   = p.End;
 
-                    if (n.InnerMod != ModKind.None) ApplyMod(n.InnerMod, ref start, ref end, out _, out _);
+                    if (n.InnerMod != ModKind.None)
+                    {
+                        // "before the end of december" names the boundary itself, not the last part of it
+                        if (IsPointMod(n.Mod))
+                        {
+                            var point = BoundaryPoint(start, end, n.InnerMod, halfForMid: false);
+                            start = point;
+                            end   = point;
+                        }
+                        else
+                        {
+                            ApplyMod(n.InnerMod, ref start, ref end, out _, out _, thirds: n.Year >= 0);
+                        }
+                    }
 
-                    ApplyMod(n.Mod, ref start, ref end, out bool dropStart, out bool dropEnd);
+                    ApplyMod(n.Mod, ref start, ref end, out bool dropStart, out bool dropEnd, thirds: n.Year >= 0 && n.InnerMod == ModKind.None);
 
                     if (!dropStart) value.Start = FormatDate(start);
                     if (!dropEnd)   value.End   = FormatDate(end);
@@ -741,7 +761,10 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>Narrows or opens a period according to its modifier ("end of", "before", "since", "mid").</summary>
-        internal void ApplyMod(ModKind mod, ref DateTime start, ref DateTime end, out bool dropStart, out bool dropEnd)
+        internal void ApplyMod(ModKind mod, ref DateTime start, ref DateTime end, out bool dropStart, out bool dropEnd) =>
+            ApplyMod(mod, ref start, ref end, out dropStart, out dropEnd, thirds: false);
+
+        internal void ApplyMod(ModKind mod, ref DateTime start, ref DateTime end, out bool dropStart, out bool dropEnd, bool thirds)
         {
             dropStart = false;
             dropEnd   = false;
@@ -788,6 +811,9 @@ namespace Catalyst.DateTimeRecognition
                     break;
 
                 case ModKind.End:
+                    if (thirds) { (start, end) = Slice(start, end, 2); break; }
+                    goto case ModKind.Late;
+
                 case ModKind.Late:
                     start = Nearer(start, end, first: false, reference: start);   // the halfway point
                     break;
@@ -810,6 +836,33 @@ namespace Catalyst.DateTimeRecognition
                          : (reference > half ? reference : half);
         }
 
+        /// <summary>"before the end of december" reports both halves of what it says: "before-end".</summary>
+        private static string CombinedModName(ModKind outer, ModKind inner)
+        {
+            string name = ModName(outer);
+
+            if (name is null || !IsPointMod(outer) || inner == ModKind.None) return name;
+
+            string part = ModName(inner);
+            return part is null ? name : $"{name}-{part}";
+        }
+
+        private static bool IsPointMod(ModKind mod) =>
+            mod is ModKind.Before or ModKind.Until or ModKind.After or ModKind.Since;
+
+        /// <summary>
+        /// Where inside a period a modifier points. "the end of december" is the first of january, "the
+        /// beginning of march" the first of march, and "mid may" the day the middle of the month gives way.
+        /// </summary>
+        private static DateTime BoundaryPoint(DateTime start, DateTime end, ModKind mod, bool halfForMid) => mod switch
+        {
+            ModKind.Start or ModKind.Early => start,
+            ModKind.End                    => end,
+            ModKind.Mid                    => halfForMid ? Nearer(start, end, first: false, reference: start) : Slice(start, end, 1).Item2,
+            ModKind.Late                   => Nearer(start, end, first: false, reference: start),
+            _                              => start,
+        };
+
         /// <summary>Splits a period into its early / middle / late thirds, in the shapes a calendar actually uses.</summary>
         private static (DateTime, DateTime) Slice(DateTime start, DateTime end, int which)
         {
@@ -819,9 +872,9 @@ namespace Catalyst.DateTimeRecognition
             {
                 return which switch
                 {
-                    0 => (start, start.AddMonths(6)),
+                    0 => (start, start.AddMonths(4)),
                     1 => (start.AddMonths(4), start.AddMonths(8)),
-                    _ => (start.AddMonths(6), end),
+                    _ => (start.AddMonths(8), end),
                 };
             }
 
