@@ -2,6 +2,7 @@ using MessagePack;
 using Mosaik.Core;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -303,6 +304,68 @@ namespace Catalyst.Tests
                     pool.Return(pooled);
                 }
             });
+        }
+
+        [Fact]
+        public void ADeepDocumentRoundTripsThroughThePool()
+        {
+            //A batch-shaped caller rents the whole batch before returning any of it, and the documents are deep -
+            //which is what the pool's element budgets, rather than its instance counts, have to survive.
+            var pool      = new DocumentPool();
+            var documents = new List<PooledDocument>();
+
+            for (int d = 0; d < 64; d++)
+            {
+                var document = pool.Rent(TEXT, Language.English);
+
+                document.ReserveSpans(500);
+
+                for (int s = 0; s < 500; s++)
+                {
+                    var span = document.AddSpan(0, 79);
+
+                    for (int t = 0; t < 20; t++)
+                    {
+                        span.AddTokenAsStruct(t * 4, t * 4 + 3);
+                    }
+                }
+
+                documents.Add(document);
+            }
+
+            foreach (var document in documents)
+            {
+                Assert.Equal(500,      document.SpansCount);
+                Assert.Equal(500 * 20, document.TokensCount);
+            }
+
+            foreach (var document in documents)
+            {
+                pool.Return(document);
+            }
+
+            //Everything is recycled, and a document rented afterwards is empty rather than carrying the last one's spans
+            var reused = pool.Rent(TEXT, Language.English);
+
+            Assert.Equal(0, reused.SpansCount);
+            Assert.Equal(0, reused.TokensCount);
+
+            pool.Return(reused);
+        }
+
+        [Fact]
+        public void TrimDropsWhatThePoolIsHoldingAndRentingStillWorks()
+        {
+            var pool = new DocumentPool();
+
+            pool.Return(NewPooled(pool));
+            pool.Trim();
+
+            var afterTrim = NewPooled(pool);
+
+            AssertSameContent(NewDocument(), afterTrim);
+
+            pool.Return(afterTrim);
         }
 
         [Fact]

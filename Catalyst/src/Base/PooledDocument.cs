@@ -47,6 +47,19 @@ namespace Catalyst
         /// </summary>
         public void Return() => m_pool.Return(this);
 
+        /// <summary>
+        /// Reserves room for <paramref name="expectedSpanCount"/> spans, so a document deserialized from
+        /// storage - where the span count is known up front - does not re-grow its two span lists on the way in.
+        /// </summary>
+        /// <param name="expectedSpanCount">The number of spans about to be added.</param>
+        public void ReserveSpans(int expectedSpanCount)
+        {
+            if (expectedSpanCount <= 0) return;
+
+            if (SpanBounds.Capacity < expectedSpanCount) { SpanBounds.Capacity = expectedSpanCount; }
+            if (TokensData.Capacity < expectedSpanCount) { TokensData.Capacity = expectedSpanCount; }
+        }
+
         /// <inheritdoc />
         public override Span AddSpan(int begin, int end)
         {

@@ -16,56 +16,100 @@ namespace Catalyst
     /// list and dictionary set on every one of them.
     /// </summary>
     /// <remarks>
-    /// Every pool here is bounded: once it is full the extra instance is dropped rather than kept, so a
-    /// burst of unusually large documents cannot pin memory for the rest of the process. A pool that has
-    /// run dry simply allocates, which is what makes <see cref="Rent(string, Language)"/> safe to call
-    /// from any number of threads.
+    /// Every pool here is bounded twice over: by how many instances it keeps, and by how many elements those
+    /// instances retain between them. The second bound is what matters, because a cleared
+    /// <see cref="List{T}"/> still holds its backing array - so counting instances alone would let a burst of
+    /// unusually deep documents pin gigabytes for the rest of the process. Whatever does not fit either bound
+    /// is dropped and collected normally, and a pool that has run dry simply allocates, which is what makes
+    /// <see cref="Rent(string, Language)"/> safe to call from any number of threads.
     /// </remarks>
     public sealed class DocumentPool
     {
         /// <summary>The pool used when a caller does not bring its own.</summary>
         public static DocumentPool Shared { get; } = new DocumentPool();
 
-        private const int MAXIMUM_POOLED_COLLECTION_SIZE = 4096; //A collection grown past this is dropped instead of kept
-        private const int MAXIMUM_POOLED_BUFFER_SIZE     = 1024 * 1024;
+        /// <summary>
+        /// Documents kept by default. Sized for a caller that rents a whole indexing batch at once rather than
+        /// one document at a time, which is what a batch-shaped pipeline does.
+        /// </summary>
+        public const int DEFAULT_POOLED_DOCUMENTS = 10_000;
 
-        private readonly BoundedPool<PooledDocument>                              m_documents;
-        private readonly BoundedPool<List<List<TokenData>>>                       m_tokensDataLists;
-        private readonly BoundedPool<List<TokenData>>                             m_tokenDataLists;
-        private readonly BoundedPool<List<int[]>>                                 m_spanBoundsLists;
-        private readonly BoundedPool<int[]>                                       m_spanBounds;
-        private readonly BoundedPool<List<string>>                                m_labelsLists;
-        private readonly BoundedPool<List<EntityType>>                            m_entityTypeLists;
-        private readonly BoundedPool<Dictionary<string, string>>                  m_metadataMaps;
-        private readonly BoundedPool<Dictionary<long, List<EntityType>>>          m_entityDataMaps;
+        /// <summary>Spans a pooled document is assumed to carry, for sizing the per-span pools.</summary>
+        private const int ASSUMED_SPANS_PER_DOCUMENT = 64;
+
+        private const int MAXIMUM_POOLED_BUFFER_SIZE = 1024 * 1024;
+
+        //Element budgets, in elements rather than bytes, which is what the pools can actually count. A TokenData
+        //is ~48 bytes and an EntityType ~32, so these come to roughly 200 MB and 30 MB held at the extreme -
+        //reached only by a workspace that really does keep that many spans in flight.
+        private const long TOKEN_DATA_ELEMENT_BUDGET   = 4_000_000;
+        private const long ENTITY_TYPE_ELEMENT_BUDGET  = 1_000_000;
+        private const long SPAN_ELEMENT_BUDGET         = 4_000_000;
+        private const long METADATA_ELEMENT_BUDGET     = 1_000_000;
+
+        //A single collection grown past this is dropped rather than kept: one pathological document must not
+        //leave an outsized collection parked for the lifetime of the process.
+        private const int MAXIMUM_POOLED_COLLECTION_SIZE = 65_536;
+
+        private readonly BoundedPool<PooledDocument>                               m_documents;
+        private readonly BoundedPool<List<List<TokenData>>>                        m_tokensDataLists;
+        private readonly BoundedPool<List<TokenData>>                              m_tokenDataLists;
+        private readonly BoundedPool<List<int[]>>                                  m_spanBoundsLists;
+        private readonly BoundedPool<int[]>                                        m_spanBounds;
+        private readonly BoundedPool<List<string>>                                 m_labelsLists;
+        private readonly BoundedPool<List<EntityType>>                             m_entityTypeLists;
+        private readonly BoundedPool<Dictionary<string, string>>                   m_metadataMaps;
+        private readonly BoundedPool<Dictionary<long, List<EntityType>>>           m_entityDataMaps;
         private readonly BoundedPool<Dictionary<long, Dictionary<string, string>>> m_tokenMetadataMaps;
-        private readonly BoundedPool<ArrayBufferWriter<byte>>                     m_bufferWriters;
+        private readonly BoundedPool<ArrayBufferWriter<byte>>                      m_bufferWriters;
 
         /// <summary>
         /// Initializes a new pool.
         /// </summary>
         /// <param name="maximumPooledDocuments">
-        /// How many documents (and how many of each of their collections) are kept. The default scales with
-        /// the core count, which is the concurrency a parsing pipeline actually reaches.
+        /// How many documents - and how many of each of their document-level collections - are kept. The
+        /// per-span pools are sized from this. Zero uses <see cref="DEFAULT_POOLED_DOCUMENTS"/>.
         /// </param>
         public DocumentPool(int maximumPooledDocuments = 0)
         {
-            if (maximumPooledDocuments <= 0) { maximumPooledDocuments = Math.Max(8, Environment.ProcessorCount * 4); }
+            if (maximumPooledDocuments <= 0) { maximumPooledDocuments = DEFAULT_POOLED_DOCUMENTS; }
 
-            //The per-span collections are rented many times per document, so they get a deeper pool
-            int perSpanCapacity = maximumPooledDocuments * 64;
+            //The per-span collections are rented once per span, so they are pooled that much more deeply
+            long perSpanCapacity = (long)maximumPooledDocuments * ASSUMED_SPANS_PER_DOCUMENT;
 
-            m_documents         = new BoundedPool<PooledDocument>(maximumPooledDocuments);
-            m_tokensDataLists   = new BoundedPool<List<List<TokenData>>>(maximumPooledDocuments);
-            m_spanBoundsLists   = new BoundedPool<List<int[]>>(maximumPooledDocuments);
-            m_labelsLists       = new BoundedPool<List<string>>(maximumPooledDocuments);
-            m_metadataMaps      = new BoundedPool<Dictionary<string, string>>(perSpanCapacity);
-            m_entityDataMaps    = new BoundedPool<Dictionary<long, List<EntityType>>>(maximumPooledDocuments);
-            m_tokenMetadataMaps = new BoundedPool<Dictionary<long, Dictionary<string, string>>>(maximumPooledDocuments);
-            m_tokenDataLists    = new BoundedPool<List<TokenData>>(perSpanCapacity);
-            m_spanBounds        = new BoundedPool<int[]>(perSpanCapacity);
-            m_entityTypeLists   = new BoundedPool<List<EntityType>>(perSpanCapacity);
-            m_bufferWriters     = new BoundedPool<ArrayBufferWriter<byte>>(maximumPooledDocuments);
+            m_documents         = new BoundedPool<PooledDocument>(maximumPooledDocuments,                           long.MaxValue);
+            m_tokensDataLists   = new BoundedPool<List<List<TokenData>>>(maximumPooledDocuments,                    SPAN_ELEMENT_BUDGET);
+            m_spanBoundsLists   = new BoundedPool<List<int[]>>(maximumPooledDocuments,                              SPAN_ELEMENT_BUDGET);
+            m_labelsLists       = new BoundedPool<List<string>>(maximumPooledDocuments,                             METADATA_ELEMENT_BUDGET);
+            m_entityDataMaps    = new BoundedPool<Dictionary<long, List<EntityType>>>(maximumPooledDocuments,       ENTITY_TYPE_ELEMENT_BUDGET);
+            m_tokenMetadataMaps = new BoundedPool<Dictionary<long, Dictionary<string, string>>>(maximumPooledDocuments, METADATA_ELEMENT_BUDGET);
+            m_tokenDataLists    = new BoundedPool<List<TokenData>>(perSpanCapacity,                                 TOKEN_DATA_ELEMENT_BUDGET);
+            m_spanBounds        = new BoundedPool<int[]>(perSpanCapacity,                                           SPAN_ELEMENT_BUDGET);
+            m_entityTypeLists   = new BoundedPool<List<EntityType>>(perSpanCapacity,                                ENTITY_TYPE_ELEMENT_BUDGET);
+            m_metadataMaps      = new BoundedPool<Dictionary<string, string>>(perSpanCapacity,                      METADATA_ELEMENT_BUDGET);
+
+            //Serialization buffers are held for the length of one call, so what bounds them is how many threads
+            //serialize at once - not how many documents a batch carries.
+            m_bufferWriters     = new BoundedPool<ArrayBufferWriter<byte>>(Math.Max(8, Environment.ProcessorCount * 4), long.MaxValue);
+        }
+
+        /// <summary>
+        /// Drops everything this pool is holding, so a process under memory pressure can get the retained
+        /// collections back. Renting keeps working - it just allocates until the pool refills.
+        /// </summary>
+        public void Trim()
+        {
+            m_documents.Trim();
+            m_tokensDataLists.Trim();
+            m_spanBoundsLists.Trim();
+            m_labelsLists.Trim();
+            m_entityDataMaps.Trim();
+            m_tokenMetadataMaps.Trim();
+            m_tokenDataLists.Trim();
+            m_spanBounds.Trim();
+            m_entityTypeLists.Trim();
+            m_metadataMaps.Trim();
+            m_bufferWriters.Trim();
         }
 
         /// <summary>
@@ -513,9 +557,16 @@ namespace Catalyst
             return document;
         }
 
-        internal List<TokenData> RentTokenData() => m_tokenDataLists.Rent() ?? new List<TokenData>();
+        /// <summary>
+        /// Rents a token list of the kind <see cref="PooledDocument.AddSpan"/> uses. For a caller filling a
+        /// pooled document from its own storage format rather than through the span API.
+        /// </summary>
+        /// <returns>An empty list the pool takes back with the document.</returns>
+        public List<TokenData> RentTokenData() => m_tokenDataLists.Rent() ?? new List<TokenData>();
 
-        internal void ReturnTokenData(List<TokenData> tokens)
+        /// <summary>Gives a token list back. Returning the document it belongs to does this for you.</summary>
+        /// <param name="tokens">The list to return. Null is ignored.</param>
+        public void ReturnTokenData(List<TokenData> tokens)
         {
             if (tokens is null) return;
 
@@ -541,9 +592,16 @@ namespace Catalyst
             m_spanBounds.Return(bounds, 0);
         }
 
-        internal List<EntityType> RentEntityTypes() => m_entityTypeLists.Rent() ?? new List<EntityType>();
+        /// <summary>
+        /// Rents an entity list of the kind a token's entities are held in, for a caller writing straight into
+        /// <see cref="Document.EntityData"/>.
+        /// </summary>
+        /// <returns>An empty list the pool takes back with the document.</returns>
+        public List<EntityType> RentEntityTypes() => m_entityTypeLists.Rent() ?? new List<EntityType>();
 
-        internal void ReturnEntityTypes(List<EntityType> entities)
+        /// <summary>Gives an entity list back. Returning the document it belongs to does this for you.</summary>
+        /// <param name="entities">The list to return. Null is ignored.</param>
+        public void ReturnEntityTypes(List<EntityType> entities)
         {
             if (entities is null) return;
 
@@ -552,9 +610,16 @@ namespace Catalyst
             m_entityTypeLists.Return(entities, capacity);
         }
 
-        internal Dictionary<string, string> RentMetadata() => m_metadataMaps.Rent() ?? new Dictionary<string, string>();
+        /// <summary>
+        /// Rents a metadata dictionary, for a caller writing straight into <see cref="Document.TokenMetadata"/>
+        /// or into an <see cref="EntityType.Metadata"/>.
+        /// </summary>
+        /// <returns>An empty dictionary the pool takes back with the document.</returns>
+        public Dictionary<string, string> RentMetadata() => m_metadataMaps.Rent() ?? new Dictionary<string, string>();
 
-        internal void ReturnMetadata(Dictionary<string, string> metadata)
+        /// <summary>Gives a metadata dictionary back. Returning the document it belongs to does this for you.</summary>
+        /// <param name="metadata">The dictionary to return. Null is ignored.</param>
+        public void ReturnMetadata(Dictionary<string, string> metadata)
         {
             if (metadata is null) return;
 
@@ -595,27 +660,37 @@ namespace Catalyst
         }
 
         /// <summary>
-        /// A lock-free pool that keeps at most <c>capacity</c> instances and drops anything bigger than
-        /// <see cref="MAXIMUM_POOLED_COLLECTION_SIZE"/>, so one outlier document does not leave an
-        /// oversized collection parked for the lifetime of the process.
+        /// A lock-free pool bounded by instance count and by the elements those instances retain between
+        /// them, dropping anything bigger than <see cref="MAXIMUM_POOLED_COLLECTION_SIZE"/> on its own.
         /// </summary>
+        /// <remarks>
+        /// The size a caller hands to <see cref="Return"/> is what the instance keeps hold of - a cleared
+        /// list's <c>Capacity</c>, a dictionary's entry count - and it travels with the instance so
+        /// <see cref="Rent"/> can give the budget back. Counting instances alone would be no bound at all:
+        /// ten thousand token lists are nothing, and ten thousand token lists that each grew to a hundred
+        /// thousand tokens are tens of gigabytes.
+        /// </remarks>
         private sealed class BoundedPool<T> where T : class
         {
-            private readonly ConcurrentQueue<T> m_items = new ConcurrentQueue<T>();
-            private readonly int                m_capacity;
-            private          int                m_count;
+            private readonly ConcurrentQueue<Pooled> m_items = new ConcurrentQueue<Pooled>();
+            private readonly int                     m_capacity;
+            private readonly long                    m_elementBudget;
+            private          int                     m_count;
+            private          long                    m_retainedElements;
 
-            internal BoundedPool(int capacity)
+            internal BoundedPool(long capacity, long elementBudget)
             {
-                m_capacity = capacity;
+                m_capacity      = (int)Math.Min(capacity, int.MaxValue);
+                m_elementBudget = elementBudget;
             }
 
             internal T Rent()
             {
-                if (m_items.TryDequeue(out var item))
+                if (m_items.TryDequeue(out var pooled))
                 {
                     Interlocked.Decrement(ref m_count);
-                    return item;
+                    Interlocked.Add(ref m_retainedElements, -pooled.Size);
+                    return pooled.Item;
                 }
 
                 return null;
@@ -625,13 +700,41 @@ namespace Catalyst
             {
                 if (size > MAXIMUM_POOLED_COLLECTION_SIZE) return;
 
-                if (Interlocked.Increment(ref m_count) > m_capacity)
+                if (Interlocked.Add(ref m_retainedElements, size) > m_elementBudget)
                 {
-                    Interlocked.Decrement(ref m_count);
+                    Interlocked.Add(ref m_retainedElements, -size);
                     return;
                 }
 
-                m_items.Enqueue(item);
+                if (Interlocked.Increment(ref m_count) > m_capacity)
+                {
+                    Interlocked.Decrement(ref m_count);
+                    Interlocked.Add(ref m_retainedElements, -size);
+                    return;
+                }
+
+                m_items.Enqueue(new Pooled(item, size));
+            }
+
+            internal void Trim()
+            {
+                while (m_items.TryDequeue(out var pooled))
+                {
+                    Interlocked.Decrement(ref m_count);
+                    Interlocked.Add(ref m_retainedElements, -pooled.Size);
+                }
+            }
+
+            private readonly struct Pooled
+            {
+                internal readonly T   Item;
+                internal readonly int Size;
+
+                internal Pooled(T item, int size)
+                {
+                    Item = item;
+                    Size = size;
+                }
             }
         }
     }
