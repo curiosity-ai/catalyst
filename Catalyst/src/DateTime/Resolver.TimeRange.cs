@@ -353,6 +353,25 @@ namespace Catalyst.DateTimeRecognition
                 Mod   = CombinedModName(n.Mod, n.InnerMod),
             });
 
+            // "between 10 and 11:30 on 1/1/2015" — neither end said which half of the day it meant
+            if (marked < 0 && left.AmPm < 0 && At(n.Right).AmPm < 0
+                && left.PartOfDay == PartOfDayKind.None && At(n.Right).PartOfDay == PartOfDayKind.None
+                && start.Hour > 0 && start.Hour < 12 && end.Hour > 0 && end.Hour < 12
+                && !timex.Contains("XXXX", StringComparison.Ordinal))
+            {
+                var otherStart = start.AddHours(12);
+                var otherEnd   = end.AddHours(12);
+
+                values.Add(new DateTimeResolutionValue
+                {
+                    Timex = $"({startTimex.Replace($"T{start.Hour:00}", $"T{otherStart.Hour:00}", StringComparison.Ordinal)},{endTimex.Replace($"T{end.Hour:00}", $"T{otherEnd.Hour:00}", StringComparison.Ordinal)},{duration})",
+                    Type  = "datetimerange",
+                    Start = FormatDateTime(otherStart),
+                    End   = FormatDateTime(otherEnd),
+                    Mod   = CombinedModName(n.Mod, n.InnerMod),
+                });
+            }
+
             // A day neither end pinned to a year has the second reading a year on
             if (timex.Contains("XXXX", StringComparison.Ordinal))
             {

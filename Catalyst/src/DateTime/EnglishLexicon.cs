@@ -154,7 +154,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Decade,      "decade", "decades");
             b.Add(TermKind.Unit, (int)TimeUnit.Century,     "century", "centuries");
             b.Add(TermKind.Unit, (int)TimeUnit.Weekend,     "weekend", "weekends");
-            b.Add(TermKind.Unit, (int)TimeUnit.WorkWeek,    "workweek", "workweeks");
+            b.Add(TermKind.Unit, (int)TimeUnit.WorkWeek,    "workweek", "workweeks", "working week", "working weeks", "work week", "work weeks", "business week");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Night, TermKind.PartOfDay, (int)PartOfDayKind.Night), "night", "nights");
 
             b.Add(TermKind.BusinessDay, "business", "working", "work", "weekday", "weekdays");

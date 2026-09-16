@@ -462,11 +462,14 @@ namespace Catalyst.DateTimeRecognition
 
             string mod = ModName(n.Mod);
 
-            values.Add(new DateTimeResolutionValue { Timex = timex, Type = "date", Value = first == default ? NotResolved : FormatDate(first), Mod = mod });
+            // "around the 21st" is reported as the range it approximates
+            string type = n.Mod == ModKind.Approx ? "daterange" : "date";
+
+            values.Add(new DateTimeResolutionValue { Timex = timex, Type = type, Value = first == default ? NotResolved : FormatDate(first), Mod = mod });
 
             if (hasSecond)
             {
-                values.Add(new DateTimeResolutionValue { Timex = timex, Type = "date", Value = FormatDate(second), Mod = mod });
+                values.Add(new DateTimeResolutionValue { Timex = timex, Type = type, Value = FormatDate(second), Mod = mod });
             }
         }
 
@@ -535,10 +538,13 @@ namespace Catalyst.DateTimeRecognition
 
             string mod = ModName(n.Mod);
 
+            // "around 1pm" is reported as the range it approximates
+            string type = n.Mod == ModKind.Approx ? "timerange" : "time";
+
             values.Add(new DateTimeResolutionValue
             {
                 Timex = TimexOfTime(h1, minute, second),
-                Type  = "time",
+                Type  = type,
                 Value = $"{h1:00}:{m:00}:{s:00}",
                 Mod   = mod,
             });
@@ -548,7 +554,7 @@ namespace Catalyst.DateTimeRecognition
                 values.Add(new DateTimeResolutionValue
                 {
                     Timex = TimexOfTime(h2, minute, second),
-                    Type  = "time",
+                    Type  = type,
                     Value = $"{h2:00}:{m:00}:{s:00}",
                     Mod   = mod,
                 });

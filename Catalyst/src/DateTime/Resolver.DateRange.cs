@@ -58,8 +58,13 @@ namespace Catalyst.DateTimeRecognition
 
                 if (leftYearUnknown && rightYearUnknown)
                 {
-                    alternate.Start = leftStart.AddYears(1);
-                    alternate.End   = rightStart.AddYears(1);
+                    // "from sep to nov" is this year's and last year's while this year's has not gone by
+                    int shift = period.End >= _reference.Date ? -1 : 0;
+
+                    period.Start    = period.Start.AddYears(shift);
+                    period.End      = period.End.AddYears(shift);
+                    alternate.Start = period.Start.AddYears(1);
+                    alternate.End   = period.End.AddYears(1);
                     alternate.Timex = period.Timex;
                     hasAlternate    = true;
                 }
@@ -745,7 +750,8 @@ namespace Catalyst.DateTimeRecognition
                     break;
 
                 case ModKind.After:
-                    start   = end;
+                    // "after january 1, 2007" starts on that day; "after 2010" starts once 2010 is over
+                    if ((end - start).TotalDays > 1) start = end;
                     dropEnd = true;
                     break;
 
