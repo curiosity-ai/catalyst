@@ -1,0 +1,450 @@
+using System;
+
+namespace Catalyst.DateTimeRecognition
+{
+    public ref partial struct Parser
+    {
+        /// <summary>The clock window a part of the day covers, and the TIMEX letters that stand for it.</summary>
+        public readonly struct DayPart
+        {
+            public readonly string Timex;
+            public readonly int    StartHour;
+            public readonly int    StartMinute;
+            public readonly int    EndHour;
+            public readonly int    EndMinute;
+            public readonly int    EndSecond;
+
+            public DayPart(string timex, int startHour, int endHour, int startMinute = 0, int endMinute = 0, int endSecond = 0)
+            {
+                Timex       = timex;
+                StartHour   = startHour;
+                EndHour     = endHour;
+                StartMinute = startMinute;
+                EndMinute   = endMinute;
+                EndSecond   = endSecond;
+            }
+        }
+
+        public static DayPart RangeOf(PartOfDayKind kind) => kind switch
+        {
+            PartOfDayKind.Morning      => new DayPart("TMO",   8, 12),
+            PartOfDayKind.Afternoon    => new DayPart("TAF",  12, 16),
+            PartOfDayKind.Evening      => new DayPart("TEV",  16, 20),
+            PartOfDayKind.Night        => new DayPart("TNI",  20, 23, 0, 59, 59),
+            PartOfDayKind.Tonight      => new DayPart("TNI",  20, 23, 0, 59, 59),
+            PartOfDayKind.DayTime      => new DayPart("TDT",   8, 18),
+            PartOfDayKind.LateNight    => new DayPart("TNT",   0,  8),
+            PartOfDayKind.Business     => new DayPart("TBH",   8, 18),
+            PartOfDayKind.Lunch        => new DayPart("TMEL", 11, 13),
+            PartOfDayKind.Dinner       => new DayPart("TMED", 16, 20),
+            PartOfDayKind.Breakfast    => new DayPart("TMEB",  8, 12),
+            PartOfDayKind.Brunch       => new DayPart("TMEBR",10, 12),
+            PartOfDayKind.EarlyMorning => new DayPart("TMO",   8, 10),
+            _                          => new DayPart(null,    0,  0),
+        };
+
+        // ------------------------------------------------------------------ am / pm
+
+        /// <summary>"am", "pm", "a.m.", "p . m .", or a bare "a"/"p" glued to the clock.</summary>
+        private readonly bool TryAmPm(int i, out int value, out int end)
+        {
+            value = Node.Unspecified;
+            end   = i;
+
+            if (!At(i, LexKind.Word)) return false;
+
+            var word = _text.Slice(_lex[i].Start, _lex[i].Length);
+
+            if (word.Equals("am", StringComparison.OrdinalIgnoreCase) || word.Equals("pm", StringComparison.OrdinalIgnoreCase))
+            {
+                value = word[0] is 'a' or 'A' ? 0 : 1;
+                end   = i + 1;
+                return true;
+            }
+
+            bool isA = word.Equals("a", StringComparison.OrdinalIgnoreCase);
+            bool isP = word.Equals("p", StringComparison.OrdinalIgnoreCase);
+
+            if (!isA && !isP) return false;
+
+            // "a . m ." / "p.m."
+            int at      = i + 1;
+            bool dotted = At(at, LexKind.Dot);
+            if (dotted) at++;
+
+            if (AtWord(at, "m"))
+            {
+                at++;
+
+                // "p.m." and "p . m ." end in a dot; the dot in "one thirty p m." ends the sentence
+                if (At(at, LexKind.Dot) && (dotted || _lex[at].SpaceBefore)) at++;
+
+                value = isA ? 0 : 1;
+                end   = at;
+                return true;
+            }
+
+            // A bare "a"/"p" only counts when it is glued to what precedes it ("9:00a", "7p")
+            if (!_lex[i].SpaceBefore)
+            {
+                value = isA ? 0 : 1;
+                end   = i + 1;
+                return true;
+            }
+
+            return false;
+        }
+
+        // ------------------------------------------------------------------ part of the day
+
+        /// <summary>"in the morning", "early afternoon", "at lunchtime", "later in the evening".</summary>
+        private readonly int TryPartOfDay(int i, out PartOfDayKind kind, out ModKind mod)
+        {
+            kind = PartOfDayKind.None;
+            mod  = ModKind.None;
+
+            int at = i;
+
+            if (AtWord(at, "in") || AtWord(at, "at") || AtWord(at, "during")) at++;
+            if (AtWord(at, "the")) at++;
+
+            if (AtTerm(at, TermKind.Mod, out int modValue))
+            {
+                var k = (ModKind)modValue;
+                if (k == ModKind.Early || k == ModKind.Late || k == ModKind.Mid)
+                {
+                    mod = k;
+                    at  = After(at);
+                    at  = SkipWords(at, "in", "the");
+                }
+            }
+            else if (AtTerm(at, TermKind.FromNow) && AtWord(at + 1, "in"))
+            {
+                // "later in the morning"
+                mod = ModKind.Late;
+                at  = at + 2;
+                at  = SkipWord(at, "the");
+            }
+
+            if (At(at, LexKind.Dash) && at > i) at++;
+
+            if (!AtTerm(at, TermKind.PartOfDay, out int podValue)) return -1;
+
+            kind = (PartOfDayKind)podValue;
+            at   = After(at);
+
+            // "night-time", "day time"
+            if ((At(at, LexKind.Dash) || AtWord(at, "time")) && kind == PartOfDayKind.Night)
+            {
+                int probe = At(at, LexKind.Dash) ? at + 1 : at;
+                if (AtWord(probe, "time"))
+                {
+                    kind = PartOfDayKind.LateNight;
+                    at   = probe + 1;
+                }
+            }
+
+            if (kind == PartOfDayKind.Morning && mod == ModKind.Early) { /* keeps TMO with a start mod */ }
+
+            return at;
+        }
+
+        // ------------------------------------------------------------------ the clock itself
+
+        /// <summary>Reads a wall-clock reading and leaves the am/pm decision to the caller.</summary>
+        private readonly int TryClock(int i, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked)
+        {
+            hour            = Node.Unspecified;
+            minute          = Node.Unspecified;
+            second          = Node.Unspecified;
+            ampm            = Node.Unspecified;
+            explicitMinutes = false;
+            marked          = false;
+
+            int at = i;
+
+            // "noon" / "midnight" / "noonish"
+            if (AtTerm(at, TermKind.PartOfDay, out int podValue))
+            {
+                var pod = (PartOfDayKind)podValue;
+
+                if (pod == PartOfDayKind.Noon)     { hour = 12; ampm = 1; marked = true; return After(at); }
+                if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(at); }
+            }
+
+            // "half past seven", "quarter to five", "ten past nine", "twenty minutes past eight"
+            int relative = TryRelativeMinutes(at, out int relMinute, out int relDirection, out int relEnd);
+            if (relative > 0)
+            {
+                if (!TryHourValue(relEnd, out int baseHour, out int afterBase)) return -1;
+
+                hour            = baseHour;
+                minute          = relDirection > 0 ? relMinute : 60 - relMinute;
+                if (relDirection < 0) hour = hour == 1 ? 12 : hour - 1;
+                second          = Node.Unspecified;
+                explicitMinutes = true;
+
+                int tail = afterBase;
+                if (AtTerm(tail, TermKind.OClock)) tail = After(tail);
+
+                marked = true;
+                return tail;
+            }
+
+            if (!TryHourValue(at, out hour, out int afterHour)) return -1;
+
+            at = afterHour;
+
+            // "1140 a.m." — a four-digit military reading
+            if (AtNumber(i) && DigitsAt(i) == 4 && NumberAt(i) <= 2359 && (NumberAt(i) % 100) < 60)
+            {
+                int candidateHour   = NumberAt(i) / 100;
+                int candidateMinute = NumberAt(i) % 100;
+
+                if (candidateHour <= 23)
+                {
+                    int probe = i + 1;
+                    bool hasAmPm = TryAmPm(probe, out int ap, out int apEnd);
+
+                    if (hasAmPm || IsInClockRangeContext(i))
+                    {
+                        hour            = candidateHour;
+                        minute          = candidateMinute;
+                        explicitMinutes = true;
+                        if (hasAmPm) { ampm = ap; return apEnd; }
+                        return probe;
+                    }
+                }
+            }
+
+            if (hour < 0 || hour > 24) return -1;
+
+            // ":mm[:ss]"
+            if (At(at, LexKind.Colon) && AtNumber(at + 1) && DigitsAt(at + 1) <= 2 && NumberAt(at + 1) < 60)
+            {
+                minute          = NumberAt(at + 1);
+                explicitMinutes = true;
+                at              = at + 2;
+
+                if (At(at, LexKind.Colon) && AtNumber(at + 1) && DigitsAt(at + 1) <= 2 && NumberAt(at + 1) < 60)
+                {
+                    second = NumberAt(at + 1);
+                    at     = at + 2;
+                }
+            }
+            // ".mm" — "8.10 pm", "at 6.45"
+            else if (At(at, LexKind.Dot) && AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60 && !_lex[at].SpaceBefore && !_lex[at + 1].SpaceBefore)
+            {
+                minute          = NumberAt(at + 1);
+                explicitMinutes = true;
+                at              = at + 2;
+            }
+            // spelled-out minutes — "three thirty", "two forty five"
+            else if (AtTerm(i, TermKind.Cardinal) && TryWordNumber(at, out int spokenMinutes, out int afterSpoken) && spokenMinutes > 0 && spokenMinutes < 60)
+            {
+                minute          = spokenMinutes;
+                explicitMinutes = true;
+                at              = afterSpoken;
+
+                if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Minute)) at++;
+            }
+
+            if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
+
+            if (At(at, LexKind.Dot) && AtTerm(at + 1, TermKind.AmPm)) at++;   // "9.am"
+
+            if (TryAmPm(at, out int ampmValue, out int ampmEnd))
+            {
+                ampm = ampmValue;
+                at   = ampmEnd;
+            }
+            else if (AtTerm(at, TermKind.Approx) && !_lex[at].SpaceBefore)
+            {
+                at++;   // "11ish"
+                marked = true;
+            }
+
+            if (AtTerm(at, TermKind.OClock)) { at = After(at); marked = true; }
+
+            return at;
+        }
+
+        /// <summary>An hour, as digits or spelled out.</summary>
+        private readonly bool TryHourValue(int i, out int hour, out int end)
+        {
+            if (AtNumber(i) && DigitsAt(i) <= 2)
+            {
+                hour = NumberAt(i);
+                end  = i + 1;
+                return hour >= 0 && hour <= 24;
+            }
+
+            if (AtNumber(i) && DigitsAt(i) == 4)
+            {
+                hour = NumberAt(i) / 100;
+                end  = i + 1;
+                return true;
+            }
+
+            if (AtTerm(i, TermKind.Cardinal, out int spoken) && spoken >= 1 && spoken <= 24)
+            {
+                hour = spoken;
+                end  = i + 1;
+                return true;
+            }
+
+            hour = Node.Unspecified;
+            end  = i;
+            return false;
+        }
+
+        /// <summary>"half past", "quarter to", "ten past", "20 min past" — returns the offset and its direction.</summary>
+        private readonly int TryRelativeMinutes(int i, out int minutes, out int direction, out int end)
+        {
+            minutes   = 0;
+            direction = 0;
+            end       = i;
+
+            bool explicitUnit = false;
+            int  at           = i;
+            at = SkipWord(at, "a");
+
+            if (AtTerm(at, TermKind.HalfWord))
+            {
+                minutes      = 30;
+                explicitUnit = true;
+                at++;
+            }
+
+            else if (AtTerm(at, TermKind.QuarterWord))
+            {
+                minutes      = 15;
+                explicitUnit = true;
+                at++;
+            }
+            else if (TryInteger(at, out int value, out int afterValue) && value > 0 && value < 60)
+            {
+                minutes = value;
+                at      = afterValue;
+
+                if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Minute)) { at++; explicitUnit = true; }
+            }
+            else
+            {
+                return -1;
+            }
+
+            if (AtTerm(at, TermKind.PastWord))      { direction =  1; at = After(at); }
+            else if (AtTerm(at, TermKind.ToWord))   { direction = -1; at = After(at); }
+            else                                    { return -1; }
+
+            // "5 to 6pm" is a range, not five minutes to six: only a reading that cannot be an hour,
+            // or one that says "minutes", counts backwards from the hour.
+            if (direction < 0 && !explicitUnit && minutes <= 12) return -1;
+
+            end = at;
+            return at;
+        }
+
+        /// <summary>True when something between the two indices marks the numbers as clock readings.</summary>
+        private readonly bool HasClockMarker(int from, int to)
+        {
+            for (int k = from; k < to; k++)
+            {
+                if (AtTerm(k, TermKind.AmPm) && !AtTerm(k, TermKind.Filler)) return true;
+                if (AtTerm(k, TermKind.OClock)) return true;
+                if (AtTerm(k, TermKind.PartOfDay)) return true;
+                if (At(k, LexKind.Colon)) return true;
+                if (At(k, LexKind.Word) && (AtWord(k, "am") || AtWord(k, "pm") || AtWord(k, "a") || AtWord(k, "p"))) return true;
+            }
+
+            return false;
+        }
+
+        private readonly bool IsInClockRangeContext(int i)
+        {
+            // "between 0730-0930" — a bare four-digit reading counts as a clock only inside an explicit range
+            for (int k = Math.Max(0, i - 2); k < i; k++)
+            {
+                if (AtTerm(k, TermKind.RangeStart)) return true;
+            }
+
+            return (At(i + 1, LexKind.Dash) || AtTerm(i + 1, TermKind.Connector)) && AtNumber(i + 2) && DigitsAt(i + 2) == 4;
+        }
+
+        // ------------------------------------------------------------------ a time
+
+        private int TryTime(int i, out int node) => TryTime(i, out node, allowBareHour: false);
+
+        /// <param name="allowBareHour">true inside an explicit range, where "from 9 to 11" really does mean nine o'clock.</param>
+        private int TryTime(int i, out int node, bool allowBareHour)
+        {
+            node = Node.Unspecified;
+
+            int at  = i;
+            var mod = ModKind.None;
+
+            if (AtTerm(at, TermKind.Approx))
+            {
+                mod = ModKind.Approx;
+                at  = After(at);
+            }
+
+            var  pod       = PartOfDayKind.None;
+            bool podLeading = false;
+
+            int podEnd = TryPartOfDay(at, out var leadingPod, out _);
+            if (podEnd > 0)
+            {
+                // Only a lead-in when a clock reading follows: "in the morning at 7"
+                int probe = podEnd;
+                probe = SkipWords(probe, "at", "around");
+
+                int test = TryClock(probe, out _, out _, out _, out _, out _, out _);
+                if (test > 0)
+                {
+                    pod        = leadingPod;
+                    podLeading = true;
+                    at         = probe;
+                }
+            }
+
+            int clockEnd = TryClock(at, out int hour, out int minute, out int second, out int ampm, out bool explicitMinutes, out bool marked);
+            if (clockEnd < 0) return -1;
+
+            at = clockEnd;
+
+            if (!podLeading)
+            {
+                // "2 nights" is a duration; only a marked clock or an introduced phrase takes a part of the day
+                bool introduced = AtWord(at, "in") || AtWord(at, "at") || AtWord(at, "during") || AtTerm(at, TermKind.Mod);
+
+                if (ampm >= 0 || explicitMinutes || marked || introduced)
+                {
+                    int trailing = TryPartOfDay(at, out var trailingPod, out _);
+                    if (trailing > 0)
+                    {
+                        pod = trailingPod;
+                        at  = trailing;
+                    }
+                }
+            }
+
+            // A bare number is only a time when something marks it as one
+            if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !AtWord(i - 1, "at")) return -1;
+
+            var n = Node.Create(NodeKind.Time);
+            n.LexStart  = i;
+            n.LexEnd    = at;
+            n.Hour      = hour;
+            n.Minute    = minute;
+            n.Second    = second;
+            n.AmPm      = ampm;
+            n.PartOfDay = pod;
+            n.Mod       = mod;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return at;
+        }
+    }
+}

@@ -1,0 +1,318 @@
+using System;
+using Mosaik.Core;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+
+namespace Catalyst.DateTimeRecognition
+{
+    /// <summary>
+    /// The semantic class a lexicon word belongs to. The grammar switches on this instead of matching
+    /// character patterns, which is what lets the whole engine run without a single regular expression.
+    /// </summary>
+    public enum TermKind : byte
+    {
+        None = 0,
+        Month,              // Value = 1..12
+        Weekday,            // Value = 0..6, Sunday = 0
+        Cardinal,           // Value = the number itself
+        Ordinal,            // Value = the number itself
+        Multiplier,         // hundred / thousand / million, Value = the multiplier
+        Unit,               // Value = (int)TimeUnit
+        Relative,           // Value = (int)RelativeKind
+        SpecialDay,         // Value = (int)SpecialDayKind
+        PartOfDay,          // Value = (int)PartOfDayKind
+        AmPm,               // Value = 0 (am) or 1 (pm)
+        Connector,          // to / till / until / through / and
+        RangeStart,         // from / between
+        Mod,                // Value = (int)ModKind
+        SetFrequency,       // Value = (int)TimeUnit, from daily / weekly / ...
+        SetPrefix,          // every / each
+        Filler,             // of / on / in / at / the / a / an — skippable glue
+        Holiday,            // Value = (int)HolidayKind
+        Season,             // Value = (int)SeasonKind
+        OClock,             // o'clock / oclock
+        HalfWord,           // half
+        QuarterWord,        // quarter
+        PastWord,           // past / after, in "ten past nine"
+        ToWord,             // to / before / til, in "quarter to nine"
+        Approx,             // around / circa / about / approximately / ish
+        Ago,                // ago
+        FromNow,            // later / from now / hence / afterwards
+        Several,            // a few / several / some / couple
+        BusinessDay,        // business / working / work (day)
+        Timezone,           // Value = offset in minutes
+        OrdinalSuffix,      // st / nd / rd / th, following a digit
+        Fiscal,             // fiscal / calendar / school, qualifying "year"
+        QuarterMarker,      // the "q" of q1, or "h" of h2 (Value = periods per year)
+        WeekMarker,         // the "week" of "week 27"
+        Ignore,             // a word that is allowed inside a match but carries no meaning
+    }
+
+    public enum TimeUnit : byte
+    {
+        None = 0,
+        Second,
+        Minute,
+        Hour,
+        Day,
+        Week,
+        Fortnight,
+        Month,
+        Quarter,
+        Year,
+        Decade,
+        Century,
+        Weekend,
+        WorkWeek,
+        BusinessDay,
+        Night,
+    }
+
+    public enum RelativeKind : byte
+    {
+        None = 0,
+        This,
+        Next,
+        Last,
+        Coming,     // coming / upcoming — same resolution as Next but a distinct surface form
+        Following,  // following — Next
+        Previous,   // previous — Last
+        Current,    // current / same — This
+    }
+
+    public enum SpecialDayKind : byte
+    {
+        None = 0,
+        Today,
+        Tomorrow,
+        Yesterday,
+        Now,
+        DayAfterTomorrow,
+        DayBeforeYesterday,
+        TheDay,             // "the day" == today
+        NextDay,            // "the next day" / "the day after"
+        PriorDay,           // "the day before"
+        EndOfDay,
+    }
+
+    public enum PartOfDayKind : byte
+    {
+        None = 0,
+        Morning,
+        Afternoon,
+        Evening,
+        Night,
+        Noon,
+        Midnight,
+        DayTime,
+        MidDay,
+        Business,       // business hours
+        EarlyMorning,
+        LateNight,
+        Tonight,
+        Lunch,
+        Dinner,
+        Breakfast,
+        Brunch,
+    }
+
+    public enum SeasonKind : byte
+    {
+        None = 0,
+        Spring,
+        Summer,
+        Fall,
+        Winter,
+    }
+
+    public enum ModKind : byte
+    {
+        None = 0,
+        Before,         // "before 2010"       -> mod "before"
+        After,          // "after 2010"        -> mod "after"
+        Since,          // "since 2010"        -> mod "since"
+        Until,          // "until april 27th"  -> mod "before"
+        Start,          // "beginning of"      -> mod "start"
+        End,            // "end of"            -> mod "end"
+        Mid,            // "mid may"
+        Approx,         // "around"
+        Less,           // "less than"
+        More,           // "more than"
+        Early,          // "early september"
+        Late,           // "late july"
+        OrLater,        // "2018 or later"
+        OrEarlier,      // "2018 or earlier"
+        RefUndef,       // "the same week" — the period the reference moment falls in
+    }
+
+    public enum HolidayKind : byte
+    {
+        None = 0,
+        NewYear,
+        NewYearEve,
+        Christmas,
+        ChristmasEve,
+        Easter,
+        EasterMonday,
+        GoodFriday,
+        Thanksgiving,
+        BlackFriday,
+        Halloween,
+        Valentines,
+        AprilFools,
+        IndependenceDay,
+        MemorialDay,
+        LaborDay,
+        ColumbusDay,
+        VeteransDay,
+        MartinLutherKingDay,
+        PresidentsDay,
+        StPatricksDay,
+        MothersDay,
+        FathersDay,
+        EarthDay,
+        Juneteenth,
+        FreedomDay,
+        JubileeDay,
+        InternationalWorkersDay,
+        Groundhog,
+        Boxing,
+        CyberMonday,
+        WhiteLoverDay,
+        Yuandan,
+        EidAlFitr,
+        Ramadan,
+        Diwali,
+        Hanukkah,
+        Passover,
+        RoshHashanah,
+        YomKippur,
+        AllSaints,
+        GermanUnityDay,
+        BastilleDay,
+        CanadaDay,
+        AustraliaDay,
+        AnzacDay,
+    }
+
+    /// <summary>What a lexicon entry means: its <see cref="TermKind"/> plus a kind-specific payload.</summary>
+    public readonly struct TermInfo
+    {
+        public readonly TermKind Kind;
+        public readonly int      Value;
+        /// <summary>A second reading of the same word, for the genuinely ambiguous ones ("second", "quarter", "past").</summary>
+        public readonly TermKind AltKind;
+        public readonly int      AltValue;
+
+        public TermInfo(TermKind kind, int value = 0)
+        {
+            Kind     = kind;
+            Value    = value;
+            AltKind  = TermKind.None;
+            AltValue = 0;
+        }
+
+        public TermInfo(TermKind kind, int value, TermKind altKind, int altValue = 0)
+        {
+            Kind     = kind;
+            Value    = value;
+            AltKind  = altKind;
+            AltValue = altValue;
+        }
+
+        public bool Is(TermKind kind) => Kind == kind || AltKind == kind;
+
+        public bool Is(TermKind kind, out int value)
+        {
+            if (Kind == kind)    { value = Value;    return true; }
+            if (AltKind == kind) { value = AltValue; return true; }
+            value = 0;
+            return false;
+        }
+
+        public static readonly TermInfo Unknown = new TermInfo(TermKind.None);
+    }
+
+    /// <summary>
+    /// A multi-word phrase (a holiday name, "o'clock", "the day after tomorrow", ...). Phrases are stored
+    /// pre-split so matching them costs only span comparisons against the already-lexed words.
+    /// </summary>
+    public sealed class Phrase
+    {
+        public readonly string[] Words;
+        public readonly TermInfo Info;
+
+        public Phrase(string[] words, TermInfo info)
+        {
+            Words = words;
+            Info  = info;
+        }
+    }
+
+    /// <summary>
+    /// A language's vocabulary. Single words are resolved through a <see cref="FrozenDictionary{TKey,TValue}"/>
+    /// alternate lookup, so a <c>ReadOnlySpan&lt;char&gt;</c> is matched without ever materialising a string.
+    /// Phrases are bucketed by their first word for the same reason.
+    /// </summary>
+    public sealed class Lexicon
+    {
+        private readonly FrozenDictionary<string, TermInfo>                                              _words;
+        private readonly FrozenDictionary<string, TermInfo>.AlternateLookup<ReadOnlySpan<char>>          _wordsBySpan;
+        private readonly FrozenDictionary<string, Phrase[]>                                              _phrases;
+        private readonly FrozenDictionary<string, Phrase[]>.AlternateLookup<ReadOnlySpan<char>>          _phrasesBySpan;
+
+        public Language Language     { get; }
+        public bool     DayMonthOrder { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases)
+        {
+            Language      = language;
+            DayMonthOrder = dayMonthOrder;
+
+            var singles = new Dictionary<string, TermInfo>(StringComparer.OrdinalIgnoreCase);
+            var multi   = new Dictionary<string, List<Phrase>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kv in words)
+            {
+                singles[kv.Key] = kv.Value;
+            }
+
+            foreach (var kv in phrases)
+            {
+                var parts = kv.Key.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length == 1)
+                {
+                    singles[parts[0]] = kv.Value;
+                    continue;
+                }
+
+                if (!multi.TryGetValue(parts[0], out var list))
+                {
+                    list = new List<Phrase>();
+                    multi[parts[0]] = list;
+                }
+
+                list.Add(new Phrase(parts, kv.Value));
+            }
+
+            var byFirstWord = new Dictionary<string, Phrase[]>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var kv in multi)
+            {
+                // Longest first, so "new year's eve" wins over "new year"
+                kv.Value.Sort(static (a, b) => b.Words.Length.CompareTo(a.Words.Length));
+                byFirstWord[kv.Key] = kv.Value.ToArray();
+            }
+
+            _words         = singles.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+            _wordsBySpan   = _words.GetAlternateLookup<ReadOnlySpan<char>>();
+            _phrases       = byFirstWord.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+            _phrasesBySpan = _phrases.GetAlternateLookup<ReadOnlySpan<char>>();
+        }
+
+        public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info) => _wordsBySpan.TryGetValue(word, out info);
+
+        public bool TryGetPhrases(ReadOnlySpan<char> firstWord, out Phrase[] phrases) => _phrasesBySpan.TryGetValue(firstWord, out phrases);
+    }
+}
