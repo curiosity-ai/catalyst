@@ -107,6 +107,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "folgende", "folgenden");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,      "letzte", "letzten", "letzter", "letztes", "vergangene", "vergangenen", "vorige", "vorigen");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte");
+            b.Add(TermKind.Relative, (int)RelativeKind.AfterNext,  "übernächste", "übernächsten", "uebernaechste", "uebernaechsten", "übernächstes");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "aktuelle", "aktuellen", "laufende", "laufenden", "selbe", "selben", "gleiche", "gleichen");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "heute");

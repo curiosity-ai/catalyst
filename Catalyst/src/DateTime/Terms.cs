@@ -81,6 +81,7 @@ namespace Catalyst.DateTimeRecognition
         Previous,   // previous — Last
         Current,    // current / same — This
         JustPast,   // past — the most recent occurrence, which may be in this week
+        AfterNext,  // "übernächste", "overmorgen week" — two units on, not one
     }
 
     public enum SpecialDayKind : byte

@@ -558,6 +558,7 @@ namespace Catalyst.DateTimeRecognition
         internal static int WeekShift(RelativeKind rel) => rel switch
         {
             RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
+            RelativeKind.AfterNext                                             =>  2,
             RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
             _                                                                  =>  0,
         };

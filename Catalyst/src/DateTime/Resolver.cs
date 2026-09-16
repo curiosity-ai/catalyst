@@ -200,6 +200,10 @@ namespace Catalyst.DateTimeRecognition
                         d = d.AddDays(7);
                         break;
 
+                    case RelativeKind.AfterNext:
+                        d = d.AddDays(14);
+                        break;
+
                     case RelativeKind.Coming:
                         if (d <= _reference.Date) d = d.AddDays(7);
                         break;
@@ -342,6 +346,7 @@ namespace Catalyst.DateTimeRecognition
                     int shift = n.Relative switch
                     {
                         RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following  =>  1,
+                        RelativeKind.AfterNext                                              =>  2,
                         RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
                         _                                                                   =>  0,
                     };

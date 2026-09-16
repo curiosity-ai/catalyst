@@ -909,6 +909,7 @@ namespace Catalyst.DateTimeRecognition
             n.OffsetDays = rel switch
             {
                 RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
+                RelativeKind.AfterNext                                             =>  2,
                 RelativeKind.Last or RelativeKind.Previous                         => -1,
                 _                                                                  =>  0,
             };

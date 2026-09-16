@@ -772,7 +772,7 @@ namespace Catalyst.DateTimeRecognition
                 bool forward = AtWord(at + 1, "after");
                 var  beyond  = (RelativeKind)beyondRel;
 
-                bool matches = forward ? beyond is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following
+                bool matches = forward ? beyond is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following or RelativeKind.AfterNext
                                        : beyond is RelativeKind.Last or RelativeKind.Previous;
 
                 if (matches)
