@@ -46,6 +46,7 @@ namespace Catalyst.DateTimeRecognition
         WeekMarker,         // the "week" of "week 27"
         Decade,             // "the nineties", Value = the first year of the decade
         ClockPrefix,        // the word that introduces a clock: "at 5", "a las 5", "um 8"
+        InPrefix,           // "in 3 days" / "en 2 semanas"; Value 1 means the "within" sense
     }
 
     public enum TimeUnit : byte

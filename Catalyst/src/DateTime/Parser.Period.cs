@@ -646,10 +646,10 @@ namespace Catalyst.DateTimeRecognition
             int afterArticle = SkipWord(at, "the");
             if (afterArticle != at && AtTerm(afterArticle, TermKind.Unit)) return -1;
 
-            bool within = AtWord(at, "within");
+            bool within = AtTermValue(at, TermKind.InPrefix, 1);
             if (within)
             {
-                at++;
+                at = After(at);
                 at = SkipArticle(at);
                 if (AtTermValue(at, TermKind.Relative, (int)RelativeKind.Next)) at++;
             }

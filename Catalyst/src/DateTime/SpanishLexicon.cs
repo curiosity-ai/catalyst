@@ -101,7 +101,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,      "este", "esta", "estos", "estas", "el presente");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "próximo", "proximo", "próxima", "proxima", "próximos", "siguiente", "siguientes", "que viene");
-            b.Add(TermKind.Relative, (int)RelativeKind.Last,      "pasado", "pasada", "pasados", "pasadas", "último", "ultimo", "última", "ultima");
+            b.Add(TermKind.Relative, (int)RelativeKind.Last,      "pasado", "pasada", "pasados", "pasadas", "último", "ultimo", "última", "ultima", "últimos", "ultimos", "últimas", "ultimas");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "anterior", "anteriores", "previo", "previa");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "actual", "corriente", "mismo", "misma");
 
@@ -136,6 +136,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "de", "del", "el", "la", "los", "las", "en", "por", "para", "un", "una");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "en");
+            b.Add(TermKind.InPrefix, 1, "dentro de", "dentro del");
             b.Add(TermKind.ClockPrefix, "a las", "a la", "de las", "de la");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de");

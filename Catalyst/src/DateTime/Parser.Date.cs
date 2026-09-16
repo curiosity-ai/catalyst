@@ -836,12 +836,12 @@ namespace Catalyst.DateTimeRecognition
                 at  = After(at);
             }
 
-            if (AtWord(at, "in") || AtWord(at, "within"))
+            if (AtTerm(at, TermKind.InPrefix))
             {
-                if (AtWord(at + 1, "the")) return -1;   // "in the week" is a period, not an offset
+                if (AtWord(After(at), "the")) return -1;   // "in the week" is a period, not an offset
 
                 sawIn = true;
-                at++;
+                at    = After(at);
             }
 
             int durationEnd = TryDuration(at, out int durationNode);
@@ -857,20 +857,26 @@ namespace Catalyst.DateTimeRecognition
             int  anchor = Node.Unspecified;
             int  tail   = durationEnd;
 
-            if (AtTerm(tail, TermKind.Ago))
+            if (AtTerm(tail, TermKind.Ago) || AtTerm(tail, TermKind.FromNow))
             {
-                sign = -1;
+                sign = AtTerm(tail, TermKind.Ago) ? -1 : 1;
                 end  = After(tail);
+
+                // "dos días después de hoy", "2 days before today" — the word names the anchor after itself
+                int anchorAt  = AtTerm(end, TermKind.Filler) && !AtTerm(end, TermKind.SpecialDay) ? After(end) : end;
+                int anchorEnd = TryDate(anchorAt, out int named);
+
+                if (anchorEnd > 0)
+                {
+                    anchor = named;
+                    end    = anchorEnd;
+                }
             }
-            else if (AtTerm(tail, TermKind.FromNow))
-            {
-                sign = 1;
-                end  = After(tail);
-            }
-            else if (AtWord(tail, "from") || AtWord(tail, "after") || AtWord(tail, "before") || AtTerm(tail, TermKind.Mod))
+            else if (AtWord(tail, "from") || AtWord(tail, "after") || AtWord(tail, "before")
+                     || AtTerm(tail, TermKind.Mod) || AtTerm(tail, TermKind.RangeStart))
             {
                 bool backwards = AtWord(tail, "before") || (AtTerm(tail, TermKind.Mod, out int mv) && (ModKind)mv == ModKind.Before);
-                int  anchorAt  = tail + 1;
+                int  anchorAt  = After(tail);
 
                 if (AtTerm(anchorAt, TermKind.SpecialDay, out int sd) && (SpecialDayKind)sd == SpecialDayKind.Now)
                 {
@@ -950,7 +956,7 @@ namespace Catalyst.DateTimeRecognition
 
         private readonly bool LooksLikeOffsetStart(int i)
         {
-            if (AtWord(i, "in") || AtWord(i, "within")) return true;
+            if (AtTerm(i, TermKind.InPrefix)) return true;
             if (AtNumber(i)) return true;
             if (AtTerm(i, TermKind.Cardinal)) return true;
             if (AtTerm(i, TermKind.Several)) return true;

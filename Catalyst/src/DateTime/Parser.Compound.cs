@@ -559,10 +559,10 @@ namespace Catalyst.DateTimeRecognition
             int at    = i;
             bool sawIn = false;
 
-            if (AtWord(at, "in") || AtWord(at, "within"))
+            if (AtTerm(at, TermKind.InPrefix))
             {
                 sawIn = true;
-                at++;
+                at    = After(at);
             }
 
             int durationEnd = TryDuration(at, out int duration);
@@ -932,10 +932,10 @@ namespace Catalyst.DateTimeRecognition
             var rel   = RelativeKind.None;
             bool within = false;
 
-            if (AtWord(at, "within"))
+            if (AtTermValue(at, TermKind.InPrefix, 1))
             {
                 within = true;
-                at++;
+                at = After(at);
                 at = SkipArticle(at);
 
                 if (AtTerm(at, TermKind.Relative, out int wRel))

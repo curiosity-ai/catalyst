@@ -135,6 +135,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "tussen");
 
             b.Add(TermKind.Filler, "de", "het", "een", "in", "op", "om", "voor", "van de", "aan");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
+            b.Add(TermKind.InPrefix, 0, "over");
+            b.Add(TermKind.InPrefix, 1, "binnen");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "om");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor de", "uiterlijk", "niet later dan");

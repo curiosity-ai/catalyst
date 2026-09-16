@@ -138,6 +138,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "zwischen");
 
             b.Add(TermKind.Filler, "der", "die", "das", "den", "dem", "des", "am", "im", "in", "an", "auf", "um", "für", "fuer", "einem", "einer", "eines");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
+            b.Add(TermKind.InPrefix, 1, "innerhalb", "innerhalb von");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "um");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "vor dem", "bis spätestens", "spätestens");
