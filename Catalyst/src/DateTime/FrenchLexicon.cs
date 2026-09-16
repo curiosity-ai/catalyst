@@ -66,7 +66,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Multiplier, 1000000, "million", "millions");
 
             b.Add(TermKind.Ordinal,  1, "premier", "première", "premiere", "1er");
-            b.Add(TermKind.Ordinal,  2, "deuxième", "deuxieme", "second", "seconde");
+            b.Add(TermKind.Ordinal,  2, "deuxième", "deuxieme", "second");
             b.Add(TermKind.Ordinal,  3, "troisième", "troisieme");
             b.Add(TermKind.Ordinal,  4, "quatrième", "quatrieme");
             b.Add(TermKind.Ordinal,  5, "cinquième", "cinquieme");
@@ -77,7 +77,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal, 10, "dixième", "dixieme");
             b.Add(TermKind.OrdinalSuffix, "er", "ère", "ere", "ème", "eme", "e");
 
-            b.Add(TermKind.Unit, (int)TimeUnit.Second,    "seconde", "secondes", "sec");
+            b.Add(TermKind.Unit, (int)TimeUnit.Second,    "secondes", "sec");
+            b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "seconde");
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minute", "minutes", "min");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "heure", "heures", "h", "hr");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,       "jour", "jours", "journée", "journee", "journées");
@@ -135,7 +136,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");
             b.Add(TermKind.RangeStart, 1, "entre");
 
-            b.Add(TermKind.Filler, "le", "la", "les", "l'", "d'", "dans", "en", "sur", "pour", "vers", "par");
+            b.Add(TermKind.Filler, "le", "l'", "d'", "dans", "en", "sur", "pour", "par");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "la", "les");   // "vers les trois heures"
             b.Add(TermKind.Filler, "tout", "toute", "toutes", "entier", "entière");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "dans", "en");
             b.Add(TermKind.InPrefix, 0, "d'ici");
@@ -150,7 +152,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mi", "milieu", "milieu de", "milieu du", "mi-");
             b.Add(TermKind.Approx, "environ", "vers", "aux alentours de", "à peu près");
 
-            b.Add(TermKind.SetPrefix, 0, "chaque", "tous", "toutes", "tout");
+            b.Add(TermKind.SetPrefix, 0, "chaque", "tous");
+            b.Add(new TermInfo(TermKind.SetPrefix, 0, TermKind.Filler, 0), "toutes", "tout");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Day,     "quotidien", "quotidienne", "quotidiennement");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "hebdomadaire", "hebdomadairement");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "mensuel", "mensuelle", "mensuellement");

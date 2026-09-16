@@ -497,10 +497,15 @@ namespace Catalyst.DateTimeRecognition
             int at  = i;
             var mod = ModKind.None;
 
+            bool approxIntroduced = false;
+
             if (AtTerm(at, TermKind.Approx))
             {
                 mod = ModKind.Approx;
                 at  = After(at);
+
+                // "cerca de las tres" — the approximation keeps the introducer it was written with
+                if (AtClockPrefix(at)) { at = After(at); approxIntroduced = true; }
             }
 
             var  pod       = PartOfDayKind.None;
@@ -544,7 +549,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // A bare number is only a time when something marks it as one
-            if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !ClockPrefixEndsAt(i)) return -1;
+            if (ampm < 0 && pod == PartOfDayKind.None && !explicitMinutes && !marked && !allowBareHour && !approxIntroduced && !ClockPrefixEndsAt(i)) return -1;
 
             var n = Node.Create(NodeKind.Time);
 
