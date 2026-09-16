@@ -287,6 +287,8 @@ namespace Catalyst.DateTimeRecognition
                 at     = After(at);
             }
 
+            at = SkipClockPrefix(at);   // "después de las 2:00"
+
             bool narrowing = mod == ModKind.Early || mod == ModKind.Late || mod == ModKind.Mid;
 
             int time    = Node.Unspecified;
