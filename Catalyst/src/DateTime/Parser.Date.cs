@@ -201,9 +201,20 @@ namespace Catalyst.DateTimeRecognition
             if (!sawWeek)
             {
                 // "tuesday of next week", "on monday of the following week"
-                int probe = end;
-                probe = SkipWord(probe, "of");
-                probe = SkipArticle(probe);
+                int probe = SkipGlue(end, 2);
+
+                // "lunes de la semana siguiente" puts the qualifier behind the unit
+                if (_lexicon.RelativeAfterUnit && AtTermValue(probe, TermKind.Unit, (int)TimeUnit.Week)
+                    && AtTerm(After(probe), TermKind.Relative, out int afterUnitRel))
+                {
+                    n.Relative    = (RelativeKind)afterUnitRel;
+                    n.OffsetWeeks = WeekShiftOf((RelativeKind)afterUnitRel);
+                    end           = After(After(probe));
+                    n.LexEnd      = end;
+                    SetSpan(ref n);
+                    node = Alloc(n);
+                    return end;
+                }
 
                 if (AtTerm(probe, TermKind.Relative, out int tailRel) && AtTermValue(probe + 1, TermKind.Unit, (int)TimeUnit.Week))
                 {
@@ -345,6 +356,14 @@ namespace Catalyst.DateTimeRecognition
             {
                 year = ExpandTwoDigitYear(NumberAt(i));
                 end  = i + 1;
+                return true;
+            }
+
+            // "mil novecientos noventa y dos", "dois mil e vinte"
+            if (TryWordNumber(i, out int spelled, out int spelledEnd) && spelled >= 1000 && spelled <= 2999)
+            {
+                year = spelled;
+                end  = spelledEnd;
                 return true;
             }
 
