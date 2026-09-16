@@ -280,13 +280,27 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     ArticleInPeriodSpan { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false)
+        /// <summary>
+        /// Whether the qualifier may follow the unit ("la semaine prochaine"). English puts it in front, so
+        /// reading it the other way round turns "2 hours next month" into a two-hour period.
+        /// </summary>
+        public bool     RelativeAfterUnit { get; }
+
+        /// <summary>
+        /// Whether a plural unit can be told from a singular one by its last letter. Where it can,
+        /// "3 next week" is not a period of three weeks — it is the number three beside "next week".
+        /// </summary>
+        public bool     PluralEndsInS { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true)
         {
             Language      = language;
             DayMonthOrder = dayMonthOrder;
             DecimalComma  = decimalComma;
             ArticleInDateSpan    = articleInDateSpan;
             ArticleInPeriodSpan  = articleInPeriodSpan;
+            RelativeAfterUnit    = relativeAfterUnit;
+            PluralEndsInS        = pluralEndsInS;
 
             var singles = new Dictionary<string, TermInfo>(StringComparer.OrdinalIgnoreCase);
             var multi   = new Dictionary<string, List<Phrase>>(StringComparer.OrdinalIgnoreCase);

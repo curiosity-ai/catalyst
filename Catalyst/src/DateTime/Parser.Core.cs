@@ -89,6 +89,16 @@ namespace Catalyst.DateTimeRecognition
         /// Skips a leading definite article. English reports "next week" without its "the", so there the
         /// article is only stepped over; the other languages keep theirs inside the match.
         /// </summary>
+        /// <summary>Whether the word at <paramref name="i"/> reads as a plural, where the language shows it.</summary>
+        private readonly bool LooksPlural(int i)
+        {
+            if (!_lexicon.PluralEndsInS) return true;
+            if (!In(i)) return false;
+
+            var word = _text.Slice(_lex[i].Start, _lex[i].Length);
+            return word.Length > 1 && (word[^1] == 's' || word[^1] == 'S');
+        }
+
         private readonly int SkipArticle(int i)
         {
             if (AtWord(i, "the")) return i + 1;

@@ -15,8 +15,8 @@ namespace Catalyst.DateTimeRecognition
 
             Consider(TryExplicitTimeRange(i, out int n1, allowBareHours), n1, ref best, ref bestNode);
             Consider(TryTimeWithDuration(i, out int n2),  n2, ref best, ref bestNode);
-            Consider(TryModTime(i, out int n3),           n3, ref best, ref bestNode);
             Consider(TryPartOfDayPeriod(i, out int n4),   n4, ref best, ref bestNode);
+            Consider(TryModTime(i, out int n3),           n3, ref best, ref bestNode);
             Consider(TryOpenEndedTime(i, out int n6),     n6, ref best, ref bestNode);
 
             if (best < 0)
@@ -95,6 +95,23 @@ namespace Catalyst.DateTimeRecognition
             if (podMod != ModKind.None) mod = podMod;
 
             int spanStart = podMod != ModKind.None && podStart > i ? podStart : i;
+
+            // "early morning at 8:00" is one time, told apart from the evening by the part of the day
+            if (AtWord(end, "at"))
+            {
+                int atTimeEnd = TryTime(end + 1, out int atTime, allowBareHour: true);
+
+                if (atTimeEnd > 0)
+                {
+                    ref var t = ref NodeAt(atTime);
+                    t.LexStart  = spanStart;
+                    t.LexEnd    = atTimeEnd;
+                    t.PartOfDay = kind;
+                    SetSpan(ref t);
+                    node = atTime;
+                    return atTimeEnd;
+                }
+            }
 
             // "this evening from 7 to 9" — the part of the day says which of the two clock readings is meant
             int rangeEnd = TryExplicitTimeRange(SkipWord(end, "at"), out int range, allowBareHours: true);
@@ -410,6 +427,19 @@ namespace Catalyst.DateTimeRecognition
                 at = SkipWord(at, "for");
 
                 int timeEnd = TryTime(at, out int time, allowBareHour: marker);
+
+                // "sunday early morning at 8:00" — the part of the day only says which eight is meant
+                if (timeEnd <= 0)
+                {
+                    int podEnd = TryPartOfDayPeriod(at, out int podTime);
+
+                    if (podEnd > 0 && NodeAt(podTime).Kind == NodeKind.Time)
+                    {
+                        timeEnd = podEnd;
+                        time    = podTime;
+                    }
+                }
+
                 if (timeEnd <= 0) continue;
 
                 var n = NodeAt(dateNodes[c]);
@@ -637,6 +667,7 @@ namespace Catalyst.DateTimeRecognition
 
                 int periodEnd = TryTimePeriod(at, out int period, allowBareHours: true);
                 if (periodEnd <= bestEnd) continue;
+                if (NodeAt(period).Kind != NodeKind.TimeRange) continue;   // a single time makes a datetime, not a range
 
                 var n = NodeAt(dateNodes[c]);
                 ref var p = ref NodeAt(period);
@@ -711,10 +742,13 @@ namespace Catalyst.DateTimeRecognition
                 }
             }
 
-            // "today pm", "tomorrow am"
+            // "today pm", "tomorrow am" — never "9-10 am" or "mon 9 am", where the number is the clock
             for (int c = 0; c < candidates; c++)
             {
                 int at = dateEnds[c];
+
+                ref var candidate = ref NodeAt(dateNodes[c]);
+                if (candidate.Day >= 0 || candidate.Month >= 0 || candidate.Year >= 0) continue;
 
                 if (TryAmPm(at, out int half, out int halfEnd) && _lex[at].SpaceBefore)
                 {
@@ -863,10 +897,13 @@ namespace Catalyst.DateTimeRecognition
                 }
             }
 
+            bool countLedTheUnit = false;
+
             if (count < 0 && TryInteger(at, out int leading, out int afterLeading) && leading > 0 && leading < 1000 && (AtTerm(afterLeading, TermKind.Relative) || within))
             {
-                count = leading;
-                at    = afterLeading;
+                count           = leading;
+                at              = afterLeading;
+                countLedTheUnit = true;
             }
 
             if (AtTerm(at, TermKind.Relative, out int relValue))
@@ -885,6 +922,9 @@ namespace Catalyst.DateTimeRecognition
 
             var unit = (TimeUnit)unitValue;
             if (unit != TimeUnit.Hour && unit != TimeUnit.Minute && unit != TimeUnit.Second) return -1;
+
+            // "13 last minute" is the number thirteen beside "last minute", not thirteen minutes
+            if (countLedTheUnit && count > 1 && !within && !LooksPlural(at)) return -1;
             if (rel == RelativeKind.None && !within) return -1;
 
             // "last two hours" is the verb "last"; a period written that way says "the" or uses digits

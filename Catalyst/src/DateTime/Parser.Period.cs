@@ -679,10 +679,13 @@ namespace Catalyst.DateTimeRecognition
             int count    = Node.Unspecified;
 
             // "5 past years", "2 next days", "10 previous weeks"
+            bool countLedTheUnit = false;
+
             if (TryInteger(at, out int leadingCount, out int afterLeading) && leadingCount > 0 && leadingCount < 1000 && AtTerm(afterLeading, TermKind.Relative))
             {
-                count = leadingCount;
-                at    = afterLeading;
+                count           = leadingCount;
+                at              = afterLeading;
+                countLedTheUnit = true;
             }
 
             if (AtTerm(at, TermKind.Relative, out int relValue))
@@ -711,8 +714,11 @@ namespace Catalyst.DateTimeRecognition
 
             if (!AtTerm(at, TermKind.Unit, out int unitValue)) return -1;
 
-            // Romance and Germanic languages put the qualifier after the unit: "la semaine prochaine"
-            if (relative == RelativeKind.None && AtTerm(at + 1, TermKind.Relative, out int trailingRel))
+            // "3 next week" is the number three beside "next week", not three weeks
+            if (countLedTheUnit && count > 1 && !LooksPlural(at)) return -1;
+
+            // Romance languages put the qualifier after the unit: "la semaine prochaine"
+            if (_lexicon.RelativeAfterUnit && relative == RelativeKind.None && AtTerm(at + 1, TermKind.Relative, out int trailingRel))
             {
                 relative = (RelativeKind)trailingRel;
 
