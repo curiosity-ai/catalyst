@@ -390,7 +390,9 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (!_wordsBySpan.TryGetValue(word[..k], out head))  continue;
                 if (!_wordsBySpan.TryGetValue(word[k..], out tail))  continue;
-                if (!NamesSomething(head) || !NamesSomething(tail))  continue;
+                // "spätabends" qualifies its tail; every other compound is two things written as one
+                if (!NamesSomething(head) && head.Kind != TermKind.Mod)  continue;
+                if (!NamesSomething(tail))                              continue;
 
                 cut = k;
                 return true;

@@ -180,14 +180,18 @@ namespace Catalyst.DateTimeRecognition
                 if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(spoken); }
             }
 
-            // "halb acht" / "half acht" — the half hour before the hour it names
-            if (_lexicon.HalfIsBeforeTheHour && AtTerm(at, TermKind.HalfWord) && TryHourValue(After(at), out int halfOf, out int afterHalfOf))
+            // "halb acht", "viertel acht", "dreiviertel acht" — the fraction counts towards the hour it names
+            if (_lexicon.HalfIsBeforeTheHour
+                && (AtTerm(at, TermKind.HalfWord) || AtTerm(at, TermKind.QuarterWord, out _))
+                && TryHourValue(After(at), out int fractionOf, out int afterFractionOf))
             {
-                hour            = halfOf == 1 ? 12 : halfOf - 1;
-                minute          = 30;
+                int quarters = AtTerm(at, TermKind.HalfWord) ? 2 : AtTermValue(at, TermKind.QuarterWord, 3) ? 3 : 1;
+
+                hour            = fractionOf == 1 ? 12 : fractionOf - 1;
+                minute          = quarters * 15;
                 explicitMinutes = true;
                 marked          = true;
-                return afterHalfOf;
+                return afterFractionOf;
             }
 
             // "half past seven", "quarter to five", "ten past nine", "twenty minutes past eight"

@@ -100,7 +100,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Several, 3, "einige", "mehrere", "ein paar", "manche");
             b.Add(TermKind.Several, 2, "paar");
             b.Add(TermKind.HalfWord, "halbe", "halb", "halben");
-            b.Add(TermKind.QuarterWord, "viertel");
+            b.Add(TermKind.QuarterWord, 1, "viertel");
+            b.Add(TermKind.QuarterWord, 3, "dreiviertel", "drei viertel");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,      "diese", "dieser", "diesen", "dieses", "diesem", "kommende", "kommenden");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "folgende", "folgenden");
@@ -118,20 +119,29 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ago,     "vor", "davor", "früher", "frueher");
             b.Add(TermKind.FromNow, "später", "spaeter", "danach", "ab jetzt");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "vormittags", "morgens", "früh", "frueh");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "früh", "frueh", "vormittagszeit");
             b.Add(TermKind.PastWord, "nach");
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.ToWord), "vor");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag", "nachmittags");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "abend", "abends");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag", "mittags");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "abend");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Night,     "nacht");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "mitternacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "heute abend", "heute nacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "mittagessen", "mittagszeit");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "abendessen", "abendbrot");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "frühstück", "fruehstueck");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.EarlyMorning, "früher morgen", "frühmorgens");
 
-            b.Add(TermKind.AmPm, 0, "vormittags", "am", "a.m.");
-            b.Add(TermKind.AmPm, 1, "nachmittags", "pm", "p.m.");
+            // The -s adverbs are both the part of the day and the am/pm marker that qualifies a clock
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   TermKind.AmPm, 0), "vormittags", "morgens");
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, TermKind.AmPm, 1), "nachmittags");
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   TermKind.AmPm, 1), "abends");
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Night,     TermKind.AmPm, 1), "nachts");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon, "mittags");
+
+            b.Add(TermKind.AmPm, 0, "a.m.");
+            b.Add(TermKind.AmPm, 1, "pm", "p.m.");
             b.Add(TermKind.OClock, "uhr");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "bis", "zu", "zum", "bis zum", "bis zu");
@@ -154,7 +164,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.End,       "ende", "ende des", "zum ende");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mitte", "mitte des");
             b.Add(TermKind.Mod, (int)ModKind.Early,     "früh im", "anfangs");
-            b.Add(TermKind.Mod, (int)ModKind.Late,      "spät im", "ende von");
+            b.Add(TermKind.Mod, (int)ModKind.Late,      "spät im", "ende von", "spät", "spaet");
             b.Add(TermKind.Approx, "gegen", "etwa", "ungefähr", "ungefaehr", "circa", "ca");
 
             b.Add(TermKind.SetPrefix, 0, "jeden", "jede", "jedes", "jedem", "alle");
