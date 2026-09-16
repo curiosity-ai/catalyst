@@ -1,4 +1,4 @@
-using MessagePack;
+﻿using MessagePack;
 using Mosaik.Core;
 using System;
 using System.Buffers;
@@ -50,6 +50,16 @@ namespace Catalyst
         //A single collection grown past this is dropped rather than kept: one pathological document must not
         //leave an outsized collection parked for the lifetime of the process.
         private const int MAXIMUM_POOLED_COLLECTION_SIZE = 65_536;
+
+        //Token lists get their own, much higher ceiling. A long document legitimately has a lot of tokens, and
+        //its token list is both the largest thing the pool holds and the most expensive to rebuild - so the
+        //general cap excluded precisely the documents worth pooling. Measured against a production
+        //distribution of _Document.TokensCount, the half a percent of documents above 65,536 tokens
+        //re-allocated on every pass and accounted for 1,035 MiB of the 1,055 MiB a pass allocated; at 2^20
+        //that falls to 508 MiB, all of it one ten-million-token document the element budget rightly refuses.
+        //What bounds retention is TOKEN_DATA_ELEMENT_BUDGET either way - this only decides which lists may
+        //occupy it.
+        private const int MAXIMUM_POOLED_TOKEN_LIST_SIZE = 1 << 20;
 
         private readonly BoundedPool<PooledDocument>                               m_documents;
         private readonly BoundedPool<List<List<TokenData>>>                        m_tokensDataLists;
@@ -785,7 +795,7 @@ namespace Catalyst
 
         /// <summary>
         /// A lock-free pool bounded by instance count and by the elements those instances retain between
-        /// them, dropping anything bigger than <see cref="MAXIMUM_POOLED_COLLECTION_SIZE"/> on its own.
+        /// them, dropping anything bigger than <see cref="MAXIMUM_POOLED_TOKEN_LIST_SIZE"/> on its own.
         /// </summary>
         /// <remarks>
         /// The size a caller hands to <see cref="Return"/> is what the instance keeps hold of - a cleared
@@ -824,8 +834,10 @@ namespace Catalyst
         private sealed class SizeClassedPool<T>
         {
             //Bucket 0 takes everything below 2, so a list that came back with no capacity has somewhere to go;
-            //every bucket above it holds [2^k, 2^(k+1)). The last ends where a list is dropped rather than kept.
-            private const int MAXIMUM_BUCKET = 16; //2^16 == MAXIMUM_POOLED_COLLECTION_SIZE
+            //every bucket above it holds [2^k, 2^(k+1)). The last ends where a list is dropped rather than kept,
+            //so it has to track the ceiling: a bucket that clamps below it stops promising the capacity it was
+            //asked for, and Rent starts answering too small for exactly the largest callers.
+            private const int MAXIMUM_BUCKET = 20; //2^20 == MAXIMUM_POOLED_TOKEN_LIST_SIZE
 
             private readonly ConcurrentQueue<Pooled>[] m_buckets;
             private readonly int                       m_capacity;
@@ -903,7 +915,7 @@ namespace Catalyst
 
             internal void Return(List<T> item, int capacity)
             {
-                if (capacity > MAXIMUM_POOLED_COLLECTION_SIZE) return;
+                if (capacity > MAXIMUM_POOLED_TOKEN_LIST_SIZE) return;
 
                 if (Interlocked.Add(ref m_retainedElements, capacity) > m_elementBudget)
                 {
