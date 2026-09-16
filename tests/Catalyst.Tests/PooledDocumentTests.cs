@@ -408,6 +408,65 @@ namespace Catalyst.Tests
             }
         }
 
+        private static readonly int[] MixedCapacities = new[] { 2, 5, 9, 17, 33, 40, 65, 130, 260, 600, 1_100, 5_000 };
+
+        [Fact]
+        public void ARentIsNeverAnsweredWithASmallerListWhileABigEnoughOneIsInThePool()
+        {
+            //Bucketing a list only from above does not do this: the bucket that holds a request for forty
+            //also holds the lists of two, so the pool answers with one of those while the list it should
+            //have handed over sits in the same bucket behind it.
+            var pool = new DocumentPool();
+
+            foreach (var capacity in MixedCapacities)
+            {
+                //Built rather than rented: renting would recycle the one already in there instead of adding
+                pool.ReturnTokenData(new List<TokenData>(capacity));
+            }
+
+            //Largest first, so the answer cannot come out right just because the pool happens to hand them
+            //back in the order they went in. Each is put back before the next, so a big enough list is
+            //always in there to be found.
+            foreach (var capacity in MixedCapacities.Reverse())
+            {
+                var list = pool.RentTokenData(capacity);
+
+                Assert.True(list.Capacity >= capacity, $"a list rented for {capacity} came back holding {list.Capacity}");
+
+                pool.ReturnTokenData(list);
+            }
+        }
+
+        [Fact]
+        public void AReservationIsHonouredEvenWhenThePoolCanOnlyOfferASmallerList()
+        {
+            //A pool that only has lists of 260 cannot serve a span of 300, and says so by handing over the
+            //nearest thing it has. Reserving has to finish the job rather than trust what it was handed.
+            var pool = new DocumentPool();
+
+            pool.ReturnTokenData(new List<TokenData>(260)); //one for the span
+            pool.ReturnTokenData(new List<TokenData>(260)); //one for the reservation to be offered
+
+            var document = pool.Rent(TEXT, Language.English);
+            var span     = document.AddSpan(0, TEXT.Length - 1);
+
+            span.ReserveTokens(300);
+
+            Assert.True(document.TokensData[0].Capacity >= 300, $"the span was left holding {document.TokensData[0].Capacity}");
+
+            //And filling it to what was reserved does not grow it again
+            var capacityAfterReserving = document.TokensData[0].Capacity;
+
+            for (int i = 0; i < 300; i++)
+            {
+                span.AddTokenAsStruct(0, 1);
+            }
+
+            Assert.Equal(capacityAfterReserving, document.TokensData[0].Capacity);
+
+            pool.Return(document);
+        }
+
         [Fact]
         public void ReservingTokensOnAnEmptySpanDoesNotGrowTheRentedList()
         {

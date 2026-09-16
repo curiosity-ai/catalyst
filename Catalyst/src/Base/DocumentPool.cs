@@ -795,59 +795,149 @@ namespace Catalyst
         /// thousand tokens are tens of gigabytes.
         /// </remarks>
         /// <summary>
-        /// A <see cref="BoundedPool{T}"/> per capacity band, so a caller that knows how many elements it is
-        /// about to write gets a list that already holds them. One undifferentiated pool hands a span of
-        /// five thousand tokens whichever list came back last, and growing that list allocates exactly what
-        /// the pool was there to save.
+        /// Keeps recycled lists in buckets by capacity, so a caller that knows how many elements it is about
+        /// to write gets a list that already holds them.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Bucket <c>k</c> holds lists whose capacity is in <c>[2^k, 2^(k+1))</c>, so <b>every member of
+        /// bucket <c>k</c> holds at least <c>2^k</c></b>. That invariant is the whole point: <see cref="Rent"/>
+        /// starts at the first bucket whose floor covers the request, which is what lets it promise the
+        /// capacity rather than hope for it. A bucketing that only bounds a list from above cannot - the
+        /// bucket holding a request for forty also holds lists of eight - and a rent that answers too small
+        /// is worse than no bucketing at all, because the caller grows it after believing it was served.
+        /// Powers of two keep the over-provisioning under 2x, the same slack <see cref="List{T}"/> gives
+        /// itself when it grows.
+        /// </para>
+        /// <para>
+        /// A rent that finds every large enough bucket empty falls back to a smaller list rather than
+        /// allocating: growing that list costs one array - what an unbucketed pool cost every time - and
+        /// keeps the <see cref="List{T}"/> itself out of the garbage. So the bucketing can win, and cannot
+        /// lose, against handing out whichever list came back last.
+        /// </para>
+        /// <para>
+        /// The element budget is shared across the buckets rather than divided between them. Dividing it caps
+        /// each shape at a fraction of what the pool may hold, so the one shape a workload actually produces
+        /// runs dry while the rest sit empty.
+        /// </para>
+        /// </remarks>
         private sealed class SizeClassedPool<T>
         {
-            //Capacity bands, in elements. The last one ends at MAXIMUM_POOLED_COLLECTION_SIZE, past which
-            //BoundedPool drops the list anyway.
-            private static readonly int[] BANDS = new[] { 64, 256, 1_024, 4_096, 16_384, MAXIMUM_POOLED_COLLECTION_SIZE };
+            //Bucket 0 takes everything below 2, so a list that came back with no capacity has somewhere to go;
+            //every bucket above it holds [2^k, 2^(k+1)). The last ends where a list is dropped rather than kept.
+            private const int MAXIMUM_BUCKET = 16; //2^16 == MAXIMUM_POOLED_COLLECTION_SIZE
 
-            private readonly BoundedPool<List<T>>[] m_bands;
+            private readonly ConcurrentQueue<Pooled>[] m_buckets;
+            private readonly int                       m_capacity;
+            private readonly long                      m_elementBudget;
+            private          int                       m_count;
+            private          long                      m_retainedElements;
 
             internal SizeClassedPool(long capacity, long elementBudget)
             {
-                m_bands = new BoundedPool<List<T>>[BANDS.Length];
+                m_capacity      = (int)Math.Min(capacity, int.MaxValue);
+                m_elementBudget = elementBudget;
+                m_buckets       = new ConcurrentQueue<Pooled>[MAXIMUM_BUCKET + 1];
 
-                for (int i = 0; i < m_bands.Length; i++)
+                for (int i = 0; i < m_buckets.Length; i++)
                 {
-                    m_bands[i] = new BoundedPool<List<T>>(capacity, elementBudget / BANDS.Length);
+                    m_buckets[i] = new ConcurrentQueue<Pooled>();
                 }
             }
 
-            private static int BandFor(int capacity)
+            /// <summary>Where a list of this capacity belongs - floor(log2), so the bucket's members all hold at least 2^k.</summary>
+            private static int BucketHolding(int capacity)
             {
-                for (int i = 0; i < BANDS.Length; i++)
-                {
-                    if (capacity <= BANDS[i]) return i;
-                }
+                int bucket = 0;
 
-                return BANDS.Length - 1;
+                while (bucket < MAXIMUM_BUCKET && (1 << (bucket + 1)) <= capacity) { bucket++; }
+
+                return bucket;
             }
 
-            /// <summary>Takes a list holding at least <paramref name="minimumCapacity"/>, or null.</summary>
+            /// <summary>The first bucket whose members are guaranteed to hold this many - ceil(log2).</summary>
+            private static int BucketFor(int minimumCapacity)
+            {
+                int bucket = 0;
+
+                while (bucket < MAXIMUM_BUCKET && (1 << bucket) < minimumCapacity) { bucket++; }
+
+                return bucket;
+            }
+
+            /// <summary>
+            /// Takes a list holding at least <paramref name="minimumCapacity"/> when the pool has one, a
+            /// smaller one when it does not, and null when it is empty.
+            /// </summary>
             internal List<T> Rent(int minimumCapacity)
             {
-                for (int band = BandFor(minimumCapacity); band < m_bands.Length; band++)
-                {
-                    var item = m_bands[band].Rent();
+                var wanted = BucketFor(minimumCapacity);
 
-                    if (item is object) return item;
+                for (int bucket = wanted; bucket <= MAXIMUM_BUCKET; bucket++)
+                {
+                    if (TryTake(bucket, out var item)) return item;
+                }
+
+                for (int bucket = wanted - 1; bucket >= 0; bucket--)
+                {
+                    if (TryTake(bucket, out var item)) return item;
                 }
 
                 return null;
             }
 
-            internal void Return(List<T> item, int capacity) => m_bands[BandFor(capacity)].Return(item, capacity);
+            private bool TryTake(int bucket, out List<T> item)
+            {
+                if (m_buckets[bucket].TryDequeue(out var pooled))
+                {
+                    Interlocked.Decrement(ref m_count);
+                    Interlocked.Add(ref m_retainedElements, -pooled.Size);
+
+                    item = pooled.Item;
+                    return true;
+                }
+
+                item = null;
+                return false;
+            }
+
+            internal void Return(List<T> item, int capacity)
+            {
+                if (capacity > MAXIMUM_POOLED_COLLECTION_SIZE) return;
+
+                if (Interlocked.Add(ref m_retainedElements, capacity) > m_elementBudget)
+                {
+                    Interlocked.Add(ref m_retainedElements, -capacity);
+                    return;
+                }
+
+                if (Interlocked.Increment(ref m_count) > m_capacity)
+                {
+                    Interlocked.Decrement(ref m_count);
+                    Interlocked.Add(ref m_retainedElements, -capacity);
+                    return;
+                }
+
+                m_buckets[BucketHolding(capacity)].Enqueue(new Pooled(item, capacity));
+            }
 
             internal void Trim()
             {
-                for (int i = 0; i < m_bands.Length; i++)
+                for (int bucket = 0; bucket <= MAXIMUM_BUCKET; bucket++)
                 {
-                    m_bands[i].Trim();
+                    while (TryTake(bucket, out _)) { }
+                }
+            }
+
+            private readonly struct Pooled
+            {
+                internal readonly List<T> Item;
+                internal readonly int     Size;
+
+                internal Pooled(List<T> item, int size)
+                {
+                    Item = item;
+                    Size = size;
                 }
             }
         }

@@ -62,8 +62,11 @@ namespace Catalyst
 
         /// <inheritdoc />
         /// <remarks>
-        /// An empty list the pool handed back too small is swapped for one of the right size rather than
-        /// grown - growing it allocates the array the pool exists to hand over.
+        /// An empty list the pool handed back too small is swapped for one the pool sized for this span,
+        /// rather than grown - growing it allocates the array the pool exists to hand over. The pool answers
+        /// a rent it cannot satisfy with the nearest thing it has rather than with nothing, so the swap is
+        /// not on its own a guarantee: the base call is what makes the capacity certain, and it is a no-op
+        /// whenever the swap did its job.
         /// </remarks>
         public override void ReserveTokens(int spanIndex, int expectedTokenCount)
         {
@@ -73,7 +76,6 @@ namespace Catalyst
             {
                 TokensData[spanIndex] = m_pool.RentTokenData(expectedTokenCount);
                 m_pool.ReturnTokenData(current);
-                return;
             }
 
             base.ReserveTokens(spanIndex, expectedTokenCount);
