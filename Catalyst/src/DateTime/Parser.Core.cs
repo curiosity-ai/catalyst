@@ -206,8 +206,11 @@ namespace Catalyst.DateTimeRecognition
                     continue;
                 }
 
-                if (AtTerm(at, TermKind.Multiplier, out int m) && any)
+                // "mil novecientos noventa y dos" opens on its thousand, where English says "one thousand"
+                if (AtTerm(at, TermKind.Multiplier, out int m) && (any || m >= 1000))
                 {
+                    any = true;
+
                     if (m >= 1000)
                     {
                         total  += (current == 0 ? 1 : current) * m;

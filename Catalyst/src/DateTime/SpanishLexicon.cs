@@ -73,6 +73,14 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Cardinal, 80, "ochenta");
             b.Add(TermKind.Cardinal, 90, "noventa");
             b.Add(TermKind.Multiplier,     100, "cien", "ciento", "cientos");
+            b.Add(TermKind.Cardinal,  200, "doscientos");
+            b.Add(TermKind.Cardinal,  300, "trescientos");
+            b.Add(TermKind.Cardinal,  400, "cuatrocientos");
+            b.Add(TermKind.Cardinal,  500, "quinientos");
+            b.Add(TermKind.Cardinal,  600, "seiscientos");
+            b.Add(TermKind.Cardinal,  700, "setecientos");
+            b.Add(TermKind.Cardinal,  800, "ochocientos");
+            b.Add(TermKind.Cardinal,  900, "novecientos");
             b.Add(TermKind.Multiplier,    1000, "mil");
             b.Add(TermKind.Multiplier, 1000000, "millón", "millon", "millones");
 
