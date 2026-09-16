@@ -718,8 +718,8 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             int at      = i;
-            bool hadThe = AtWord(at, "the");
-            if (hadThe) at++;
+            bool hadThe = AtWord(at, "the") || AtTerm(at, TermKind.Article);
+            if (hadThe) at = After(at);
 
             // "el día 21", "dia 12" — the word for "day" licenses the bare number the way "the" does
             int dayNoun = SkipDayNoun(at);
@@ -737,11 +737,13 @@ namespace Catalyst.DateTimeRecognition
             }
 
             bool ordinal = TryOrdinal(at, out int day, out int end);
+            bool bare    = false;
 
             if (!ordinal && hadThe && AtNumber(at) && DigitsAt(at) <= 2 && NumberAt(at) >= 1 && NumberAt(at) <= 31)
             {
-                day = NumberAt(at);
-                end = at + 1;
+                day  = NumberAt(at);
+                end  = at + 1;
+                bare = true;
             }
             else if (!ordinal || day < 1 || day > 31)
             {
@@ -753,6 +755,12 @@ namespace Catalyst.DateTimeRecognition
 
             // "3rd week of 2018" counts weeks; the ordinal belongs to the period, not to a day
             if (AtTerm(end, TermKind.Unit) || AtTerm(end, TermKind.BusinessDay)) return -1;
+
+            // A number written without a suffix says nothing itself, so anything that says what it really
+            // is wins: "el 27/11" is a numeric date, "lunes 1-3 p.m." a clock range
+            if (bare && (At(end, LexKind.Slash) || At(end, LexKind.Colon)
+                         || (At(end, LexKind.Dash) && AtNumber(end + 1))
+                         || AtTerm(end, TermKind.AmPm) || AtTerm(end, TermKind.OClock))) return -1;
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;
