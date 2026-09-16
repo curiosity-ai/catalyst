@@ -87,7 +87,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minute", "minuten", "min");
             b.Add(TermKind.Unit, (int)TimeUnit.Hour,      "stunde", "stunden", "std", "h");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,       "tag", "tage", "tagen", "tages", "t");
-            b.Add(TermKind.Unit, (int)TimeUnit.Week,      "woche", "wochen", "wo");
+            b.Add(TermKind.Unit, (int)TimeUnit.Week,      "woche", "wochen", "wo", "arbeitswoche", "arbeitswochen");
             b.Add(TermKind.Unit, (int)TimeUnit.Fortnight, "vierzehn tage");
             b.Add(TermKind.Unit, (int)TimeUnit.Month,     "monat", "monate", "monaten", "monats");
             b.Add(TermKind.Unit, (int)TimeUnit.Quarter,   "quartal", "quartale", "vierteljahr");
@@ -107,7 +107,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.This,      "diese", "dieser", "diesen", "dieses", "diesem", "kommende", "kommenden");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "folgende", "folgenden");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,      "letzte", "letzten", "letzter", "letztes", "vergangene", "vergangenen", "vorige", "vorigen");
-            b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte");
+            b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte", "vorletzten", "vorletztes", "vorletzter");
             b.Add(TermKind.Relative, (int)RelativeKind.AfterNext,  "übernächste", "übernächsten", "uebernaechste", "uebernaechsten", "übernächstes");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "aktuelle", "aktuellen", "laufende", "laufenden", "selbe", "selben", "gleiche", "gleichen");
 
@@ -153,7 +153,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "seit");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 
-            b.Add(TermKind.Filler, "am", "im", "in", "an", "auf", "um", "für", "fuer");
+            b.Add(TermKind.Filler, "am", "im", "in", "an", "auf", "um", "für", "fuer", "unter", "während", "waehrend");
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "der", "die", "das", "den", "dem", "des");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "einem", "einer", "eines");
             b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "ganz", "ganze", "ganzen", "ganzer", "ganzes");   // "the whole day" counts as one

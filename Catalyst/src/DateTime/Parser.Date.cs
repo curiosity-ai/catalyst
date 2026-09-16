@@ -758,6 +758,9 @@ namespace Catalyst.DateTimeRecognition
 
             // A number written without a suffix says nothing itself, so anything that says what it really
             // is wins: "el 27/11" is a numeric date, "lunes 1-3 p.m." a clock range
+            // "den 28.10." is a numeric date; the dot is its separator, not an ordinal's suffix
+            if (AtDottedOrdinal(at) && AtNumber(end)) return -1;
+
             if (bare && (At(end, LexKind.Slash) || At(end, LexKind.Colon)
                          || (At(end, LexKind.Dash) && AtNumber(end + 1))
                          || AtTerm(end, TermKind.AmPm) || AtTerm(end, TermKind.OClock))) return -1;
