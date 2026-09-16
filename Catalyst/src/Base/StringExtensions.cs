@@ -26,7 +26,20 @@ namespace Catalyst
 
         public static string RemoveControlCharacters(this string text)
         {
-            return text.AsSpan().RemoveControlCharacters();
+            if (text is null) return null;
+
+            //Most text has nothing to remove, and copying it would allocate a second copy of every document
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+
+                if (ch == '' || (ch != '\r' && ch != '\n' && char.IsControl(ch)))
+                {
+                    return text.AsSpan().RemoveControlCharacters();
+                }
+            }
+
+            return text;
         }
 
         public static string RemoveControlCharacters(this ReadOnlySpan<char> text)
