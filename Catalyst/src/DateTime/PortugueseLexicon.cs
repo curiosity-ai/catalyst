@@ -77,7 +77,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal,  8, "oitavo");
             b.Add(TermKind.Ordinal,  9, "nono");
             b.Add(TermKind.Ordinal, 10, "décimo", "decimo");
-            b.Add(TermKind.OrdinalSuffix, "º", "ª", "o", "a");
+            b.Add(TermKind.OrdinalSuffix, "º", "ª", "o", "a", "ro", "do", "to", "mo", "vo", "no");
 
             b.Add(TermKind.Unit, (int)TimeUnit.Second,  "segundos");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "segundo");

@@ -86,7 +86,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal,  8, "octavo", "octava");
             b.Add(TermKind.Ordinal,  9, "noveno", "novena");
             b.Add(TermKind.Ordinal, 10, "décimo", "decimo");
-            b.Add(TermKind.OrdinalSuffix, "º", "ª", "er", "o", "a");
+            b.Add(TermKind.OrdinalSuffix, "º", "ª", "er", "o", "a", "ro", "do", "to", "mo", "vo", "no");
 
             b.Add(TermKind.Unit, (int)TimeUnit.Second,    "segundos", "seg");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "segundo");
@@ -113,7 +113,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "próximo", "proximo", "próxima", "proxima", "próximos", "siguiente", "siguientes", "que viene");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,      "pasado", "pasada", "pasados", "pasadas", "último", "ultimo", "última", "ultima", "últimos", "ultimos", "últimas", "ultimas");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "anterior", "anteriores", "previo", "previa");
-            b.Add(TermKind.Relative, (int)RelativeKind.Current,   "actual", "corriente", "mismo", "misma");
+            b.Add(TermKind.Relative, (int)RelativeKind.Current,   "ese", "esa", "esos", "esas",   "actual", "corriente", "mismo", "misma");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "hoy");
             // "mañana" is both tomorrow and the morning; the grammar picks by context

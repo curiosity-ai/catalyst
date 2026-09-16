@@ -260,6 +260,15 @@ namespace Catalyst.DateTimeRecognition
                 return true;
             }
 
+            // "1.º" — the suffix written after a full stop
+            if (AtNumber(i) && At(i + 1, LexKind.Dot) && !_lex[i + 1].SpaceBefore
+                && AtTerm(i + 2, TermKind.OrdinalSuffix) && !_lex[i + 2].SpaceBefore)
+            {
+                value = NumberAt(i);
+                end   = i + 3;
+                return true;
+            }
+
             // "twenty third", "thirty-first"
             if (AtTerm(i, TermKind.Cardinal, out int tens) && tens >= 20 && tens % 10 == 0)
             {
