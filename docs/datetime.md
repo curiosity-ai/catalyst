@@ -100,14 +100,14 @@ is the ceiling this is measured against.
 
 | Language | span + type | full resolution |
 |---|---:|---:|
-| English | 86.9% | 72.6% |
-| EnglishOthers | 82.9% | 70.7% |
-| French | 59.5% | 53.7% |
-| Italian | 59.1% | 50.4% |
-| Dutch | 48.7% | 39.8% |
-| Spanish | 42.2% | 35.8% |
-| German | 42.1% | 34.4% |
-| Portuguese | 40.6% | 33.3% |
+| English | 93.8% | 89.0% |
+| EnglishOthers | 97.6% | 82.9% |
+| Italian | 61.3% | 56.9% |
+| French | 60.5% | 57.9% |
+| Dutch | 49.7% | 44.4% |
+| German | 43.0% | 37.6% |
+| Spanish | 42.6% | 38.9% |
+| Portuguese | 40.0% | 37.0% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine
@@ -118,3 +118,9 @@ article belongs to the match depends on what is being matched, not only on the l
 date ("the 09th of may") and drops it from a qualified period ("the april 2017" is reported as "april 2017"),
 while French, Spanish, Portuguese, Italian and Dutch do the opposite. That is what `Lexicon.ArticleInDateSpan`
 and `ArticleInPeriodSpan` select between.
+
+Two more per-language flags exist for the same reason. `RelativeAfterUnit` says whether the qualifier may follow
+the unit (*la semaine prochaine*); English puts it in front, so reading it the other way round turns "2 hours
+next month" into a two-hour period. `PluralEndsInS` says whether a plural unit can be told from a singular one
+by its last letter, which is what makes "3 next week" the number three beside "next week" rather than three
+weeks; German and Dutch opt out.
