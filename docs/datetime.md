@@ -65,6 +65,21 @@ Per type, with the TIMEX it produces:
 | `duration` | `3 days`, `2w`, `one and a half hours`, `a few minutes` | `P3D`, `PT1.5H` |
 | `set` | `every monday`, `weekly`, `tuesdays at 9am`, `19th of every month` | `XXXX-WXX-1`, `P1W` |
 
+## Performance
+
+Measured with BenchmarkDotNet (.NET 10, Intel Xeon 2.80GHz) against `Microsoft.Recognizers.Text.DateTime`
+1.8.13 on the same inputs, both engines warmed up first so neither pays for building its patterns:
+
+| Input | Microsoft | Catalyst | Faster | Microsoft allocated | Catalyst allocated |
+|---|---:|---:|---:|---:|---:|
+| Prose, 241 chars, no date in it | 972 µs | 138 µs | 7x | 52 KB | **0 B** |
+| Short sentence, one date | 482 µs | 15 µs | 32x | 70 KB | 472 B |
+| Sentence dense in date expressions | 2,782 µs | 45 µs | 62x | 290 KB | 3 KB |
+| Document, ~9.5 KB, 240 hits | 636 ms | 5.2 ms | 122x | 43.5 MB | 105 KB |
+
+The zero in the first row is the one that matters for a corpus: text with no date in it is what a scanner
+spends nearly all of its time on, and there the engine allocates nothing at all.
+
 ## Languages
 
 English is first class. German, French, Spanish, Portuguese, Italian and Dutch share the same grammar with

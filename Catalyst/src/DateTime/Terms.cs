@@ -40,12 +40,10 @@ namespace Catalyst.DateTimeRecognition
         FromNow,            // later / from now / hence / afterwards
         Several,            // a few / several / some / couple
         BusinessDay,        // business / working / work (day)
-        Timezone,           // Value = offset in minutes
         OrdinalSuffix,      // st / nd / rd / th, following a digit
         Fiscal,             // fiscal / calendar / school, qualifying "year"
         QuarterMarker,      // the "q" of q1, or "h" of h2 (Value = periods per year)
         WeekMarker,         // the "week" of "week 27"
-        Ignore,             // a word that is allowed inside a match but carries no meaning
     }
 
     public enum TimeUnit : byte

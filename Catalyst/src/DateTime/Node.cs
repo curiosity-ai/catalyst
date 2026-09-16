@@ -154,7 +154,6 @@ namespace Catalyst.DateTimeRecognition
         public DurationParts Duration;
         public double   DurationSeconds;
         public string   DurationTimex;
-        public bool     DurationIsDateOnly;   // true when every component is a day or larger
 
         // Range
         public int  Left;
@@ -197,7 +196,6 @@ namespace Catalyst.DateTimeRecognition
         }
 
         public readonly bool HasDate    => Year >= 0 || Month >= 0 || Day >= 0 || Weekday >= 0 || Holiday != HolidayKind.None || OffsetDays != 0 || OffsetWeeks != 0 || OffsetMonths != 0 || OffsetYears != 0 || Relative != RelativeKind.None;
-        public readonly bool HasTime    => Hour >= 0 || PartOfDay != PartOfDayKind.None;
         public readonly bool HasAnyTime => Hour >= 0;
     }
 }

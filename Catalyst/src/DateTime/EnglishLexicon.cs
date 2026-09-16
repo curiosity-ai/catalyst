@@ -165,7 +165,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Following, "following");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "previous", "prior", "preceding");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "current", "same", "present");
-            b.Add(new TermInfo(TermKind.Relative, (int)RelativeKind.Last, TermKind.Ignore), "last");
+            b.Add(TermKind.Relative, (int)RelativeKind.Last, "last");
             b.Add(new TermInfo(TermKind.Relative, (int)RelativeKind.Last, TermKind.PastWord), "past");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,     "today", "otd");

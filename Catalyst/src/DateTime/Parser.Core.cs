@@ -25,12 +25,6 @@ namespace Catalyst.DateTimeRecognition
             _modDepth  = 0;
         }
 
-        public int Count => _lex.Length;
-
-        public Span<Node> Nodes => _nodes.Slice(0, _nodeCount);
-
-        public void Reset() => _nodeCount = 0;
-
         public int Alloc(Node node)
         {
             if (_nodeCount >= _nodes.Length) return Node.Unspecified;
@@ -80,8 +74,6 @@ namespace Catalyst.DateTimeRecognition
             return i;
         }
 
-        private readonly int SkipComma(int i) => At(i, LexKind.Comma) ? i + 1 : i;
-
         /// <summary>
         /// Skips a leading definite article. English reports "next week" without its "the", so there the
         /// article is only stepped over; the other languages keep theirs inside the match.
@@ -115,12 +107,6 @@ namespace Catalyst.DateTimeRecognition
             }
 
             return at;
-        }
-
-        private readonly bool IsRangeConnector(int i)
-        {
-            if (AtTerm(i, TermKind.Connector)) return true;
-            return At(i, LexKind.Dash) || At(i, LexKind.Tilde);
         }
 
         // ------------------------------------------------------------------ numbers
@@ -228,18 +214,6 @@ namespace Catalyst.DateTimeRecognition
             return false;
         }
 
-        /// <summary>An ordinal that may be introduced by "the".</summary>
-        private readonly bool TryOrdinalWithArticle(int i, out int value, out int end)
-        {
-            int at = SkipWord(i, "the");
-
-            if (TryOrdinal(at, out value, out end)) return true;
-
-            value = 0;
-            end   = i;
-            return false;
-        }
-
         /// <summary>A four-digit year, or one spelled out ("nineteen seventy two", "two thousand and fifteen").</summary>
         private readonly bool TryYear(int i, out int year, out int end)
         {
@@ -275,34 +249,5 @@ namespace Catalyst.DateTimeRecognition
 
         /// <summary>A two-digit year, expanded the way Microsoft.Recognizers.Text does: 00-30 -> 2000s, 31-99 -> 1900s.</summary>
         public static int ExpandTwoDigitYear(int y) => y < 100 ? (y < 30 ? 2000 + y : 1900 + y) : y;
-
-        // ------------------------------------------------------------------ modifiers
-
-        /// <summary>Reads an optional leading modifier ("before", "after", "around", "early", "the end of", ...).</summary>
-        private readonly bool TryLeadingMod(int i, out ModKind mod, out int end)
-        {
-            mod = ModKind.None;
-            end = i;
-
-            if (AtTerm(i, TermKind.Approx))
-            {
-                mod = ModKind.Approx;
-                end = After(i);
-                return true;
-            }
-
-            if (AtTerm(i, TermKind.Mod, out int value))
-            {
-                var k = (ModKind)value;
-
-                if (k == ModKind.OrLater || k == ModKind.OrEarlier) return false;
-
-                mod = k;
-                end = After(i);
-                return true;
-            }
-
-            return false;
-        }
     }
 }

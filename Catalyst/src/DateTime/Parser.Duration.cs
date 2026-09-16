@@ -64,7 +64,6 @@ namespace Catalyst.DateTimeRecognition
             n.Duration           = parts;
             n.DurationSeconds    = parts.TotalSeconds;
             n.DurationTimex      = parts.ToTimex();
-            n.DurationIsDateOnly = parts.IsDateOnly;
             n.Mod                = mod;
             SetSpan(ref n);
 
