@@ -124,7 +124,6 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.ToWord), "vor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "abend");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Night,     "nacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "mitternacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "heute abend", "heute nacht");
@@ -149,14 +148,16 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "seit", "beginnend");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 
-            b.Add(TermKind.Filler, "der", "die", "das", "den", "dem", "des", "am", "im", "in", "an", "auf", "um", "für", "fuer", "einem", "einer", "eines");
+            b.Add(TermKind.Filler, "der", "die", "das", "den", "dem", "des", "am", "im", "in", "an", "auf", "um", "für", "fuer");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "einem", "einer", "eines");
             b.Add(TermKind.Filler, "ganz", "ganze", "ganzen", "ganzer", "ganzes");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
             b.Add(TermKind.InPrefix, 1, "innerhalb", "innerhalb von");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "um");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "vor dem", "bis spätestens", "spätestens");
-            b.Add(TermKind.Mod, (int)ModKind.After,     "nach", "nach dem", "später als");
+            b.Add(TermKind.Mod, (int)ModKind.After,     "nach dem", "später als");
+            b.Add(new TermInfo(TermKind.PastWord, 0, TermKind.Mod, (int)ModKind.After), "nach");
             b.Add(TermKind.Mod, (int)ModKind.Less,      "weniger als");
             b.Add(TermKind.Mod, (int)ModKind.More,      "mehr als");
             b.Add(TermKind.Mod, (int)ModKind.Since,     "seit dem");

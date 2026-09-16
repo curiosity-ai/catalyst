@@ -36,7 +36,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Weekday, 6, "zaterdag", "zaterdagen", "za");
 
             b.Add(TermKind.Cardinal,  0, "nul");
-            b.Add(TermKind.Cardinal,  1, "een", "één");
+            b.Add(TermKind.Cardinal,  1, "één");
             b.Add(TermKind.Cardinal,  2, "twee");
             b.Add(TermKind.Cardinal,  3, "drie");
             b.Add(TermKind.Cardinal,  4, "vier");
@@ -118,8 +118,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "ochtend", "ochtenden", "'s ochtends", "'s morgens", "vanmorgen", "vanochtend", "voormiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "middag", "namiddag", "'s middags", "vanmiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "avond", "avonden", "'s avonds");
-            b.Add(TermKind.PastWord, "over");
-            b.Add(TermKind.ToWord,   "voor");
+            b.Add(new TermInfo(TermKind.PastWord, 0, TermKind.InPrefix, 0), "over");
+            b.Add(new TermInfo(TermKind.ToWord, 0, TermKind.Filler, 0), "voor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "middaguur", "twaalf uur 's middags");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "middernacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "vanavond", "vannacht");
@@ -136,11 +136,12 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "van", "vanaf", "sinds", "beginnend");
             b.Add(TermKind.RangeStart, 1, "tussen");
 
-            b.Add(TermKind.Filler, "de", "het", "een", "in", "op", "om", "voor", "van de", "aan");
+            b.Add(TermKind.Filler, "het", "in", "op", "om", "van de", "aan");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.OrdinalSuffix), "de");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "een");
             b.Add(TermKind.Filler, "hele", "heel", "gehele", "geheel");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
-            b.Add(TermKind.InPrefix, 0, "over");
-            b.Add(TermKind.InPrefix, 1, "binnen");
+                        b.Add(TermKind.InPrefix, 1, "binnen");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "om");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor de", "uiterlijk", "niet later dan");

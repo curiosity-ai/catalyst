@@ -22,7 +22,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Month,  6, "juin", "jun");
             b.Add(TermKind.Month,  7, "juillet", "juil");
             b.Add(TermKind.Month,  8, "août", "aout", "aoû");
-            b.Add(TermKind.Month,  9, "septembre", "sept", "sep");
+            b.Add(TermKind.Month,  9, "septembre", "sep");
             b.Add(TermKind.Month, 10, "octobre", "oct");
             b.Add(TermKind.Month, 11, "novembre", "nov");
             b.Add(TermKind.Month, 12, "décembre", "decembre", "déc", "dec");
@@ -42,7 +42,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Cardinal,  4, "quatre");
             b.Add(TermKind.Cardinal,  5, "cinq");
             b.Add(TermKind.Cardinal,  6, "six");
-            b.Add(TermKind.Cardinal,  7, "sept");
+            b.Add(new TermInfo(TermKind.Cardinal, 7, TermKind.Month, 9), "sept");
             b.Add(TermKind.Cardinal,  8, "huit");
             b.Add(TermKind.Cardinal,  9, "neuf");
             b.Add(TermKind.Cardinal, 10, "dix");

@@ -67,10 +67,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Multiplier,    1000, "mille", "mila");
             b.Add(TermKind.Multiplier, 1000000, "milione", "milioni");
 
-            b.Add(TermKind.Ordinal,  1, "primo", "prima");
-            b.Add(TermKind.Ordinal,  2, "secondo", "seconda");
+            b.Add(TermKind.Ordinal,  1, "primo");
+            b.Add(TermKind.Ordinal,  2, "seconda");
             b.Add(TermKind.Ordinal,  3, "terzo", "terza");
-            b.Add(TermKind.Ordinal,  4, "quarto", "quarta");
+            b.Add(TermKind.Ordinal,  4, "quarta");
             b.Add(TermKind.Ordinal,  5, "quinto", "quinta");
             b.Add(TermKind.Ordinal,  6, "sesto");
             b.Add(TermKind.Ordinal,  7, "settimo");
@@ -79,7 +79,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal, 10, "decimo");
             b.Add(TermKind.OrdinalSuffix, "º", "ª", "°");
 
-            b.Add(TermKind.Unit, (int)TimeUnit.Second,  "secondo", "secondi", "sec");
+            b.Add(TermKind.Unit, (int)TimeUnit.Second,  "secondi", "sec");
+            b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "secondo");
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,  "minuto", "minuti", "min");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "ora", "ore", "h");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,     "giorno", "giorni", "giornata", "giornate");
@@ -96,7 +97,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Several, 3, "alcuni", "alcune", "diversi", "diverse", "qualche");
             b.Add(TermKind.Several, 2, "paio");
             b.Add(TermKind.HalfWord, "mezza", "mezzo", "e mezza");
-            b.Add(TermKind.QuarterWord, "quarto");
+            b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "quarto");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "questo", "questa", "questi", "queste");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "prossimo", "prossima", "prossimi", "próssimo", "seguente", "venturo");
@@ -109,9 +110,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Yesterday,          "ieri");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "dopodomani");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "l'altro ieri", "avantieri");
-            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "adesso", "ora", "in questo momento");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "adesso", "in questo momento");
 
-            b.Add(TermKind.Ago,     "fa", "prima");
+            b.Add(TermKind.Ago,     "fa");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Ordinal, 1), "prima");
             b.Add(TermKind.FromNow, "dopo", "da adesso");
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "più tardi", "piu tardi");
 
@@ -135,7 +137,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "da", "dal", "dalle");
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 
-            b.Add(TermKind.Filler, "di", "del", "della", "il", "lo", "la", "i", "gli", "le", "in", "nel", "nella", "per", "un", "una");
+            b.Add(TermKind.Filler, "di", "del", "della", "il", "lo", "la", "i", "gli", "le", "in", "nel", "nella", "per");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "un", "una");
             b.Add(TermKind.Filler, "tutto", "tutta", "tutti", "tutte", "intero", "intera");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
             b.Add(TermKind.InPrefix, 1, "entro");
@@ -149,7 +152,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "metà", "meta", "metà di");
             b.Add(TermKind.Approx, "circa", "intorno a", "verso", "approssimativamente");
 
-            b.Add(TermKind.SetPrefix, 0, "ogni", "tutti", "tutte");
+            b.Add(TermKind.SetPrefix, 0, "ogni");
+            b.Add(new TermInfo(TermKind.SetPrefix, 0, TermKind.Filler, 0), "tutti", "tutte");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Day,     "giornaliero", "quotidiano", "quotidianamente");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "settimanale", "settimanalmente");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "mensile", "mensilmente");
