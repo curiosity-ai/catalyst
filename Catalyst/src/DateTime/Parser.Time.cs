@@ -53,6 +53,16 @@ namespace Catalyst.DateTimeRecognition
 
             if (!At(i, LexKind.Word)) return false;
 
+            // "de la tarde", "du matin" — a language can name the half of the day instead of writing am/pm.
+            // A word that is also a part of the day keeps that reading, which carries more than the half.
+            if (AtTerm(i, TermKind.AmPm, out int named) && _lex[i].PhraseLength > 1
+                && !AtTerm(i, TermKind.PartOfDay) && !AtTerm(i, TermKind.Filler))
+            {
+                value = named;
+                end   = After(i);
+                return true;
+            }
+
             var word = _text.Slice(_lex[i].Start, _lex[i].Length);
 
             if (word.Equals("am", StringComparison.OrdinalIgnoreCase) || word.Equals("pm", StringComparison.OrdinalIgnoreCase))
