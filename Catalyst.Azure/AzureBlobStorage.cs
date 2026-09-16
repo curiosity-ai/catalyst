@@ -72,7 +72,8 @@ namespace Catalyst.Azure
             return await blockBlob.ExistsAsync();
         }
 
-        public string GetDataPath(Language language, string modelType, int version, string file)
+        //createPathIfMissing is ignored: a blob name is not a directory, so there is nothing to create ahead of the write
+        public string GetDataPath(Language language, string modelType, int version, string file, bool createPathIfMissing)
         {
             var path = Path.Combine("Data", Languages.EnumToCode(language), PathExtensions.GetValidPathName(modelType), $"v{version:000000}");
             if (!string.IsNullOrWhiteSpace(file)) {
@@ -87,7 +88,7 @@ namespace Catalyst.Azure
             throw new NotImplementedException();
         }
 
-        public string GetPath(IStorageTarget storeTarget, Language language, string modelType, int version, string tag, bool compressed)
+        public string GetPath(IStorageTarget storeTarget, Language language, string modelType, int version, string tag, bool compressed, bool createPathIfMissing)
         {
             string path = storeTarget.GetPath(BasePath, language, PathExtensions.GetValidPathName(modelType), version, tag);
             tag = PathExtensions.GetValidFileName(tag);

@@ -1,4 +1,4 @@
-
+﻿
 [![Nuget](https://img.shields.io/nuget/v/Catalyst.svg?maxAge=0&colorB=brightgreen)](https://www.nuget.org/packages/Catalyst/) [![Build Status](https://dev.azure.com/curiosity-ai/mosaik/_apis/build/status/catalyst?branchName=master)](https://dev.azure.com/curiosity-ai/mosaik/_build/latest?definitionId=10&branchName=master)
 
 <img src="https://raw.githubusercontent.com/curiosity-ai/catalyst/master/Catalyst/catalyst.png?token=ACDCOAYAIML2KGJTHTJP27C5KGCEC"/>
@@ -10,7 +10,7 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 [![Gitter](https://badges.gitter.im/curiosityai/catalyst.svg)](https://gitter.im/curiosityai/catalyst?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## ⚡ Features
-- Fast, modern pure-C# NLP library, supporting [.NET standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard)
+- Fast, modern pure-C# NLP library, targeting [.NET 9 and .NET 10](https://dotnet.microsoft.com/download)
 - Cross-platform, runs anywhere [.NET core](https://dotnet.microsoft.com/download) is supported - Windows, Linux, macOS and even ARM
 - Non-destructive [tokenization](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/Base/FastTokenizer.cs), >99.9% [RegEx-free](https://blog.codinghorror.com/regex-performance/), >1M tokens/s on a modern CPU
 - Named Entity Recognition ([gazeteer](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/Spotter.cs), [rule-based](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/PatternSpotter.cs) & [perceptron-based](https://github.com/curiosity-ai/catalyst/blob/master/Catalyst/src/Models/EntityRecognition/AveragePerceptronEntityRecognizer.cs))
@@ -23,6 +23,20 @@ _**catalyst**_ is a C# Natural Language Processing library built for speed. Insp
 - Pre-built models for [language packages](https://www.nuget.org/packages?q=catalyst.models) ✨
 - Lemmatization ✨ (using lookup tables ported from [spaCy](https://github.com/explosion/spacy-lookups-data))
 
+
+## ⚠️ Breaking changes
+
+**`ILemmatizer` takes the token's value, not the token.** `Token` is a struct, so a lemmatizer that asked for an `IToken` boxed one on every `Lemma` / `LemmaAsSpan` read - measured at 72 bytes per read, paid once per token a search index writes. The three members now take a `ReadOnlySpan<char>`:
+
+`````csharp
+bool IsBaseForm(ReadOnlySpan<char> value);
+string GetLemma(ReadOnlySpan<char> value);
+ReadOnlySpan<char> GetLemmaAsSpan(ReadOnlySpan<char> value);
+`````
+
+A custom `ILemmatizer` has to be updated, and **a `Catalyst.Models.*` package built against an older Catalyst will not load** - upgrade the language packages together with Catalyst. `English.Map.ToAmerican` / `ToBritish` narrow the same way (a `string` still works, it converts implicitly).
+
+**`netstandard2.1`, `netcoreapp3.1` and `net5.0` - `net8.0` are no longer built.** Catalyst and the language packages target `net9.0` and `net10.0`.
 
 ## Language Packages ✨
 All language-specific data and models are provided as NuGet packages, you can find all packages [here](https://www.nuget.org/packages?q=catalyst.models). 
