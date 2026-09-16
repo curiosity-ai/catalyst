@@ -105,15 +105,29 @@ namespace Catalyst
         /// <summary>
         /// Initializes a new instance of the <see cref="Document"/> class.
         /// </summary>
-        public Document()
+        public Document() : this(initializeCollections: true)
         {
-            TokensData = new List<List<TokenData>>();
-            SpanBounds = new List<int[]>();
-            Metadata = new Dictionary<string, string>();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class, optionally leaving the backing
+        /// collections unset so a derived type can supply its own (see <see cref="PooledDocument"/>, which
+        /// rents them from a <see cref="DocumentPool"/>).
+        /// </summary>
+        /// <param name="initializeCollections">Whether to allocate the backing collections.</param>
+        private protected Document(bool initializeCollections)
+        {
             Language = Language.Unknown;
-            Labels = new List<string>();
-            EntityData = new Dictionary<long, List<EntityType>>();
-            TokenMetadata = new Dictionary<long, Dictionary<string, string>>();
+
+            if (initializeCollections)
+            {
+                TokensData = new List<List<TokenData>>();
+                SpanBounds = new List<int[]>();
+                Metadata = new Dictionary<string, string>();
+                Labels = new List<string>();
+                EntityData = new Dictionary<long, List<EntityType>>();
+                TokenMetadata = new Dictionary<long, Dictionary<string, string>>();
+            }
         }
 
         /// <summary>
@@ -140,7 +154,7 @@ namespace Catalyst
             Metadata = doc.Metadata?.ToDictionary(kv => kv.Key, kv => kv.Value);
             UID = doc.UID;
             Labels = doc.Labels?.ToList();
-            EntityData = doc.EntityData?.ToDictionary(kv => kv.Key, kv => kv.Value.Select(et => new EntityType(et.Type, et.Tag)).ToList());
+            EntityData = doc.EntityData?.ToDictionary(kv => kv.Key, kv => kv.Value.Select(et => new EntityType(et.Type, et.Tag, et.Metadata is null ? null : new Dictionary<string, string>(et.Metadata), et.TargetUID)).ToList());
             TokenMetadata = doc.TokenMetadata?.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(kv2 => kv2.Key, kv2 => kv2.Value));
         }
 
@@ -182,13 +196,18 @@ namespace Catalyst
         /// <summary>
         /// Clears all token and span data from the document.
         /// </summary>
-        public void Clear()
+        public virtual void Clear()
         {
             SpanBounds.Clear();
             TokensData.Clear();
         }
 
         internal IToken AddToken(int spanIndex, int begin, int end)
+        {
+            return AddTokenAsStruct(spanIndex, begin, end);
+        }
+
+        internal Token AddTokenAsStruct(int spanIndex, int begin, int end)
         {
             if (end < begin)
             {
@@ -276,7 +295,7 @@ namespace Catalyst
         /// <param name="begin">The beginning character index.</param>
         /// <param name="end">The ending character index.</param>
         /// <returns>The newly created <see cref="Span"/>.</returns>
-        public Span AddSpan(int begin, int end)
+        public virtual Span AddSpan(int begin, int end)
         {
             SpanBounds.Add(new int[] { begin, end });
             TokensData.Add(new List<TokenData>());
@@ -381,7 +400,7 @@ namespace Catalyst
             }
         }
 
-        internal void AddEntityTypeToToken(int tokenIndex, int spanIndex, EntityType entityType)
+        internal virtual void AddEntityTypeToToken(int tokenIndex, int spanIndex, EntityType entityType)
         {
             if (EntityData is null) { EntityData = new Dictionary<long, List<EntityType>>(); }
 
@@ -416,7 +435,7 @@ namespace Catalyst
             }
         }
 
-        internal void RemoveEntityTypeFromToken(int tokenIndex, int spanIndex, int entityIndex)
+        internal virtual void RemoveEntityTypeFromToken(int tokenIndex, int spanIndex, int entityIndex)
         {
             long ix = GetTokenIndex(spanIndex, tokenIndex);
             List<EntityType> entityList;
@@ -431,7 +450,7 @@ namespace Catalyst
             }
         }
 
-        internal void RemoveEntityTypeFromToken(int tokenIndex, int spanIndex, string entityType)
+        internal virtual void RemoveEntityTypeFromToken(int tokenIndex, int spanIndex, string entityType)
         {
             if (EntityData is null) { return; } //nothing to do
             long ix = GetTokenIndex(spanIndex, tokenIndex);
@@ -447,7 +466,7 @@ namespace Catalyst
             }
         }
 
-        internal void ClearEntityTypesFromToken(int tokenIndex, int spanIndex)
+        internal virtual void ClearEntityTypesFromToken(int tokenIndex, int spanIndex)
         {
             if (EntityData is null) { return; } //nothing to do
             long ix = GetTokenIndex(spanIndex, tokenIndex);
@@ -575,7 +594,7 @@ namespace Catalyst
             return sb.ToString();
         }
 
-        internal Dictionary<string, string> GetTokenMetadata(int tokenIndex, int spanIndex)
+        internal virtual Dictionary<string, string> GetTokenMetadata(int tokenIndex, int spanIndex)
         {
             if (TokenMetadata is null) { TokenMetadata = new Dictionary<long, Dictionary<string, string>>(); }
 
@@ -597,7 +616,7 @@ namespace Catalyst
         /// <summary>
         /// Removes overlapping tokens from all spans in the document.
         /// </summary>
-        public void RemoveOverlapingTokens()
+        public virtual void RemoveOverlapingTokens()
         {
             for (int i = 0; i < TokensData.Count; i++)
             {

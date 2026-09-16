@@ -118,6 +118,20 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Adds a new token to the span and hands it back as a <see cref="Token"/> rather than an
+        /// <see cref="IToken"/>, so a tokenizer adding millions of them does not box one per token. The
+        /// returned value behaves identically - it is the same struct <see cref="AddToken(int, int)"/>
+        /// returns, just not behind the interface.
+        /// </summary>
+        /// <param name="begin">The beginning character index.</param>
+        /// <param name="end">The ending character index.</param>
+        /// <returns>The newly created token.</returns>
+        public Token AddTokenAsStruct(int begin, int end)
+        {
+            return Parent.AddTokenAsStruct(Index, begin, end);
+        }
+
+        /// <summary>
         /// Adds a token to the span based on an existing token.
         /// </summary>
         /// <param name="token">The token to copy data from.</param>
