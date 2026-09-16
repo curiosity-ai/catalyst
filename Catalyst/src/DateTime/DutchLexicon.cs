@@ -135,6 +135,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "tussen");
 
             b.Add(TermKind.Filler, "de", "het", "een", "in", "op", "om", "voor", "van de", "aan");
+            b.Add(TermKind.Filler, "hele", "heel", "gehele", "geheel");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
             b.Add(TermKind.InPrefix, 0, "over");
             b.Add(TermKind.InPrefix, 1, "binnen");

@@ -56,7 +56,15 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Cardinal, 18, "dieciocho");
             b.Add(TermKind.Cardinal, 19, "diecinueve");
             b.Add(TermKind.Cardinal, 20, "veinte");
-            b.Add(TermKind.Cardinal, 21, "veintiuno", "veintiún");
+            b.Add(TermKind.Cardinal, 21, "veintiuno", "veintiún", "veintiuna");
+            b.Add(TermKind.Cardinal, 22, "veintidós", "veintidos");
+            b.Add(TermKind.Cardinal, 23, "veintitrés", "veintitres");
+            b.Add(TermKind.Cardinal, 24, "veinticuatro");
+            b.Add(TermKind.Cardinal, 25, "veinticinco");
+            b.Add(TermKind.Cardinal, 26, "veintiséis", "veintiseis");
+            b.Add(TermKind.Cardinal, 27, "veintisiete");
+            b.Add(TermKind.Cardinal, 28, "veintiocho");
+            b.Add(TermKind.Cardinal, 29, "veintinueve");
             b.Add(TermKind.Cardinal, 30, "treinta");
             b.Add(TermKind.Cardinal, 40, "cuarenta");
             b.Add(TermKind.Cardinal, 50, "cincuenta");
@@ -136,6 +144,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "de", "del", "el", "la", "los", "las", "en", "por", "para", "un", "una");
+            b.Add(TermKind.Filler, "todo", "toda", "todos", "todas", "entero", "entera");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "en");
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro del");
             b.Add(TermKind.ClockPrefix, "a las", "a la", "de las", "de la");

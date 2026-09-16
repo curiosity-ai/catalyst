@@ -115,6 +115,19 @@ namespace Catalyst.DateTimeRecognition
             return word.Length > 1 && (word[^1] == 's' || word[^1] == 'S');
         }
 
+        /// <summary>
+        /// Whether the word at <paramref name="i"/> is an article or a bare preposition — glue that counts
+        /// as "one" in front of a unit ("a day", "una hora", "een uur", "ganzen Tag").
+        /// </summary>
+        private readonly bool AtArticle(int i)
+        {
+            if (!AtTerm(i, TermKind.Filler)) return false;
+
+            return !AtTerm(i, TermKind.Month)       && !AtTerm(i, TermKind.Weekday)  && !AtTerm(i, TermKind.Unit)
+                && !AtTerm(i, TermKind.Relative)    && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal)
+                && !AtTerm(i, TermKind.ClockPrefix) && !AtTerm(i, TermKind.InPrefix);
+        }
+
         private readonly int SkipArticle(int i)
         {
             if (AtWord(i, "the")) return i + 1;
