@@ -117,22 +117,25 @@ namespace Catalyst.DateTimeRecognition
             n.Holiday  = (HolidayKind)holidayValue;
             n.Relative = rel;
 
-            // "easter 2018" / "fourth of july, 1995" / "independence day of this year"
+            // "easter 2018", "fourth of july, 1995", "independence day of this year",
+            // "Heilige Drei Könige im Jahr 2020", "Friedensfest letzten Jahres"
             int afterYear = end;
             if (At(afterYear, LexKind.Comma)) afterYear++;
-            afterYear = SkipWords(afterYear, "of", "in");
-            afterYear = SkipWord(afterYear, "the");
+            afterYear = SkipGlue(afterYear, 2);
 
-            if (TryYear(afterYear, out int year, out int yearEnd))
+            int named = AtTermValue(afterYear, TermKind.Unit, (int)TimeUnit.Year) ? After(afterYear) : afterYear;
+
+            if (TryYear(named, out int year, out int yearEnd))
             {
                 n.Year = year;
                 end    = yearEnd;
             }
-            else if (AtTerm(afterYear, TermKind.Relative, out int yearRel) && AtTermValue(afterYear + 1, TermKind.Unit, (int)TimeUnit.Year))
+            else if (AtTerm(afterYear, TermKind.Relative, out int yearRel)
+                     && AtTermValue(After(afterYear), TermKind.Unit, (int)TimeUnit.Year))
             {
                 // "independence day of this year" names one year, so it names one day
                 n.Relative = (RelativeKind)yearRel;
-                end        = afterYear + 2;
+                end        = After(After(afterYear));
             }
 
             n.LexEnd = end;
