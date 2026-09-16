@@ -226,7 +226,7 @@ namespace Catalyst.Models
                 var splitPoints = rentedSplitPoints;
 
                 var splitPointsCount = 0;
-                var infixLocation = new List<(int index, int length)>();
+                var infixLocation = _infixLocation ??= new List<(int index, int length)>();
 
                 int offset = 0, sufix_offset = 0;
                 int checkEvery = 0;
@@ -483,13 +483,13 @@ namespace Catalyst.Models
 
                     if (IsSimpleSpecialCase(customSimpleSpecialCases, hash))
                     {
-                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                        span.AddTokenAsStruct(spanBegin + b, spanBegin + e);
                     }
                     else if ((customSpecialCases is object && customSpecialCases.TryGetValue(hash, out TokenizationException exp)) || baseSpecialCases.TryGetValue(hash, out exp))
                     {
                         if (exp.Replacements is null)
                         {
-                            var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                            span.AddTokenAsStruct(spanBegin + b, spanBegin + e);
                         }
                         else
                         {
@@ -499,7 +499,7 @@ namespace Catalyst.Models
                             {
                                 //Adds replacement tokens sequentially, consuming one char from the original document at a time, and
                                 //using the remaing chars in the last replacement token
-                                var tk = span.AddToken(begin2, ((i == exp.Replacements.Length - 1) ? (spanBegin + e) : begin2));
+                                var tk = span.AddTokenAsStruct(begin2, ((i == exp.Replacements.Length - 1) ? (spanBegin + e) : begin2));
                                 tk.Replacement = exp.Replacements[i];
                                 begin2++;
                             }
@@ -507,7 +507,7 @@ namespace Catalyst.Models
                     }
                     else
                     {
-                        var tk = span.AddToken(spanBegin + b, spanBegin + e);
+                        var tk = span.AddTokenAsStruct(spanBegin + b, spanBegin + e);
                         if (sp.Reason == SplitPointReason.EmailOrUrl && !DisableEmailOrURLCapture)
                         {
                             tk.AddEntityType(new EntityType("EmailOrURL", EntityTag.Single));
@@ -660,6 +660,9 @@ namespace Catalyst.Models
         }
 
         private static InfixLocationSorter _infixLocationSorter = new();
+
+        //FindInfix clears it per candidate, so one list per thread does for every span this thread ever parses.
+        [ThreadStatic] private static List<(int index, int length)> _infixLocation;
         private sealed class InfixLocationSorter : IComparer<(int index, int length)>
         {
             public int Compare((int index, int length) x, (int index, int length) y)

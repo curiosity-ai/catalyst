@@ -148,6 +148,25 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Adds a token to the span based on an existing <see cref="Token"/>. Same as
+        /// <see cref="AddToken(IToken)"/> without boxing either the argument or the result - which is what
+        /// the sentence detector re-adding every token of a document needs.
+        /// </summary>
+        /// <param name="token">The token to copy data from.</param>
+        /// <returns>The token that was copied.</returns>
+        public Token AddToken(Token token)
+        {
+            var newtoken = Parent.AddTokenAsStruct(Index, token.Begin, token.End);
+
+            if (token.Replacement is object)
+            {
+                newtoken.Replacement = token.Replacement;
+            }
+
+            return token;
+        }
+
+        /// <summary>
         /// Reserves capacity for a specified number of tokens in the span.
         /// </summary>
         /// <param name="expectedTokenCount">The expected number of tokens.</param>
@@ -168,6 +187,20 @@ namespace Catalyst
         internal IEnumerator<Token> GetStructEnumerator()
         {
             return TokensStructEnumerable.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Reads one token as a <see cref="Token"/> rather than an <see cref="IToken"/>. Same value the
+        /// indexer returns, without the box - which is what lets a per-token loop run allocation-free.
+        /// </summary>
+        /// <param name="index">The index of the token within the span.</param>
+        /// <returns>The token at <paramref name="index"/>.</returns>
+        public Token GetTokenAsStruct(int index)
+        {
+            var sd = Parent.TokensData[Index];
+            var td = sd[index];
+
+            return new Token(Parent, index, Index, hasReplacement: td.Replacement is object, td.LowerBound, td.UpperBound);
         }
 
         /// <summary>
@@ -240,7 +273,7 @@ namespace Catalyst
             var tokensCount = TokensCount; //Cache the property to avoid fetching the value on every iteration
             for (int i = 0; i < tokensCount; i++)
             {
-                var token = this[i];
+                var token = GetTokenAsStruct(i);
 
                 var entityTypes = token.EntityTypes;
                 if (entityTypes.Any())
@@ -262,7 +295,7 @@ namespace Catalyst
                             {
                                 i = entityEnd.index;
                                 foundEntity = true;
-                                yield return new Tokens(Parent, Index, Enumerable.Range(token.Index, entityEnd.index - token.Index + 1).ToArray(), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
+                                yield return new Tokens(Parent, Index, IndexRange(token.Index, entityEnd.index), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
                                 break;
                             }
                         }
@@ -291,35 +324,57 @@ namespace Catalyst
 
             for (int i = 0; i < tokensCount; i++)
             {
-                var token = this[i];
+                var token = GetTokenAsStruct(i);
                 var entityTypes = token.EntityTypes;
-                if (entityTypes.Count > 0)
+
+                if (entityTypes.Count == 0) continue;
+
+                //PreferLongerEntities orders by the tag character, so every Begin is tried before any Single -
+                //walking the list twice is the same order without the OrderBy's buffer.
+                bool captured = false;
+
+                for (int e = 0; e < entityTypes.Count; e++)
                 {
-                    foreach (var et in PreferLongerEntities(entityTypes))
+                    var et = entityTypes[e];
+
+                    if (et.Tag != EntityTag.Begin) continue;
+                    if (hasFilter && !filter(et)) continue;
+
+                    var entityEnd = FindEntityEnd(tokensCount, token.Index, token.Frequency, entityTypes);
+
+                    if (entityEnd.index > token.Index)
                     {
-                        if (hasFilter && !filter(et))
-                        {
-                            continue; // Skip unwanted entities
-                        }
-
-                        if (et.Tag == EntityTag.Single)
-                        {
-                            yield return new Tokens(Parent, Index, new int[] { token.Index }, entityType: et) { Frequency = token.Frequency };
-                        }
-                        else if (et.Tag == EntityTag.Begin)
-                        {
-                            var entityEnd = FindEntityEnd(tokensCount, token.Index, token.Frequency, entityTypes);
-
-                            if (entityEnd.index > token.Index)
-                            {
-                                i = entityEnd.index;
-                                yield return new Tokens(Parent, Index, Enumerable.Range(token.Index, entityEnd.index - token.Index + 1).ToArray(), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
-                                break;
-                            }
-                        }
+                        i = entityEnd.index;
+                        captured = true;
+                        yield return new Tokens(Parent, Index, IndexRange(token.Index, entityEnd.index), entityType: entityEnd.entityType) { Frequency = entityEnd.lowestTokenFrequency };
+                        break;
                     }
                 }
+
+                if (captured) continue;
+
+                for (int e = 0; e < entityTypes.Count; e++)
+                {
+                    var et = entityTypes[e];
+
+                    if (et.Tag != EntityTag.Single) continue;
+                    if (hasFilter && !filter(et)) continue;
+
+                    yield return new Tokens(Parent, Index, new int[] { token.Index }, entityType: et) { Frequency = token.Frequency };
+                }
             }
+        }
+
+        private static int[] IndexRange(int begin, int end)
+        {
+            var indexes = new int[end - begin + 1];
+
+            for (int i = 0; i < indexes.Length; i++)
+            {
+                indexes[i] = begin + i;
+            }
+
+            return indexes;
         }
 
         /// <summary>
@@ -332,26 +387,37 @@ namespace Catalyst
             int finalIndex = -1;
             float finalFrequency = tokenFrequency;
 
-            foreach (var beginEntityType in entityTypes.Where(et => et.Tag == EntityTag.Begin))
+            for (int b = 0; b < entityTypes.Count; b++)
             {
+                var beginEntityType = entityTypes[b];
+
+                if (beginEntityType.Tag != EntityTag.Begin) continue;
+
                 int possibleFinal = -1;
                 float possibleFrequency = tokenFrequency;
                 bool foundEnd = false;
 
                 for (int j = currentIndex + 1; j < tokenCount; j++)
                 {
-                    var other = this[j];
-                    var otherET = other.EntityTypes.Where(oet => (oet.Tag == EntityTag.Inside || oet.Tag == EntityTag.End) && oet.Type == beginEntityType.Type);
-                    if (otherET.Any())
+                    var other = GetTokenAsStruct(j);
+                    var otherEntityTypes = other.EntityTypes;
+
+                    bool continues = false;
+
+                    for (int o = 0; o < otherEntityTypes.Count; o++)
                     {
-                        possibleFinal = j;
-                        possibleFrequency = Math.Min(possibleFrequency, other.Frequency);
-                        foundEnd |= otherET.Any(oet => oet.Tag == EntityTag.End);
+                        var oet = otherEntityTypes[o];
+
+                        if ((oet.Tag != EntityTag.Inside && oet.Tag != EntityTag.End) || oet.Type != beginEntityType.Type) continue;
+
+                        continues = true;
+                        foundEnd |= oet.Tag == EntityTag.End;
                     }
-                    else
-                    {
-                        break;
-                    }
+
+                    if (!continues) break;
+
+                    possibleFinal = j;
+                    possibleFrequency = Math.Min(possibleFrequency, other.Frequency);
                 }
 
                 if (foundEnd)
