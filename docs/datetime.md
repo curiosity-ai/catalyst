@@ -1,0 +1,88 @@
+# Date and time recognition
+
+`Catalyst.DateTimeRecognition` finds dates, times, periods, durations and recurrences in free text and
+resolves them against a reference moment. It replaces the `Microsoft.Recognizers.Text.DateTime` dependency
+Catalyst used to carry, and produces the same `datetimeV2` resolution shape, so anything reading the old
+`timex` / `type` / `value` / `start` / `end` / `Mod` keys keeps working.
+
+```csharp
+var model = DateTimeModel.For(Language.English);
+
+foreach (var hit in model.Parse("Let's meet next friday at 3pm", DateTime.Now))
+{
+    Console.WriteLine($"{hit.TypeName} [{hit.Start}..{hit.End}] {hit.Text}");
+
+    foreach (var value in hit.Values)
+    {
+        Console.WriteLine($"   timex={value.Timex} value={value.Value} start={value.Start} end={value.End}");
+    }
+}
+```
+
+The entity recognizer used inside a pipeline is unchanged:
+
+```csharp
+var pipeline = Pipeline.TokenizerFor(Language.English);
+pipeline.Add(new DateTimeRecognizer(Language.English));
+pipeline.ProcessSingle(document);
+```
+
+Each recognised expression tags the tokens it covers with a `DateTime` entity whose `Metadata` is the first
+resolution, as a `Dictionary<string, string>`.
+
+## How it works
+
+There is no regular expression anywhere in the engine. The pipeline is:
+
+1. **`Lexer`** scans the `ReadOnlySpan<char>` into `Lexeme` structs — numbers (with their digit count), words,
+   and single punctuation marks. It splits on script changes, so `3pm` and `mar3` become two lexemes the
+   grammar can glue back together, and it records whether whitespace preceded each one.
+2. **`Lexicon`** resolves each word to a `TermInfo` — a `TermKind` (month, weekday, unit, relative, part of
+   day, modifier, holiday, …) plus a payload. Lookup goes through a `FrozenDictionary` alternate lookup keyed
+   by `ReadOnlySpan<char>`, so a word is matched without ever being materialised as a string. Multi-word
+   phrases ("new year's eve", "the day after tomorrow") are bucketed by first word and folded in a second pass.
+3. **`Parser`** is a `ref partial struct` of hand-written matchers over the lexeme array. At each position it
+   tries every construct and keeps the longest; ties go to the more specific reading. Nodes live in a
+   caller-owned arena and reference each other by index, so a range holds its two endpoints without allocating.
+4. **`Resolver`** turns a node into concrete dates and TIMEX strings against the reference moment, emitting the
+   several readings an ambiguous expression has (a clock with no am/pm, a date with no year, a bare weekday).
+
+Both buffers are rented from `ArrayPool`, and the `Resolver` is only created once something matches, so a scan
+over text that contains no date allocates nothing at all. `AllocationTests` measures this rather than assuming it.
+
+## What it recognises
+
+Per type, with the TIMEX it produces:
+
+| Type | Examples | TIMEX |
+|---|---|---|
+| `date` | `2019-08-01`, `jan 5`, `next friday`, `3 days ago`, `christmas`, `the 18th` | `2019-08-01`, `XXXX-01-05`, `XXXX-WXX-5` |
+| `time` | `3pm`, `15:30`, `7:56:30 am`, `half past seven`, `noon` | `T15`, `T15:30`, `T07:56:30` |
+| `datetime` | `tomorrow at 8:45`, `wed oct 26 15:50:06 2016`, `in 5 minutes`, `now` | `2016-11-08T08:45`, `PRESENT_REF` |
+| `daterange` | `2019`, `april 2017`, `last week`, `q1 2019`, `from 2014 to 2018`, `1990s`, `week 23` | `2017-04`, `2018-W11`, `(2014-01-01,2018-01-01,P4Y)` |
+| `timerange` | `morning`, `5 to 6pm`, `after 3pm`, `for 2 hours from 2pm` | `TMO`, `(T17,T18,PT1H)` |
+| `datetimerange` | `tomorrow morning`, `monday 8-9am`, `tonight`, `next hour` | `2016-11-08TMO` |
+| `duration` | `3 days`, `2w`, `one and a half hours`, `a few minutes` | `P3D`, `PT1.5H` |
+| `set` | `every monday`, `weekly`, `tuesdays at 9am`, `19th of every month` | `XXXX-WXX-1`, `P1W` |
+
+## Languages
+
+English is first class. German, French, Spanish, Portuguese, Italian and Dutch share the same grammar with
+their own vocabulary; the grammar is written against `TermKind`, not against English words, and the handful of
+genuinely language-shaped decisions (day-month order, decimal comma, a qualifier that follows its unit as in
+*la semaine prochaine*) are flags on the `Lexicon`.
+
+`Lexicons.IsSupported(language)` says whether a vocabulary exists; `DateTimeRecognizer` throws
+`NotSupportedException` for anything else, so a caller can fall back to English.
+
+## Parity with Microsoft.Recognizers.Text
+
+`tests/Catalyst.DateTime.Tests` runs both engines over the specification suite from the
+[Recognizers-Text](https://github.com/microsoft/Recognizers-Text) repository (`Specs/DateTime/<language>/DateTimeModel.json`,
+MIT licensed, copied under `Specs/`) and scores them. Cases the suite itself marks as unsupported on .NET are
+excluded, since the reference implementation does not meet them either — on what remains it scores 100%, which
+is the ceiling this is measured against.
+
+Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
+per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine
+beats them.
