@@ -131,14 +131,16 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao", "até", "ate", "até o");
             b.Add(TermKind.Connector, "e");
-            b.Add(TermKind.RangeStart, 0, "de", "do", "desde", "a partir de", "começando");
+            b.Add(TermKind.RangeStart, 0, "desde", "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");
 
-            b.Add(TermKind.Filler, "da", "do", "das", "dos", "o", "a", "os", "as", "em", "no", "na", "por", "para", "um", "uma");
+            b.Add(TermKind.Filler, "dos", "o", "a", "os", "no", "na", "por", "para", "um", "uma");
             b.Add(TermKind.Filler, "todo", "toda", "todos", "todas", "inteiro", "inteira");   // "the whole day" counts as one
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "do");      // "2 de outubro" and "de 1/10 a 11/7"
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "em");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "da", "das", "as");
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro do");
-            b.Add(TermKind.ClockPrefix, "às", "as", "à", "da", "das");
+            b.Add(TermKind.ClockPrefix, "às", "à");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes do", "no máximo até");
             b.Add(TermKind.Mod, (int)ModKind.After,  "depois de", "depois do", "após");
