@@ -78,6 +78,29 @@ namespace Catalyst.DateTimeRecognition
             return at;
         }
 
+        /// <summary>
+        /// The article in front of a unit that counts as one, outside English: a word that is both glue and
+        /// the number one ("een", "una"), or the word for "whole" ("hele", "ganzen"), with at most one more
+        /// piece of glue between it and the unit. Nothing but a unit may follow, so an English preposition —
+        /// "for", "of", "during" — can never open a duration this way.
+        /// </summary>
+        private readonly int SkipDurationOne(int i)
+        {
+            // A preposition cannot head one: "por una hora" is reported from the article
+            if (!AtTerm(i, TermKind.Article) && !AtTerm(i, TermKind.Whole) && !AtTermValue(i, TermKind.Cardinal, 1)) return i;
+
+            int  at  = i;
+            bool one = false;
+
+            for (int k = 0; k < 3 && AtTerm(at, TermKind.Filler) && !AtTerm(at, TermKind.Unit); k++)
+            {
+                if (AtTerm(at, TermKind.Whole) || AtTermValue(at, TermKind.Cardinal, 1)) one = true;
+                at = After(at);
+            }
+
+            return one && at > i && AtTerm(at, TermKind.Unit) ? at : i;
+        }
+
         private readonly int LengthOfPhrase(int i)
         {
             int last = i + (_lex[i].PhraseLength < 1 ? 1 : _lex[i].PhraseLength) - 1;
@@ -111,6 +134,12 @@ namespace Catalyst.DateTimeRecognition
                     amount = 1;
                     at     = probe;
                 }
+            }
+            else if (SkipDurationOne(at) > at)
+            {
+                // "een uur", "den ganzen Tag", "todo el día" — the article is what counts as one
+                amount = 1;
+                at     = SkipDurationOne(at);
             }
             else if (AtTerm(at, TermKind.Several, out int several))
             {

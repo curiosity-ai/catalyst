@@ -137,9 +137,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");
             b.Add(TermKind.RangeStart, 1, "entre");
 
-            b.Add(TermKind.Filler, "le", "l'", "d'", "dans", "en", "sur", "pour", "par");
+            b.Add(TermKind.Filler, "d'", "dans", "en", "sur", "pour", "par");
+            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "le", "l'");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "la", "les");   // "vers les trois heures"
-            b.Add(TermKind.Filler, "tout", "toute", "toutes", "entier", "entière");   // "the whole day" counts as one
+            b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "tout", "toute", "toutes", "entier", "entière");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "dans", "en");
             b.Add(TermKind.InPrefix, 0, "d'ici");
             b.Add(TermKind.InPrefix, 1, "en moins de");

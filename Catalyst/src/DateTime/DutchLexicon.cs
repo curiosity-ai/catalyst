@@ -136,10 +136,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "van", "vanaf", "sinds", "beginnend");
             b.Add(TermKind.RangeStart, 1, "tussen");
 
-            b.Add(TermKind.Filler, "het", "in", "op", "om", "van de", "aan");
+            b.Add(TermKind.Filler, "in", "op", "om", "van de", "aan");
+            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "het");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.OrdinalSuffix), "de");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "een");
-            b.Add(TermKind.Filler, "hele", "heel", "gehele", "geheel");   // "the whole day" counts as one
+            b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "hele", "heel", "gehele", "geheel");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
                         b.Add(TermKind.InPrefix, 1, "binnen");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "om");

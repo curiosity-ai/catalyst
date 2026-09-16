@@ -39,6 +39,8 @@ namespace Catalyst.DateTimeRecognition
         Ago,                // ago
         FromNow,            // later / from now / hence / afterwards
         Several,            // a few / several / some / couple
+        Whole,              // whole / entire — "the whole day" is one day
+        Article,            // the / de / el — glue that can head a phrase, unlike a preposition
         BusinessDay,        // business / working / work (day)
         OrdinalSuffix,      // st / nd / rd / th, following a digit
         Fiscal,             // fiscal / calendar / school, qualifying "year"

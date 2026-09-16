@@ -149,9 +149,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "seit", "beginnend");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 
-            b.Add(TermKind.Filler, "der", "die", "das", "den", "dem", "des", "am", "im", "in", "an", "auf", "um", "für", "fuer");
+            b.Add(TermKind.Filler, "am", "im", "in", "an", "auf", "um", "für", "fuer");
+            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "der", "die", "das", "den", "dem", "des");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "einem", "einer", "eines");
-            b.Add(TermKind.Filler, "ganz", "ganze", "ganzen", "ganzer", "ganzes");   // "the whole day" counts as one
+            b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "ganz", "ganze", "ganzen", "ganzer", "ganzes");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
             b.Add(TermKind.InPrefix, 1, "innerhalb", "innerhalb von");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "um");
