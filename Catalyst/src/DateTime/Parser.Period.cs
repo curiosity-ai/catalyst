@@ -113,7 +113,13 @@ namespace Catalyst.DateTimeRecognition
                          || AtTermValue(at, TermKind.Mod, (int)ModKind.Start))
                 {
                     at = After(at);
-                    at = SkipWord(at, "on");
+                    at = SkipGlue(at, 1);
+                }
+                // "la semana que inicia el 4 de febrero" — the relative clause that says where it opens
+                else if (AtWord(at, "que") && (AtTermValue(at + 1, TermKind.Mod, (int)ModKind.Start)
+                                               || AtTerm(at + 1, TermKind.RangeStart)))
+                {
+                    at = SkipGlue(After(at + 1), 1);
                 }
                 else
                 {
@@ -1050,8 +1056,23 @@ namespace Catalyst.DateTimeRecognition
                 bool quoted   = At(at, LexKind.Other);
                 if (quoted) at++;
 
+                // "los años 90", "de jaren '90" — a plural year unit names the decade too
                 bool namesOne = (TimeUnit)decadeUnit == TimeUnit.Decade
-                                || ((TimeUnit)decadeUnit == TimeUnit.Year && quoted);
+                                || ((TimeUnit)decadeUnit == TimeUnit.Year && (quoted || ShowsPlural(worded)));
+
+                // "los años noventa" — the number may be spelled out
+                if (namesOne && !AtNumber(at) && AtTerm(at, TermKind.Cardinal, out int spelled)
+                    && spelled >= 20 && spelled <= 90 && spelled % 10 == 0)
+                {
+                    var ns = Node.Create(NodeKind.DateRange);
+                    ns.LexStart = i;
+                    ns.LexEnd   = After(at);
+                    ns.Decade   = 1900 + spelled;
+                    ns.Century  = 1;
+                    SetSpan(ref ns);
+                    node = Alloc(ns);
+                    return ns.LexEnd;
+                }
 
                 if (namesOne && AtNumber(at) && (DigitsAt(at) == 4 || DigitsAt(at) == 2) && NumberAt(at) % 10 == 0)
                 {

@@ -159,13 +159,14 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.ClockPrefix, "de las", "de la");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a las", "a la");   // "de las 5 a las 6"
 
-            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de", "no más tarde que", "no mas tarde que");
             b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "más tarde que", "posterior a", "posterior de",
                                                         "posterior al");
             b.Add(TermKind.Mod, (int)ModKind.Before,    "anterior a", "anterior de", "anterior al", "más temprano que", "previo a");
             b.Add(TermKind.Mod, (int)ModKind.Less,      "menos de");
             b.Add(TermKind.Mod, (int)ModKind.More,      "más de", "mas de");
             b.Add(TermKind.Mod, (int)ModKind.Start,     "principio", "principios", "inicio", "inicios", "comienzo", "comienzos",
+                                                        "inicia", "comienza", "empieza",
                                                         "principios de", "inicios de", "comienzos de");
             b.Add(TermKind.Mod, (int)ModKind.End,       "fin", "final", "finales", "fin de", "finales de");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mediados", "mediados de", "medio de", "medianos", "medianos de");
