@@ -134,6 +134,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "jusqu'à", "jusqu'au", "jusque");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "à", "a", "au");   // "à 10h" as well as "de 5 à 6"
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "et");
+            b.Add(TermKind.LengthWord, "dure", "durera", "durent", "durait", "durée", "duree", "pendant");
             b.Add(TermKind.RangeStart, 0, "dès", "des", "à partir de", "à partir du", "commençant");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "depuis");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");
@@ -199,7 +200,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "fête des pères");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "fête du travail");
 
-            return b.Build(Language.French, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, relativeAfterUnit: true, minutesFollowHour: true);
+            return b.Build(Language.French, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, relativeAfterUnit: true, minutesFollowHour: true, hourUnitNamesTheClock: true);
         }
     }
 }

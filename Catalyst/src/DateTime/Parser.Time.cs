@@ -416,6 +416,15 @@ namespace Catalyst.DateTimeRecognition
 
             int before = hourAt - 1;
 
+            // Where the hour unit names the time of day, only a preposition in front of it opens a length
+            if (_lexicon.HourUnitNamesTheClock && (TimeUnit)_lex[at].Term.Value == TimeUnit.Hour)
+            {
+                if (AtTerm(before, TermKind.LengthWord)) return false;
+
+                return !AtTerm(before, TermKind.Filler)
+                    || AtTerm(before, TermKind.ClockPrefix) || AtTerm(before, TermKind.Article);
+            }
+
             return AtTerm(before, TermKind.Connector) || AtTerm(before, TermKind.Approx)
                 || AtTerm(before, TermKind.RangeStart) || AtTerm(before, TermKind.ClockPrefix);
         }

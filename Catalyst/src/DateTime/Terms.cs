@@ -24,6 +24,7 @@ namespace Catalyst.DateTimeRecognition
         AmPm,               // Value = 0 (am) or 1 (pm)
         Connector,          // to / till / until / through / and
         AndWord,            // the language's "and" - joins a between-range, but cannot open one alone
+        LengthWord,         // "dure", "durante" - says the number that follows counts a length, not a clock
         RangeStart,         // from / between
         Mod,                // Value = (int)ModKind
         SetFrequency,       // Value = (int)TimeUnit, from daily / weekly / ...
@@ -345,14 +346,22 @@ namespace Catalyst.DateTimeRecognition
         public bool     OrdinalEndsInDot { get; }
 
         /// <summary>
+        /// Whether the hour unit standing after a number names the time of day: Portuguese "3 horas" and
+        /// French "3 heures" are three o'clock, where Spanish "3 horas" and Italian "3 ore" are three hours
+        /// long. A preposition in front of it still opens a length — "por 3 horas", "pour 3 heures".
+        /// </summary>
+        public bool     HourUnitNamesTheClock { get; }
+
+        /// <summary>
         /// Whether a holiday that falls on a different day each year still names a day in its timex.
         /// The suites disagree: English reports "easter monday" as XXXX-04-22, German reports
         /// "Ostermontag" as XXXX. A fixed holiday always names its day, whatever this says.
         /// </summary>
         public bool     MovableHolidayNamesItsDay { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true)
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false)
         {
+            HourUnitNamesTheClock     = hourUnitNamesTheClock;
             MovableHolidayNamesItsDay = movableHolidayNamesItsDay;
             OrdinalEndsInDot  = ordinalEndsInDot;
             PartNamedWithOf   = partNamedWithOf;

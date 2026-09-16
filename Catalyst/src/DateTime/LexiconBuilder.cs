@@ -33,6 +33,6 @@ namespace Catalyst.DateTimeRecognition
             }
         }
 
-        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan, relativeAfterUnit, pluralEndsInS, partNamedWithOf, minutesFollowHour, splitsCompounds, halfIsBeforeTheHour, ordinalEndsInDot, movableHolidayNamesItsDay);
+        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan, relativeAfterUnit, pluralEndsInS, partNamedWithOf, minutesFollowHour, splitsCompounds, halfIsBeforeTheHour, ordinalEndsInDot, movableHolidayNamesItsDay, hourUnitNamesTheClock);
     }
 }
