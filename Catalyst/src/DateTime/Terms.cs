@@ -306,10 +306,23 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     MinutesFollowHour { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false)
+        /// <summary>
+        /// Whether the language writes compounds as one word ("dienstagmorgen", "maandagmiddag"), so an
+        /// unknown word is worth splitting into two the lexicon does know.
+        /// </summary>
+        public bool     SplitsCompounds { get; }
+
+        /// <summary>
+        /// Whether "half" names the half hour before the hour it precedes: "halb acht" is half past seven.
+        /// </summary>
+        public bool     HalfIsBeforeTheHour { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false)
         {
             PartNamedWithOf   = partNamedWithOf;
             MinutesFollowHour = minutesFollowHour;
+            SplitsCompounds   = splitsCompounds;
+            HalfIsBeforeTheHour = halfIsBeforeTheHour;
             Language      = language;
             DayMonthOrder = dayMonthOrder;
             DecimalComma  = decimalComma;
@@ -359,6 +372,65 @@ namespace Catalyst.DateTimeRecognition
             _phrases       = byFirstWord.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             _phrasesBySpan = _phrases.GetAlternateLookup<ReadOnlySpan<char>>();
         }
+
+        /// <summary>
+        /// Splits a word the lexicon does not know into two it does, where the language writes compounds as
+        /// one word: "dienstagmorgen" is tuesday plus morning. Both halves have to name something.
+        /// </summary>
+        public bool TrySplitCompound(ReadOnlySpan<char> word, out int cut, out TermInfo head, out TermInfo tail)
+        {
+            cut  = 0;
+            head = default;
+            tail = default;
+
+            if (!SplitsCompounds || word.Length < 8) return false;
+
+            // The longest head that leaves a word behind: "montagnachmittag" is montag, not mona
+            for (int k = word.Length - 3; k >= 3; k--)
+            {
+                if (!_wordsBySpan.TryGetValue(word[..k], out head))  continue;
+                if (!_wordsBySpan.TryGetValue(word[k..], out tail))  continue;
+                if (!NamesSomething(head) || !NamesSomething(tail))  continue;
+
+                cut = k;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A number the language writes as one word from its units and tens: "neunundzwanzig" is
+        /// nine-and-twenty. The joiner is the language's "and", which is a Connector in the lexicon.
+        /// </summary>
+        public bool TrySplitNumber(ReadOnlySpan<char> word, out TermInfo number)
+        {
+            number = default;
+
+            if (!SplitsCompounds || word.Length < 8) return false;
+
+            for (int k = 3; k <= word.Length - 5; k++)
+            {
+                if (!_wordsBySpan.TryGetValue(word[..k], out var units)) continue;
+                if (units.Kind != TermKind.Cardinal || units.Value < 1 || units.Value > 9) continue;
+
+                for (int j = k + 2; j <= k + 3 && j <= word.Length - 4; j++)
+                {
+                    if (!_wordsBySpan.TryGetValue(word[k..j], out var joiner) || joiner.Kind != TermKind.Connector) continue;
+                    if (!_wordsBySpan.TryGetValue(word[j..], out var tens)) continue;
+                    if (tens.Value < 20 || tens.Value > 90 || tens.Value % 10 != 0) continue;
+                    if (tens.Kind != TermKind.Cardinal && tens.Kind != TermKind.Ordinal) continue;
+
+                    number = new TermInfo(tens.Kind, tens.Value + units.Value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool NamesSomething(TermInfo info) => info.Kind is TermKind.Weekday or TermKind.Month
+            or TermKind.SpecialDay or TermKind.PartOfDay or TermKind.Unit or TermKind.Relative or TermKind.Season;
 
         public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info)
         {

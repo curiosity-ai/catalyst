@@ -106,7 +106,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "vandaag");
-            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow,           "morgen");
+            b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "morgen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Yesterday,          "gisteren");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "overmorgen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "eergisteren");
@@ -115,9 +115,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ago,     "geleden", "eerder");
             b.Add(TermKind.FromNow, "later", "vanaf nu", "daarna");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "ochtend", "ochtenden", "'s ochtends", "voormiddag");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "middag", "namiddag", "'s middags");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "ochtend", "ochtenden", "'s ochtends", "'s morgens", "vanmorgen", "vanochtend", "voormiddag");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "middag", "namiddag", "'s middags", "vanmiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "avond", "avonden", "'s avonds");
+            b.Add(TermKind.PastWord, "over");
+            b.Add(TermKind.ToWord,   "voor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "middaguur", "twaalf uur 's middags");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "middernacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "vanavond", "vannacht");
@@ -178,7 +180,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "vaderdag");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "dag van de arbeid");
 
-            return b.Build(Language.Dutch, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, pluralEndsInS: false);
+            return b.Build(Language.Dutch, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true);
         }
     }
 }

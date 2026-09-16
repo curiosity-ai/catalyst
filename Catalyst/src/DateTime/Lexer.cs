@@ -118,12 +118,46 @@ namespace Catalyst.DateTimeRecognition
 
                     var word = text.Slice(start, i - start);
 
+                    lexicon.TryGetWord(word, out var info);
+
+                    // "neunundzwanzig" is one number written from its units and tens
+                    if (info.Kind == TermKind.None && lexicon.TrySplitNumber(word, out var composed)) info = composed;
+
+                    if (info.Kind == TermKind.None
+                        && lexicon.TrySplitCompound(word, out int cut, out var head, out var tail)
+                        && count + 1 < buffer.Length)
+                    {
+                        // "dienstagmorgen" is two words written as one
+                        buffer[count++] = new Lexeme
+                        {
+                            Start        = start,
+                            Length       = cut,
+                            Kind         = LexKind.Word,
+                            Term         = head,
+                            SpaceBefore  = spaceBefore,
+                            PhraseLength = 1,
+                        };
+
+                        buffer[count++] = new Lexeme
+                        {
+                            Start        = start + cut,
+                            Length       = word.Length - cut,
+                            Kind         = LexKind.Word,
+                            Term         = tail,
+                            SpaceBefore  = false,
+                            PhraseLength = 1,
+                        };
+
+                        spaceBefore = false;
+                        continue;
+                    }
+
                     buffer[count++] = new Lexeme
                     {
                         Start        = start,
                         Length       = i - start,
                         Kind         = LexKind.Word,
-                        Term         = lexicon.TryGetWord(word, out var info) ? info : TermInfo.Unknown,
+                        Term         = info,
                         SpaceBefore  = spaceBefore,
                         PhraseLength = 1,
                     };

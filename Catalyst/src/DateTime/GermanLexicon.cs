@@ -109,7 +109,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "aktuelle", "aktuellen", "laufende", "laufenden", "selbe", "selben", "gleiche", "gleichen");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "heute");
-            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow,           "morgen");
+            b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "morgen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Yesterday,          "gestern");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "übermorgen", "uebermorgen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "vorgestern");
@@ -119,6 +119,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.FromNow, "später", "spaeter", "danach", "ab jetzt");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "vormittags", "morgens", "früh", "frueh");
+            b.Add(TermKind.PastWord, "nach");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.ToWord), "vor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag", "nachmittags");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "abend", "abends");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag", "mittags");
@@ -184,7 +186,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.MothersDay,     "muttertag");
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,     "vatertag");
 
-            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, pluralEndsInS: false);
+            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true);
         }
     }
 }

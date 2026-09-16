@@ -180,6 +180,16 @@ namespace Catalyst.DateTimeRecognition
                 if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(spoken); }
             }
 
+            // "halb acht" / "half acht" — the half hour before the hour it names
+            if (_lexicon.HalfIsBeforeTheHour && AtTerm(at, TermKind.HalfWord) && TryHourValue(After(at), out int halfOf, out int afterHalfOf))
+            {
+                hour            = halfOf == 1 ? 12 : halfOf - 1;
+                minute          = 30;
+                explicitMinutes = true;
+                marked          = true;
+                return afterHalfOf;
+            }
+
             // "half past seven", "quarter to five", "ten past nine", "twenty minutes past eight"
             int relative = TryRelativeMinutes(at, out int relMinute, out int relDirection, out int relEnd);
             if (relative > 0)
