@@ -100,13 +100,13 @@ is the ceiling this is measured against.
 
 | Language | span + type | full resolution |
 |---|---:|---:|
-| English | 93.8% | 89.0% |
-| EnglishOthers | 97.6% | 82.9% |
-| Italian | 61.3% | 56.9% |
+| English | 96.2% | 93.5% |
+| EnglishOthers | 97.6% | 95.1% |
+| Italian | 62.0% | 57.7% |
 | French | 60.5% | 57.9% |
-| Dutch | 49.7% | 44.4% |
-| German | 43.0% | 37.6% |
-| Spanish | 42.6% | 38.9% |
+| Dutch | 49.8% | 45.5% |
+| German | 43.0% | 38.9% |
+| Spanish | 43.2% | 39.8% |
 | Portuguese | 40.0% | 37.0% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
@@ -123,4 +123,6 @@ Two more per-language flags exist for the same reason. `RelativeAfterUnit` says 
 the unit (*la semaine prochaine*); English puts it in front, so reading it the other way round turns "2 hours
 next month" into a two-hour period. `PluralEndsInS` says whether a plural unit can be told from a singular one
 by its last letter, which is what makes "3 next week" the number three beside "next week" rather than three
-weeks; German and Dutch opt out.
+weeks; German and Dutch opt out. `PartNamedWithOf` says whether naming part of a period takes a
+preposition ("the end of may"); where it does, a bare "start" or "end" in front of anything else is the verb,
+and where it does not ("Anfang Mai") it is not.
