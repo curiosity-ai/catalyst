@@ -131,7 +131,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "à", "a", "au", "jusqu'à", "jusqu'au", "jusque");
             b.Add(TermKind.Connector, "et");
-            b.Add(TermKind.RangeStart, 0, "de", "du", "depuis", "dès", "des", "à partir de", "à partir du", "commençant");
+            b.Add(TermKind.RangeStart, 0, "depuis", "dès", "des", "à partir de", "à partir du", "commençant");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "le", "la", "les", "l'", "d'", "dans", "en", "sur", "pour", "vers", "par");

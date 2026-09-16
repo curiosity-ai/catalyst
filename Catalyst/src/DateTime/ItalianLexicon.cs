@@ -131,7 +131,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "alle", "fino a", "fino al");
             b.Add(TermKind.Connector, "e");
-            b.Add(TermKind.RangeStart, 0, "da", "dal", "dalle", "a partire da", "a partire dal");
+            b.Add(TermKind.RangeStart, 0, "a partire da", "a partire dal");
+            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "da", "dal", "dalle");
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 
             b.Add(TermKind.Filler, "di", "del", "della", "il", "lo", "la", "i", "gli", "le", "in", "nel", "nella", "per", "un", "una");
