@@ -134,7 +134,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "tot", "tot en met", "t/m", "naar");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "en");
-            b.Add(TermKind.RangeStart, 0, "van", "vanaf", "sinds", "beginnend");
+            b.Add(TermKind.RangeStart, 0, "van", "vanaf", "beginnend");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "sinds");
             b.Add(TermKind.RangeStart, 1, "tussen");
 
             b.Add(TermKind.Filler, "in", "op", "om", "van de", "aan");
@@ -153,6 +154,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Start, "begin", "begin van", "start van");
             b.Add(TermKind.Mod, (int)ModKind.End,   "eind", "einde", "eind van", "einde van");
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van");
+            b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra");
+            b.Add(TermKind.Mod, (int)ModKind.Early,  "vroeg in", "vroeg");
+            b.Add(TermKind.Mod, (int)ModKind.Late,   "laat in", "laat");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "of later", "en later", "of daarna", "en daarna");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "of eerder", "en eerder", "of ervoor", "en ervoor");
             b.Add(new TermInfo(TermKind.HalfWord, 0, TermKind.Mod, (int)ModKind.Mid), "half");   // "half acht" and "half augustus"
             b.Add(TermKind.Approx, "rond", "omstreeks", "ongeveer", "circa");
 

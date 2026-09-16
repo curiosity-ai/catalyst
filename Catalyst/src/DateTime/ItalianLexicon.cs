@@ -134,7 +134,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "fino a", "fino al");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a", "al", "alle");   // "alle 10" as well as "dalle 5 alle 6"
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
-            b.Add(TermKind.RangeStart, 0, "da", "dal", "dalle", "a partire da", "a partire dal");
+            b.Add(TermKind.RangeStart, 0, "da", "dalle", "a partire da", "a partire dal");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "dal");
             b.Add(new TermInfo(TermKind.RangeStart, 1, TermKind.InPrefix, 0), "tra", "fra");   // "tra tre giorni" is in three days
 
             b.Add(TermKind.Filler, "di", "del", "della", "in", "nel", "nella", "per");
@@ -152,6 +153,14 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Start, "inizio", "inizio di", "principio di");
             b.Add(TermKind.Mod, (int)ModKind.End,   "fine", "fine di", "fine del");
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "metà", "meta", "metà di");
+            b.Add(TermKind.Mod, (int)ModKind.After,  "successivo a", "posteriore a", "dopo di il");
+            b.Add(TermKind.Mod, (int)ModKind.Before, "precedente a", "anteriore a");
+            b.Add(TermKind.Mod, (int)ModKind.Since,  "da allora", "non appena");
+            b.Add(TermKind.Mod, (int)ModKind.Early,  "inizio di", "primi di");
+            b.Add(TermKind.Mod, (int)ModKind.Late,   "fine di", "ultimi di");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "o successivo", "e successivo", "o più tardi", "e più tardi",
+                                                        "o dopo", "e dopo", "o piu tardi");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "o precedente", "e precedente", "o prima", "e prima");
             b.Add(TermKind.Approx, "circa", "intorno a", "verso", "approssimativamente");
 
             b.Add(TermKind.SetPrefix, 0, "ogni");

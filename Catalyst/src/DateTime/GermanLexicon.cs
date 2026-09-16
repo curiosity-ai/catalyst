@@ -146,7 +146,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "bis", "zu", "zum", "bis zum", "bis zu");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "und");
-            b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "seit", "beginnend");
+            b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "beginnend");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "seit");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 
             b.Add(TermKind.Filler, "am", "im", "in", "an", "auf", "um", "für", "fuer");
@@ -168,6 +169,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mitte", "mitte des");
             b.Add(TermKind.Mod, (int)ModKind.Early,     "früh im", "anfangs");
             b.Add(TermKind.Mod, (int)ModKind.Late,      "spät im", "ende von", "spät", "spaet");
+            b.Add(TermKind.Mod, (int)ModKind.Since,     "seitdem", "seit dem");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "oder später", "und später", "oder danach", "und danach",
+                                                        "oder spaeter", "und spaeter");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "oder früher", "und früher", "oder davor", "und davor",
+                                                        "oder frueher", "und frueher");
             b.Add(TermKind.Approx, "gegen", "etwa", "ungefähr", "ungefaehr", "circa", "ca");
 
             b.Add(TermKind.SetPrefix, 0, "jeden", "jede", "jedes", "jedem", "alle", "immer", "stets");

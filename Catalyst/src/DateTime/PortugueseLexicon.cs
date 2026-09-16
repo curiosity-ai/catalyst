@@ -133,7 +133,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao", "até", "ate", "até o");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
-            b.Add(TermKind.RangeStart, 0, "desde", "a partir de", "começando");
+            b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "dos", "no", "na", "por", "para");
@@ -153,6 +153,16 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Start,  "início", "inicio", "começo", "princípio", "início de");
             b.Add(TermKind.Mod, (int)ModKind.End,    "fim", "final", "fim de", "final de");
             b.Add(TermKind.Mod, (int)ModKind.Mid,    "meados", "meados de", "meio de");
+            b.Add(TermKind.Mod, (int)ModKind.After,  "posterior a", "posterior de", "mais tarde que");
+            b.Add(TermKind.Mod, (int)ModKind.Before, "anterior a", "anterior de", "mais cedo que");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "desde", "desde o");
+            b.Add(TermKind.Mod, (int)ModKind.Since,  "desde então", "assim que");
+            b.Add(TermKind.Mod, (int)ModKind.Early,  "no início de", "começo de");
+            b.Add(TermKind.Mod, (int)ModKind.Late,   "finais de", "no fim de");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "ou posterior", "e posterior", "ou mais tarde", "e mais tarde",
+                                                        "ou depois", "e depois");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "ou anterior", "e anterior", "ou antes", "e antes",
+                                                        "ou mais cedo", "e mais cedo");
             b.Add(TermKind.Approx, "por volta de", "aproximadamente", "cerca de", "quase");
 
             b.Add(TermKind.SetPrefix, 0, "cada");

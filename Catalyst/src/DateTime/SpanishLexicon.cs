@@ -143,7 +143,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "hasta", "hasta el");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "y", "e");
-            b.Add(TermKind.RangeStart, 0, "desde", "desde el", "a partir de", "a partir del", "comenzando");
+            b.Add(TermKind.RangeStart, 0, "a partir de", "a partir del", "comenzando");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "del");   // "de 1/10 a 11/7"
             b.Add(TermKind.RangeStart, 1, "entre");
 
@@ -158,12 +158,22 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a las", "a la");   // "de las 5 a las 6"
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de");
-            b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "más tarde que");
+            b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "más tarde que", "posterior a", "posterior de",
+                                                        "posterior al", "más tarde de", "mas tarde de");
+            b.Add(TermKind.Mod, (int)ModKind.Before,    "anterior a", "anterior de", "anterior al", "más temprano que", "previo a");
             b.Add(TermKind.Mod, (int)ModKind.Less,      "menos de");
             b.Add(TermKind.Mod, (int)ModKind.More,      "más de", "mas de");
-            b.Add(TermKind.Mod, (int)ModKind.Start,     "principio", "principios", "inicio", "comienzo", "principios de");
+            b.Add(TermKind.Mod, (int)ModKind.Start,     "principio", "principios", "inicio", "inicios", "comienzo", "comienzos",
+                                                        "principios de", "inicios de", "comienzos de");
             b.Add(TermKind.Mod, (int)ModKind.End,       "fin", "final", "finales", "fin de", "finales de");
-            b.Add(TermKind.Mod, (int)ModKind.Mid,       "mediados", "mediados de", "medio de");
+            b.Add(TermKind.Mod, (int)ModKind.Mid,       "mediados", "mediados de", "medio de", "medianos", "medianos de");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "desde", "desde el");
+            b.Add(TermKind.Mod, (int)ModKind.Since,     "desde entonces", "tan pronto como", "a partir del momento");
+            b.Add(TermKind.Mod, (int)ModKind.Until,     "tan tarde como");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "o posterior", "y posterior", "o más tarde", "y más tarde",
+                                                        "o mas tarde", "y mas tarde", "o después", "y después", "o despues", "y despues");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "o anterior", "y anterior", "o antes", "y antes",
+                                                        "o más temprano", "y más temprano");
             b.Add(TermKind.Approx, "alrededor de", "aproximadamente", "cerca de", "sobre las");
             b.Add(new TermInfo(TermKind.Approx, 0, TermKind.Several, 3), "unos");
 

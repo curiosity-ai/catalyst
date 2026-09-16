@@ -133,7 +133,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "jusqu'à", "jusqu'au", "jusque");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "à", "a", "au");   // "à 10h" as well as "de 5 à 6"
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "et");
-            b.Add(TermKind.RangeStart, 0, "depuis", "dès", "des", "à partir de", "à partir du", "commençant");
+            b.Add(TermKind.RangeStart, 0, "dès", "des", "à partir de", "à partir du", "commençant");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "depuis");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "du");
             b.Add(TermKind.RangeStart, 1, "entre");
 
@@ -152,6 +153,14 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Start,     "début", "debut", "début de", "début du");
             b.Add(TermKind.Mod, (int)ModKind.End,       "fin", "fin de", "fin du");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mi", "milieu", "milieu de", "milieu du", "mi-");
+            b.Add(TermKind.Mod, (int)ModKind.After,     "postérieur à", "posterieur a", "après");
+            b.Add(TermKind.Mod, (int)ModKind.Before,    "antérieur à", "anterieur a", "plus tôt que");
+            b.Add(TermKind.Mod, (int)ModKind.Since,     "depuis lors", "dès que");
+            b.Add(TermKind.Mod, (int)ModKind.Early,     "tôt dans", "tot dans");
+            b.Add(TermKind.Mod, (int)ModKind.OrLater,   "ou plus tard", "et plus tard", "ou après", "et après",
+                                                        "ou ultérieur", "ou apres", "et apres");
+            b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "ou plus tôt", "et plus tôt", "ou avant", "et avant",
+                                                        "ou antérieur", "ou plus tot");
             b.Add(TermKind.Approx, "environ", "vers", "aux alentours de", "à peu près");
 
             b.Add(TermKind.SetPrefix, 0, "chaque", "tous");
