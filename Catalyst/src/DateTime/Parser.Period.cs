@@ -302,7 +302,33 @@ namespace Catalyst.DateTimeRecognition
             bool sawBetween = false;
             bool sawFrom    = false;
 
-            if (AtTerm(at, TermKind.RangeStart, out int rangeKind))
+            // "volgende maand van 4-23", "nächsten Monat vom 4. bis zum 23." — the month is named by a
+            // qualifier rather than by name, and the days that follow are read inside it
+            var monthRelative = RelativeKind.None;
+
+            if (_modDepth == 0)
+            {
+                _modDepth++;
+                int relEnd = TryRelativeUnitPeriod(at, out int relNode);
+                _modDepth--;
+
+                if (relEnd > 0 && NodeAt(relNode).PeriodUnit == TimeUnit.Month && NodeAt(relNode).PeriodCount == 1
+                    && NodeAt(relNode).Relative != RelativeKind.None)
+                {
+                    // The range word may itself be glue ("van"), so it is looked for before any is skipped
+                    int probe = AtTerm(relEnd, TermKind.RangeStart) ? relEnd : SkipGlue(relEnd, 2);
+
+                    if (AtTerm(probe, TermKind.RangeStart, out int leadKind))
+                    {
+                        monthRelative = NodeAt(relNode).Relative;
+                        sawBetween    = leadKind == 1;
+                        sawFrom       = leadKind == 0;
+                        at            = After(probe);
+                    }
+                }
+            }
+
+            if (monthRelative == RelativeKind.None && AtTerm(at, TermKind.RangeStart, out int rangeKind))
             {
                 sawBetween = rangeKind == 1;
                 sawFrom    = rangeKind == 0;
@@ -340,7 +366,7 @@ namespace Catalyst.DateTimeRecognition
 
             int end = afterSecond;
 
-            if (month < 0)
+            if (month < 0 && monthRelative == RelativeKind.None)
             {
                 int ofAt = SkipWords(end, "of", "in");
                 ofAt = SkipArticle(ofAt);
@@ -369,6 +395,7 @@ namespace Catalyst.DateTimeRecognition
             left.Month    = month;
             left.Day      = firstDay;
             left.Year     = year;
+            left.Relative = monthRelative;
             SetSpan(ref left);
 
             var right = Node.Create(NodeKind.Date);
@@ -377,6 +404,7 @@ namespace Catalyst.DateTimeRecognition
             right.Month    = month;
             right.Day      = secondDay;
             right.Year     = year;
+            right.Relative = monthRelative;
             SetSpan(ref right);
 
             var n = Node.Create(NodeKind.DateRange);

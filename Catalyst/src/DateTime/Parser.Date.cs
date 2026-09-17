@@ -286,7 +286,7 @@ namespace Catalyst.DateTimeRecognition
                     end           = spokenEnd;
                 }
                 else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore
-                         && !AtTerm(probe + 1, TermKind.AmPm))
+                         && !AtTerm(probe + 1, TermKind.AmPm) && !ClockPrefixEndsAt(probe))
                 {
                     // "mon 9 am" is nine o'clock on a monday, not the ninth
                     n.Day         = NumberAt(probe);
