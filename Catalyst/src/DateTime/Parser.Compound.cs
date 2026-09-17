@@ -951,7 +951,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
                 RelativeKind.AfterNext                                             =>  2,
-                RelativeKind.Last or RelativeKind.Previous                         => -1,
+                RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
                 RelativeKind.BeforeLast                                            => -2,
                 _                                                                  =>  0,
             };
