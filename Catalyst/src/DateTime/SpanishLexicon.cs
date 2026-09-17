@@ -98,21 +98,22 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Unit, (int)TimeUnit.Second,    "segundos", "seg");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "segundo");
-            b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minuto", "minutos", "min");
-            b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "hora", "horas", "h", "hrs");
+            b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minuto", "minutos", "min", "mins");
+            b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "hora", "horas", "h", "hrs", "hra", "hras");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,       "día", "dia", "días", "dias", "d");
             b.Add(TermKind.Unit, (int)TimeUnit.Week,      "semana", "semanas");
             b.Add(TermKind.Unit, (int)TimeUnit.Fortnight, "quincena", "quincenas");
             b.Add(TermKind.Unit, (int)TimeUnit.Month,     "mes", "meses");
             b.Add(TermKind.Unit, (int)TimeUnit.Quarter,   "trimestre", "trimestres");
             b.Add(TermKind.Unit, (int)TimeUnit.Year,      "año", "ano", "años", "anos");
-            b.Add(TermKind.Unit, (int)TimeUnit.Decade,    "década", "decada", "décadas");
+            b.Add(TermKind.Unit, (int)TimeUnit.Decade,    "década", "decada", "décadas", "decenio", "decenios");
             b.Add(TermKind.Unit, (int)TimeUnit.Century,   "siglo", "siglos");
-            b.Add(TermKind.Unit, (int)TimeUnit.Weekend,   "fin de semana", "fines de semana");
+            b.Add(TermKind.Unit, (int)TimeUnit.Weekend,   "fin de semana", "fines de semana", "finde", "findes");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Night, TermKind.PartOfDay, (int)PartOfDayKind.Night), "noche", "noches");
             b.Add(TermKind.BusinessDay, "laborable", "laborables", "hábil", "hábiles", "habiles");
             b.Add(TermKind.Several, 3, "unas", "varios", "varias", "algunos", "algunas");
             b.Add(TermKind.Several, 2, "par");
+            b.Add(TermKind.Several, 1, "otro", "otra");
             b.Add(TermKind.HalfWord, "media", "medio");
             b.Add(TermKind.ToWord, "menos");   // "siete menos cuarto"
             b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "cuarto");
@@ -144,6 +145,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mediodía", "mediodia");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "medianoche");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "esta noche");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.LastNight, "anoche", "ayer por la noche", "ayer noche");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "almuerzo", "comida");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "cena");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "desayuno");
@@ -197,6 +199,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "anual", "anualmente");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Hour,    "cada hora");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "trimestral", "trimestralmente");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semestral", "semestrales", "semestralmente");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Fortnight, "quincenal", "quincenales", "quincenalmente", "bimensual", "bimensuales");
 
             b.Add(TermKind.Season, (int)SeasonKind.Spring, "primavera");
             b.Add(TermKind.Season, (int)SeasonKind.Summer, "verano");

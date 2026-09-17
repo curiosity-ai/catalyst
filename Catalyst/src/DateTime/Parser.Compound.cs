@@ -763,11 +763,12 @@ namespace Catalyst.DateTimeRecognition
                 ref var p = ref NodeAt(leadPeriod);
 
                 // A part of the day on its own resolves against today
-                if (p.PartOfDay == PartOfDayKind.Tonight && p.Kind == NodeKind.TimeRange)
+                if ((p.PartOfDay == PartOfDayKind.Tonight || p.PartOfDay == PartOfDayKind.LastNight) && p.Kind == NodeKind.TimeRange)
                 {
                     var tonight = p;
-                    tonight.Kind     = NodeKind.DateTimeRange;
-                    tonight.Relative = RelativeKind.Current;
+                    tonight.Kind       = NodeKind.DateTimeRange;
+                    tonight.Relative   = RelativeKind.Current;
+                    tonight.OffsetDays = p.PartOfDay == PartOfDayKind.LastNight ? -1 : 0;   // "anoche" is yesterday's
                     tonight.LexStart = i;
                     tonight.LexEnd   = leadPeriodEnd;
                     SetSpan(ref tonight);

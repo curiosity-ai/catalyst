@@ -25,7 +25,7 @@ namespace Catalyst.DateTimeRecognition
                     i   = After(i);
                 }
             }
-            else if (AtTerm(i, TermKind.Approx))
+            else if (AtTerm(i, TermKind.Approx) && !AtTerm(i, TermKind.Several) && !AtTerm(i, TermKind.Cardinal))
             {
                 mod = ModKind.Approx;
                 i   = After(i);

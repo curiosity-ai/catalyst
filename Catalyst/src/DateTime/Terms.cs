@@ -118,6 +118,7 @@ namespace Catalyst.DateTimeRecognition
         Business,       // business hours
         EarlyMorning,
         Dawn,
+        LastNight,
         LateNight,
         Tonight,
         Lunch,
