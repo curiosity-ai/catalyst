@@ -280,7 +280,9 @@ namespace Catalyst
             writer.WriteArrayHeader(9);
 
             languageFormatter.Serialize(ref writer, Language, options);
-            writer.Write(Value);
+
+            //Written from the span so a document over a slice of a larger buffer is not turned into a string
+            if (IsValueNull) { writer.WriteNil(); } else { writer.Write(ValueAsSpan); }
 
             writer.WriteArrayHeader(TokensData.Count);
             for (int i = 0; i < TokensData.Count; i++)

@@ -2,6 +2,7 @@
 using Mosaik.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,8 +18,41 @@ namespace Catalyst
         /// <summary>Gets or sets the language of the document.</summary>
         public Language Language { get; set; }
 
+        private ReadOnlyMemory<char> _value;
+        private string _valueAsString;
+        private bool _valueIsNull;
+
+        /// <summary>
+        /// Gets or sets the document's text as memory over whatever buffer holds it. This is the document's
+        /// backing store; setting it does not copy, and the buffer must outlive the document.
+        /// </summary>
+        public ReadOnlyMemory<char> ValueMemory
+        {
+            get { return _value; }
+            set { _value = value; _valueAsString = null; _valueIsNull = false; }
+        }
+
+        /// <summary>Gets the document's text as a span, without allocating.</summary>
+        public ReadOnlySpan<char> ValueAsSpan { get { return _value.Span; } }
+
         /// <summary>Gets or sets the text value of the document.</summary>
-        public string Value { get; set; }
+        public string Value
+        {
+            get
+            {
+                if (_valueIsNull) { return null; }
+                return _valueAsString ??= DocumentText.Materialize(_value);
+            }
+            set
+            {
+                _valueAsString = value;
+                _valueIsNull   = value is null;
+                _value         = value.AsMemory();
+            }
+        }
+
+        /// <summary>Whether <see cref="Value"/> is null, answered without materializing it.</summary>
+        internal bool IsValueNull { get { return _valueIsNull; } }
 
         /// <summary>Gets or sets the token data for each span in the document.</summary>
         public TokenData[][] TokensData { get; set; }
@@ -42,7 +76,7 @@ namespace Catalyst
         public Dictionary<long, Dictionary<string, string>> TokenMetadata { get; set; }
 
         /// <summary>Gets the length of the document's text value.</summary>
-        public int Length { get { return Value.Length; } }
+        public int Length { get { return _value.Length; } }
 
         private static long GetTokenIndex(int spanIndex, int tokenIndex)
         {
@@ -56,6 +90,23 @@ namespace Catalyst
         {
             Language = language;
             Value = value;
+            TokensData = tokensData;
+            SpanBounds = spanBounds;
+            Metadata = metadata;
+            UID = uID;
+            Labels = labels;
+            EntityData = entityData;
+            TokenMetadata = tokenMetadata;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableDocument"/> class over text the caller
+        /// already holds, without copying it - see <see cref="ValueMemory"/>.
+        /// </summary>
+        public ImmutableDocument(Language language, ReadOnlyMemory<char> value, TokenData[][] tokensData, long[] spanBounds, Dictionary<string, string> metadata, UID128 uID, string[] labels, Dictionary<long, EntityType[]> entityData, Dictionary<long, Dictionary<string, string>> tokenMetadata)
+        {
+            Language = language;
+            ValueMemory = value;
             TokensData = tokensData;
             SpanBounds = spanBounds;
             Metadata = metadata;

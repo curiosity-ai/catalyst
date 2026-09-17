@@ -42,6 +42,24 @@ namespace Catalyst
             return text;
         }
 
+        public static ReadOnlyMemory<char> RemoveControlCharacters(this ReadOnlyMemory<char> text)
+        {
+            var span = text.Span;
+
+            //Most text has nothing to remove, and copying it would allocate a second copy of every document
+            for (int i = 0; i < span.Length; i++)
+            {
+                char ch = span[i];
+
+                if (ch == '\uF022' || (ch != '\r' && ch != '\n' && char.IsControl(ch)))
+                {
+                    return span.RemoveControlCharacters().AsMemory();
+                }
+            }
+
+            return text;
+        }
+
         public static string RemoveControlCharacters(this ReadOnlySpan<char> text)
         {
             if (text == null) return null;

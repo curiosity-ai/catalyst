@@ -136,7 +136,7 @@ namespace Catalyst.Models
                                     {
                                         //Found all letters, so hopefully we have a match
                                         //Make sure now that the letters appear in sequence
-                                        var fullSpan = doc.Value.AsSpan().Slice(tokens[j].Begin, tokens[i].Begin - tokens[j].Begin);
+                                        var fullSpan = doc.ValueAsSpan.Slice(tokens[j].Begin, tokens[i].Begin - tokens[j].Begin);
 
                                         if (AppearsIn(innerToken.ValueAsSpan, fullSpan) && !fullSpan.IsAllUpperCase())
                                         {

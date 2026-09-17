@@ -1,6 +1,7 @@
 ﻿using UID;
 using Mosaik.Core;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 //using MessagePack;
@@ -27,6 +28,17 @@ namespace Catalyst
         /// Gets or sets the text value of the document.
         /// </summary>
         string Value { get; set; }
+
+        /// <summary>
+        /// Gets or sets the document's text as memory over the buffer holding it. Setting it does not copy,
+        /// so the buffer must outlive the document.
+        /// </summary>
+        ReadOnlyMemory<char> ValueMemory { get; set; }
+
+        /// <summary>
+        /// Gets the document's text as a span, without allocating.
+        /// </summary>
+        ReadOnlySpan<char> ValueAsSpan { get; }
 
         /// <summary>
         /// Returns the tokenized value of the document.

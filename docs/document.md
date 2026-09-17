@@ -13,9 +13,29 @@ using Mosaik.Core;
 var doc = new Document("The quick brown fox jumps over the lazy dog", Language.English);
 ```
 
+### Creating a document over text you already hold
+
+A document stores its text as `ReadOnlyMemory<char>`, so it can be a view over a buffer you already have
+instead of a copy of it. Pass memory rather than a string and nothing is copied - useful when many documents
+are carved out of one large buffer:
+
+```csharp
+var file = File.ReadAllText("corpus.txt");
+var doc  = new Document(file.AsMemory(start, length), Language.English);
+```
+
+The document holds a view, not a copy, so the buffer must not be overwritten or returned to a pool while
+the document is alive. `DocumentPool.Rent` has the same overload.
+
 ## Important Properties
 
-- **`Value`**: The original raw text of the document.
+- **`Value`**: The original raw text of the document. Reading it is free when the text came from a string -
+  that same string is handed back. When the text is a slice of a larger buffer, the first read allocates one
+  string and caches it.
+- **`ValueMemory`**: The document's text as `ReadOnlyMemory<char>` - the backing store every other value is a
+  view over. Setting it does not copy.
+- **`ValueAsSpan`**: The document's text as a `ReadOnlySpan<char>`, without allocating. Prefer this over
+  `Value.AsSpan()` when you only need to read the text.
 - **`Language`**: The language of the document.
 - **`UID`**: A unique identifier for the document.
 - **`Metadata`**: A dictionary for storing arbitrary key-value pairs associated with the document.

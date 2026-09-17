@@ -34,7 +34,8 @@ namespace Catalyst.Models
 
         public void Normalize(IDocument document)
         {
-            if(NeedNormalize(document.Value))
+            //Checked on the span, so a document that needs no normalizing is never turned into a string
+            if(NeedNormalize(document.ValueAsSpan))
             {
                 document.Value = GetTextFromHtml(document.Value);
             }
@@ -49,11 +50,9 @@ namespace Catalyst.Models
 			return text;
 		}
 
-		private static bool NeedNormalize(string content)
+		private static bool NeedNormalize(ReadOnlySpan<char> s)
         {
 			//Super simple heuristic to detect if text contains any <> html tags fast
-            var s = content.AsSpan();
-
             var open = s.IndexOf('<');
             if(open >= 0)
             {

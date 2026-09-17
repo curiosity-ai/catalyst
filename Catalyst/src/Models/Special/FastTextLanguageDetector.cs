@@ -138,13 +138,14 @@ namespace Catalyst.Models
 
             if (document.SpansCount == 0) // Have to tokenize temporarily the document
             {
+                //Sliced as memory, so a long document is not copied just to look at its first 1000 chars
                 if (document.Length > 1000)
                 {
-                    tempDocument = new Document(document.Value.Substring(0, 1000));
+                    tempDocument = new Document(document.ValueMemory.Slice(0, 1000));
                 }
                 else
                 {
-                    tempDocument = new Document(document.Value);
+                    tempDocument = new Document(document.ValueMemory);
                 }
                 Tokenizer.Process(tempDocument);
                 NumberNormalizer.Process(tempDocument);

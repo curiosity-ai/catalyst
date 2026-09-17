@@ -84,7 +84,7 @@ namespace Catalyst.Models
                 hasReplacements |= (tokens[i].Replacement is null);
             }
 
-            var text = document.Value.AsSpan();
+            var text = document.ValueAsSpan;
 
             const int padding = 2;
 
