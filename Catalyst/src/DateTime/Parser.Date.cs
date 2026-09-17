@@ -472,6 +472,10 @@ namespace Catalyst.DateTimeRecognition
                     n.Day      = day2;
 
                     int end    = afterDay + 1;
+
+                    // "30 jul." — an abbreviated month keeps the full stop that says it is one
+                    if (At(end, LexKind.Dot) && !_lex[end].SpaceBefore && _lex[afterDay].Length <= 5) end++;
+
                     int yearAt = end;
                     if (At(yearAt, LexKind.Dot) && !_lex[yearAt].SpaceBefore) yearAt++;
                     bool comma2 = At(yearAt, LexKind.Comma);

@@ -156,7 +156,10 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "hasta", "hasta el");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "y", "e");
-            b.Add(TermKind.RangeStart, 0, "a partir de", "a partir del", "comenzando");
+            b.Add(TermKind.RangeStart, 0, "a partir de", "a partir del", "a partir de las");
+            // These open a range, and on their own say everything after the day they name
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.After, TermKind.RangeStart, 0),
+                  "a primeros de", "comenzando", "empezando", "empienzando", "comienzo de");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "de", "del");   // "de 1/10 a 11/7"
             b.Add(TermKind.RangeStart, 1, "entre");
 
