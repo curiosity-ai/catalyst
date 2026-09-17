@@ -576,6 +576,17 @@ namespace Catalyst.DateTimeRecognition
                     n.Second    = t.Second;
                     n.AmPm      = t.AmPm;
                     if (t.PartOfDay != PartOfDayKind.None) n.PartOfDay = t.PartOfDay;
+
+                    // "dix heures mercredi matin" — the part of the day follows the day it belongs to
+                    int podEnd = TryPartOfDay(trailingDateEnd, out var trailingPod, out _);
+
+                    if (podEnd > 0 && !IsMealTime(trailingPod))
+                    {
+                        n.PartOfDay     = trailingPod;
+                        n.LexEnd        = podEnd;
+                        trailingDateEnd = podEnd;
+                    }
+
                     SetSpan(ref n);
                     node = Alloc(n);
                     return trailingDateEnd;

@@ -637,9 +637,19 @@ namespace Catalyst.DateTimeRecognition
             n.LexStart = i;
             n.LexEnd   = inner;
 
-            // "mid today", "later in today", "early in the day wednesday" — narrowing a day names its hours
-            if (target.Kind == NodeKind.Date && IsDaySlice(mod))
+            // "mid today", "later in today", "tôt dans la journée" — narrowing a day names its hours
+            if (IsDaySlice(mod) && (target.Kind == NodeKind.Date
+                                    || (target.Kind == NodeKind.DateRange && target.PeriodUnit == TimeUnit.Day && target.PeriodCount == 1)))
             {
+                // "la journée" is the day the reference sits in; narrowed, it names that day's hours
+                if (target.Kind == NodeKind.DateRange)
+                {
+                    n.PeriodUnit  = TimeUnit.None;
+                    n.PeriodCount = 0;
+                    n.Relative    = RelativeKind.Current;
+                    n.OffsetDays  = 0;
+                }
+
                 n.Kind = NodeKind.DateTimeRange;
                 n.Mod  = mod switch
                 {
