@@ -118,7 +118,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "cuarto");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,      "este", "esta", "estos", "estas", "el presente");
-            b.Add(TermKind.Relative, (int)RelativeKind.Next,      "próximo", "proximo", "próxima", "proxima", "próximos", "siguiente", "siguientes", "que viene");
+            b.Add(TermKind.Relative, (int)RelativeKind.Next,      "próximo", "proximo", "próxima", "proxima", "próximos", "proximos", "próximas", "proximas",
+                                                                 "siguiente", "siguientes", "que viene", "entrante", "entrantes");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,      "pasado", "pasada", "pasados", "pasadas", "último", "ultimo", "última", "ultima", "últimos", "ultimos", "últimas", "ultimas");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "anterior", "anteriores", "previo", "previa");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "ese", "esa", "esos", "esas",   "actual", "corriente", "mismo", "misma");
