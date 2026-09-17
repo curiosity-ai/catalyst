@@ -169,13 +169,14 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor de", "uiterlijk", "niet later dan");
             b.Add(TermKind.Mod, (int)ModKind.After, "na", "na de", "later dan", "hoger dan", "groter dan");
-            b.Add(TermKind.Mod, (int)ModKind.Less,  "minder dan");
-            b.Add(TermKind.Mod, (int)ModKind.More,  "meer dan");
+            b.Add(TermKind.Mod, (int)ModKind.Less,  "minder dan", "korter dan");
+            b.Add(TermKind.Mod, (int)ModKind.More,  "meer dan", "langer dan");
             b.Add(TermKind.Mod, (int)ModKind.Start, "begin", "begin van", "start van",
                                                     "beginnend", "beginnende", "startend", "startende", "aanvangend", "aanvangende");
             b.Add(TermKind.Mod, (int)ModKind.End,   "eind", "einde", "eind van", "einde van");
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van", "halverwege");
-            b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra", "zo vroeg als", "al zo vroeg als", "zo snel als");
+            b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra", "zo vroeg als", "al zo vroeg als", "zo snel als",
+                                                     "een tijdstip vanaf", "elk tijdstip vanaf", "enig tijdstip vanaf");
             b.Add(TermKind.Mod, (int)ModKind.Until,   "zo laat als", "al zo laat als");
             b.Add(TermKind.Mod, (int)ModKind.Early,  "vroeg in", "vroeg", "vroege");
             b.Add(TermKind.Mod, (int)ModKind.Late,   "laat in", "laat");
