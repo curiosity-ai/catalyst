@@ -18,6 +18,7 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryNumericDate(i, out int n6),   n6, ref best, ref bestNode);
             Consider(TryNthDayOfDate(i, out int n7),  n7, ref best, ref bestNode);
             Consider(TryOrdinalDay(i, out int n8),    n8, ref best, ref bestNode);
+            Consider(TryTwoOrdinalDate(i, out int n10), n10, ref best, ref bestNode);
             Consider(TryRelativeYearDate(i, out int n9), n9, ref best, ref bestNode);
 
             node = bestNode;
@@ -735,6 +736,42 @@ namespace Catalyst.DateTimeRecognition
             }
 
             return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+        }
+
+        /// <summary>
+        /// "siebter vierter", "7. vierter", "dritter/11." — German names the month by its number as readily
+        /// as by its name, and writes both as ordinals.
+        /// </summary>
+        private int TryTwoOrdinalDate(int i, out int node)
+        {
+            node = Node.Unspecified;
+
+            if (!_lexicon.OrdinalEndsInDot) return -1;
+
+            int at = SkipArticleOfDate(i, out i);
+
+            if (!TryOrdinal(at, out int day, out int afterDay) || day < 1 || day > 31) return -1;
+
+            int monthAt = afterDay;
+            if (At(monthAt, LexKind.Slash) || At(monthAt, LexKind.Dash)) monthAt++;
+
+            if (!TryOrdinal(monthAt, out int month, out int end) || month < 1 || month > 12) return -1;
+
+            var n = Node.Create(NodeKind.Date);
+            n.LexStart = i;
+            n.Day      = day;
+            n.Month    = month;
+
+            if (TryYearLoose(SkipGlue(end, 1), out int year, out int yearEnd))
+            {
+                n.Year = year;
+                end    = yearEnd;
+            }
+
+            n.LexEnd = end;
+            SetSpan(ref n);
+            node = Alloc(n);
+            return end;
         }
 
         // ------------------------------------------------------------------ "the 18th", "the 15th day of next month"

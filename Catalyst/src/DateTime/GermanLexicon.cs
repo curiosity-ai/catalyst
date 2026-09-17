@@ -78,10 +78,16 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal,  9, "neunte", "neunter", "neunten");
             b.Add(TermKind.Ordinal, 10, "zehnte", "zehnter", "zehnten");
             b.Add(TermKind.Ordinal, 11, "elfte", "elfter", "elften");
-            b.Add(TermKind.Ordinal, 12, "zwölfte", "zwoelfte");
-            b.Add(TermKind.Ordinal, 13, "dreizehnte");
-            b.Add(TermKind.Ordinal, 20, "zwanzigste");
-            b.Add(TermKind.Ordinal, 30, "dreißigste", "dreissigste");
+            b.Add(TermKind.Ordinal, 12, "zwölfte", "zwölfter", "zwölften", "zwoelfte", "zwoelfter", "zwoelften");
+            b.Add(TermKind.Ordinal, 13, "dreizehnte", "dreizehnter", "dreizehnten");
+            b.Add(TermKind.Ordinal, 14, "vierzehnte", "vierzehnter", "vierzehnten");
+            b.Add(TermKind.Ordinal, 15, "fünfzehnte", "fünfzehnter", "fünfzehnten", "fuenfzehnte");
+            b.Add(TermKind.Ordinal, 16, "sechzehnte", "sechzehnter", "sechzehnten");
+            b.Add(TermKind.Ordinal, 17, "siebzehnte", "siebzehnter", "siebzehnten");
+            b.Add(TermKind.Ordinal, 18, "achtzehnte", "achtzehnter", "achtzehnten");
+            b.Add(TermKind.Ordinal, 19, "neunzehnte", "neunzehnter", "neunzehnten");
+            b.Add(TermKind.Ordinal, 20, "zwanzigste", "zwanzigster", "zwanzigsten");
+            b.Add(TermKind.Ordinal, 30, "dreißigste", "dreißigster", "dreißigsten", "dreissigste", "dreissigster", "dreissigsten");
 
             b.Add(TermKind.Unit, (int)TimeUnit.Second,    "sekunde", "sekunden", "sek");
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minute", "minuten", "min");
@@ -104,10 +110,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.QuarterWord, 1, "viertel");
             b.Add(TermKind.QuarterWord, 3, "dreiviertel", "drei viertel");
 
-            b.Add(TermKind.Relative, (int)RelativeKind.This,      "diese", "dieser", "diesen", "dieses", "diesem", "kommende", "kommenden");
-            b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "folgende", "folgenden");
-            b.Add(TermKind.Relative, (int)RelativeKind.Last,      "letzte", "letzten", "letzter", "letztes", "vergangene", "vergangenen", "vorige", "vorigen");
-            b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte", "vorletzten", "vorletztes", "vorletzter");
+            b.Add(TermKind.Relative, (int)RelativeKind.This,      "diese", "dieser", "diesen", "dieses", "diesem", "kommende", "kommenden", "kommendem", "kommendes");
+            b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "nächstem", "naechstem", "folgende", "folgenden", "folgendem");
+            b.Add(TermKind.Relative, (int)RelativeKind.Last,      "letzte", "letzten", "letzter", "letztes", "letztem", "vergangene", "vergangenen", "vergangenem", "vorige", "vorigen", "vorigem");
+            b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte", "vorletzten", "vorletztes", "vorletzter", "vorletztem");
             b.Add(TermKind.Relative, (int)RelativeKind.AfterNext,  "übernächste", "übernächsten", "uebernaechste", "uebernaechsten", "übernächstes");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "aktuelle", "aktuellen", "laufende", "laufenden", "selbe", "selben", "gleiche", "gleichen");
 
