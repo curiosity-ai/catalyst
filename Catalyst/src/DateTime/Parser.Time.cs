@@ -381,6 +381,15 @@ namespace Catalyst.DateTimeRecognition
                 marked = true;
             }
 
+            // "8 pm e meia" — where the minutes follow the hour they may follow its marker too
+            if (_lexicon.MinutesFollowHour && !explicitMinutes && JoinsWrittenHour(at)
+                && TrySpokenMinutes(at, out int trailingMinutes, out int afterTrailing) && trailingMinutes > 0)
+            {
+                minute          = trailingMinutes;
+                explicitMinutes = true;
+                at              = afterTrailing;
+            }
+
             return at;
         }
 
@@ -392,6 +401,10 @@ namespace Catalyst.DateTimeRecognition
             int joined = After(i);
 
             if (AtTerm(joined, TermKind.HalfWord) || AtTerm(joined, TermKind.QuarterWord)) return true;
+
+            // "5 e 45" — two digits after the language's own "and" are minutes; after a range connector
+            // they are the far end of the range, which is why only the "and" counts here
+            if (AtTerm(i, TermKind.AndWord) && AtNumber(joined) && DigitsAt(joined) == 2 && NumberAt(joined) > 24 && NumberAt(joined) < 60) return true;
 
             return TryWordNumber(joined, out int spoken, out _) && spoken > 24 && spoken < 60;
         }
@@ -425,6 +438,8 @@ namespace Catalyst.DateTimeRecognition
                 return false;
             }
 
+            bool joined_ = false;
+
             if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.Connector) && !AtTerm(at, TermKind.ToWord))
             {
                 int joined = After(at);
@@ -432,13 +447,22 @@ namespace Catalyst.DateTimeRecognition
                 if (AtTerm(joined, TermKind.HalfWord))         { minutes = 30; end = After(joined); return true; }
                 if (AtTerm(joined, TermKind.QuarterWord))      { minutes = 15; end = After(joined); return true; }
 
-                at = joined;
+                at      = joined;
+                joined_ = true;
             }
 
             if (TryWordNumber(at, out int spoken, out int afterSpoken) && spoken > 0 && spoken < 60)
             {
                 minutes = spoken;
                 end     = afterSpoken;
+                return true;
+            }
+
+            // "5 e 45" — the joiner is what says the digits are minutes; without it they are a second reading
+            if (joined_ && AtNumber(at) && DigitsAt(at) == 2 && NumberAt(at) > 24 && NumberAt(at) < 60)
+            {
+                minutes = NumberAt(at);
+                end     = at + 1;
                 return true;
             }
 
@@ -467,6 +491,12 @@ namespace Catalyst.DateTimeRecognition
             if (_lexicon.HourUnitNamesTheClock && (TimeUnit)_lex[at].Term.Value == TimeUnit.Hour)
             {
                 if (AtTerm(before, TermKind.LengthWord)) return false;
+
+                // "3 horas é a duração da viagem" — the word that says it is a length may follow it
+                for (int k = at + 1; k <= at + 3; k++)
+                {
+                    if (AtTerm(k, TermKind.LengthWord)) return false;
+                }
 
                 return !AtTerm(before, TermKind.Filler)
                     || AtTerm(before, TermKind.ClockPrefix) || AtTerm(before, TermKind.Article);

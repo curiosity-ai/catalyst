@@ -152,7 +152,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "até", "ate", "ateh", "até o", "até a", "ate a", "ateh a", "ateh o");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
-            b.Add(TermKind.LengthWord, "dura", "durará", "durante", "duração", "duracao", "leva");
+            b.Add(TermKind.LengthWord, "dura", "durou", "durar", "durará", "duraram", "duram", "durante", "duração", "duracao",
+                                       "leva", "levar", "levou", "levará", "demora", "demorar", "demorou");
             b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");
 
