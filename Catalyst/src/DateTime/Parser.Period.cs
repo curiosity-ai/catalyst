@@ -553,11 +553,12 @@ namespace Catalyst.DateTimeRecognition
 
             if (mod == ModKind.OrLater || mod == ModKind.OrEarlier || mod == ModKind.Less || mod == ModKind.More) return -1;
 
-            // Where the word that bounds is the language's "for" or "from" as well, only a clock reading
-            // after one is really a bound: "voor de hele dag" is how long, not how late. The words that
-            // can only bound — "uiterlijk", "niet later dan" — still do
+            // Where the word that bounds is the language's "for" and "from" as well, a definite article
+            // behind it is what says it is not bounding: "voor de hele dag" is how long, not how late.
+            // The words that can only bound — "sinds", "uiterlijk" — are unaffected
             if (_lexicon.BoundsOnlyOnTimes && IsBounding(mod)
-                && (openedByRangeWord || AtTerm(i, TermKind.ToWord))) return -1;
+                && (openedByRangeWord
+                    || (AtTerm(i, TermKind.ToWord) && (AtTerm(After(i), TermKind.Article) || AtTerm(After(i), TermKind.Whole))))) return -1;
 
             int at = After(i);
 
