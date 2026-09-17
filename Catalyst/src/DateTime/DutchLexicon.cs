@@ -103,8 +103,12 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit");
             b.Add(TermKind.Relative, (int)RelativeKind.Coming,   "komende", "komend", "aanstaande", "aanstaand");
-            b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend", "aankomende");
-            b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "afgelopen", "laatste");
+            b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend");
+            b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "laatste");
+            // "afgelopen woensdag" and "aankomende vrijdag" are the nearest one either side, which may
+            // still be in this week
+            b.Add(TermKind.Relative, (int)RelativeKind.JustPast, "afgelopen");
+            b.Add(TermKind.Relative, (int)RelativeKind.Coming,   "aankomende", "aankomend");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "voorgaande", "voorafgaande");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde", "hetzelfde", "dat", "die");
 
