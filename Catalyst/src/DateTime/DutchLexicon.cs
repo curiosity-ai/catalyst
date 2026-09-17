@@ -208,7 +208,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.PalmSunday,   "palmzondag");
             b.Add(TermKind.Holiday, (int)HolidayKind.Epiphany,     "driekoningen");
 
-            return b.Build(Language.Dutch, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true);
+            return b.Build(Language.Dutch, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, boundsOnlyOnTimes: true);
         }
     }
 }

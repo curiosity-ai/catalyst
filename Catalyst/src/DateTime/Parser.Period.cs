@@ -491,6 +491,7 @@ namespace Catalyst.DateTimeRecognition
             node = Node.Unspecified;
 
             var mod = ModKind.None;
+            bool openedByRangeWord = false;
 
             if (AtTerm(i, TermKind.Mod, out int modValue))
             {
@@ -511,6 +512,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 // A word that is also glue is too weak to open one on its own: "2 de outubro" is a date
                 mod = ModKind.Since;   // "starting january 7th", "beginning on january 7th"
+                openedByRangeWord = true;
             }
             else if (LeadsAModifier(i))
             {
@@ -522,6 +524,12 @@ namespace Catalyst.DateTimeRecognition
             }
 
             if (mod == ModKind.OrLater || mod == ModKind.OrEarlier || mod == ModKind.Less || mod == ModKind.More) return -1;
+
+            // Where the word that bounds is the language's "for" or "from" as well, only a clock reading
+            // after one is really a bound: "voor de hele dag" is how long, not how late. The words that
+            // can only bound — "uiterlijk", "niet later dan" — still do
+            if (_lexicon.BoundsOnlyOnTimes && IsBounding(mod)
+                && (openedByRangeWord || AtTerm(i, TermKind.ToWord))) return -1;
 
             int at = After(i);
 

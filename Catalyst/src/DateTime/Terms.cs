@@ -369,8 +369,16 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     NarrowingFollowsPeriod { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false)
+        /// <summary>
+        /// Whether the words that bound something open-ended ("voor", "vanaf") only ever bound a clock time.
+        /// Dutch writes both of them for "for" and "from" as well, so "voor de hele dag" is what something
+        /// lasts and "voor maandag om half 3" is a deadline; the suite reads a date after one as neither.
+        /// </summary>
+        public bool     BoundsOnlyOnTimes { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false)
         {
+            BoundsOnlyOnTimes         = boundsOnlyOnTimes;
             NarrowingFollowsPeriod    = narrowingFollowsPeriod;
             HourUnitNamesTheClock     = hourUnitNamesTheClock;
             MovableHolidayNamesItsDay = movableHolidayNamesItsDay;
