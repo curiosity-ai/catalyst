@@ -407,12 +407,14 @@ namespace Catalyst.DateTimeRecognition
         {
             node = Node.Unspecified;
 
-            int at = SkipArticleOfDate(i, out i);
+            int origin = i;
+            int at     = SkipArticleOfDate(i, out i);
 
-            // "el día 9 mayo" — the word for "day" in front of the number it introduces. A date that goes
-            // on to name its month reports from the number, the way "no dia 20 de junho" is read
-            int dayNoun = SkipDayNoun(at);
-            if (dayNoun > at) { at = dayNoun; i = dayNoun; }
+            // "el día 9 mayo" — the word for "day" in front of the number it introduces, and the article
+            // in front of that belongs to it rather than to the date
+            int dayNoun    = SkipDayNoun(at);
+            int spokenFrom = dayNoun > at ? origin : i;
+            if (dayNoun > at) { at = dayNoun; }
 
             // ---- "<month> <day> [, <year>]"
             if (AtTerm(at, TermKind.Month, out int month))
@@ -462,7 +464,10 @@ namespace Catalyst.DateTimeRecognition
                 if (AtTerm(afterDay, TermKind.Month, out int month2))
                 {
                     var n = Node.Create(NodeKind.Date);
-                    n.LexStart = i;
+
+                    // "no dia 20 de junho" reports from the number, where "el día 9 mayo" keeps its
+                    // introducer: what separates them is the connective the month is written with
+                    n.LexStart = afterDay > day2End && dayNoun > spokenFrom ? dayNoun : spokenFrom;
                     n.Month    = month2;
                     n.Day      = day2;
 
