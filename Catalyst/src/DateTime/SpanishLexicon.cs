@@ -186,7 +186,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.End,       "fin", "final", "finales", "fin de", "finales de");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mediados", "mediados de", "medio de", "medianos", "medianos de");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "desde", "desde el");
-            b.Add(TermKind.Mod, (int)ModKind.Since,     "desde entonces", "tan pronto como", "a partir del momento");
+            b.Add(TermKind.Mod, (int)ModKind.Since,     "desde entonces", "tan pronto como", "a partir del momento",
+                                                        "tan temprano como", "cualquier tiempo a partir de", "cualquier momento a partir de");
             b.Add(TermKind.Mod, (int)ModKind.Until,     "tan tarde como");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "o posterior", "y posterior", "o más tarde", "y más tarde",
                                                         "o mas tarde", "y mas tarde", "o después", "y después", "o despues", "y despues");

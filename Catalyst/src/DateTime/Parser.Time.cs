@@ -419,7 +419,7 @@ namespace Catalyst.DateTimeRecognition
                     || (TryWordNumber(back, out int off, out _) && off > 0 && off < 60);
             }
 
-            if (!AtTerm(i, TermKind.Connector) || AtTerm(i, TermKind.ToWord)) return false;
+            if (!AtTerm(i, TermKind.Connector) || AtTerm(i, TermKind.ToWord) || AtTerm(i, TermKind.ClockPrefix)) return false;
 
             int joined = After(i);
 
@@ -480,7 +480,10 @@ namespace Catalyst.DateTimeRecognition
 
             bool joined_ = false;
 
-            if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.Connector) && !AtTerm(at, TermKind.ToWord))
+            // A joiner that also introduces a clock is opening the far end of a range, not the minutes:
+            // "cinco a las siete" is five to seven, not five past seven
+            if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.Connector)
+                && !AtTerm(at, TermKind.ToWord) && !AtTerm(at, TermKind.ClockPrefix))
             {
                 int joined = After(at);
 
