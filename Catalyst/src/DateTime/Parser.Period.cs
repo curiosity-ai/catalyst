@@ -403,7 +403,7 @@ namespace Catalyst.DateTimeRecognition
             int year = Node.Unspecified;
             int yearAt = end;
             if (At(yearAt, LexKind.Comma)) yearAt++;
-            yearAt = SkipWords(yearAt, "of", "in");
+            yearAt = SkipGlue(SkipWords(yearAt, "of", "in"), 1);   // "de 26 a 28 de junio en 2020"
 
             if (TryYearLoose(yearAt, out int parsedYear, out int yearEnd))
             {

@@ -116,6 +116,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "nu", "op dit moment", "meteen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.NextDay,            "de dag erna", "de volgende dag", "dag erna");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.PriorDay,           "de dag ervoor", "de vorige dag", "dag ervoor");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.EndOfDay,           "eind van de dag", "einde van de dag", "eind van dag");
 
             b.Add(TermKind.Ago,     "geleden");
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "eerder");

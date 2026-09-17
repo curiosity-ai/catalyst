@@ -132,6 +132,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "pasado mañana");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "anteayer", "antes de ayer");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "ahora", "ahora mismo", "en este momento");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.EndOfDay,           "fin de día", "fin del día", "final de día", "final del día",
+                                                                               "fin de dia", "fin del dia", "final de dia", "final del dia");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.NextDay,            "el día siguiente", "el dia siguiente", "día siguiente", "dia siguiente");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.PriorDay,           "el día anterior", "el dia anterior", "día anterior", "dia anterior");
 
             b.Add(TermKind.Ago,     "hace", "atrás", "atras", "antes");
             b.Add(TermKind.FromNow, "después", "despues", "a partir de ahora");
