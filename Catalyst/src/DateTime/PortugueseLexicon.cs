@@ -134,7 +134,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "mais tarde");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Earlier), "mais cedo");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "manhã", "manha", "manhãs", "madrugada");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "manhã", "manha", "manhãs");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dawn,      "madrugada", "madrugadas");
             // "a tarde" runs from four to eight in the suite, which is the evening slot
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "tarde", "tardes");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "meio-dia", "meio dia");
@@ -149,7 +150,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.OClock, "em ponto");
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "ao");
-            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "até", "ate", "até o", "até a");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "até", "ate", "ateh", "até o", "até a", "ate a", "ateh a", "ateh o");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
             b.Add(TermKind.LengthWord, "dura", "durará", "durante", "duração", "duracao", "leva");
             b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
@@ -165,7 +166,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro do");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "às", "à");   // "às 5" as well as "de 23 às 4"
 
-            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes do", "no máximo até");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes do", "antes da", "antes das", "antes dos", "no máximo até");
             b.Add(TermKind.Mod, (int)ModKind.After,  "depois de", "depois do", "após");
             b.Add(TermKind.Mod, (int)ModKind.Less,   "menos de");
             b.Add(TermKind.Mod, (int)ModKind.More,   "mais de");
@@ -191,6 +192,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "mensal", "mensalmente");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "anual", "anualmente");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "trimestral", "trimestralmente");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "semestral", "semestralmente");
 
             b.Add(TermKind.Season, (int)SeasonKind.Spring, "primavera");
             b.Add(TermKind.Season, (int)SeasonKind.Summer, "verão", "verao");

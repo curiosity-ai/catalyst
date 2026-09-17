@@ -40,6 +40,7 @@ namespace Catalyst.DateTimeRecognition
             PartOfDayKind.Breakfast    => new DayPart("TMEB",  8, 12),
             PartOfDayKind.Brunch       => new DayPart("TMEBR",10, 12),
             PartOfDayKind.EarlyMorning => new DayPart("TMO",   8, 10),
+            PartOfDayKind.Dawn         => new DayPart("TDA",   4,  8),
             _                          => new DayPart(null,    0,  0),
         };
 

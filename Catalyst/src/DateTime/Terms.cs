@@ -117,6 +117,7 @@ namespace Catalyst.DateTimeRecognition
         MidDay,
         Business,       // business hours
         EarlyMorning,
+        Dawn,
         LateNight,
         Tonight,
         Lunch,

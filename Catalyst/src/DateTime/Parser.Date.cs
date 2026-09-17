@@ -952,6 +952,9 @@ namespace Catalyst.DateTimeRecognition
             bool leadingAgo = !sawIn && AtTerm(at, TermKind.Ago) && !AtTerm(at, TermKind.Unit);
             if (leadingAgo) at = After(at);
 
+            // "de noche", "en noche" — a bare night is the part of the day, not a length of one
+            if (AtTerm(at, TermKind.PartOfDay) && !AtNumber(at)) return -1;
+
             int durationEnd = TryDuration(at, out int durationNode);
             if (durationEnd < 0) return -1;
 
