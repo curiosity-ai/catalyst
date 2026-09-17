@@ -294,7 +294,7 @@ namespace Catalyst.DateTimeRecognition
                     n.DefiniteDay = theDay;
                     end           = ordEnd;
                 }
-                else if (probeDayNoun > tail && TryWordNumber(probe, out int spokenDay, out int spokenEnd) && spokenDay >= 1 && spokenDay <= 31)
+                else if (TryWordNumber(probe, out int spokenDay, out int spokenEnd) && spokenDay >= 1 && spokenDay <= 31)
                 {
                     // "terça-feira dia vinte e cinco" — a day the introducer says is one
                     n.Day         = spokenDay;
@@ -385,6 +385,9 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>A year in any accepted spelling, including two digits.</summary>
         private readonly bool TryYearLoose(int i, out int year, out int end) => TryYearLoose(i, out year, out end, allowTwoDigits: true);
 
+        /// <summary>Whether the text ends here, allowing for a closing full stop.</summary>
+        private readonly bool NothingFollows(int i) => !In(i) || (At(i, LexKind.Dot) && !In(i + 1));
+
         /// <summary>"'18" — two digits the writer marked as a year.</summary>
         private readonly bool WrittenWithAnApostrophe(int i)
         {
@@ -401,7 +404,7 @@ namespace Catalyst.DateTimeRecognition
             if (TryYear(i, out year, out end)) return true;
 
             if (AtNumber(i) && DigitsAt(i) == 2 && !At(i + 1, LexKind.Colon)
-                && (allowTwoDigits || WrittenWithAnApostrophe(i)))
+                && (allowTwoDigits || WrittenWithAnApostrophe(i) || NothingFollows(i + 1)))
             {
                 year = ExpandTwoDigitYear(NumberAt(i));
                 end  = i + 1;
@@ -516,18 +519,23 @@ namespace Catalyst.DateTimeRecognition
                 int monthAt = day2End + 1;
 
                 if (IsWrittenConnective(day2End) && AtNumber(monthAt) && DigitsAt(monthAt) <= 2
-                    && NumberAt(monthAt) >= 1 && NumberAt(monthAt) <= 12 && IsWrittenConnective(monthAt + 1)
-                    && TryYearLoose(monthAt + 2, out int year3, out int year3End))
+                    && NumberAt(monthAt) >= 1 && NumberAt(monthAt) <= 12)
                 {
                     var n = Node.Create(NodeKind.Date);
                     n.LexStart = i;
                     n.Month    = NumberAt(monthAt);
                     n.Day      = day2;
-                    n.Year     = year3;
-                    n.LexEnd   = year3End;
+                    n.LexEnd   = monthAt + 1;
+
+                    if (IsWrittenConnective(monthAt + 1) && TryYearLoose(monthAt + 2, out int year3, out int year3End))
+                    {
+                        n.Year   = year3;
+                        n.LexEnd = year3End;
+                    }
+
                     SetSpan(ref n);
                     node = Alloc(n);
-                    return year3End;
+                    return n.LexEnd;
                 }
             }
 
@@ -537,7 +545,8 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>A one-word connective spelled out between two halves of a date: the "de" of "9 de 8 de 1971".</summary>
         private readonly bool IsWrittenConnective(int i)
             => In(i) && _lex[i].Kind == LexKind.Word && _lex[i].PhraseLength <= 1
-            && AtTerm(i, TermKind.Filler) && !AtTerm(i, TermKind.Connector) && !AtTerm(i, TermKind.AndWord);
+            && AtTerm(i, TermKind.Filler) && AtTerm(i, TermKind.RangeStart)
+            && !AtTerm(i, TermKind.Connector) && !AtTerm(i, TermKind.AndWord);
 
         // ------------------------------------------------------------------ numeric dates
 
