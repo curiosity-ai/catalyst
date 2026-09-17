@@ -221,7 +221,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.FathersDay,   "dia dos pais");
             b.Add(TermKind.Holiday, (int)HolidayKind.InternationalWorkersDay, "dia do trabalho", "dia do trabalhador");
 
-            return b.Build(Language.Portuguese, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, relativeAfterUnit: true, minutesFollowHour: true, hourUnitNamesTheClock: true);
+            return b.Build(Language.Portuguese, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, articleInPeriodSpan: false, relativeAfterUnit: true, minutesFollowHour: true, hourUnitNamesTheClock: true, clockRangeStaysOnItsDay: true);
         }
     }
 }

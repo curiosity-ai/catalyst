@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Mosaik.Core;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -387,8 +387,16 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     QualifierCanBeAVerb { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false)
+        /// <summary>
+        /// Whether a clock range that runs past midnight still names the day it opened on. Every other
+        /// language closes such a range on the next day ("Monday 23 to 4" ends on Tuesday); Portuguese
+        /// reports both ends on the same day.
+        /// </summary>
+        public bool     ClockRangeStaysOnItsDay { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false, bool clockRangeStaysOnItsDay = false)
         {
+            ClockRangeStaysOnItsDay   = clockRangeStaysOnItsDay;
             QualifierCanBeAVerb       = qualifierCanBeAVerb;
             BoundsOnlyOnTimes         = boundsOnlyOnTimes;
             NarrowingFollowsPeriod    = narrowingFollowsPeriod;

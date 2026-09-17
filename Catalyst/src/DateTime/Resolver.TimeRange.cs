@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Catalyst.DateTimeRecognition
@@ -407,6 +407,21 @@ namespace Catalyst.DateTimeRecognition
             }
         }
 
+        /// <summary>The day after the one this timex names, in whichever of the two shapes it is written.</summary>
+        private static string NextDayTimex(string dayTimex, DateTime day)
+        {
+            const string week = "XXXX-WXX-";
+
+            if (dayTimex.StartsWith(week, StringComparison.Ordinal) && dayTimex.Length == week.Length + 1
+                && char.IsAsciiDigit(dayTimex[^1]))
+            {
+                int weekday = dayTimex[^1] - '0';
+                return week + (weekday == 7 ? 1 : weekday + 1);
+            }
+
+            return FormatDate(day.AddDays(1));
+        }
+
         /// <summary>Which half of the day a part of the day falls in, or -1 where it says nothing.</summary>
         private static int AmPmOfPart(PartOfDayKind part) => part switch
         {
@@ -535,7 +550,11 @@ namespace Catalyst.DateTimeRecognition
                 }
                 else
                 {
-                    timex = $"({dayTimex}{r.StartTimex},{dayTimex}{r.EndTimex},{ClockSpanTimex(r)})";
+                    // A range that runs past midnight closes on the next day, and says so
+                    bool wraps = !_lexicon.ClockRangeStaysOnItsDay
+                              && (r.EndHour < r.StartHour || (r.EndHour == r.StartHour && r.EndMinute < r.StartMinute));
+
+                    timex = $"({dayTimex}{r.StartTimex},{(wraps ? NextDayTimex(dayTimex, day) : dayTimex)}{r.EndTimex},{ClockSpanTimex(r)})";
                 }
 
                 var start = day.AddHours(r.StartHour).AddMinutes(r.StartMinute).AddSeconds(r.StartSecond);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Mosaik.Core;
 using System.Collections.Generic;
 
@@ -45,6 +45,6 @@ namespace Catalyst.DateTimeRecognition
             else                        { _words.Add(new KeyValuePair<string, TermInfo>(word, info)); }
         }
 
-        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan, relativeAfterUnit, pluralEndsInS, partNamedWithOf, minutesFollowHour, splitsCompounds, halfIsBeforeTheHour, ordinalEndsInDot, movableHolidayNamesItsDay, hourUnitNamesTheClock, narrowingFollowsPeriod, boundsOnlyOnTimes, qualifierCanBeAVerb);
+        public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false, bool clockRangeStaysOnItsDay = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan, relativeAfterUnit, pluralEndsInS, partNamedWithOf, minutesFollowHour, splitsCompounds, halfIsBeforeTheHour, ordinalEndsInDot, movableHolidayNamesItsDay, hourUnitNamesTheClock, narrowingFollowsPeriod, boundsOnlyOnTimes, qualifierCanBeAVerb, clockRangeStaysOnItsDay);
     }
 }
