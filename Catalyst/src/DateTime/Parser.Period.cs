@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Catalyst.DateTimeRecognition
 {
@@ -630,6 +630,11 @@ namespace Catalyst.DateTimeRecognition
                 && (openedByRangeWord
                     || (AtTerm(i, TermKind.ToWord) && (AtTerm(After(i), TermKind.Article) || AtTerm(After(i), TermKind.Whole)
                                                        || AtTerm(i + 1, TermKind.Article))))) return -1;   // "voor de" is one phrase
+
+            // Such a word bounds something named, not something already written as two endpoints: "voor
+            // 6-4 tussen 9.30-16.30" is which meeting is meant, not when it has to be over by
+            if (_lexicon.BoundsOnlyOnTimes && IsBounding(mod) && AtTerm(i, TermKind.ToWord)
+                && target.Left != Node.Unspecified && target.Right != Node.Unspecified) return -1;
 
             // "end of tomorrow" / "end of this sunday" name a moment, not a period
             if (mod == ModKind.End && target.Kind == NodeKind.Date) return -1;
