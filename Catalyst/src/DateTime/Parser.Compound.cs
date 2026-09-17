@@ -179,7 +179,11 @@ namespace Catalyst.DateTimeRecognition
             bool connector = false;
 
             if (sawBetween && AtTerm(mid, TermKind.AndWord))                     { connector = true; mid = After(mid); }
-            else if (AtTerm(mid, TermKind.Connector) && !AtTerm(mid, TermKind.AndWord)) { connector = true; mid = After(mid); }
+            // "às" both connects a range and introduces a clock. Where nothing opened a range and the
+            // left-hand side is a bare number, "sexta-feira 13 às 14:00" says the thirteenth at two
+            else if (AtTerm(mid, TermKind.Connector) && !AtTerm(mid, TermKind.AndWord)
+                     && !(allowBareHours && leftEnd == at + 1 && AtNumber(at) && NumberAt(at) > 12 && NumberAt(at) <= 31
+                          && AtTerm(mid, TermKind.ClockPrefix) && !sawFrom && !sawBetween)) { connector = true; mid = After(mid); }
             else if (At(mid, LexKind.Dash) || At(mid, LexKind.Tilde)) { connector = true; mid = After(mid); }
 
             if (!connector) return -1;

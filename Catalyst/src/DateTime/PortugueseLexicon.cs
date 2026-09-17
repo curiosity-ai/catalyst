@@ -183,7 +183,7 @@ namespace Catalyst.DateTimeRecognition
                                                         "ou depois", "e depois");
             b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "ou anterior", "e anterior", "ou antes", "e antes",
                                                         "ou mais cedo", "e mais cedo");
-            b.Add(TermKind.Approx, "por volta de", "aproximadamente", "cerca de", "quase");
+            b.Add(TermKind.Approx, "por volta de", "por volta das", "por volta da", "por volta do", "aproximadamente", "cerca de", "quase");
 
             b.Add(TermKind.SetPrefix, 0, "cada");
             b.Add(new TermInfo(TermKind.SetPrefix, 0, TermKind.Filler, 0), "todos", "todas", "todo", "toda");
