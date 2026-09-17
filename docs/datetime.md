@@ -116,7 +116,7 @@ beside it, so the tolerance hides nothing.
 | Portuguese | 92.7% | 90.3% | 89.1% |
 | French | 91.1% | 88.4% | 86.3% |
 | Dutch | 90.6% | 86.3% | 83.5% |
-| Spanish | 90.3% | 85.3% | 82.9% |
+| Spanish | 90.5% | 85.5% | 83.2% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine

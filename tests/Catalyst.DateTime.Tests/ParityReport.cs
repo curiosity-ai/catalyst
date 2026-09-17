@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -32,6 +32,8 @@ namespace Catalyst.Tests.DateTimeRecognition
         public int                              PerfectCases { get; set; }
         /// <summary>Readings the engine got right, bounded one function word differently.</summary>
         public int                              GlueOnly { get; set; }
+        /// <summary>Inputs the engine threw on. Scoring one as "found nothing" is what hid a crash for a while.</summary>
+        public List<string>                     Threw    { get; } = new List<string>();
 
         public ParityStats For(string type)
         {
@@ -73,6 +75,7 @@ namespace Catalyst.Tests.DateTimeRecognition
                 catch (Exception e)
                 {
                     actual = new List<Hit>();
+                    result.Threw.Add($"{c.Input}  ->  {e.GetType().Name}: {e.Message}");
                     if (result.Failures.Count < maxFailuresRecorded) result.Failures.Add($"THREW  {c.Input}\n         {e.GetType().Name}: {e.Message}");
                 }
 

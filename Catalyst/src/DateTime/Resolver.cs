@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -510,7 +510,8 @@ namespace Catalyst.DateTimeRecognition
         {
             ref var n = ref At(nodeIndex);
 
-            int hour = n.Hour;
+            // "a las 24" is midnight of the day it names, and 24 is not an hour a DateTime can hold
+            int hour = n.Hour == 24 ? 0 : n.Hour;
             minute   = n.Minute;
             second   = n.Second;
 

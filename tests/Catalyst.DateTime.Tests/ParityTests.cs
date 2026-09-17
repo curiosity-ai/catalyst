@@ -30,7 +30,7 @@ namespace Catalyst.Tests.DateTimeRecognition
         [InlineData("Portuguese",    0.92, 0.90, 0.89)]
         [InlineData("French",        0.91, 0.88, 0.86)]
         [InlineData("Dutch",         0.90, 0.86, 0.83)]
-        [InlineData("Spanish",       0.90, 0.85, 0.82)]
+        [InlineData("Spanish",       0.90, 0.85, 0.83)]
         public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumReadingRate, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);
@@ -43,6 +43,10 @@ namespace Catalyst.Tests.DateTimeRecognition
             Console.WriteLine(ParityReport.Format($"Microsoft / {language}", microsoft));
 
             Assert.True(catalyst.Overall.Expected > 0, "the spec suite did not load");
+
+            // A throw is not a reading the engine got wrong, it is one a caller cannot recover from, and
+            // scoring it as "found nothing" is what let an un-representable hour sit in the report unread
+            Assert.True(catalyst.Threw.Count == 0, $"the engine threw on {catalyst.Threw.Count} {language} input(s):\n  " + string.Join("\n  ", catalyst.Threw));
 
             // The suite is Microsoft's own regression set, so its score is the ceiling this is measured against
             Assert.True(microsoft.Overall.SpanRate > 0.98, $"the reference implementation scored {microsoft.Overall.SpanRate:P1}, so the comparison is not measuring what it should");
