@@ -311,10 +311,11 @@ namespace Catalyst.DateTimeRecognition
                         }
                     }
 
-                    // "monday the 26th" names one day; "monday 21" leaves both readings open
-                    if (n.DefiniteDay && haveNext)
+                    // "monday the 26th" names one day — the nearer of the two; "monday 21" leaves both open
+                    if (n.DefiniteDay && (haveNext || haveBack))
                     {
-                        first = second;
+                        if (haveNext && (!haveBack || second - _reference.Date <= _reference.Date - first)) first = second;
+
                         timex = FormatDate(first);
                         return true;
                     }
