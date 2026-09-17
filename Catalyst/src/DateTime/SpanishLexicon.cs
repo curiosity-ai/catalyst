@@ -27,13 +27,13 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Month, 11, "noviembre", "nov");
             b.Add(TermKind.Month, 12, "diciembre", "dic");
 
-            b.Add(TermKind.Weekday, 0, "domingo", "domingos", "dom");
+            b.Add(TermKind.Weekday, 0, "domingo", "domingos", "dom", "do");
             b.Add(TermKind.Weekday, 1, "lunes", "lun");
             b.Add(TermKind.Weekday, 2, "martes", "mar");
-            b.Add(TermKind.Weekday, 3, "miércoles", "miercoles", "mié", "mie");
-            b.Add(TermKind.Weekday, 4, "jueves", "jue");
-            b.Add(TermKind.Weekday, 5, "viernes", "vie");
-            b.Add(TermKind.Weekday, 6, "sábado", "sabado", "sábados", "sab", "sáb");
+            b.Add(TermKind.Weekday, 3, "miércoles", "miercoles", "mié", "mie", "mi");
+            b.Add(TermKind.Weekday, 4, "jueves", "jue", "ju");
+            b.Add(TermKind.Weekday, 5, "viernes", "vie", "vi");
+            b.Add(TermKind.Weekday, 6, "sábado", "sabado", "sábados", "sab", "sáb", "sa");
 
             b.Add(TermKind.Cardinal,  0, "cero");
             b.Add(TermKind.Cardinal,  1, "uno", "una", "un");
