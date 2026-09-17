@@ -137,11 +137,15 @@ namespace Catalyst.DateTimeRecognition
                     at = After(at);
                     at = SkipGlue(at, 1);
                 }
-                // "la semana que inicia el 4 de febrero" — the relative clause that says where it opens
+                // "la semana que inicia el 4 de febrero", "la semana que va del 4 de febrero" — the
+                // relative clause that says where it opens, whatever verb it is written with
                 else if (AtWord(at, "que") && (AtTermValue(at + 1, TermKind.Mod, (int)ModKind.Start)
-                                               || AtTerm(at + 1, TermKind.RangeStart)))
+                                               || AtTerm(at + 1, TermKind.RangeStart)
+                                               || AtTerm(at + 2, TermKind.RangeStart)))
                 {
-                    at = SkipGlue(After(at + 1), 1);
+                    int clause = AtTerm(at + 1, TermKind.RangeStart) || AtTermValue(at + 1, TermKind.Mod, (int)ModKind.Start) ? at + 1 : at + 2;
+                    at = SkipGlue(After(clause), 1);
+                    at = SkipArticle(at);
                 }
                 else
                 {
@@ -1089,7 +1093,7 @@ namespace Catalyst.DateTimeRecognition
             n.LexStart   = i;
             n.WeekOfYear = week;
 
-            int ofAt = SkipWords(at, "of", "in");
+            int ofAt = SkipGlue(SkipWords(at, "of", "in"), 1);
             ofAt = SkipArticle(ofAt);
 
             if (TryYear(ofAt, out int year, out int yearEnd))
@@ -1097,11 +1101,19 @@ namespace Catalyst.DateTimeRecognition
                 n.Year = year;
                 at     = yearEnd;
             }
-            else if (AtTerm(ofAt, TermKind.Relative, out int relValue) && AtTermValue(ofAt + 1, TermKind.Unit, (int)TimeUnit.Year))
+            else if (AtTerm(ofAt, TermKind.Relative, out int relValue) && AtTermValue(After(ofAt), TermKind.Unit, (int)TimeUnit.Year))
             {
                 n.Relative     = (RelativeKind)relValue;
                 n.OffsetYears  = WeekShiftOf((RelativeKind)relValue);
-                at             = ofAt + 2;
+                at             = After(After(ofAt));
+            }
+            // "semana 27 del año pasado" — the qualifier follows the unit
+            else if (_lexicon.RelativeAfterUnit && AtTermValue(ofAt, TermKind.Unit, (int)TimeUnit.Year)
+                     && AtTerm(After(ofAt), TermKind.Relative, out int trailingRel))
+            {
+                n.Relative    = (RelativeKind)trailingRel;
+                n.OffsetYears = WeekShiftOf((RelativeKind)trailingRel);
+                at            = After(After(ofAt));
             }
 
             n.LexEnd = at;

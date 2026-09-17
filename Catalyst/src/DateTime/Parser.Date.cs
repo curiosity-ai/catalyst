@@ -893,8 +893,10 @@ namespace Catalyst.DateTimeRecognition
                 return -1;
             }
 
-            // A bare ordinal without "the" is only a date when it is written with its suffix ("29th", "22.")
-            if (!hadThe && !(AtNumber(at) && AtTerm(at + 1, TermKind.OrdinalSuffix))) return -1;
+            // A bare ordinal without "the" is only a date when it is written with its suffix ("29th", "22.",
+            // "18.º" — where the stop stands between the number and the letters)
+            if (!hadThe && !(AtNumber(at) && (AtOrdinalSuffix(at + 1)
+                                              || (At(at + 1, LexKind.Dot) && AtOrdinalSuffix(at + 2))))) return -1;
 
             // "3rd week of 2018" counts weeks; the ordinal belongs to the period, not to a day
             if (AtTerm(end, TermKind.Unit) || AtTerm(end, TermKind.BusinessDay)) return -1;
