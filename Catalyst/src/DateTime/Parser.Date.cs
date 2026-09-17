@@ -886,7 +886,8 @@ namespace Catalyst.DateTimeRecognition
 
             if (bare && (At(end, LexKind.Slash) || At(end, LexKind.Colon)
                          || (At(end, LexKind.Dash) && AtNumber(end + 1))
-                         || AtTerm(end, TermKind.AmPm) || AtTerm(end, TermKind.OClock))) return -1;
+                         || AtTerm(end, TermKind.AmPm) || AtTerm(end, TermKind.OClock)
+                         || ClockPrefixEndsAt(at))) return -1;   // "verso le 11" is a clock reading
 
             var n = Node.Create(NodeKind.Date);
             n.LexStart = i;
