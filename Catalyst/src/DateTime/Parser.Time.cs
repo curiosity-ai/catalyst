@@ -305,7 +305,7 @@ namespace Catalyst.DateTimeRecognition
             // a word of its own — "5 e 45", "8pm e meia" — but only when what follows the joiner cannot be
             // read as the far end of a range instead.
             else if ((AtTerm(i, TermKind.Cardinal) || (_lexicon.MinutesFollowHour && JoinsWrittenHour(at)))
-                     && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken))
+                     && TrySpokenMinutes(at, out int spokenMinutes, out int afterSpoken, spokenHour: AtTerm(i, TermKind.Cardinal)))
             {
                 // "siete menos cuarto" counts backwards from the hour it just named
                 if (spokenMinutes < 0)
@@ -411,7 +411,9 @@ namespace Catalyst.DateTimeRecognition
             // "8 menos cuarto" — the language's "to", taking the minutes back off the hour just read
             if (_lexicon.MinutesFollowHour && AtTerm(i, TermKind.ToWord) && !AtTerm(i, TermKind.Connector))
             {
-                int back = SkipArticle(After(i));
+                int back = SkipFractionArticle(After(i));
+
+                back = SkipFractionArticle(back);
 
                 return AtTerm(back, TermKind.QuarterWord) || AtTerm(back, TermKind.HalfWord)
                     || (TryWordNumber(back, out int off, out _) && off > 0 && off < 60);
@@ -421,7 +423,8 @@ namespace Catalyst.DateTimeRecognition
 
             int joined = After(i);
 
-            if (AtTerm(joined, TermKind.HalfWord) || AtTerm(joined, TermKind.QuarterWord)) return true;
+            int fractionAt = SkipFractionArticle(joined);
+            if (AtTerm(fractionAt, TermKind.HalfWord) || AtTerm(fractionAt, TermKind.QuarterWord)) return true;
 
             // "5 e 45" — two digits after the language's own "and" are minutes; after a range connector
             // they are the far end of the range, which is why only the "and" counts here
@@ -434,7 +437,23 @@ namespace Catalyst.DateTimeRecognition
         /// The minutes spoken after the hour: "three thirty", and where the language joins them to it,
         /// "siete y media" and "dos cuarenta y dos".
         /// </summary>
-        private readonly bool TrySpokenMinutes(int i, out int minutes, out int end)
+        /// <summary>"un quarto", "il quarto" — the article or the "one" in front of a fraction of an hour.</summary>
+        private readonly int SkipFractionArticle(int i)
+        {
+            int at = SkipArticle(i);
+
+            if (AtTermValue(at, TermKind.Cardinal, 1) && (AtTerm(After(at), TermKind.HalfWord) || AtTerm(After(at), TermKind.QuarterWord))) at = After(at);
+
+            return at;
+        }
+
+        private readonly bool TrySpokenMinutes(int i, out int minutes, out int end) => TrySpokenMinutes(i, out minutes, out end, spokenHour: false);
+
+        /// <param name="spokenHour">
+        /// true where the hour itself was spelled out, which is what lets "otto e 20" read its digits as
+        /// minutes: after a written hour the same shape is the far end of a range.
+        /// </param>
+        private readonly bool TrySpokenMinutes(int i, out int minutes, out int end, bool spokenHour)
         {
             minutes = Node.Unspecified;
             end     = i;
@@ -444,10 +463,10 @@ namespace Catalyst.DateTimeRecognition
             // "siete menos cuarto", "sette meno un quarto" — the minutes come off the hour just read
             if (_lexicon.MinutesFollowHour && AtTerm(at, TermKind.ToWord) && !AtTerm(at, TermKind.Connector))
             {
-                int back = SkipArticle(After(at));
+                int back = SkipFractionArticle(After(at));
 
-                if (AtTerm(back, TermKind.QuarterWord)) { minutes = -15; end = After(back); return true; }
-                if (AtTerm(back, TermKind.HalfWord))    { minutes = -30; end = After(back); return true; }
+                if (AtTerm(back, TermKind.QuarterWord, out int backQuarters)) { minutes = -15 * (backQuarters == 0 ? 1 : backQuarters); end = After(back); return true; }
+                if (AtTerm(back, TermKind.HalfWord))                          { minutes = -30; end = After(back); return true; }
 
                 if (TryWordNumber(back, out int off, out int afterOff) && off > 0 && off < 60)
                 {
@@ -465,8 +484,11 @@ namespace Catalyst.DateTimeRecognition
             {
                 int joined = After(at);
 
-                if (AtTerm(joined, TermKind.HalfWord))         { minutes = 30; end = After(joined); return true; }
-                if (AtTerm(joined, TermKind.QuarterWord))      { minutes = 15; end = After(joined); return true; }
+                // "otto e un quarto", "9pm e tre quarti" — the fraction may be counted, and introduced
+                int fraction = SkipFractionArticle(joined);
+
+                if (AtTerm(fraction, TermKind.HalfWord))                      { minutes = 30; end = After(fraction); return true; }
+                if (AtTerm(fraction, TermKind.QuarterWord, out int quarters)) { minutes = 15 * (quarters == 0 ? 1 : quarters); end = After(fraction); return true; }
 
                 at      = joined;
                 joined_ = true;
@@ -480,7 +502,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // "5 e 45" — the joiner is what says the digits are minutes; without it they are a second reading
-            if (joined_ && AtNumber(at) && DigitsAt(at) == 2 && NumberAt(at) > 24 && NumberAt(at) < 60)
+            if (joined_ && AtNumber(at) && DigitsAt(at) == 2 && (spokenHour || NumberAt(at) > 24) && NumberAt(at) < 60)
             {
                 minutes = NumberAt(at);
                 end     = at + 1;

@@ -196,6 +196,10 @@ namespace Catalyst.DateTimeRecognition
             bool any    = false;
             int at      = i;
 
+            // Where the number stops, which is not where the scan stops: "otto e un quarto" reads eight and
+            // steps over its joiner before finding that "un" cannot go on it, and the joiner is not the number's
+            int lastGood = i;
+
             while (In(at))
             {
                 if (AtTerm(at, TermKind.Cardinal, out int v))
@@ -205,8 +209,9 @@ namespace Catalyst.DateTimeRecognition
                     else if (current % 10 == 0 && v < 10)                                 { current += v; }
                     else                                                                  { break; }
 
-                    any = true;
+                    any      = true;
                     at++;
+                    lastGood = at;
                     continue;
                 }
 
@@ -226,6 +231,7 @@ namespace Catalyst.DateTimeRecognition
                     }
 
                     at++;
+                    lastGood = at;
                     continue;
                 }
 
@@ -245,7 +251,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             value = total + current;
-            end   = at;
+            end   = lastGood;
             return any;
         }
 

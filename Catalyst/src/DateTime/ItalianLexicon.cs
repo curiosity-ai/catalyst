@@ -99,6 +99,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.HalfWord, "mezza", "mezzo");
             b.Add(TermKind.ToWord, "meno");   // "sette meno un quarto"
             b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "quarto");
+            b.Add(TermKind.QuarterWord, 1, "quarti");
+            b.Add(TermKind.QuarterWord, 3, "tre quarti");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "questo", "questa", "questi", "queste");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "prossimo", "prossima", "prossimi", "prossime", "próssimo", "seguente", "seguenti", "venturo");
