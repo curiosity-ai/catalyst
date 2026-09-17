@@ -403,10 +403,11 @@ namespace Catalyst.DateTimeRecognition
                 _modDepth--;
             }
 
-            Consider(TryNthPeriodOf(i, out int n1),  n1, ref best, ref bestNode);
-            Consider(TrySimplePeriod(i, out int n2), n2, ref best, ref bestNode);
-            Consider(TryDate(i, out int n3),         n3, ref best, ref bestNode);
-            Consider(TryNowAsDate(i, out int n4),    n4, ref best, ref bestNode);
+            Consider(TryNthPeriodOf(i, out int n1),   n1, ref best, ref bestNode);
+            Consider(TrySimplePeriod(i, out int n2),  n2, ref best, ref bestNode);
+            Consider(TryDate(i, out int n3),          n3, ref best, ref bestNode);
+            Consider(TryNowAsDate(i, out int n4),     n4, ref best, ref bestNode);
+            Consider(TryDateTimePeriod(i, out int n5), n5, ref best, ref bestNode);   // "até amanhã de manhã"
 
             node = bestNode;
             return best;

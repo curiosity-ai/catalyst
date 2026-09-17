@@ -548,6 +548,10 @@ namespace Catalyst.DateTimeRecognition
                     if (dropStart) { end = start; }
                     else           { dropEnd = true; }
                 }
+                else if (dropStart)
+                {
+                    end = start;   // "before tomorrow morning" ends where the morning begins
+                }
 
                 if (!dropStart) value.Start = FormatDateTime(start);
                 if (!dropEnd)   value.End   = FormatDateTime(end);

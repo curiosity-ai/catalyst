@@ -105,7 +105,11 @@ namespace Catalyst.DateTimeRecognition
                     period.End      = period.End.AddYears(shift);
                     alternate.Start = period.Start.AddYears(1);
                     alternate.End   = period.End.AddYears(1);
-                    alternate.Timex = period.Timex;
+
+                    // A leap day makes the two readings different lengths: 28/2 to 1/3 is two days in a
+                    // leap year and one in every other
+                    period.Timex    = $"({leftTimex},{rightTimex},{SpanTimex(period.Start, period.End, months, daysOnly: anchoredToNow)})";
+                    alternate.Timex = $"({leftTimex},{rightTimex},{SpanTimex(alternate.Start, alternate.End, months, daysOnly: anchoredToNow)})";
                     hasAlternate    = true;
                 }
 

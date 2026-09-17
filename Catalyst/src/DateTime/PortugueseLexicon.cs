@@ -159,7 +159,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.After, TermKind.RangeStart, 0), "a partir de", "a partir do", "a partir da", "a partir das", "a partir dos");
             b.Add(TermKind.RangeStart, 1, "entre");
 
-            b.Add(TermKind.Filler, "dos", "no", "na", "nos", "nas", "por", "para");
+            b.Add(TermKind.Filler, "dos", "no", "na", "nos", "nas", "por", "para", "pela", "pelas", "pelo", "pelos");
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "o", "os");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "um", "uma");
             b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "todo", "toda", "todos", "todas", "inteiro", "inteira");   // "the whole day" counts as one
