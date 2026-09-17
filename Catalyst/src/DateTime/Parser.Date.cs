@@ -675,10 +675,16 @@ namespace Catalyst.DateTimeRecognition
             {
                 if (TryDateSlot(sep2, out s2, out int after2)) { has2 = true; end = after2; }
             }
-            else if (KindOf(sep2) == sepKind && TryDateSlot(sep2 + 1, out s2, out int after2b))
+            else if (KindOf(sep2) == sepKind)
             {
-                has2 = true;
-                end  = after2b;
+                // "5-3-'18" — the apostrophe marking a two-digit year sits between the separator and it
+                int slotAt = AtNumber(sep2 + 2) && WrittenWithAnApostrophe(sep2 + 2) ? sep2 + 2 : sep2 + 1;
+
+                if (TryDateSlot(slotAt, out s2, out int after2b))
+                {
+                    has2 = true;
+                    end  = after2b;
+                }
             }
 
             int year  = Node.Unspecified;
@@ -701,6 +707,11 @@ namespace Catalyst.DateTimeRecognition
                 year = tailYear;
                 end  = tailYearEnd;
             }
+
+            // "9-10 's ochtends" is a range of hours on one day, not a day of a month
+            if (!has2 && sepKind == LexKind.Dash && year < 0 && s0.Digits <= 2 && s1.Digits <= 2
+                && (TryAmPm(end, out _, out _) || AtTerm(end, TermKind.OClock)
+                    || (AtTerm(end, TermKind.PartOfDay) && !AtTerm(end, TermKind.Unit) && !AtTerm(end, TermKind.SpecialDay)))) return -1;
 
             // "22.04." — where the ordinal is written with a full stop, the date ends on one too
             if (_lexicon.DayMonthOrder && sepKind == LexKind.Dot && year < 0
