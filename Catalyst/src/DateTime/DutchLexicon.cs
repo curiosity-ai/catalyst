@@ -98,6 +98,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Several, 3, "enkele", "enige", "wat", "een paar", "verscheidene", "sommige", "meerdere");
             b.Add(TermKind.Several, 2, "paar");
             b.Add(TermKind.HalfWord, "halve");
+            b.Add(TermKind.HalfWord, 3, "anderhalf", "anderhalve");   // three halves
             b.Add(TermKind.QuarterWord, "kwartier", "kwart");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit");
@@ -164,7 +165,8 @@ namespace Catalyst.DateTimeRecognition
                                                     "beginnend", "beginnende", "startend", "startende", "aanvangend", "aanvangende");
             b.Add(TermKind.Mod, (int)ModKind.End,   "eind", "einde", "eind van", "einde van");
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van", "halverwege");
-            b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra");
+            b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra", "zo vroeg als", "al zo vroeg als", "zo snel als");
+            b.Add(TermKind.Mod, (int)ModKind.Until,   "zo laat als", "al zo laat als");
             b.Add(TermKind.Mod, (int)ModKind.Early,  "vroeg in", "vroeg");
             b.Add(TermKind.Mod, (int)ModKind.Late,   "laat in", "laat");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "of later", "en later", "of daarna", "en daarna", "of hoger", "en hoger");

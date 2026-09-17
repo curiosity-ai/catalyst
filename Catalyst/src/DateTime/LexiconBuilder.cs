@@ -28,9 +28,21 @@ namespace Catalyst.DateTimeRecognition
                 // phrase folder matches across the dash - which also makes the spaced spelling work.
                 var normalized = w.IndexOf('-') >= 0 ? w.Replace('-', ' ') : w;
 
-                if (normalized.IndexOf(' ') >= 0) { _phrases.Add(new KeyValuePair<string, TermInfo>(normalized, info)); }
-                else                              { _words.Add(new KeyValuePair<string, TermInfo>(normalized, info)); }
+                Register(normalized, info);
+
+                // Writers type the apostrophe three ways, and "'s ochtends" is the same word in all of them
+                if (normalized.IndexOf('\'') >= 0)
+                {
+                    Register(normalized.Replace('\'', '\u2019'), info);
+                    Register(normalized.Replace('\'', '\u2018'), info);
+                }
             }
+        }
+
+        private void Register(string word, TermInfo info)
+        {
+            if (word.IndexOf(' ') >= 0) { _phrases.Add(new KeyValuePair<string, TermInfo>(word, info)); }
+            else                        { _words.Add(new KeyValuePair<string, TermInfo>(word, info)); }
         }
 
         public Lexicon Build(Language language, bool dayMonthOrder, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false) => new Lexicon(language, dayMonthOrder, _words, _phrases, decimalComma, articleInDateSpan, articleInPeriodSpan, relativeAfterUnit, pluralEndsInS, partNamedWithOf, minutesFollowHour, splitsCompounds, halfIsBeforeTheHour, ordinalEndsInDot, movableHolidayNamesItsDay, hourUnitNamesTheClock, narrowingFollowsPeriod, boundsOnlyOnTimes, qualifierCanBeAVerb);

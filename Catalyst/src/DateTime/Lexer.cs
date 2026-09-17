@@ -255,7 +255,7 @@ namespace Catalyst.DateTimeRecognition
         private static bool IsSpace(char c) => c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ' ' || c == '​';
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsApostrophe(char c) => c == '\'' || c == '’' || c == 'ʼ';
+        private static bool IsApostrophe(char c) => c == '\'' || c == '’' || c == '‘' || c == 'ʼ';
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWordChar(char c) => char.IsLetter(c) || c == '_';

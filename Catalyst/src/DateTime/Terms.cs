@@ -501,7 +501,7 @@ namespace Catalyst.DateTimeRecognition
             int mark = -1;
             for (int k = 1; k < word.Length - 1; k++)
             {
-                if (word[k] is '\'' or '\u2019' or 'ʼ') { mark = k; break; }
+                if (word[k] is '\'' or '\u2019' or '\u2018' or 'ʼ') { mark = k; break; }
             }
 
             if (mark < 0) return false;
