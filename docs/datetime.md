@@ -1,4 +1,4 @@
-# Date and time recognition
+﻿# Date and time recognition
 
 `Catalyst.DateTimeRecognition` finds dates, times, periods, durations and recurrences in free text and
 resolves them against a reference moment. It replaces the `Microsoft.Recognizers.Text.DateTime` dependency
@@ -110,13 +110,13 @@ beside it, so the tolerance hides nothing.
 | Language | same reading | span + type | full resolution |
 |---|---:|---:|---:|
 | EnglishOthers | 95.1% | 97.6% | 95.1% |
-| English | 94.0% | 96.2% | 93.5% |
-| Italian | 81.8% | 82.5% | 78.1% |
-| Spanish | 79.1% | 75.7% | 72.2% |
-| French | 76.3% | 76.3% | 72.6% |
-| Dutch | 75.2% | 73.3% | 68.7% |
-| German | 69.7% | 75.1% | 67.9% |
-| Portuguese | 69.7% | 69.1% | 67.3% |
+| English | 94.6% | 96.0% | 93.9% |
+| German | 93.7% | 93.2% | 91.0% |
+| Italian | 93.4% | 92.0% | 89.1% |
+| Portuguese | 92.7% | 90.3% | 89.1% |
+| French | 91.1% | 88.4% | 86.3% |
+| Dutch | 90.6% | 86.3% | 83.5% |
+| Spanish | 90.3% | 85.3% | 82.9% |
 
 Adding a language, or improving one, is a matter of extending its lexicon and re-running the parity report; the
 per-language floors in `ParityTests` exist to catch a regression, and should be raised whenever the engine

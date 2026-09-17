@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using Xunit;
 
@@ -23,14 +23,14 @@ namespace Catalyst.Tests.DateTimeRecognition
 
         [Theory]
         //                       reading  span  value
-        [InlineData("English",       0.93, 0.95, 0.92)]
-        [InlineData("EnglishOthers", 0.93, 0.95, 0.92)]
-        [InlineData("Italian",       0.80, 0.81, 0.77)]
-        [InlineData("Spanish",       0.78, 0.74, 0.71)]
-        [InlineData("French",        0.75, 0.75, 0.71)]
-        [InlineData("Dutch",         0.74, 0.72, 0.67)]
-        [InlineData("German",        0.68, 0.74, 0.66)]
-        [InlineData("Portuguese",    0.68, 0.68, 0.66)]
+        [InlineData("English",       0.94, 0.95, 0.93)]
+        [InlineData("EnglishOthers", 0.95, 0.97, 0.95)]
+        [InlineData("German",        0.93, 0.93, 0.90)]
+        [InlineData("Italian",       0.93, 0.91, 0.89)]
+        [InlineData("Portuguese",    0.92, 0.90, 0.89)]
+        [InlineData("French",        0.91, 0.88, 0.86)]
+        [InlineData("Dutch",         0.90, 0.86, 0.83)]
+        [InlineData("Spanish",       0.90, 0.85, 0.82)]
         public void CatalystKeepsItsParityWithMicrosoftRecognizersText(string language, double minimumReadingRate, double minimumSpanRate, double minimumValueRate)
         {
             var catalyst  = ParityReport.Run(language, Engines.RunCatalyst);
