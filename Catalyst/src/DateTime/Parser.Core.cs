@@ -144,14 +144,14 @@ namespace Catalyst.DateTimeRecognition
 
         private readonly int SkipArticle(int i)
         {
-            if (AtWord(i, "the")) return i + 1;
+            if (AtWord(i, "the")) return After(i);
 
             if ((!_lexicon.ArticleInDateSpan || _lexicon.ArticleInPeriodSpan)
                 && AtTerm(i, TermKind.Filler)
                 && !AtTerm(i, TermKind.Month) && !AtTerm(i, TermKind.Weekday) && !AtTerm(i, TermKind.Unit)
                 && !AtTerm(i, TermKind.Relative) && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal))
             {
-                return i + 1;
+                return After(i);
             }
 
             return i;
@@ -167,7 +167,7 @@ namespace Catalyst.DateTimeRecognition
 
             for (int k = 0; k < max && AtTerm(at, TermKind.Filler) && !AtTerm(at, TermKind.Month) && !AtTerm(at, TermKind.Weekday) && !AtTerm(at, TermKind.Unit); k++)
             {
-                at++;
+                at = After(at);   // glue written as a phrase ("de la") is stepped over whole
             }
 
             return at;
