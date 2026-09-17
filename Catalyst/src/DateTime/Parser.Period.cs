@@ -565,10 +565,15 @@ namespace Catalyst.DateTimeRecognition
             if (IsDaySlice(mod) && mod != ModKind.Start && mod != ModKind.End)
             {
                 at = SkipWords(at, "in", "on");
+                at = SkipGlue(at, 1);
                 at = SkipArticle(at);
 
-                // "early in the day wednesday" says which day after saying which part of it
-                if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Day) && TryDate(at + 1, out _) > 0) at++;
+                // "al día" is the language's "a" and "el" written as one word
+                if (AtTerm(at, TermKind.Connector) && AtTermValue(After(at), TermKind.Unit, (int)TimeUnit.Day)) at = After(at);
+
+                // "early in the day wednesday", "temprano al día miércoles" — which day is said after
+                // which part of it
+                if (AtTermValue(at, TermKind.Unit, (int)TimeUnit.Day) && TryDate(After(at), out _) > 0) at = After(at);
             }
 
             at = SkipWords(at, "the", "of");

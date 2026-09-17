@@ -52,6 +52,22 @@ namespace Catalyst.DateTimeRecognition
             return end;
         }
 
+        /// <summary>"lunes 8-9 a.m." — a number that opens a clock range rather than naming a day.</summary>
+        private readonly bool OpensAClockRange(int i)
+        {
+            int at = i + 1;
+
+            if (At(at, LexKind.Dash) || At(at, LexKind.Tilde) || AtTerm(at, TermKind.Connector)) at = After(at);
+            else return false;
+
+            if (!AtNumber(at)) return false;
+
+            at++;
+
+            return TryAmPm(at, out _, out _) || AtTerm(at, TermKind.OClock)
+                || AtTerm(at, TermKind.PartOfDay) || AtTerm(SkipGlue(at, 2), TermKind.PartOfDay);
+        }
+
         private static void Consider(int end, int node, ref int best, ref int bestNode)
         {
             if (end > best)
@@ -243,7 +259,7 @@ namespace Catalyst.DateTimeRecognition
             if (dateEnd < 0) dateEnd = TryNumericDate(tail, out attached);
 
             // "lunes 1-3 p.m." is a clock range on that weekday, not the first of March
-            if (dateEnd > 0 && (AtTerm(dateEnd, TermKind.AmPm) || AtTerm(dateEnd, TermKind.OClock)
+            if (dateEnd > 0 && (TryAmPm(dateEnd, out _, out _) || AtTerm(dateEnd, TermKind.OClock)
                                 || AtTerm(dateEnd, TermKind.PartOfDay) || AtTerm(SkipGlue(dateEnd, 2), TermKind.PartOfDay))) dateEnd = -1;
 
             if (dateEnd > 0)
@@ -286,7 +302,7 @@ namespace Catalyst.DateTimeRecognition
                     end           = spokenEnd;
                 }
                 else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore
-                         && !AtTerm(probe + 1, TermKind.AmPm) && !ClockPrefixEndsAt(probe))
+                         && !AtTerm(probe + 1, TermKind.AmPm) && !ClockPrefixEndsAt(probe) && !OpensAClockRange(probe))
                 {
                     // "mon 9 am" is nine o'clock on a monday, not the ninth
                     n.Day         = NumberAt(probe);

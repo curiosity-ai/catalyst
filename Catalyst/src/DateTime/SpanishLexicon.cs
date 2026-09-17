@@ -137,6 +137,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.FromNow, "después", "despues", "a partir de ahora");
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later),   "más tarde", "mas tarde");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Earlier), "más temprano", "mas temprano", "más pronto");
+            b.Add(TermKind.Mod, (int)ModKind.Early, "temprano");
 
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "mañanas", "madrugada");
             // "la tarde" runs from four to eight in the suite, which is the evening slot
