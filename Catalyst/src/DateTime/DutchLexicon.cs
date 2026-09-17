@@ -86,6 +86,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "uur", "uren", "u");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,     "dag", "dagen", "d");
             b.Add(TermKind.Unit, (int)TimeUnit.Week,    "week", "weken", "wk");
+            b.Add(TermKind.Unit, (int)TimeUnit.WorkWeek, "werkweek", "werkweken");
             b.Add(TermKind.Unit, (int)TimeUnit.Month,   "maand", "maanden");
             b.Add(TermKind.Unit, (int)TimeUnit.Quarter, "kwartaal", "kwartalen");
             b.Add(TermKind.Unit, (int)TimeUnit.Year,    "jaar", "jaren", "jr");
@@ -104,7 +105,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend", "aankomende");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "afgelopen", "laatste");
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "voorgaande", "voorafgaande");
-            b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde", "dat", "die");
+            b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde", "hetzelfde", "dat", "die");
 
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "vandaag");
             b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "morgen");
@@ -173,7 +174,12 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "maandelijks");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "jaarlijks");
             b.Add(TermKind.SetFrequency, (int)TimeUnit.Hour,    "elk uur");
-            b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "per kwartaal");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Quarter, "per kwartaal", "driemaandelijks", "driemaandelijkse", "per drie maanden");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Day,     "eenmaal per dag", "een keer per dag");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Week,    "eenmaal per week", "een keer per week");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Month,   "eenmaal per maand", "een keer per maand");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.Year,    "eenmaal per jaar", "een keer per jaar");
+            b.Add(TermKind.SetFrequency, (int)TimeUnit.HalfYear, "halfjaarlijks", "halfjaarlijkse");
 
             b.Add(TermKind.Season, (int)SeasonKind.Spring, "lente", "voorjaar");
             b.Add(TermKind.Season, (int)SeasonKind.Summer, "zomer");
