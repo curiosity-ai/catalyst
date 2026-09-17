@@ -1013,7 +1013,7 @@ namespace Catalyst.DateTimeRecognition
             if (rel == RelativeKind.None && !within) return -1;
 
             // "last two hours" is the verb "last"; a period written that way says "the" or uses digits
-            if (count >= 0 && (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast || rel == RelativeKind.BeforeLast) && !AtWord(i, "the") && !AtNumber(i)) return -1;
+            if (_lexicon.QualifierCanBeAVerb && count >= 0 && (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast || rel == RelativeKind.BeforeLast) && !AtWord(i, "the") && !AtNumber(i)) return -1;
 
             at++;
 

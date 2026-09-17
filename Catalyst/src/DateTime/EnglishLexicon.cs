@@ -28,7 +28,7 @@ namespace Catalyst.DateTimeRecognition
             AddSeasons(b);
             AddHolidays(b);
 
-            return b.Build(Language.English, dayMonthOrder, partNamedWithOf: true);
+            return b.Build(Language.English, dayMonthOrder, partNamedWithOf: true, qualifierCanBeAVerb: true);
         }
 
         private static void AddMonths(LexiconBuilder b)

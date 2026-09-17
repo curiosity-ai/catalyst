@@ -896,7 +896,8 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // "last three weekends" is the verb "last"; a period written that way says "the"
-            if (!hadThe && count >= 0 && (relative == RelativeKind.Last || relative == RelativeKind.Previous || relative == RelativeKind.BeforeLast) && !AtNumber(i)) return -1;
+            if (_lexicon.QualifierCanBeAVerb && !hadThe && count >= 0
+                && (relative == RelativeKind.Last || relative == RelativeKind.Previous || relative == RelativeKind.BeforeLast) && !AtNumber(i)) return -1;
 
             var unit = (TimeUnit)unitValue;
             if (business && unit == TimeUnit.Day) unit = TimeUnit.BusinessDay;

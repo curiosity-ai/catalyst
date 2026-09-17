@@ -377,8 +377,16 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     BoundsOnlyOnTimes { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false)
+        /// <summary>
+        /// Whether the word the language qualifies a period with is also a verb. English's "last three
+        /// weekends" is usually the verb, so a period written that way says "the" or uses digits; Italian's
+        /// "ultimi 3 mesi" can only be the qualifier.
+        /// </summary>
+        public bool     QualifierCanBeAVerb { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false, bool boundsOnlyOnTimes = false, bool qualifierCanBeAVerb = false)
         {
+            QualifierCanBeAVerb       = qualifierCanBeAVerb;
             BoundsOnlyOnTimes         = boundsOnlyOnTimes;
             NarrowingFollowsPeriod    = narrowingFollowsPeriod;
             HourUnitNamesTheClock     = hourUnitNamesTheClock;
