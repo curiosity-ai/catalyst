@@ -303,6 +303,7 @@ namespace Catalyst.DateTimeRecognition
                 }
                 else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore
                          && !TryAmPm(probe + 1, out _, out _) && !AtTerm(probe + 1, TermKind.OClock)
+                         && !At(probe + 1, LexKind.Colon)   // "volgende maandag 13:00-15:00" is a clock range
                          && !ClockPrefixEndsAt(probe) && !OpensAClockRange(probe))
                 {
                     // "mon 9 am" is nine o'clock on a monday, not the ninth
