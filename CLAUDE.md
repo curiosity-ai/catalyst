@@ -13,6 +13,23 @@ The tests are xunit.v3, which runs on Microsoft.Testing.Platform rather than VST
 repo's `global.json` opts `dotnet test` into that runner; the .NET 10 SDK then wants the
 project passed as `--project`, and `dotnet test <csproj>` is rejected.
 
+## Date and time recognition
+
+`Catalyst/src/DateTime/` is a hand-written, regular-expression-free date/time engine that replaced the
+`Microsoft.Recognizers.Text.DateTime` package. Do not reintroduce that dependency, and do not reach for
+`System.Text.RegularExpressions` inside the engine — the whole point is a span scanner plus a lexeme grammar.
+`docs/datetime.md` explains the pipeline and what each layer owns.
+
+Two things are load-bearing and have tests:
+
+- **The scan allocates nothing until something matches.** Buffers are rented, the lexicon is probed by
+  `ReadOnlySpan<char>` through a `FrozenDictionary` alternate lookup, and the `Resolver` is created on the
+  first hit. `AllocationTests` measures it.
+- **Capability is measured, not asserted.** `tests/Catalyst.DateTime.Tests` scores the engine against the
+  Microsoft.Recognizers.Text specification suite and against that library itself, per language. The floors in
+  `ParityTests` catch regressions; raise one when the engine beats it, never lower one to make a change pass.
+  That test project is the only place the old package is still referenced.
+
 ## Git LFS required for tests (model files)
 
 The `.bin` / `.binz` model files under `Languages/` and `Languages.ForTest/` are stored

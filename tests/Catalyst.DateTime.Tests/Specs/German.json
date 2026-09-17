@@ -1,0 +1,5608 @@
+﻿[
+  {
+    "Input": "Ich komme am 2. Oktober zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "2. oktober",
+        "Start": 13,
+        "End": 22,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-02",
+              "type": "date",
+              "value": "2016-10-02"
+            },
+            {
+              "timex": "XXXX-10-02",
+              "type": "date",
+              "value": "2017-10-02"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am 22.04 zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Comment": "Should be removed, as 22.04 could be an (incorrectly) formatted date (22.04.) or time (22:04).",
+    "NotSupported": "dotnet, javascript",
+    "Results": [
+      {
+        "Text": "22.04",
+        "Start": 13,
+        "End": 17,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-22",
+              "type": "date",
+              "value": "2016-04-22"
+            },
+            {
+              "timex": "XXXX-04-22",
+              "type": "date",
+              "value": "2017-04-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am 22.04. zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "22.04.",
+        "Start": 13,
+        "End": 18,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-22",
+              "type": "date",
+              "value": "2016-04-22"
+            },
+            {
+              "timex": "XXXX-04-22",
+              "type": "date",
+              "value": "2017-04-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am neunundzwanzigsten Mai zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "neunundzwanzigsten mai",
+        "Start": 13,
+        "End": 34,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-05-29",
+              "type": "date",
+              "value": "2016-05-29"
+            },
+            {
+              "timex": "XXXX-05-29",
+              "type": "date",
+              "value": "2017-05-29"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am zweiten Mai zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "zweiten mai",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-05-02",
+              "type": "date",
+              "value": "2016-05-02"
+            },
+            {
+              "timex": "XXXX-05-02",
+              "type": "date",
+              "value": "2017-05-02"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am 2. Mai zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "2. mai",
+        "Start": 13,
+        "End": 18,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-05-02",
+              "type": "date",
+              "value": "2016-05-02"
+            },
+            {
+              "timex": "XXXX-05-02",
+              "type": "date",
+              "value": "2017-05-02"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am Freitag zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "freitag",
+        "Start": 13,
+        "End": 19,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-5",
+              "type": "date",
+              "value": "2016-11-04"
+            },
+            {
+              "timex": "XXXX-WXX-5",
+              "type": "date",
+              "value": "2016-11-11"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin nächsten Monat vom 4. bis zum 23. weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "nächsten monat vom 4. bis zum 23.",
+        "Start": 8,
+        "End": 40,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2016-12-04,2016-12-23,P19D)",
+              "type": "daterange",
+              "start": "2016-12-04",
+              "end": "2016-12-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin zwischen dem 3. und dem 12. September nicht da",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "zwischen dem 3. und dem 12. september",
+        "Start": 8,
+        "End": 44,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-09-03,XXXX-09-12,P9D)",
+              "type": "daterange",
+              "start": "2016-09-03",
+              "end": "2016-09-12"
+            },
+            {
+              "timex": "(XXXX-09-03,XXXX-09-12,P9D)",
+              "type": "daterange",
+              "start": "2017-09-03",
+              "end": "2017-09-12"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Diesen September fahre ich in den Urlaub.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "diesen september",
+        "Start": 0,
+        "End": 15,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-09",
+              "type": "daterange",
+              "start": "2016-09-01",
+              "end": "2016-10-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin vom 12. Januar 2016 bis zum 22.01.2016 weg.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "vom 12. januar 2016 bis zum 22.01.2016",
+        "Start": 8,
+        "End": 45,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2016-01-12,2016-01-22,P10D)",
+              "type": "daterange",
+              "start": "2016-01-12",
+              "end": "2016-01-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin für die nächsten 3 Tage weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "nächsten 3 tage",
+        "Start": 16,
+        "End": 30,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2016-11-08,2016-11-11,P3D)",
+              "type": "daterange",
+              "start": "2016-11-08",
+              "end": "2016-11-11"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das wäre dann in der letzten Woche im Juli",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "der letzten woche im juli",
+        "Start": 17,
+        "End": 41,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-07-W05",
+              "type": "daterange",
+              "start": "2016-07-25",
+              "end": "2016-08-01"
+            },
+            {
+              "timex": "XXXX-07-W05",
+              "type": "daterange",
+              "start": "2017-07-24",
+              "end": "2017-07-31"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich geh jetzt zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "jetzt",
+        "Start": 8,
+        "End": 12,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PRESENT_REF",
+              "type": "datetime",
+              "value": "2016-11-07 00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Am 14. Oktober um 8:00:31 ist es dann so weit.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "14. oktober um 8:00:31",
+        "Start": 3,
+        "End": 24,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-14T08:00:31",
+              "type": "datetime",
+              "value": "2016-10-14 08:00:31"
+            },
+            {
+              "timex": "XXXX-10-14T08:00:31",
+              "type": "datetime",
+              "value": "2017-10-14 08:00:31"
+            },
+            {
+              "timex": "XXXX-10-14T20:00:31",
+              "type": "datetime",
+              "value": "2016-10-14 20:00:31"
+            },
+            {
+              "timex": "XXXX-10-14T20:00:31",
+              "type": "datetime",
+              "value": "2017-10-14 20:00:31"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 22. April von 5 bis 6 Nachmittags nicht im Büro sein",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "Results": [
+      {
+        "Text": "22. april von 5 bis 6 nachmittags",
+        "Start": 13,
+        "End": 45,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-04-22T17,XXXX-04-22T18,PT1H)",
+              "type": "datetimerange",
+              "start": "2016-04-22 17:00:00",
+              "end": "2016-04-22 18:00:00"
+            },
+            {
+              "timex": "(XXXX-04-22T17,XXXX-04-22T18,PT1H)",
+              "type": "datetimerange",
+              "start": "2017-04-22 17:00:00",
+              "end": "2017-04-22 18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 22. April von 5 bis 6 Uhr Nachmittags nicht im Büro sein",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "Results": [
+      {
+        "Text": "22. april von 5 bis 6 uhr nachmittags",
+        "Start": 13,
+        "End": 49,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-04-22T17,XXXX-04-22T18,PT1H)",
+              "type": "datetimerange",
+              "start": "2016-04-22 17:00:00",
+              "end": "2016-04-22 18:00:00"
+            },
+            {
+              "timex": "(XXXX-04-22T17,XXXX-04-22T18,PT1H)",
+              "type": "datetimerange",
+              "start": "2017-04-22 17:00:00",
+              "end": "2017-04-22 18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Dieser Abend wird schön.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "dieser abend",
+        "Start": 0,
+        "End": 11,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-07TEV",
+              "type": "datetimerange",
+              "start": "2016-11-07 16:00:00",
+              "end": "2016-11-07 20:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das ist dann nächsten Montag Nachmittag.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "nächsten montag nachmittag",
+        "Start": 13,
+        "End": 38,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-14TAF",
+              "type": "datetimerange",
+              "start": "2016-11-14 12:00:00",
+              "end": "2016-11-14 16:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das ist dann nächsten Montagnachmittag.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript, python",
+    "Results": [
+      {
+        "Text": "nächsten montagnachmittag",
+        "Start": 13,
+        "End": 37,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-14TAF",
+              "type": "datetimerange",
+              "start": "2016-11-14 12:00:00",
+              "end": "2016-11-14 16:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich gehe dann Dienstag Morgen zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "dienstag morgen",
+        "Start": 14,
+        "End": 28,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "type": "datetimerange",
+              "start": "2016-11-01 08:00:00",
+              "end": "2016-11-01 12:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "type": "datetimerange",
+              "start": "2016-11-08 08:00:00",
+              "end": "2016-11-08 12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich gehe dann Dienstagmorgen zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript, python",
+    "Results": [
+      {
+        "Text": "dienstagmorgen",
+        "Start": 14,
+        "End": 27,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "type": "datetimerange",
+              "start": "2016-11-01 08:00:00",
+              "end": "2016-11-01 12:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "type": "datetimerange",
+              "start": "2016-11-08 08:00:00",
+              "end": "2016-11-08 12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin für 3 Stunden weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "3 stunden",
+        "Start": 12,
+        "End": 20,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT3H",
+              "type": "duration",
+              "value": "10800"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde für 3,5 Jahre weg sein.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "3,5 jahre",
+        "Start": 14,
+        "End": 22,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "P3.5Y",
+              "type": "duration",
+              "value": "110376000"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das dauert nur 3 Minuten",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "3 minuten",
+        "Start": 15,
+        "End": 23,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT3M",
+              "type": "duration",
+              "value": "180"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das waren 123,45 sek",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "123,45 sek",
+        "Start": 10,
+        "End": 19,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT123.45S",
+              "type": "duration",
+              "value": "123.45"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin den ganzen Tag weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "ganzen tag",
+        "Start": 12,
+        "End": 21,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "P1D",
+              "type": "duration",
+              "value": "86400"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das passiert dann jährlich",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "jährlich",
+        "Start": 18,
+        "End": 25,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "P1Y",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich muss das alle zwei Tage machen",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "alle zwei tage",
+        "Start": 13,
+        "End": 26,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "P2D",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich gehe jeden Tag um 3 Uhr Nachmittags",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "jeden tag um 3 uhr nachmittags",
+        "Start": 9,
+        "End": 38,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T15",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir treffen uns Montags",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "montags",
+        "Start": 16,
+        "End": 22,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-1",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Der Termin ist jeden Mittwoch um 16 Uhr",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "jeden mittwoch um 16 uhr",
+        "Start": 15,
+        "End": 38,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-3T16",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das Meeting ist immer Mittwochs",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "immer mittwochs",
+        "Start": 16,
+        "End": 30,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-3",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin gegen 7:56:30 Abends zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "gegen 7:56:30 abends",
+        "Start": 8,
+        "End": 27,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T19:56:30",
+              "Mod": "approx",
+              "type": "timerange",
+              "value": "19:56:30"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es ist halb 8.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "halb 8",
+        "Start": 7,
+        "End": 12,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07:30",
+              "type": "time",
+              "value": "07:30:00"
+            },
+            {
+              "timex": "T19:30",
+              "type": "time",
+              "value": "19:30:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Viertel nach 8 Abends",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "viertel nach 8 abends",
+        "Start": 0,
+        "End": 20,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T20:15",
+              "type": "time",
+              "value": "20:15:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin von 17 bis 18 Uhr weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "von 17 bis 18 uhr",
+        "Start": 8,
+        "End": 24,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(T17,T18,PT1H)",
+              "type": "timerange",
+              "start": "17:00:00",
+              "end": "18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin dann morgens von 5 bis sieben weg.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "morgens von 5 bis sieben",
+        "Start": 13,
+        "End": 36,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(T05,T07,PT2H)",
+              "type": "timerange",
+              "start": "05:00:00",
+              "end": "07:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin von 5 Uhr Nachmittags bis 6 Uhr Nachmittags weg",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "Results": [
+      {
+        "Text": "von 5 uhr nachmittags bis 6 uhr nachmittags",
+        "Start": 8,
+        "End": 50,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(T17,T18,PT1H)",
+              "type": "timerange",
+              "start": "17:00:00",
+              "end": "18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin zwischen 4 und 7 Uhr nicht hier",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "zwischen 4 und 7 uhr",
+        "Start": 8,
+        "End": 27,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(T04,T07,PT3H)",
+              "type": "timerange",
+              "start": "04:00:00",
+              "end": "07:00:00"
+            },
+            {
+              "timex": "(T16,T19,PT3H)",
+              "type": "timerange",
+              "start": "16:00:00",
+              "end": "19:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Lass uns mal gegen Abend treffen",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupported": "javascript, python",
+    "Results": [
+      {
+        "Text": "gegen abend",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TEV",
+              "Mod": "approx",
+              "type": "timerange",
+              "start": "16:00:00",
+              "end": "20:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Eigentlich ist das jetzt schon",
+    "Context": {
+      "ReferenceDateTime": "2017-09-28T14:11:10.9626841"
+    },
+    "Results": [
+      {
+        "Text": "jetzt",
+        "Start": 19,
+        "End": 23,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PRESENT_REF",
+              "type": "datetime",
+              "value": "2017-09-28 14:11:10"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin in 5 Minuten zurück",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "in 5 minuten",
+        "Start": 8,
+        "End": 19,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-07T00:05:00",
+              "type": "datetime",
+              "value": "2016-11-07 00:05:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "in 5 minuten",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "in 5 minuten",
+        "Start": 0,
+        "End": 11,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-07T00:05:00",
+              "type": "datetime",
+              "value": "2016-11-07 00:05:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Setzen wir das Meeting nun für nächste Woche Montag um 9 Uhr morgens oder ein Uhr Nachmittags an?",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "nächste woche montag um 9 uhr morgens",
+        "Start": 31,
+        "End": 67,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017-12-11T09",
+              "type": "datetime",
+              "value": "2017-12-11 09:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "ein uhr nachmittags",
+        "Start": 74,
+        "End": 92,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T13",
+              "type": "time",
+              "value": "13:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Kommen Sie in der übernächsten Woche am Donnerstag zwischen 4 und 6 Uhr nachmittags",
+    "Context": {
+      "ReferenceDateTime": "2020-07-29T00:00:00"
+    },
+    "NotSupported": "javascript, python",
+    "Results": [
+      {
+        "Text": "übernächsten woche am donnerstag zwischen 4 und 6 uhr nachmittags",
+        "Start": 18,
+        "End": 82,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2020-08-13T16,2020-08-13T18,PT2H)",
+              "type": "datetimerange",
+              "start": "2020-08-13 16:00:00",
+              "end": "2020-08-13 18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wie sieht es übernächste Woche aus?",
+    "Context": {
+      "ReferenceDateTime": "2020-07-29T00:00:00"
+    },
+    "NotSupported": "python, javascript",
+    "Results": [
+      {
+        "Text": "übernächste woche",
+        "Start": 13,
+        "End": 29,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-W33",
+              "type": "daterange",
+              "start": "2020-08-10",
+              "end": "2020-08-17"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Der Euro ist im harten Handel heute um 15% gegenüber dem US-Dollar gefallen.",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "heute",
+        "Start": 30,
+        "End": 34,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017-12-04",
+              "type": "date",
+              "value": "2017-12-04"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "guten Morgen",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": []
+  },
+  {
+    "Input": "Lass uns um 18:12 einen Kaffee trinken gehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "18:12",
+        "Start": 12,
+        "End": 16,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T18:12",
+              "type": "time",
+              "value": "18:12:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Lass uns um 18 uhr 12 einen Kaffee trinken gehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "18 uhr 12",
+        "Start": 12,
+        "End": 20,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T18:12",
+              "type": "time",
+              "value": "18:12:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Lass uns um 18 uhr und 12 einen Kaffee trinken gehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "18 uhr und 12",
+        "Start": 12,
+        "End": 24,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T18:12",
+              "type": "time",
+              "value": "18:12:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Lass uns um 18.12 uhr einen Kaffee trinken gehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "18.12 uhr",
+        "Start": 12,
+        "End": 20,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T18:12",
+              "type": "time",
+              "value": "18:12:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es ist zehn Uhr.",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "zehn uhr",
+        "Start": 7,
+        "End": 14,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T10",
+              "type": "time",
+              "value": "10:00:00"
+            },
+            {
+              "timex": "T22",
+              "type": "time",
+              "value": "22:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich gehe jeden Montag um 4 Uhr",
+    "Context": {
+      "ReferenceDateTime": "2019-08-06T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "jeden montag um 4 uhr",
+        "Start": 9,
+        "End": 29,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-1T04",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Am Wochenende bin ich nicht hier",
+    "Context": {
+      "ReferenceDateTime": "2019-08-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "am wochenende",
+        "Start": 0,
+        "End": 12,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W32-WE",
+              "type": "daterange",
+              "start": "2019-08-10",
+              "end": "2019-08-12"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Unter der woche bin ich nicht hier",
+    "Context": {
+      "ReferenceDateTime": "2019-08-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "unter der woche",
+        "Start": 0,
+        "End": 14,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W32",
+              "type": "daterange",
+              "start": "2019-08-05",
+              "end": "2019-08-10"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "2",
+    "Context": {
+      "ReferenceDateTime": "2019-08-27T00:00:00"
+    },
+    "Results": []
+  },
+  {
+    "Input": "Ich gehe um viertel nach drei",
+    "Context": {
+      "ReferenceDateTime": "2019-08-27T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "viertel nach drei",
+        "Start": 12,
+        "End": 28,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T03:15",
+              "type": "time",
+              "value": "03:15:00"
+            },
+            {
+              "timex": "T15:15",
+              "type": "time",
+              "value": "15:15:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wie wird das Wetter nächsten Donnerstag bis Samstag in Genf",
+    "Context": {
+      "ReferenceDateTime": "2019-09-03T00:00:00"
+    },
+    "NotSupported": "python, javascript, java",
+    "Results": [
+      {
+        "Text": "nächsten donnerstag bis samstag",
+        "Start": 20,
+        "End": 50,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2019-09-12,2019-09-14,P2D)",
+              "type": "daterange",
+              "start": "2019-09-12",
+              "end": "2019-09-14"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Setze Timer auf eine Viertelstunde.",
+    "Context": {
+      "ReferenceDateTime": "2019-09-03T00:00:00"
+    },
+    "NotSupported": "python, javascript",
+    "Results": [
+      {
+        "Text": "eine viertelstunde",
+        "Start": 16,
+        "End": 33,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT0.25H",
+              "type": "duration",
+              "value": "900"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Setze Timer auf ein Dreiviertelstunde",
+    "Context": {
+      "ReferenceDateTime": "2019-09-03T00:00:00"
+    },
+    "NotSupported": "python, javascript",
+    "Results": [
+      {
+        "Text": "ein dreiviertelstunde",
+        "Start": 16,
+        "End": 36,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT0.75H",
+              "type": "duration",
+              "value": "2700"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "eine halbe Stunde",
+    "Context": {
+      "ReferenceDateTime": "2019-09-03T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "eine halbe stunde",
+        "Start": 0,
+        "End": 16,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT0.5H",
+              "type": "duration",
+              "value": "1800"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "lass uns nach dem Wochenende treffen",
+    "Context": {
+      "ReferenceDateTime": "2019-09-11T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "nach dem wochenende",
+        "Start": 9,
+        "End": 27,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W37-WE",
+              "Mod": "after",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "start": "2019-09-16"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "lass uns vor dem Wochenende treffen",
+    "Context": {
+      "ReferenceDateTime": "2019-09-11T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "vor dem wochenende",
+        "Start": 9,
+        "End": 26,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W37-WE",
+              "Mod": "before",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "end": "2019-09-14"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was läuft auf TV ab 14 Uhr",
+    "Context": {
+      "ReferenceDateTime": "2019-09-11T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "ab 14 uhr",
+        "Start": 17,
+        "End": 25,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T14",
+              "Mod": "since",
+              "type": "timerange",
+              "sourceEntity": "datetimepoint",
+              "start": "14:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was läuft auf TV bis 14 Uhr",
+    "Context": {
+      "ReferenceDateTime": "2019-09-11T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "bis 14 uhr",
+        "Start": 17,
+        "End": 26,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T14",
+              "Mod": "before",
+              "type": "timerange",
+              "sourceEntity": "datetimepoint",
+              "end": "14:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was wird das wetter in den nächsten beiden Tage?",
+    "Context": {
+      "ReferenceDateTime": "2019-09-19T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "nächsten beiden tage",
+        "Start": 27,
+        "End": 46,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2019-09-20,2019-09-22,P2D)",
+              "type": "daterange",
+              "start": "2019-09-20",
+              "end": "2019-09-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "sende eine geburtstagsabfrage für morgen",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "morgen",
+        "Start": 34,
+        "End": 39,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-12-03",
+              "type": "date",
+              "value": "2019-12-03"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "send eine geburtstagsabfrage für den 28.10.",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "den 28.10.",
+        "Start": 33,
+        "End": 42,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2019-10-28"
+            },
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2020-10-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "send eine geburtstagsabfrage für den 28.Oktober",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "den 28.oktober",
+        "Start": 33,
+        "End": 46,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2019-10-28"
+            },
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2020-10-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "send eine geburtstagsabfrage für den 28. Oktober",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "den 28. oktober",
+        "Start": 33,
+        "End": 47,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2019-10-28"
+            },
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2020-10-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "send eine geburtstagsabfrage für 28.10.",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "28.10.",
+        "Start": 33,
+        "End": 38,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2019-10-28"
+            },
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2020-10-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "send eine geburtstagsabfrage für 28.Oktober",
+    "Context": {
+      "ReferenceDateTime": "2019-12-02T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "28.oktober",
+        "Start": 33,
+        "End": 42,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2019-10-28"
+            },
+            {
+              "timex": "XXXX-10-28",
+              "type": "date",
+              "value": "2020-10-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Am Ende des Monats",
+    "Context": {
+      "ReferenceDateTime": "2020-04-30T18:00:00"
+    },
+    "NotSupported": "javascript, java",
+    "Results": [
+      {
+        "Text": "ende des monats",
+        "Start": 3,
+        "End": 17,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-04",
+              "Mod": "end",
+              "type": "daterange",
+              "start": "2020-04-16",
+              "end": "2020-05-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ab Ende 1989 gehörte das Unternehmen zur Premier Automotive Group von Ford",
+    "Context": {
+      "ReferenceDateTime": "2020-04-30T18:00:00"
+    },
+    "NotSupported": "python, javascript, java",
+    "Results": [
+      {
+        "Text": "ab ende 1989",
+        "Start": 0,
+        "End": 11,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "1989",
+              "Mod": "since-end",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "start": "1989-09-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "die es im bis März 2008 zusammen mit Land Rover an Tata Motors verkaufte",
+    "Context": {
+      "ReferenceDateTime": "2020-04-30T18:00:00"
+    },
+    "NotSupported": "javascript, java",
+    "Results": [
+      {
+        "Text": "bis märz 2008",
+        "Start": 10,
+        "End": 22,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2008-03",
+              "Mod": "before",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "end": "2008-03-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "28. Dezember 2012 wurde das Geschäft der Land Rover Private Unlimited Company auf die Jaguar Cars Limited übertragen und im Zuge dessen auf Jaguar Land Rover Limited umfirmiert",
+    "Context": {
+      "ReferenceDateTime": "2020-04-30T18:00:00"
+    },
+    "NotSupported": "javascript, java",
+    "Results": [
+      {
+        "Text": "28. dezember 2012",
+        "Start": 0,
+        "End": 16,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2012-12-28",
+              "type": "date",
+              "value": "2012-12-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ab Ende 1989 gehörte das Unternehmen zur Premier Automotive Group von Ford, die es im bis März 2008 zusammen mit Land Rover an Tata Motors verkaufte. 28. Dezember 2012 wurde das Geschäft der Land Rover Private Unlimited Company auf die Jaguar Cars Limited übertragen und im Zuge dessen auf Jaguar Land Rover Limited umfirmiert. Die Land Rover Private Unlimited Company besteht weiterhin, die Markennamen werden separat weitergeführt.",
+    "Context": {
+      "ReferenceDateTime": "2020-04-30T18:00:00"
+    },
+    "NotSupported": "python, javascript, java",
+    "Results": [
+      {
+        "Text": "ab ende 1989",
+        "Start": 0,
+        "End": 11,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "1989",
+              "Mod": "since-end",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "start": "1989-09-01"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "bis märz 2008",
+        "Start": 86,
+        "End": 98,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2008-03",
+              "Mod": "before",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "end": "2008-03-01"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "28. dezember 2012",
+        "Start": 150,
+        "End": 166,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2012-12-28",
+              "type": "date",
+              "value": "2012-12-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "10/1-11/2/2017",
+    "Context": {
+      "ReferenceDateTime": "2018-10-24T12:00:00"
+    },
+    "NotSupportedByDesign": "javascript,java",
+    "Results": [
+      {
+        "Text": "10/1-11/2/2017",
+        "Start": 0,
+        "End": 13,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2017-01-10,2017-02-11,P32D)",
+              "type": "daterange",
+              "start": "2017-01-10",
+              "end": "2017-02-11"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "dienstag 11:00 uhr",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "dienstag 11:00 uhr",
+        "Start": 0,
+        "End": 17,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-2T11:00",
+              "type": "datetime",
+              "value": "2016-11-01 11:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2T11:00",
+              "type": "datetime",
+              "value": "2016-11-08 11:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2T23:00",
+              "type": "datetime",
+              "value": "2016-11-01 23:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2T23:00",
+              "type": "datetime",
+              "value": "2016-11-08 23:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde da sein am Mittwoch 4:00.",
+    "Context": {
+      "ReferenceDateTime": "2019-04-15T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "mittwoch 4:00",
+        "Start": 21,
+        "End": 33,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-3T04:00",
+              "type": "datetime",
+              "value": "2019-04-10 04:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-3T04:00",
+              "type": "datetime",
+              "value": "2019-04-17 04:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-3T16:00",
+              "type": "datetime",
+              "value": "2019-04-10 16:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-3T16:00",
+              "type": "datetime",
+              "value": "2019-04-17 16:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "aktuelle Uhrzeit in Berlin",
+    "Context": {
+      "ReferenceDateTime": "2018-10-24T12:00:00"
+    },
+    "NotSupportedByDesign": "javascript,java",
+    "Results": [
+      {
+        "Text": "aktuelle",
+        "Start": 0,
+        "End": 7,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PRESENT_REF",
+              "type": "datetime",
+              "value": "2018-10-24 12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es ist dreiviertel 8.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupportedByDesign": "javascript,java",
+    "Results": [
+      {
+        "Text": "dreiviertel 8",
+        "Start": 7,
+        "End": 19,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07:45",
+              "type": "time",
+              "value": "07:45:00"
+            },
+            {
+              "timex": "T19:45",
+              "type": "time",
+              "value": "19:45:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es ist viertel 8.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupportedByDesign": "javascript,java",
+    "Results": [
+      {
+        "Text": "viertel 8",
+        "Start": 7,
+        "End": 15,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07:15",
+              "type": "time",
+              "value": "07:15:00"
+            },
+            {
+              "timex": "T19:15",
+              "type": "time",
+              "value": "19:15:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Spule anderthalb Stunden vor",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python, java, javascript",
+    "Results": [
+      {
+        "Text": "anderthalb stunden vor",
+        "Start": 6,
+        "End": 27,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2016-11-06T22:30:00,2016-11-07T00:00:00,PT1.5H)",
+              "type": "datetimerange",
+              "start": "2016-11-06 22:30:00",
+              "end": "2016-11-07 00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Spring zweieinhalb Stunden nach vorne",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python, java, javascript",
+    "Results": [
+      {
+        "Text": "zweieinhalb stunden",
+        "Start": 7,
+        "End": 25,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT2.5H",
+              "type": "duration",
+              "value": "9000"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir haben anderthalb Stunden gewartet.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python, java, javascript",
+    "Results": [
+      {
+        "Text": "anderthalb stunden",
+        "Start": 10,
+        "End": 27,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT1.5H",
+              "type": "duration",
+              "value": "5400"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir haben fünfeinhalb Stunden gewartet.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python, java, javascript",
+    "Results": [
+      {
+        "Text": "fünfeinhalb stunden",
+        "Start": 10,
+        "End": 28,
+        "TypeName": "datetimeV2.duration",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "PT5.5H",
+              "type": "duration",
+              "value": "19800"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es wird unter der woche passieren",
+    "Context": {
+      "ReferenceDateTime": "2019-08-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "unter der woche",
+        "Start": 8,
+        "End": 22,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W32",
+              "type": "daterange",
+              "start": "2019-08-05",
+              "end": "2019-08-10"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es wird nächste arbeitswoche passieren",
+    "Context": {
+      "ReferenceDateTime": "2019-08-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "nächste arbeitswoche",
+        "Start": 8,
+        "End": 27,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W33",
+              "type": "daterange",
+              "start": "2019-08-12",
+              "end": "2019-08-17"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es ist letzte werktags passiert",
+    "Context": {
+      "ReferenceDateTime": "2019-08-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "letzte werktags",
+        "Start": 7,
+        "End": 21,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-W31",
+              "type": "daterange",
+              "start": "2019-07-29",
+              "end": "2019-08-03"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "was läuft am morgen",
+    "Comment": "Java does not correctly handle lookbehinds.",
+    "NotSupported": "java",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "Results": [
+      {
+        "Text": "am morgen",
+        "Start": 10,
+        "End": 18,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TMO",
+              "type": "timerange",
+              "start": "08:00:00",
+              "end": "12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe zur Vormittagszeit",
+    "Context": {
+      "ReferenceDateTime": "2019-07-17T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "vormittagszeit",
+        "Start": 9,
+        "End": 22,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T12",
+              "Mod": "before",
+              "type": "timerange",
+              "sourceEntity": "datetimepoint",
+              "end": "12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe zur Mittagszeit",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "mittagszeit",
+        "Start": 9,
+        "End": 19,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T12",
+              "type": "time",
+              "value": "12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe auf Spätabends",
+    "Context": {
+      "ReferenceDateTime": "2019-08-01T00:00:00"
+    },
+    "NotSupported": "java",
+    "Results": [
+      {
+        "Text": "spätabends",
+        "Start": 9,
+        "End": 18,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TEV",
+              "Mod": "end",
+              "type": "timerange",
+              "start": "18:00:00",
+              "end": "20:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe auf Spätnachmittags",
+    "Context": {
+      "ReferenceDateTime": "2019-08-01T00:00:00"
+    },
+    "NotSupported": "java",
+    "Results": [
+      {
+        "Text": "spätnachmittags",
+        "Start": 9,
+        "End": 23,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TAF",
+              "Mod": "end",
+              "type": "timerange",
+              "start": "14:00:00",
+              "end": "16:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe nach Mitternacht",
+    "Context": {
+      "ReferenceDateTime": "2018-09-07T12:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "nach mitternacht",
+        "Start": 5,
+        "End": 20,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "Mod": "after",
+              "type": "timerange",
+              "start": "00:00:00",
+              "sourceEntity": "datetimepoint"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe vor Mitternacht",
+    "Context": {
+      "ReferenceDateTime": "2018-09-07T12:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "vor mitternacht",
+        "Start": 5,
+        "End": 19,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "Mod": "before",
+              "type": "timerange",
+              "end": "00:00:00",
+              "sourceEntity": "datetimepoint"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "gehe um Mitternacht",
+    "Context": {
+      "ReferenceDateTime": "2018-09-07T12:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "mitternacht",
+        "Start": 8,
+        "End": 18,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was kommt in drei Wochen auf ARD",
+    "Context": {
+      "ReferenceDateTime": "2019-08-12T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "in drei wochen",
+        "Start": 10,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-09-02",
+              "type": "date",
+              "value": "2019-09-02"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was kommt in 3 Wochen auf ARD",
+    "Context": {
+      "ReferenceDateTime": "2019-08-12T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "in 3 wochen",
+        "Start": 10,
+        "End": 20,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-09-02",
+              "type": "date",
+              "value": "2019-09-02"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Erinnere mich um 12 Uhr nachts aufzustehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "12 uhr nachts",
+        "Start": 17,
+        "End": 29,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Erinnere mich um 12 Uhr abends aufzustehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "12 uhr abends",
+        "Start": 17,
+        "End": 29,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Erinnere mich um 12 nachts aufzustehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "12 nachts",
+        "Start": 17,
+        "End": 25,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Erinnere mich um 12 abends aufzustehen",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "12 abends",
+        "Start": 17,
+        "End": 25,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "jeden Tag um 19:13 Uhr Alarm stellen",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, python, java",
+    "Results": [
+      {
+        "Text": "jeden tag um 19:13 uhr",
+        "Start": 0,
+        "End": 21,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T19:13",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "jeden Abend um 19:13 Uhr Alarm stellen",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "jeden abend um 19:13 uhr",
+        "Start": 0,
+        "End": 23,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T19:13",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was läuft am ostermontag um 10:30 uhr?",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "ostermontag",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2019-04-22"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2020-04-13"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "10:30 uhr",
+        "Start": 28,
+        "End": 36,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T10:30",
+              "type": "time",
+              "value": "10:30:00"
+            },
+            {
+              "timex": "T22:30",
+              "type": "time",
+              "value": "22:30:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "welche filme laufen an heiligabend um 18 uhr?",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "heiligabend",
+        "Start": 23,
+        "End": 33,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-24",
+              "type": "date",
+              "value": "2018-12-24"
+            },
+            {
+              "timex": "XXXX-12-24",
+              "type": "date",
+              "value": "2019-12-24"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "18 uhr",
+        "Start": 38,
+        "End": 43,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T18",
+              "type": "time",
+              "value": "18:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für dieses Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "dieses jahr",
+        "Start": 28,
+        "End": 38,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "type": "daterange",
+              "start": "2018-01-01",
+              "end": "2019-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für diesen Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "diesen jahr",
+        "Start": 28,
+        "End": 38,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "type": "daterange",
+              "start": "2018-01-01",
+              "end": "2019-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für diesem Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "diesem jahr",
+        "Start": 28,
+        "End": 38,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "type": "daterange",
+              "start": "2018-01-01",
+              "end": "2019-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für diese Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "diese jahr",
+        "Start": 28,
+        "End": 37,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "type": "daterange",
+              "start": "2018-01-01",
+              "end": "2019-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für letztes Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "letztes jahr",
+        "Start": 28,
+        "End": 39,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017",
+              "type": "daterange",
+              "start": "2017-01-01",
+              "end": "2018-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für letzten Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "letzten jahr",
+        "Start": 28,
+        "End": 39,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017",
+              "type": "daterange",
+              "start": "2017-01-01",
+              "end": "2018-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für letzte Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "letzte jahr",
+        "Start": 28,
+        "End": 38,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017",
+              "type": "daterange",
+              "start": "2017-01-01",
+              "end": "2018-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für vorletztes Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "vorletztes jahr",
+        "Start": 28,
+        "End": 42,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016",
+              "type": "daterange",
+              "start": "2016-01-01",
+              "end": "2017-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für vorletzten Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "vorletzten jahr",
+        "Start": 28,
+        "End": 42,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016",
+              "type": "daterange",
+              "start": "2016-01-01",
+              "end": "2017-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wir hätten einen Termin für vorletztem Jahr vereinbaren können.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "vorletztem jahr",
+        "Start": 28,
+        "End": 42,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016",
+              "type": "daterange",
+              "start": "2016-01-01",
+              "end": "2017-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme nächstes Jahr wieder.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "nächstes jahr",
+        "Start": 10,
+        "End": 22,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019",
+              "type": "daterange",
+              "start": "2019-01-01",
+              "end": "2020-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "29/2",
+    "Context": {
+      "ReferenceDateTime": "2017-03-22T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "29/2",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2016-02-29"
+            },
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2020-02-29"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 3
+      }
+    ]
+  },
+  {
+    "Input": "29/2",
+    "Context": {
+      "ReferenceDateTime": "2019-03-22T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "29/2",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2016-02-29"
+            },
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2020-02-29"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 3
+      }
+    ]
+  },
+  {
+    "Input": "29/2",
+    "Context": {
+      "ReferenceDateTime": "2020-03-22T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "29/2",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2020-02-29"
+            },
+            {
+              "timex": "XXXX-02-29",
+              "type": "date",
+              "value": "2024-02-29"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 3
+      }
+    ]
+  },
+  {
+    "Input": "30/2",
+    "Context": {
+      "ReferenceDateTime": "2020-03-22T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "30/2",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-02-30",
+              "type": "date",
+              "value": "not resolved"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 3
+      }
+    ]
+  },
+  {
+    "Input": "29/2/2019",
+    "Context": {
+      "ReferenceDateTime": "2020-03-22T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "29/2/2019",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-02-29",
+              "type": "date",
+              "value": "not resolved"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 8
+      }
+    ]
+  },
+  {
+    "Input": "29/2/2020",
+    "Context": {
+      "ReferenceDateTime": "2020-03-22T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "29/2/2020",
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-02-29",
+              "type": "date",
+              "value": "2020-02-29"
+            }
+          ]
+        },
+        "Start": 0,
+        "End": 8
+      }
+    ]
+  },
+  {
+    "Input": "28/2-1/3",
+    "Context": {
+      "ReferenceDateTime": "2019-09-18T18:00:00"
+    },
+    "NotSupported": "javascript,java",
+    "Results": [
+      {
+        "Text": "28/2-1/3",
+        "Start": 0,
+        "End": 7,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-02-28,XXXX-03-01,P1D)",
+              "type": "daterange",
+              "start": "2019-02-28",
+              "end": "2019-03-01"
+            },
+            {
+              "timex": "(XXXX-02-28,XXXX-03-01,P2D)",
+              "type": "daterange",
+              "start": "2020-02-28",
+              "end": "2020-03-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "29/2-1/3",
+    "Context": {
+      "ReferenceDateTime": "2019-09-18T18:00:00"
+    },
+    "NotSupported": "javascript,java",
+    "Results": [
+      {
+        "Text": "29/2-1/3",
+        "Start": 0,
+        "End": 7,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-02-29,XXXX-03-01,P1D)",
+              "type": "daterange",
+              "start": "2016-02-29",
+              "end": "2016-03-01"
+            },
+            {
+              "timex": "(XXXX-02-29,XXXX-03-01,P1D)",
+              "type": "daterange",
+              "start": "2020-02-29",
+              "end": "2020-03-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "29/2-1/3/2019",
+    "Context": {
+      "ReferenceDateTime": "2019-09-18T18:00:00"
+    },
+    "NotSupported": "javascript,java",
+    "Results": [
+      {
+        "Text": "29/2-1/3/2019",
+        "Start": 0,
+        "End": 12,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2019-02-29,2019-03-01,PXD)",
+              "type": "daterange",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Meine Temperatur war 37,1 am Morgen",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript,java",
+    "Results": [
+      {
+        "Text": "am morgen",
+        "Start": 26,
+        "End": 34,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TMO",
+              "type": "timerange",
+              "start": "08:00:00",
+              "end": "12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am Sep-23-2020.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "sep-23-2020",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am September-2020-23.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "september-2020-23.",
+        "Start": 13,
+        "End": 30,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 2020/23/Sep.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "2020/23/sep",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 2020/Sep/23",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "2020/sep/23",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 23/Sep/2020",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "23/sep/2020",
+        "Start": 13,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich werde am 23-2020-September",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "23-2020-september",
+        "Start": 13,
+        "End": 29,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-09-23",
+              "type": "date",
+              "value": "2020-09-23"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Palmsonntag 2019",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "palmsonntag 2019",
+        "Start": 20,
+        "End": 35,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-04-14",
+              "type": "date",
+              "value": "2019-04-14"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Karsamstag",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "karsamstag",
+        "Start": 20,
+        "End": 29,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2016-03-26"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2017-04-15"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Fastnachtssamstag",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "fastnachtssamstag",
+        "Start": 20,
+        "End": 36,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2016-02-06"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2017-02-25"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Fastnachtssonntag im nächsten Jahr",
+    "Context": {
+      "ReferenceDateTime": "2017-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "fastnachtssonntag im nächsten jahr",
+        "Start": 20,
+        "End": 53,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018-02-11",
+              "type": "date",
+              "value": "2018-02-11"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Heilige Drei Könige im Jahr 2020",
+    "Context": {
+      "ReferenceDateTime": "2017-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "heilige drei könige im jahr 2020",
+        "Start": 20,
+        "End": 51,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020-01-06",
+              "type": "date",
+              "value": "2020-01-06"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Barbaratag",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "barbaratag",
+        "Start": 20,
+        "End": 29,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-04",
+              "type": "date",
+              "value": "2017-12-04"
+            },
+            {
+              "timex": "XXXX-12-04",
+              "type": "date",
+              "value": "2018-12-04"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Weltkindertag 2019",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "weltkindertag 2019",
+        "Start": 20,
+        "End": 37,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019-06-01",
+              "type": "date",
+              "value": "2019-06-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Augsburger Friedensfest letzten Jahres",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "augsburger friedensfest letzten jahres",
+        "Start": 20,
+        "End": 57,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2017-08-08",
+              "type": "date",
+              "value": "2017-08-08"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Johannistag",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "johannistag",
+        "Start": 20,
+        "End": 30,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-06-24",
+              "type": "date",
+              "value": "2018-06-24"
+            },
+            {
+              "timex": "XXXX-06-24",
+              "type": "date",
+              "value": "2019-06-24"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Peter und Paul ",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "peter und paul",
+        "Start": 20,
+        "End": 33,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-06-29",
+              "type": "date",
+              "value": "2018-06-29"
+            },
+            {
+              "timex": "XXXX-06-29",
+              "type": "date",
+              "value": "2019-06-29"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an Allerheiligen",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "allerheiligen",
+        "Start": 20,
+        "End": 32,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-11-01",
+              "type": "date",
+              "value": "2018-11-01"
+            },
+            {
+              "timex": "XXXX-11-01",
+              "type": "date",
+              "value": "2019-11-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ostern ist dieses Jahr früh",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "ostern",
+        "Start": 0,
+        "End": 5,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2016-03-27"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2017-04-16"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "dieses jahr früh",
+        "Start": 11,
+        "End": 26,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016",
+              "Mod": "start",
+              "type": "daterange",
+              "start": "2016-01-01",
+              "end": "2016-07-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich an So 27.02.2022",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "so 27.02.2022",
+        "Start": 20,
+        "End": 32,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2022-02-27",
+              "type": "date",
+              "value": "2022-02-27"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich besuche dich in 15 Tg.",
+    "Context": {
+      "ReferenceDateTime": "2018-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "in 15 tg",
+        "Start": 17,
+        "End": 24,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018-11-22",
+              "type": "date",
+              "value": "2018-11-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die ukrainische Heidelbeersaison könnte dieses Jahr später beginnen.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "dieses jahr später",
+        "Start": 40,
+        "End": 57,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "Mod": "end",
+              "type": "daterange",
+              "start": "2018-07-01",
+              "end": "2019-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Lagerhaltung für Butter dieses Jahr früher begonnen.",
+    "Context": {
+      "ReferenceDateTime": "2018-05-28T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "dieses jahr früher",
+        "Start": 24,
+        "End": 41,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2018",
+              "Mod": "start",
+              "type": "daterange",
+              "start": "2018-01-01",
+              "end": "2018-07-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Mein nächstes Gehalt ist Dienstag, der 25..",
+    "Context": {
+      "ReferenceDateTime": "2021-05-04T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "dienstag, der 25",
+        "Start": 25,
+        "End": 40,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2021-05-25",
+              "type": "date",
+              "value": "2021-05-25"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "7 Uhr von Montag bis Freitag.",
+    "Context": {
+      "ReferenceDateTime": "2021-05-04T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "7 uhr",
+        "Start": 0,
+        "End": 4,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07",
+              "type": "time",
+              "value": "07:00:00"
+            },
+            {
+              "timex": "T19",
+              "type": "time",
+              "value": "19:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "von montag bis freitag",
+        "Start": 6,
+        "End": 27,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-WXX-1,XXXX-WXX-5,P4D)",
+              "type": "daterange",
+              "start": "2021-05-03",
+              "end": "2021-05-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "von Montag 7 Uhr bis Freitag 15 Uhr.",
+    "Context": {
+      "ReferenceDateTime": "2021-05-04T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "von montag 7 uhr bis freitag 15 uhr",
+        "Start": 0,
+        "End": 34,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-WXX-1T07,XXXX-WXX-5T15,PT104H)",
+              "type": "datetimerange",
+              "start": "2021-05-03 07:00:00",
+              "end": "2021-05-07 15:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Am Erntedankfest sind viele Kirchen kunstvoll mit Feldfrüchten verziert",
+    "Context": {
+      "ReferenceDateTime": "2021-05-04T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "erntedankfest",
+        "Start": 3,
+        "End": 15,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2020-10-04"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2021-10-03"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Wann ist Pfingsten 2022?",
+    "Context": {
+      "ReferenceDateTime": "2021-05-04T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "pfingsten 2022",
+        "Start": 9,
+        "End": 22,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2022-06-05",
+              "type": "date",
+              "value": "2022-06-05"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Selbst mitternachts hat das Schnellrestaurant geöffnet.",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "mitternachts",
+        "Start": 7,
+        "End": 18,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T00",
+              "type": "time",
+              "value": "00:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Vorgestern Dienstagfrühmorgens",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "vorgestern",
+        "Start": 0,
+        "End": 9,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2021-06-16",
+              "type": "date",
+              "value": "2021-06-16"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "dienstagfrühmorgens",
+        "Start": 11,
+        "End": 29,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "Mod": "start",
+              "type": "datetimerange",
+              "start": "2021-06-15 08:00:00",
+              "end": "2021-06-15 10:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2TMO",
+              "Mod": "start",
+              "type": "datetimerange",
+              "start": "2021-06-22 08:00:00",
+              "end": "2021-06-22 10:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Sonnabend frühmorgens bin ich erst um 8 Uhr aufgestanden.",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "sonnabend frühmorgens",
+        "Start": 0,
+        "End": 20,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-6TMO",
+              "Mod": "start",
+              "type": "datetimerange",
+              "start": "2021-06-12 08:00:00",
+              "end": "2021-06-12 10:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-6TMO",
+              "Mod": "start",
+              "type": "datetimerange",
+              "start": "2021-06-19 08:00:00",
+              "end": "2021-06-19 10:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "8 uhr",
+        "Start": 38,
+        "End": 42,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T08",
+              "type": "time",
+              "value": "08:00:00"
+            },
+            {
+              "timex": "T20",
+              "type": "time",
+              "value": "20:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Damit stehen den Fahrgästen am kommenden Sonnabendabend Züge für die Rückfahrt ab Bremen bis Osnabrück um 20.20 Uhr sowie 22.20 Uhr und 23.23 Uhr.",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "kommenden sonnabendabend",
+        "Start": 31,
+        "End": 54,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2021-06-26TEV",
+              "type": "datetimerange",
+              "start": "2021-06-26 16:00:00",
+              "end": "2021-06-26 20:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "20.20 uhr",
+        "Start": 106,
+        "End": 114,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T20:20",
+              "type": "time",
+              "value": "20:20:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "22.20 uhr",
+        "Start": 122,
+        "End": 130,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T22:20",
+              "type": "time",
+              "value": "22:20:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "23.23 uhr",
+        "Start": 136,
+        "End": 144,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T23:23",
+              "type": "time",
+              "value": "23:23:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Dienstagspätabends Anreise, samstagfrüh Abreise.",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "dienstagspätabends",
+        "Start": 0,
+        "End": 17,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-2TEV",
+              "Mod": "end",
+              "type": "datetimerange",
+              "start": "2021-06-15 18:00:00",
+              "end": "2021-06-15 20:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-2TEV",
+              "Mod": "end",
+              "type": "datetimerange",
+              "start": "2021-06-22 18:00:00",
+              "end": "2021-06-22 20:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "samstagfrüh",
+        "Start": 28,
+        "End": 38,
+        "TypeName": "datetimeV2.datetimerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-6TMO",
+              "type": "datetimerange",
+              "start": "2021-06-12 08:00:00",
+              "end": "2021-06-12 12:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-6TMO",
+              "type": "datetimerange",
+              "start": "2021-06-19 08:00:00",
+              "end": "2021-06-19 12:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Jeden Donnerstag wandern wir auf dem Goldsteig.",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "jeden donnerstag",
+        "Start": 0,
+        "End": 15,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-4",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Tag der Arbeit, ersten Weihnachtsfeiertag, zweiten Weihnachtstag",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "tag der arbeit",
+        "Start": 0,
+        "End": 13,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-05-01",
+              "type": "date",
+              "value": "2021-05-01"
+            },
+            {
+              "timex": "XXXX-05-01",
+              "type": "date",
+              "value": "2022-05-01"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "ersten weihnachtsfeiertag",
+        "Start": 16,
+        "End": 40,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2020-12-25"
+            },
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2021-12-25"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "zweiten weihnachtstag",
+        "Start": 43,
+        "End": 63,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-26",
+              "type": "date",
+              "value": "2020-12-26"
+            },
+            {
+              "timex": "XXXX-12-26",
+              "type": "date",
+              "value": "2021-12-26"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Morgens stehe ich um 7 Uhr von Montag bis Freitag auf und ich gehe zur Schule",
+    "Context": {
+      "ReferenceDateTime": "2021-06-18T18:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "morgens",
+        "Start": 0,
+        "End": 6,
+        "TypeName": "datetimeV2.timerange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "TMO",
+              "type": "timerange",
+              "start": "08:00:00",
+              "end": "12:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "7 uhr",
+        "Start": 21,
+        "End": 25,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07",
+              "type": "time",
+              "value": "07:00:00"
+            },
+            {
+              "timex": "T19",
+              "type": "time",
+              "value": "19:00:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "von montag bis freitag",
+        "Start": 27,
+        "End": 48,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-WXX-1,XXXX-WXX-5,P4D)",
+              "type": "daterange",
+              "start": "2021-06-14",
+              "end": "2021-06-18"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin geboren in dem Jahr.",
+    "Context": {
+      "ReferenceDateTime": "2019-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "dem jahr",
+        "Start": 19,
+        "End": 26,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2019",
+              "type": "daterange",
+              "start": "2019-01-01",
+              "end": "2020-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das Jahr hatte Höhen und Tiefen.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "das jahr",
+        "Start": 0,
+        "End": 7,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016",
+              "type": "daterange",
+              "start": "2016-01-01",
+              "end": "2017-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Mit dem Jahr 2009 war ich zufrieden.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "jahr 2009",
+        "Start": 8,
+        "End": 16,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2009",
+              "type": "daterange",
+              "start": "2009-01-01",
+              "end": "2010-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Publikationen aus dem Jahr 2012.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "jahr 2012",
+        "Start": 22,
+        "End": 30,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2012",
+              "type": "daterange",
+              "start": "2012-01-01",
+              "end": "2013-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Diese Webseite gibt es seit dem Jahr 2001.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "seit dem jahr 2001",
+        "Start": 23,
+        "End": 40,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2001",
+              "Mod": "since",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "start": "2001-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "für das jahr 2010 sind wieder verschiedene ausstellungen und projekte geplant.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "jahr 2010",
+        "Start": 8,
+        "End": 16,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2010",
+              "type": "daterange",
+              "start": "2010-01-01",
+              "end": "2011-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Es wurde zum Film des Jahres gekürt.",
+    "Context": {
+      "ReferenceDateTime": "2021-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "des jahres",
+        "Start": 18,
+        "End": 27,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2021",
+              "type": "daterange",
+              "start": "2021-01-01",
+              "end": "2022-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das Projekt wurde eingereicht letzten Monat und 3 Wochen später wurde es genehmigt",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T16:12:00"
+    },
+    "NotSupportedByDesign": "javascript,python,java",
+    "Results": [
+      {
+        "Text": "letzten monat",
+        "Start": 30,
+        "End": 42,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-10",
+              "type": "daterange",
+              "start": "2016-10-01",
+              "end": "2016-11-01"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "3 wochen später",
+        "Start": 48,
+        "End": 62,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-11-28",
+              "type": "date",
+              "value": "2016-11-28"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Kinderflohmarkt immer Sonnabends",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "immer sonnabends",
+        "Start": 16,
+        "End": 31,
+        "TypeName": "datetimeV2.set",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-6",
+              "type": "set",
+              "value": "not resolved"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "In Deutschland gibt es unter anderem den meteorologischen und kalendarischen Herbstanfang.",
+    "Context": {
+      "ReferenceDateTime": "2020-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "herbstanfang",
+        "Start": 77,
+        "End": 88,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-09-22",
+              "type": "date",
+              "value": "2020-09-22"
+            },
+            {
+              "timex": "XXXX-09-22",
+              "type": "date",
+              "value": "2021-09-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Mit dem Ewigkeitssonntag endet das Kirchenjahr.",
+    "Context": {
+      "ReferenceDateTime": "2020-11-07T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "ewigkeitssonntag",
+        "Start": 8,
+        "End": 23,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2019-11-24"
+            },
+            {
+              "timex": "XXXX",
+              "type": "date",
+              "value": "2020-11-22"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "nächstem Jahr.",
+    "Context": {
+      "ReferenceDateTime": "2021-11-01T00:00:00"
+    },
+    "Results": [
+      {
+        "Text": "nächstem jahr",
+        "Start": 0,
+        "End": 12,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2022",
+              "type": "daterange",
+              "start": "2022-01-01",
+              "end": "2023-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "letztem Jahr.",
+    "Context": {
+      "ReferenceDateTime": "2021-11-01T00:00:00"
+    },
+    "NotSupported": "python",
+    "Results": [
+      {
+        "Text": "letztem jahr",
+        "Start": 0,
+        "End": 11,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020",
+              "type": "daterange",
+              "start": "2020-01-01",
+              "end": "2021-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Was morgens um 7 Uhr machen?",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "morgens um 7 uhr",
+        "Start": 4,
+        "End": 19,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T07",
+              "type": "time",
+              "value": "07:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Feier beginnt um 9 Uhr morgens",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "9 uhr morgens",
+        "Start": 21,
+        "End": 33,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T09",
+              "type": "time",
+              "value": "09:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Nehmen Sie abends um 8 Uhr einen Tropfen",
+    "Context": {
+      "ReferenceDateTime": "2017-12-04T00:00:00"
+    },
+    "NotSupported": "javascript",
+    "Results": [
+      {
+        "Text": "abends um 8 uhr",
+        "Start": 11,
+        "End": 25,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T20",
+              "type": "time",
+              "value": "20:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am Weihnachten frühmorgens um 8:00",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "weihnachten",
+        "Start": 29,
+        "End": 39,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2018-12-25"
+            },
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2019-12-25"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "frühmorgens um 8:00",
+        "Start": 41,
+        "End": 59,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T08:00",
+              "type": "time",
+              "value": "08:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am sonntag frühmorgens um 8:00",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "sonntag frühmorgens um 8:00",
+        "Start": 29,
+        "End": 55,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-7T08:00",
+              "type": "datetime",
+              "value": "2019-08-04 08:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-7T08:00",
+              "type": "datetime",
+              "value": "2019-08-11 08:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am mittwochfrühmorgens um 8:00",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "mittwochfrühmorgens um 8:00",
+        "Start": 29,
+        "End": 55,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-3T08:00",
+              "type": "datetime",
+              "value": "2019-07-31 08:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-3T08:00",
+              "type": "datetime",
+              "value": "2019-08-07 08:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am Weihnachten um 8:00 frühmorgens",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "weihnachten",
+        "Start": 29,
+        "End": 39,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2018-12-25"
+            },
+            {
+              "timex": "XXXX-12-25",
+              "type": "date",
+              "value": "2019-12-25"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "8:00 frühmorgens",
+        "Start": 44,
+        "End": 59,
+        "TypeName": "datetimeV2.time",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "T08:00",
+              "type": "time",
+              "value": "08:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am sonntag um 8:00 frühmorgens",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "sonntag um 8:00 frühmorgens",
+        "Start": 29,
+        "End": 55,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-7T08:00",
+              "type": "datetime",
+              "value": "2019-08-04 08:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-7T08:00",
+              "type": "datetime",
+              "value": "2019-08-11 08:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Die Veranstaltung beginnt am sonntag spätabend um 10:00",
+    "Context": {
+      "ReferenceDateTime": "2019-08-05T00:00:00"
+    },
+    "NotSupported": "java, javascript",
+    "Results": [
+      {
+        "Text": "sonntag spätabend um 10:00",
+        "Start": 29,
+        "End": 54,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-WXX-7T22:00",
+              "type": "datetime",
+              "value": "2019-08-04 22:00:00"
+            },
+            {
+              "timex": "XXXX-WXX-7T22:00",
+              "type": "datetime",
+              "value": "2019-08-11 22:00:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Zeig mir Verkäufe von 2010 bis 2018 oder vor 2000",
+    "Context": {
+      "ReferenceDateTime": "2018-06-26T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "von 2010 bis 2018",
+        "Start": 18,
+        "End": 34,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(2010-01-01,2018-01-01,P8Y)",
+              "type": "daterange",
+              "start": "2010-01-01",
+              "end": "2018-01-01"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "vor 2000",
+        "Start": 41,
+        "End": 48,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2000",
+              "Mod": "before",
+              "type": "daterange",
+              "sourceEntity": "datetimerange",
+              "end": "2000-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich bin November 19-20 unterwegs",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupportedByDesign": "javascript, python, java",
+    "Results": [
+      {
+        "Text": "november 19-20",
+        "Start": 8,
+        "End": 21,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "(XXXX-11-19,XXXX-11-20,P1D)",
+              "type": "daterange",
+              "start": "2015-11-19",
+              "end": "2015-11-20"
+            },
+            {
+              "timex": "(XXXX-11-19,XXXX-11-20,P1D)",
+              "type": "daterange",
+              "start": "2016-11-19",
+              "end": "2016-11-20"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "DateTime Suchbegriff\n23.04.2022 14:55\n30.04.2022 12:04 etwas Text 2020",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "java, javascript, python",
+    "Results": [
+      {
+        "Text": "23.04.2022 14:55",
+        "Start": 21,
+        "End": 36,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2022-04-23T14:55",
+              "type": "datetime",
+              "value": "2022-04-23 14:55:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "30.04.2022 12:04",
+        "Start": 38,
+        "End": 53,
+        "TypeName": "datetimeV2.datetime",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2022-04-30T12:04",
+              "type": "datetime",
+              "value": "2022-04-30 12:04:00"
+            },
+            {
+              "timex": "2022-04-30T00:04",
+              "type": "datetime",
+              "value": "2022-04-30 00:04:00"
+            }
+          ]
+        }
+      },
+      {
+        "Text": "2020",
+        "Start": 66,
+        "End": 69,
+        "TypeName": "datetimeV2.daterange",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2020",
+              "type": "daterange",
+              "start": "2020-01-01",
+              "end": "2021-01-01"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am siebter 4. zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "siebter 4.",
+        "Start": 13,
+        "End": 22,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            },
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2017-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am 7. vierter zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "7. vierter",
+        "Start": 13,
+        "End": 22,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            },
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2017-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme 7. vierter zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": []
+  },
+  {
+    "Input": "Ich komme am Donnerstag siebter 4. zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "donnerstag siebter 4.",
+        "Start": 13,
+        "End": 33,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            },
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2017-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am Donnerstag 7. vierter zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "donnerstag 7. vierter",
+        "Start": 13,
+        "End": 33,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            },
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2017-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das treffen ist Donnerstag 7. vierter 2016.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "donnerstag 7. vierter 2016",
+        "Start": 16,
+        "End": 41,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "2016-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das treffen ist am 27. 11.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "27. 11.",
+        "Start": 19,
+        "End": 25,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-11-27",
+              "type": "date",
+              "value": "2015-11-27"
+            },
+            {
+              "timex": "XXXX-11-27",
+              "type": "date",
+              "value": "2016-11-27"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das treffen ist am dritter/11.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "dritter/11.",
+        "Start": 19,
+        "End": 29,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-11-03",
+              "type": "date",
+              "value": "2016-11-03"
+            },
+            {
+              "timex": "XXXX-11-03",
+              "type": "date",
+              "value": "2017-11-03"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Das treffen ist Montag zwölfter fünfter.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "montag zwölfter fünfter",
+        "Start": 16,
+        "End": 38,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-05-12",
+              "type": "date",
+              "value": "2016-05-12"
+            },
+            {
+              "timex": "XXXX-05-12",
+              "type": "date",
+              "value": "2017-05-12"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am Donnerstag, den siebten vierten zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "donnerstag, den siebten vierten",
+        "Start": 13,
+        "End": 43,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2016-04-07"
+            },
+            {
+              "timex": "XXXX-04-07",
+              "type": "date",
+              "value": "2017-04-07"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "Input": "Ich komme am Donnerstag, den siebenundzwanzigsten zwölften zurück.",
+    "Context": {
+      "ReferenceDateTime": "2016-11-07T00:00:00"
+    },
+    "NotSupported": "javascript, java, python",
+    "Results": [
+      {
+        "Text": "donnerstag, den siebenundzwanzigsten zwölften",
+        "Start": 13,
+        "End": 57,
+        "TypeName": "datetimeV2.date",
+        "Resolution": {
+          "values": [
+            {
+              "timex": "XXXX-12-27",
+              "type": "date",
+              "value": "2015-12-27"
+            },
+            {
+              "timex": "XXXX-12-27",
+              "type": "date",
+              "value": "2016-12-27"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
