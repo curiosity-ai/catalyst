@@ -857,12 +857,18 @@ namespace Catalyst.DateTimeRecognition
             // "3 next week" is the number three beside "next week", not three weeks
             if (countLedTheUnit && count > 1 && !LooksPlural(at)) return -1;
 
-            // "the week after next" is two weeks on, and "the week before last" two back
+            // "the week after next" is two weeks on, "la semana después de la próxima" the same, and
+            // "the week before last" two back
+            int  sideAt   = After(at);
+            bool saysPast = AtTerm(sideAt, TermKind.Mod, out int sideMod) && (ModKind)sideMod == ModKind.Before;
+            bool saysOn   = AtWord(sideAt, "after") || (AtTerm(sideAt, TermKind.Mod, out sideMod) && (ModKind)sideMod == ModKind.After);
+            int  beyondAt = SkipArticle(After(sideAt));
+
             if (relative == RelativeKind.None && count < 0
-                && (AtWord(at + 1, "after") || AtWord(at + 1, "before"))
-                && AtTerm(at + 2, TermKind.Relative, out int beyondRel))
+                && (saysOn || saysPast || AtWord(sideAt, "before"))
+                && AtTerm(beyondAt, TermKind.Relative, out int beyondRel))
             {
-                bool forward = AtWord(at + 1, "after");
+                bool forward = saysOn;
                 var  beyond  = (RelativeKind)beyondRel;
 
                 bool matches = forward ? beyond is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following or RelativeKind.AfterNext
@@ -872,7 +878,7 @@ namespace Catalyst.DateTimeRecognition
                 {
                     var n3 = Node.Create(NodeKind.DateRange);
                     n3.LexStart    = start;
-                    n3.LexEnd      = at + 3;
+                    n3.LexEnd      = After(beyondAt);
                     n3.PeriodUnit  = (TimeUnit)unitValue;
                     n3.PeriodCount = 1;
                     n3.Relative     = forward ? RelativeKind.Next : RelativeKind.Last;

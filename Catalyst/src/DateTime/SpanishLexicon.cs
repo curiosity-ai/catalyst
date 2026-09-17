@@ -176,7 +176,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a las", "a la");   // "de las 5 a las 6"
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de", "no más tarde que", "no mas tarde que");
-            b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "más tarde que", "posterior a", "posterior de",
+            b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "después del", "despues del", "después de las", "más tarde que", "posterior a", "posterior de",
                                                         "posterior al");
             b.Add(TermKind.Mod, (int)ModKind.Before,    "anterior a", "anterior de", "anterior al", "más temprano que", "previo a");
             b.Add(TermKind.Mod, (int)ModKind.Less,      "menos de");
