@@ -154,9 +154,11 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.AmPm, 1, "pm", "p.m.");
             b.Add(TermKind.OClock, "uhr");
 
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "bis", "zu", "zum", "bis zum", "bis zu");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.Mod, (int)ModKind.Before), "bis", "bis zum", "bis zu");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "zu", "zum");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "und");
-            b.Add(TermKind.RangeStart, 0, "von", "vom", "ab", "beginnend");
+            b.Add(TermKind.RangeStart, 0, "von", "vom", "beginnend");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "ab", "ab dem");
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "seit");
             b.Add(TermKind.RangeStart, 1, "zwischen");
 

@@ -489,6 +489,10 @@ namespace Catalyst.DateTimeRecognition
                 // A word that is also glue is too weak to open one on its own: "2 de outubro" is a date
                 mod = ModKind.Since;   // "starting january 7th", "beginning on january 7th"
             }
+            else if (LeadsAModifier(i))
+            {
+                mod = ModKind.Before;   // "vor 2000"
+            }
             else
             {
                 return -1;

@@ -252,6 +252,15 @@ namespace Catalyst.DateTimeRecognition
             return end;
         }
 
+        /// <summary>
+        /// Whether the ago-word at <paramref name="i"/> is bounding something rather than counting back from it.
+        /// German's "vor" leads what it measures, so "vor zwei Stunden" is two hours ago and "vor Mitternacht"
+        /// is any time up to midnight; only the absence of a duration tells the two apart.
+        /// </summary>
+        private bool LeadsAModifier(int i)
+            => AtTerm(i, TermKind.Ago) && !AtTerm(i, TermKind.Unit) && !AtTerm(i, TermKind.FromNow)
+            && TryDuration(After(i), out _) < 0;
+
         /// <summary>"after 3pm", "before 2.30pm", "as early as 7:00 am".</summary>
         private int TryModTime(int i, out int node)
         {
@@ -271,6 +280,12 @@ namespace Catalyst.DateTimeRecognition
             else if (AtTerm(at, TermKind.RangeStart, out int kind) && kind == 0 && at > i)
             {
                 mod = ModKind.Since;
+                at  = After(at);
+            }
+            else if (LeadsAModifier(at))
+            {
+                // "vor Mitternacht" — where the ago-word leads its duration it also bounds a clock time
+                mod = ModKind.Before;
                 at  = After(at);
             }
             else
