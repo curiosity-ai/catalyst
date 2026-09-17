@@ -456,10 +456,34 @@ namespace Catalyst.DateTimeRecognition
                     node = Alloc(n);
                     return end;
                 }
+
+                // "9 de 8 de 1971" — the month written as a number, told apart from a bare pair of numbers
+                // by the language's own connective standing on both sides of it
+                int monthAt = day2End + 1;
+
+                if (IsWrittenConnective(day2End) && AtNumber(monthAt) && DigitsAt(monthAt) <= 2
+                    && NumberAt(monthAt) >= 1 && NumberAt(monthAt) <= 12 && IsWrittenConnective(monthAt + 1)
+                    && TryYearLoose(monthAt + 2, out int year3, out int year3End))
+                {
+                    var n = Node.Create(NodeKind.Date);
+                    n.LexStart = i;
+                    n.Month    = NumberAt(monthAt);
+                    n.Day      = day2;
+                    n.Year     = year3;
+                    n.LexEnd   = year3End;
+                    SetSpan(ref n);
+                    node = Alloc(n);
+                    return year3End;
+                }
             }
 
             return -1;
         }
+
+        /// <summary>A one-word connective spelled out between two halves of a date: the "de" of "9 de 8 de 1971".</summary>
+        private readonly bool IsWrittenConnective(int i)
+            => In(i) && _lex[i].Kind == LexKind.Word && _lex[i].PhraseLength <= 1
+            && AtTerm(i, TermKind.Filler) && !AtTerm(i, TermKind.Connector) && !AtTerm(i, TermKind.AndWord);
 
         // ------------------------------------------------------------------ numeric dates
 

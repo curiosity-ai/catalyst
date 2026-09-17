@@ -154,7 +154,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "e");
             b.Add(TermKind.LengthWord, "dura", "durou", "durar", "durará", "duraram", "duram", "durante", "duração", "duracao",
                                        "leva", "levar", "levou", "levará", "demora", "demorar", "demorou");
-            b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
+            b.Add(TermKind.RangeStart, 0, "começando");
+            // "a partir de" opens a range, and on its own says everything after the day it names
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.After, TermKind.RangeStart, 0), "a partir de", "a partir do", "a partir da", "a partir das", "a partir dos");
             b.Add(TermKind.RangeStart, 1, "entre");
 
             b.Add(TermKind.Filler, "dos", "no", "na", "nos", "nas", "por", "para");
