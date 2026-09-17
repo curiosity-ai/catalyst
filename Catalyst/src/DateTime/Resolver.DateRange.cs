@@ -48,14 +48,17 @@ namespace Catalyst.DateTimeRecognition
                     leftStart = SafeDate(rightStart.Year, leftStart.Month, leftStart.Day);
                     if (leftStart > rightStart) leftStart = leftStart.AddYears(-1);
                     leftYearUnknown = false;
-                    leftTimex       = FormatDate(leftStart);
+
+                    // "entre 22 ene y ahora" — the reference says which year, but not what the writer wrote
+                    if (!anchoredToNow) leftTimex = FormatDate(leftStart);
                 }
                 else if (rightYearUnknown && !leftYearUnknown)
                 {
                     rightStart = SafeDate(leftStart.Year, rightStart.Month, rightStart.Day);
                     if (rightStart < leftStart) rightStart = rightStart.AddYears(1);
                     rightYearUnknown = false;
-                    rightTimex       = FormatDate(rightStart);
+
+                    if (!anchoredToNow) rightTimex = FormatDate(rightStart);
                 }
                 else if (rightStart < leftStart && leftYearUnknown && rightYearUnknown)
                 {
