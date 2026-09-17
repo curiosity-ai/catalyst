@@ -240,6 +240,10 @@ namespace Catalyst.DateTimeRecognition
             int dateEnd = TryMonthNameDate(tail, out int attached);
             if (dateEnd < 0) dateEnd = TryNumericDate(tail, out attached);
 
+            // "lunes 1-3 p.m." is a clock range on that weekday, not the first of March
+            if (dateEnd > 0 && (AtTerm(dateEnd, TermKind.AmPm) || AtTerm(dateEnd, TermKind.OClock)
+                                || AtTerm(dateEnd, TermKind.PartOfDay) || AtTerm(SkipGlue(dateEnd, 2), TermKind.PartOfDay))) dateEnd = -1;
+
             if (dateEnd > 0)
             {
                 ref var a = ref NodeAt(attached);
