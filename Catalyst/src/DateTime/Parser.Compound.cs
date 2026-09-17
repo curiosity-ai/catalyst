@@ -106,10 +106,13 @@ namespace Catalyst.DateTimeRecognition
 
             int spanStart = podMod != ModKind.None && podStart > i ? podStart : i;
 
-            // "early morning at 8:00" is one time, told apart from the evening by the part of the day
-            if (AtWord(end, "at"))
+            // "early morning at 8:00", "spätabend um 10:00" is one time, told apart from the evening by
+            // the part of the day
+            int clockAt = AtWord(end, "at") ? end + 1 : SkipClockPrefix(end);
+
+            if (clockAt > end)
             {
-                int atTimeEnd = TryTime(end + 1, out int atTime, allowBareHour: true);
+                int atTimeEnd = TryTime(clockAt, out int atTime, allowBareHour: true);
 
                 if (atTimeEnd > 0)
                 {
@@ -928,6 +931,7 @@ namespace Catalyst.DateTimeRecognition
                 RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
                 RelativeKind.AfterNext                                             =>  2,
                 RelativeKind.Last or RelativeKind.Previous                         => -1,
+                RelativeKind.BeforeLast                                            => -2,
                 _                                                                  =>  0,
             };
             n.Mod = leadMod != ModKind.None ? leadMod : mod;
@@ -1004,7 +1008,7 @@ namespace Catalyst.DateTimeRecognition
             if (rel == RelativeKind.None && !within) return -1;
 
             // "last two hours" is the verb "last"; a period written that way says "the" or uses digits
-            if (count >= 0 && (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast) && !AtWord(i, "the") && !AtNumber(i)) return -1;
+            if (count >= 0 && (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast || rel == RelativeKind.BeforeLast) && !AtWord(i, "the") && !AtNumber(i)) return -1;
 
             at++;
 

@@ -121,7 +121,7 @@ namespace Catalyst.DateTimeRecognition
             // "in the morning", "dans la soiree", "am Nachmittag" — one or two connective words, whatever they are
             at = SkipGlue(at, 2);
 
-            if (AtTerm(at, TermKind.Mod, out int modValue))
+            if (AtTerm(at, TermKind.Mod, out int modValue) && !AtTerm(at, TermKind.PartOfDay))
             {
                 var k = (ModKind)modValue;
                 if (k == ModKind.Early || k == ModKind.Late || k == ModKind.Mid)
@@ -146,7 +146,11 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTerm(at, TermKind.PartOfDay, out int podValue)) return -1;
 
             kind = (PartOfDayKind)podValue;
-            at   = After(at);
+
+            // "frühmorgens", "spätabends" — one word names the part of the day and which end of it is meant
+            if (mod == ModKind.None && AtTerm(at, TermKind.Mod, out int ownMod)) mod = (ModKind)ownMod;
+
+            at = After(at);
 
             // "night-time", "day time"
             if ((At(at, LexKind.Dash) || AtWord(at, "time")) && kind == PartOfDayKind.Night)

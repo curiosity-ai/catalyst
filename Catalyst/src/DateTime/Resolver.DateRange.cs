@@ -484,7 +484,7 @@ namespace Catalyst.DateTimeRecognition
 
                 DateTime alignedStart, alignedEnd;
 
-                if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast)
+                if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast || rel == RelativeKind.BeforeLast)
                 {
                     alignedEnd   = current;
                     alignedStart = AddUnits(current, unit, -count);
@@ -510,7 +510,7 @@ namespace Catalyst.DateTimeRecognition
             DateTime start;
             DateTime end;
 
-            if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast)
+            if (rel == RelativeKind.Last || rel == RelativeKind.Previous || rel == RelativeKind.JustPast || rel == RelativeKind.BeforeLast)
             {
                 end   = today;
                 start = SubtractUnits(today, unit, count);
@@ -560,6 +560,7 @@ namespace Catalyst.DateTimeRecognition
             RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following =>  1,
             RelativeKind.AfterNext                                             =>  2,
             RelativeKind.Last or RelativeKind.Previous or RelativeKind.JustPast => -1,
+            RelativeKind.BeforeLast                                            => -2,
             _                                                                  =>  0,
         };
 

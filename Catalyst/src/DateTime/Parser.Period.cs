@@ -801,7 +801,7 @@ namespace Catalyst.DateTimeRecognition
                 var  beyond  = (RelativeKind)beyondRel;
 
                 bool matches = forward ? beyond is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following or RelativeKind.AfterNext
-                                       : beyond is RelativeKind.Last or RelativeKind.Previous;
+                                       : beyond is RelativeKind.Last or RelativeKind.Previous or RelativeKind.BeforeLast;
 
                 if (matches)
                 {
@@ -836,7 +836,7 @@ namespace Catalyst.DateTimeRecognition
             }
 
             // "last three weekends" is the verb "last"; a period written that way says "the"
-            if (!hadThe && count >= 0 && (relative == RelativeKind.Last || relative == RelativeKind.Previous) && !AtNumber(i)) return -1;
+            if (!hadThe && count >= 0 && (relative == RelativeKind.Last || relative == RelativeKind.Previous || relative == RelativeKind.BeforeLast) && !AtNumber(i)) return -1;
 
             var unit = (TimeUnit)unitValue;
             if (business && unit == TimeUnit.Day) unit = TimeUnit.BusinessDay;

@@ -463,7 +463,7 @@ namespace Catalyst.DateTimeRecognition
                     _               => count * 1d,
                 };
 
-                bool backwards = n.Relative == RelativeKind.Last || n.Relative == RelativeKind.Previous;
+                bool backwards = n.Relative == RelativeKind.Last || n.Relative == RelativeKind.Previous || n.Relative == RelativeKind.BeforeLast;
 
                 var start = backwards ? _reference.AddSeconds(-seconds) : _reference;
                 var end   = backwards ? _reference : _reference.AddSeconds(seconds);

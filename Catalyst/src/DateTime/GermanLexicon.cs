@@ -114,7 +114,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.This,      "diese", "dieser", "diesen", "dieses", "diesem", "kommende", "kommenden", "kommendem", "kommendes");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,      "nächste", "naechste", "nächsten", "naechsten", "nächster", "nächstes", "nächstem", "naechstem", "folgende", "folgenden", "folgendem");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,      "letzte", "letzten", "letzter", "letztes", "letztem", "vergangene", "vergangenen", "vergangenem", "vorige", "vorigen", "vorigem");
-            b.Add(TermKind.Relative, (int)RelativeKind.Previous,  "vorherige", "vorherigen", "vorletzte", "vorletzten", "vorletztes", "vorletzter", "vorletztem");
+            b.Add(TermKind.Relative, (int)RelativeKind.Previous,   "vorherige", "vorherigen");
+            b.Add(TermKind.Relative, (int)RelativeKind.BeforeLast, "vorletzte", "vorletzten", "vorletztes", "vorletzter", "vorletztem");
             b.Add(TermKind.Relative, (int)RelativeKind.AfterNext,  "übernächste", "übernächsten", "uebernaechste", "uebernaechsten", "übernächstes");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,   "aktuelle", "aktuellen", "laufende", "laufenden", "selbe", "selben", "gleiche", "gleichen");
 
@@ -141,7 +142,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "mittagessen", "mittagszeit");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "abendessen", "abendbrot");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "frühstück", "fruehstueck");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.EarlyMorning, "früher morgen", "frühmorgens");
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Morning, TermKind.Mod, (int)ModKind.Early), "früher morgen", "frühmorgens", "fruehmorgens");
+            b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Evening, TermKind.Mod, (int)ModKind.Late),  "später abend", "spätabends", "spätabend", "spaetabends", "spaetabend");
 
             // The -s adverbs are both the part of the day and the am/pm marker that qualifies a clock
             b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   TermKind.AmPm, 0), "vormittags", "morgens");
