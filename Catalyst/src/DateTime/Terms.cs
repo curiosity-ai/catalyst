@@ -537,7 +537,7 @@ namespace Catalyst.DateTimeRecognition
             for (int k = 3; k <= word.Length - 4; k++)
             {
                 if (!_wordsBySpan.TryGetValue(word[..k], out var lead))                  continue;
-                if (lead.Kind != TermKind.Cardinal || lead.Value < 2 || lead.Value > 9)  continue;
+                if (lead.Kind != TermKind.Cardinal || lead.Value < 2 || lead.Value > 99) continue;
                 if (!_wordsBySpan.TryGetValue(word[k..], out var multiplier))            continue;
                 if (multiplier.Kind != TermKind.Multiplier || multiplier.Value < 100)    continue;
 

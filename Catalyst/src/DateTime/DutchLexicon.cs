@@ -95,6 +95,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Weekend, "weekend", "weekenden");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Night, TermKind.PartOfDay, (int)PartOfDayKind.Night), "nacht", "nachten");
             b.Add(TermKind.BusinessDay, "werk", "werkdag", "werkdagen");
+            b.Add(TermKind.Unit, (int)TimeUnit.Day, "weekdag", "weekdagen");
             b.Add(TermKind.Several, 3, "enkele", "enige", "wat", "een paar", "verscheidene", "sommige", "meerdere");
             b.Add(TermKind.Several, 2, "paar");
             b.Add(TermKind.HalfWord, "halve");
@@ -103,6 +104,7 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "deze", "dit");
             b.Add(TermKind.Relative, (int)RelativeKind.Coming,   "komende", "komend", "aanstaande", "aanstaand");
+            b.Add(TermKind.Relative, (int)RelativeKind.Following, "eropvolgende", "eropvolgend", "daaropvolgende");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "volgende", "volgend");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,     "vorige", "vorig", "laatste");
             // "afgelopen woensdag" and "aankomende vrijdag" are the nearest one either side, which may
@@ -147,12 +149,12 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "tot", "tot en met", "t/m", "naar");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "en", "ën");   // "tweeëndertig" writes the joiner with a diaeresis
-            b.Add(TermKind.RangeStart, 0, "vanaf", "beginnend");
+            b.Add(TermKind.RangeStart, 0, "vanaf", "beginnend", "gerekend vanaf", "geteld vanaf");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.RangeStart, 0), "van");   // "de 9e van mei" and "van 4-23"
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Since, TermKind.RangeStart, 0), "sinds");
             b.Add(TermKind.RangeStart, 1, "tussen");
 
-            b.Add(TermKind.Filler, "in", "op", "om", "van de", "aan");
+            b.Add(TermKind.Filler, "in", "op", "om", "van de", "aan", "tijdens", "gedurende");
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "het");
             // Also an ordinal suffix ("de 9e"), which the lexicon remembers apart from the winning reading
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "de");
@@ -172,7 +174,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.Mid,   "midden", "midden van", "halverwege");
             b.Add(TermKind.Mod, (int)ModKind.Since,  "sindsdien", "zodra", "zo vroeg als", "al zo vroeg als", "zo snel als");
             b.Add(TermKind.Mod, (int)ModKind.Until,   "zo laat als", "al zo laat als");
-            b.Add(TermKind.Mod, (int)ModKind.Early,  "vroeg in", "vroeg");
+            b.Add(TermKind.Mod, (int)ModKind.Early,  "vroeg in", "vroeg", "vroege");
             b.Add(TermKind.Mod, (int)ModKind.Late,   "laat in", "laat");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "of later", "en later", "of daarna", "en daarna", "of hoger", "en hoger");
             b.Add(TermKind.Mod, (int)ModKind.OrEarlier, "of eerder", "en eerder", "of ervoor", "en ervoor");

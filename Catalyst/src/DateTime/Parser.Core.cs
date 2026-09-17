@@ -291,7 +291,10 @@ namespace Catalyst.DateTimeRecognition
             value = 0;
             end   = i;
 
-            if (AtNumber(i) && (AtOrdinalSuffix(i + 1) || AtDottedOrdinal(i)) && !_lex[i + 1].SpaceBefore)
+            // "20 ste" — a suffix the language uses for nothing else may stand apart from its number
+            bool spacedSuffix = AtOrdinalSuffix(i + 1) && In(i + 1) && _lex[i + 1].Term.Kind == TermKind.OrdinalSuffix;
+
+            if (AtNumber(i) && (AtOrdinalSuffix(i + 1) || AtDottedOrdinal(i)) && (!_lex[i + 1].SpaceBefore || spacedSuffix))
             {
                 value = NumberAt(i);
                 end   = i + 2;
