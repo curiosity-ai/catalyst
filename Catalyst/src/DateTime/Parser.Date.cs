@@ -963,6 +963,15 @@ namespace Catalyst.DateTimeRecognition
                 end            = tail + 2;
             }
 
+            // "le 25 mardi" — the weekday behind the day says which month's 25th is meant
+            if (hadThe && AtTerm(end, TermKind.Weekday, out int tailWeekday) && !AtTerm(end, TermKind.Unit)
+                && TryDate(end, out _) <= After(end))   // the weekday says no more than itself
+            {
+                n.Weekday     = tailWeekday;
+                n.DefiniteDay = true;
+                end           = After(end);
+            }
+
             n.LexEnd = end;
             SetSpan(ref n);
             node = Alloc(n);
