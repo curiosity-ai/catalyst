@@ -106,6 +106,18 @@ namespace Catalyst.DateTimeRecognition
                     alternate.Start = period.Start.AddYears(1);
                     alternate.End   = period.End.AddYears(1);
 
+                    // A range that opens on a leap day falls only in the years that have one
+                    if (left.Month == 2 && left.Day == 29)
+                    {
+                        int first  = period.Start.Year; while (!DateTime.IsLeapYear(first))  first--;
+                        int second = first + 1;         while (!DateTime.IsLeapYear(second)) second++;
+
+                        period.Start    = new DateTime(first,  2, 29);
+                        period.End      = EndOfLeapRange(period.Start,    ref right);
+                        alternate.Start = new DateTime(second, 2, 29);
+                        alternate.End   = EndOfLeapRange(alternate.Start, ref right);
+                    }
+
                     // A leap day makes the two readings different lengths: 28/2 to 1/3 is two days in a
                     // leap year and one in every other
                     period.Timex    = $"({leftTimex},{rightTimex},{SpanTimex(period.Start, period.End, months, daysOnly: anchoredToNow)})";
@@ -573,6 +585,13 @@ namespace Catalyst.DateTimeRecognition
                 End   = end,
                 Timex = $"{IsoYear(saturday):0000}-W{IsoWeekOfYear(saturday):00}-WE",
             };
+        }
+
+        /// <summary>Where a range that opened on a leap day closes, in that same leap year or the next.</summary>
+        private static DateTime EndOfLeapRange(DateTime start, ref Node right)
+        {
+            var end = SafeDate(start.Year, right.Month, right.Day);
+            return end < start ? SafeDate(start.Year + 1, right.Month, right.Day) : end;
         }
 
         /// <summary>A weekday named on its own, which says which day of a week and not which week.</summary>
