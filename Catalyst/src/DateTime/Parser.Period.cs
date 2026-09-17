@@ -782,7 +782,9 @@ namespace Catalyst.DateTimeRecognition
             {
                 at = After(at);
                 at = SkipArticle(at);
-                if (AtTermValue(at, TermKind.Relative, (int)RelativeKind.Next)) at++;
+                // "binnen de komende 10 maanden" — whichever word the language qualifies it with
+                if (AtTerm(at, TermKind.Relative, out int withinRel)
+                    && (RelativeKind)withinRel is RelativeKind.Next or RelativeKind.Coming or RelativeKind.Following) at = After(at);
             }
 
             int durationEnd = TryDuration(at, out int duration);

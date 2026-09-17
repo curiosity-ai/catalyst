@@ -129,7 +129,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "middaguur", "twaalf uur 's middags");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "middernacht");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "vanavond", "vannacht");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,     "vannacht");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.ThisEvening, "vanavond");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "lunch", "lunchtijd");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "diner", "avondeten");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "ontbijt");

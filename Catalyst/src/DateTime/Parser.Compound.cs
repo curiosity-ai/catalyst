@@ -779,7 +779,7 @@ namespace Catalyst.DateTimeRecognition
                 ref var p = ref NodeAt(leadPeriod);
 
                 // A part of the day on its own resolves against today
-                if ((p.PartOfDay == PartOfDayKind.Tonight || p.PartOfDay == PartOfDayKind.LastNight) && p.Kind == NodeKind.TimeRange)
+                if ((p.PartOfDay is PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening) && p.Kind == NodeKind.TimeRange)
                 {
                     var tonight = p;
                     tonight.Kind       = NodeKind.DateTimeRange;

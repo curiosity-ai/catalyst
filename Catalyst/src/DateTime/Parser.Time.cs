@@ -33,6 +33,7 @@ namespace Catalyst.DateTimeRecognition
             PartOfDayKind.Night        => new DayPart("TNI",  20, 23, 0, 59, 59),
             PartOfDayKind.Tonight      => new DayPart("TNI",  20, 23, 0, 59, 59),
             PartOfDayKind.LastNight    => new DayPart("TNI",  20, 23, 0, 59, 59),
+            PartOfDayKind.ThisEvening  => new DayPart("TEV",  16, 20),
             PartOfDayKind.DayTime      => new DayPart("TDT",   8, 18),
             PartOfDayKind.LateNight    => new DayPart("TNT",   0,  8),
             PartOfDayKind.Business     => new DayPart("TBH",   8, 18),
