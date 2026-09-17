@@ -502,10 +502,13 @@ namespace Catalyst.DateTimeRecognition
                     if (At(yearAt, LexKind.Dot) && !_lex[yearAt].SpaceBefore) yearAt++;
                     bool comma2 = At(yearAt, LexKind.Comma);
                     if (comma2) yearAt++;
-                    if ((At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore) yearAt++;
+
+                    // "18 nov-19 dec" — two digits behind a dash open the other end of a range, not a year
+                    bool dashed = (At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore;
+                    if (dashed) yearAt++;
                     yearAt = SkipGlue(yearAt);
 
-                    if (TryYearLoose(yearAt, out int year2, out int year2End, allowTwoDigits: !comma2))
+                    if (TryYearLoose(yearAt, out int year2, out int year2End, allowTwoDigits: !comma2 && !dashed))
                     {
                         n.Year = year2;
                         end    = year2End;
