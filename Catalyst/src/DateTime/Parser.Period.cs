@@ -1035,7 +1035,8 @@ namespace Catalyst.DateTimeRecognition
                 index = ordinal;
                 at    = afterOrdinal + 1;
 
-                int ofAt = SkipWords(at, "of", "in");
+                int ofAt = SkipGlue(SkipWords(at, "of", "in"), 1);
+                if (At(ofAt, LexKind.Dash) || At(ofAt, LexKind.Slash)) ofAt++;   // "1º trimestre-2019"
                 ofAt = SkipArticle(ofAt);
 
                 if (TryYear(ofAt, out int tailYear, out int tailEnd))

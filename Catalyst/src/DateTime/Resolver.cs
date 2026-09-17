@@ -522,7 +522,8 @@ namespace Catalyst.DateTimeRecognition
                 {
                     PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast => 0,
                     PartOfDayKind.Afternoon or PartOfDayKind.Evening or PartOfDayKind.Night
-                        or PartOfDayKind.Tonight or PartOfDayKind.Dinner                           => 1,
+                        or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening
+                        or PartOfDayKind.Dinner                                                    => 1,
                     _                                                                              => -1,
                 };
             }

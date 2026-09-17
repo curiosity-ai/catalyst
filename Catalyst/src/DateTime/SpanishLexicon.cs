@@ -178,6 +178,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.InPrefix, 1, "dentro de", "dentro del");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "de las", "de la");   // glue that can introduce a clock
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ClockPrefix), "a las", "a la");   // "de las 5 a las 6"
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "pasado mediodía", "pasado mediodia", "pasado el mediodía", "pasado el mediodia",
+                                                                    "pasado medio día", "pasado medio dia");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "antes de", "antes del", "no más tarde de", "no más tarde que", "no mas tarde que");
             b.Add(TermKind.Mod, (int)ModKind.After,     "después de", "despues de", "después del", "despues del", "después de las", "más tarde que", "posterior a", "posterior de",

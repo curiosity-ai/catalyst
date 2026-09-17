@@ -1170,7 +1170,7 @@ namespace Catalyst.DateTimeRecognition
                 if (prefixKind != 0 && unit != TimeUnit.Weekend && unit != TimeUnit.Year && !plural) return -1;
 
                 n.SetUnit = unit;
-                end       = at + 1;
+                end       = After(at);   // "fines de semana" is one unit written as a phrase
             }
             else if (AtTerm(at, TermKind.PartOfDay, out int podValue))
             {

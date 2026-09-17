@@ -903,6 +903,13 @@ namespace Catalyst.DateTimeRecognition
                 end  = at + 1;
                 bare = true;
             }
+            // "el día veintinueve" — the introducer licenses a spelled number the same way
+            else if (!ordinal && hadThe && TryWordNumber(at, out int spokenDay, out int spokenDayEnd) && spokenDay >= 1 && spokenDay <= 31)
+            {
+                day  = spokenDay;
+                end  = spokenDayEnd;
+                bare = true;
+            }
             else if (!ordinal || day < 1 || day > 31)
             {
                 return -1;
