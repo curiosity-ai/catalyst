@@ -84,9 +84,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Multiplier,    1000, "mil");
             b.Add(TermKind.Multiplier, 1000000, "millón", "millon", "millones");
 
-            b.Add(TermKind.Ordinal,  1, "primero", "primera", "primer");
-            b.Add(TermKind.Ordinal,  2, "segunda");
-            b.Add(TermKind.Ordinal,  3, "tercero", "tercera", "tercer");
+            b.Add(TermKind.Ordinal,  1, "primero", "primera", "primer", "primeros", "primeras");
+            b.Add(TermKind.Ordinal,  2, "segunda", "segundos", "segundas");
+            b.Add(TermKind.Ordinal,  3, "tercero", "tercera", "tercer", "terceros", "terceras");
             b.Add(TermKind.Ordinal,  4, "cuarta");
             b.Add(TermKind.Ordinal,  5, "quinto", "quinta");
             b.Add(TermKind.Ordinal,  6, "sexto", "sexta");
@@ -155,7 +155,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.AmPm, 1, "de la tarde", "de la noche", "pm", "p.m.");
             b.Add(TermKind.OClock, "en punto");
 
-            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al", "hasta", "hasta el");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.ToWord), "a", "al");
+            b.Add(new TermInfo(TermKind.Connector, 0, TermKind.Mod, (int)ModKind.Before), "hasta", "hasta el", "hasta las", "hasta la");
             b.Add(new TermInfo(TermKind.Connector, 0, TermKind.AndWord), "y", "e");
             b.Add(TermKind.RangeStart, 0, "a partir de", "a partir del", "a partir de las");
             // These open a range, and on their own say everything after the day they name
