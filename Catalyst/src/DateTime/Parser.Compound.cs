@@ -531,7 +531,7 @@ namespace Catalyst.DateTimeRecognition
             {
                 int at = leadingTimeEnd;
                 if (At(at, LexKind.Comma)) at++;
-                at = SkipWords(at, "on", "of");
+                at = SkipGlue(at, 2);   // "3:00 a 4:00 mañana", "de 3:30 a 5:55 el 1/1/2015"
 
                 int trailingDate    = Node.Unspecified;
                 int trailingDateEnd = leadingWasBare ? -1 : TryDate(at, out trailingDate);
@@ -757,7 +757,7 @@ namespace Catalyst.DateTimeRecognition
 
                 int at = leadPeriodEnd;
                 if (At(at, LexKind.Comma)) at++;
-                at = SkipWords(at, "on", "of");
+                at = SkipGlue(at, 2);   // "3:00 a 4:00 mañana", "de 3:30 a 5:55 el 1/1/2015"
 
                 int trailingDateEnd = TryDate(at, out int trailingDate);
 
