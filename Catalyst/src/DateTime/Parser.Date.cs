@@ -367,11 +367,25 @@ namespace Catalyst.DateTimeRecognition
         }
 
         /// <summary>A year in any accepted spelling, including two digits.</summary>
-        private readonly bool TryYearLoose(int i, out int year, out int end)
+        private readonly bool TryYearLoose(int i, out int year, out int end) => TryYearLoose(i, out year, out end, allowTwoDigits: true);
+
+        /// <summary>"'18" — two digits the writer marked as a year.</summary>
+        private readonly bool WrittenWithAnApostrophe(int i)
+        {
+            int start = _lex[i].Start;
+            return start > 0 && (_text[start - 1] == '\'' || _text[start - 1] == '\u2019' || _text[start - 1] == 'ʼ');
+        }
+
+        /// <param name="allowTwoDigits">
+        /// false where a comma already separated the number from the date, because "1 de julio, 17" counts
+        /// people rather than naming a year; an apostrophe still says it is one.
+        /// </param>
+        private readonly bool TryYearLoose(int i, out int year, out int end, bool allowTwoDigits)
         {
             if (TryYear(i, out year, out end)) return true;
 
-            if (AtNumber(i) && DigitsAt(i) == 2 && !At(i + 1, LexKind.Colon))
+            if (AtNumber(i) && DigitsAt(i) == 2 && !At(i + 1, LexKind.Colon)
+                && (allowTwoDigits || WrittenWithAnApostrophe(i)))
             {
                 year = ExpandTwoDigitYear(NumberAt(i));
                 end  = i + 1;
@@ -419,11 +433,12 @@ namespace Catalyst.DateTimeRecognition
 
                     int end = dayEnd;
                     int yearAt = end;
-                    if (At(yearAt, LexKind.Comma)) yearAt++;
+                    bool comma = At(yearAt, LexKind.Comma);
+                    if (comma) yearAt++;
                     if ((At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore) yearAt++;
                     yearAt = SkipGlue(yearAt);
 
-                    if (TryYearLoose(yearAt, out int year, out int yearEnd))
+                    if (TryYearLoose(yearAt, out int year, out int yearEnd, allowTwoDigits: !comma))
                     {
                         n.Year = year;
                         end    = yearEnd;
@@ -454,11 +469,12 @@ namespace Catalyst.DateTimeRecognition
                     int end    = afterDay + 1;
                     int yearAt = end;
                     if (At(yearAt, LexKind.Dot) && !_lex[yearAt].SpaceBefore) yearAt++;
-                    if (At(yearAt, LexKind.Comma)) yearAt++;
+                    bool comma2 = At(yearAt, LexKind.Comma);
+                    if (comma2) yearAt++;
                     if ((At(yearAt, LexKind.Slash) || At(yearAt, LexKind.Dash)) && !_lex[yearAt].SpaceBefore) yearAt++;
                     yearAt = SkipGlue(yearAt);
 
-                    if (TryYearLoose(yearAt, out int year2, out int year2End))
+                    if (TryYearLoose(yearAt, out int year2, out int year2End, allowTwoDigits: !comma2))
                     {
                         n.Year = year2;
                         end    = year2End;

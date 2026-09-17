@@ -381,11 +381,22 @@ namespace Catalyst.DateTimeRecognition
                 marked = true;
             }
 
-            // "8 pm e meia" — where the minutes follow the hour they may follow its marker too
-            if (_lexicon.MinutesFollowHour && !explicitMinutes && JoinsWrittenHour(at)
-                && TrySpokenMinutes(at, out int trailingMinutes, out int afterTrailing) && trailingMinutes > 0)
+            // "8 pm e meia", "8pm menos cuarto" — where the minutes follow the hour they may follow its
+            // marker too, counting forward from it or back off it
+            if (_lexicon.MinutesFollowHour && !explicitMinutes
+                && (JoinsWrittenHour(at) || (AtTerm(at, TermKind.ToWord) && !AtTerm(at, TermKind.Connector)))
+                && TrySpokenMinutes(at, out int trailingMinutes, out int afterTrailing))
             {
-                minute          = trailingMinutes;
+                if (trailingMinutes < 0)
+                {
+                    minute = 60 + trailingMinutes;
+                    hour   = hour == 1 ? 12 : hour - 1;
+                }
+                else
+                {
+                    minute = trailingMinutes;
+                }
+
                 explicitMinutes = true;
                 at              = afterTrailing;
             }
@@ -396,6 +407,15 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>Whether the joiner at <paramref name="i"/> introduces minutes a written hour can take.</summary>
         private readonly bool JoinsWrittenHour(int i)
         {
+            // "8 menos cuarto" — the language's "to", taking the minutes back off the hour just read
+            if (_lexicon.MinutesFollowHour && AtTerm(i, TermKind.ToWord) && !AtTerm(i, TermKind.Connector))
+            {
+                int back = SkipArticle(After(i));
+
+                return AtTerm(back, TermKind.QuarterWord) || AtTerm(back, TermKind.HalfWord)
+                    || (TryWordNumber(back, out int off, out _) && off > 0 && off < 60);
+            }
+
             if (!AtTerm(i, TermKind.Connector) || AtTerm(i, TermKind.ToWord)) return false;
 
             int joined = After(i);
