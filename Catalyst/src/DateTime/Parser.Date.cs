@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Catalyst.DateTimeRecognition
 {
@@ -276,13 +276,14 @@ namespace Catalyst.DateTimeRecognition
                 int probe   = tail;
                 bool theDay = false;
 
+                // The article is what says the day is a particular one — "dinsdag de elfde" as much as
+                // "tuesday the eleventh"
                 for (int k = end; k <= probe; k++)
                 {
-                    if (AtWord(k, "the")) { theDay = true; break; }
+                    if (AtTerm(k, TermKind.Article)) { theDay = true; break; }
                 }
 
                 probe = SkipArticle(probe);
-                if (AtWord(tail, "the")) theDay = true;
 
                 // "terça-feira dia 25" — the word for "day" introduces the number the same way "the" does
                 int probeDayNoun = SkipDayNoun(probe);

@@ -77,8 +77,24 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Ordinal,  8, "achtste");
             b.Add(TermKind.Ordinal,  9, "negende");
             b.Add(TermKind.Ordinal, 10, "tiende");
+            b.Add(TermKind.Ordinal, 11, "elfde");
+            b.Add(TermKind.Ordinal, 12, "twaalfde");
+            b.Add(TermKind.Ordinal, 13, "dertiende");
+            b.Add(TermKind.Ordinal, 14, "veertiende");
+            b.Add(TermKind.Ordinal, 15, "vijftiende");
+            b.Add(TermKind.Ordinal, 16, "zestiende");
+            b.Add(TermKind.Ordinal, 17, "zeventiende");
+            b.Add(TermKind.Ordinal, 18, "achttiende");
+            b.Add(TermKind.Ordinal, 19, "negentiende");
             b.Add(TermKind.Ordinal, 20, "twintigste");
             b.Add(TermKind.Ordinal, 30, "dertigste");
+            b.Add(TermKind.Ordinal, 40, "veertigste");
+            b.Add(TermKind.Ordinal, 50, "vijftigste");
+            b.Add(TermKind.Ordinal, 60, "zestigste");
+            // The compound splitter reads "vierentwintigste", but "een" is the article, so the two that
+            // count from one have to be spelled out
+            b.Add(TermKind.Ordinal, 21, "eenentwintigste");
+            b.Add(TermKind.Ordinal, 31, "eenendertigste");
             b.Add(TermKind.OrdinalSuffix, "e", "de", "ste");
 
             b.Add(TermKind.Unit, (int)TimeUnit.Second,  "seconde", "seconden", "sec");
