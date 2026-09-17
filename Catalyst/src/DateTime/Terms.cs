@@ -583,7 +583,10 @@ namespace Catalyst.DateTimeRecognition
             if (word.Length < 2 || (word[^1] != 's' && word[^1] != 'S')) return false;
 
             // Only the singular counts: "lunes" is a Monday, not a plural of the abbreviation "lun"
-            return _wordsBySpan.ContainsKey(word[..^1]);
+            if (!_wordsBySpan.TryGetValue(word[..^1], out var stem)) return false;
+
+            // An abbreviated weekday is not a singular either: "dins" is Tuesday, not a plural of "din"
+            return !(word.Length <= 4 && stem.Is(TermKind.Weekday));
         }
 
         public bool TryGetWord(ReadOnlySpan<char> word, out TermInfo info)

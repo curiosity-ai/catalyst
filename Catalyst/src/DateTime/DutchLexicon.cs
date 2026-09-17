@@ -27,13 +27,13 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Month, 11, "november", "nov");
             b.Add(TermKind.Month, 12, "december", "dec");
 
-            b.Add(TermKind.Weekday, 0, "zondag", "zondagen", "zo");
-            b.Add(TermKind.Weekday, 1, "maandag", "maandagen", "ma");
-            b.Add(TermKind.Weekday, 2, "dinsdag", "dinsdagen", "di");
-            b.Add(TermKind.Weekday, 3, "woensdag", "woensdagen", "wo");
-            b.Add(TermKind.Weekday, 4, "donderdag", "donderdagen", "do");
-            b.Add(TermKind.Weekday, 5, "vrijdag", "vrijdagen", "vr");
-            b.Add(TermKind.Weekday, 6, "zaterdag", "zaterdagen", "za");
+            b.Add(TermKind.Weekday, 0, "zondag", "zondagen", "zo", "zon");
+            b.Add(TermKind.Weekday, 1, "maandag", "maandagen", "ma", "maa", "maan");
+            b.Add(TermKind.Weekday, 2, "dinsdag", "dinsdagen", "di", "din", "dins");
+            b.Add(TermKind.Weekday, 3, "woensdag", "woensdagen", "wo", "woe", "woens");
+            b.Add(TermKind.Weekday, 4, "donderdag", "donderdagen", "do", "don", "dond");
+            b.Add(TermKind.Weekday, 5, "vrijdag", "vrijdagen", "vr", "vrij");
+            b.Add(TermKind.Weekday, 6, "zaterdag", "zaterdagen", "za", "zat");
 
             b.Add(TermKind.Cardinal,  0, "nul");
             b.Add(TermKind.Cardinal,  1, "één");
