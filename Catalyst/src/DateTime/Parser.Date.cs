@@ -268,18 +268,30 @@ namespace Catalyst.DateTimeRecognition
                 probe = SkipArticle(probe);
                 if (AtWord(tail, "the")) theDay = true;
 
+                // "terça-feira dia 25" — the word for "day" introduces the number the same way "the" does
+                int probeDayNoun = SkipDayNoun(probe);
+                if (probeDayNoun > probe) { probe = probeDayNoun; theDay = true; }
+
                 if (TryOrdinal(probe, out int ord, out int ordEnd) && ord >= 1 && ord <= 31)
                 {
                     n.Day         = ord;
                     n.DefiniteDay = theDay;
                     end           = ordEnd;
                 }
+                else if (probeDayNoun > tail && TryWordNumber(probe, out int spokenDay, out int spokenEnd) && spokenDay >= 1 && spokenDay <= 31)
+                {
+                    // "terça-feira dia vinte e cinco" — a day the introducer says is one
+                    n.Day         = spokenDay;
+                    n.DefiniteDay = theDay;
+                    end           = spokenEnd;
+                }
                 else if (AtNumber(probe) && NumberAt(probe) >= 1 && NumberAt(probe) <= 31 && DigitsAt(probe) <= 2 && _lex[probe].SpaceBefore
                          && !AtTerm(probe + 1, TermKind.AmPm))
                 {
                     // "mon 9 am" is nine o'clock on a monday, not the ninth
-                    n.Day = NumberAt(probe);
-                    end   = probe + 1;
+                    n.Day         = NumberAt(probe);
+                    n.DefiniteDay = theDay;
+                    end           = probe + 1;
                 }
             }
 
@@ -383,9 +395,10 @@ namespace Catalyst.DateTimeRecognition
 
             int at = SkipArticleOfDate(i, out i);
 
-            // "el día 9 mayo" — the word for "day" in front of the number it introduces
+            // "el día 9 mayo" — the word for "day" in front of the number it introduces. A date that goes
+            // on to name its month reports from the number, the way "no dia 20 de junho" is read
             int dayNoun = SkipDayNoun(at);
-            if (dayNoun > at) at = dayNoun;
+            if (dayNoun > at) { at = dayNoun; i = dayNoun; }
 
             // ---- "<month> <day> [, <year>]"
             if (AtTerm(at, TermKind.Month, out int month))

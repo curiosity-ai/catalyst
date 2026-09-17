@@ -262,7 +262,11 @@ namespace Catalyst.DateTimeRecognition
             if (!AtTermValue(at, TermKind.Unit, (int)TimeUnit.Day)) return i;
 
             at = After(at);
-            return AtNumber(at) && DigitsAt(at) <= 2 && NumberAt(at) >= 1 && NumberAt(at) <= 31 ? at : i;
+
+            if (AtNumber(at)) return DigitsAt(at) <= 2 && NumberAt(at) >= 1 && NumberAt(at) <= 31 ? at : i;
+
+            // "dia vinte e cinco" — the number it introduces may be spelled out
+            return TryWordNumber(at, out int spoken, out _) && spoken >= 1 && spoken <= 31 ? at : i;
         }
 
         /// <summary>"22." — where the language writes an ordinal as its number and a full stop.</summary>
