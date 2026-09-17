@@ -532,6 +532,18 @@ namespace Catalyst.DateTimeRecognition
                 return true;
             }
 
+            // "tweeduizend", "dosmil" — the count written onto its multiplier
+            for (int k = 3; k <= word.Length - 4; k++)
+            {
+                if (!_wordsBySpan.TryGetValue(word[..k], out var lead))                  continue;
+                if (lead.Kind != TermKind.Cardinal || lead.Value < 2 || lead.Value > 9)  continue;
+                if (!_wordsBySpan.TryGetValue(word[k..], out var multiplier))            continue;
+                if (multiplier.Kind != TermKind.Multiplier || multiplier.Value < 100)    continue;
+
+                number = new TermInfo(TermKind.Cardinal, lead.Value * multiplier.Value);
+                return true;
+            }
+
             if (!SplitsCompounds || word.Length < 8) return false;
 
             for (int k = 3; k <= word.Length - 5; k++)
