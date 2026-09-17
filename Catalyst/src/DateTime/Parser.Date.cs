@@ -403,7 +403,9 @@ namespace Catalyst.DateTimeRecognition
         {
             if (TryYear(i, out year, out end)) return true;
 
+            // "12h55" — two digits a marker is glued to are a clock reading, not a year
             if (AtNumber(i) && DigitsAt(i) == 2 && !At(i + 1, LexKind.Colon)
+                && !(In(i + 1) && _lex[i + 1].Kind == LexKind.Word && !_lex[i + 1].SpaceBefore)
                 && (allowTwoDigits || WrittenWithAnApostrophe(i) || NothingFollows(i + 1)))
             {
                 year = ExpandTwoDigitYear(NumberAt(i));

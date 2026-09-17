@@ -373,11 +373,31 @@ namespace Catalyst.DateTimeRecognition
             if (month < 0 && monthRelative == RelativeKind.None)
             {
                 int ofAt = SkipWords(end, "of", "in");
+                ofAt = SkipGlue(ofAt, 1);
                 ofAt = SkipArticle(ofAt);
 
-                if (!AtTerm(ofAt, TermKind.Month, out month)) return -1;
+                if (AtTerm(ofAt, TermKind.Month, out int namedMonth))
+                {
+                    month = namedMonth;
+                    end   = ofAt + 1;
+                }
+                // "4-23 mois prochain" — the qualified month may follow the days instead
+                else if (_modDepth == 0)
+                {
+                    _modDepth++;
+                    int trailingEnd = TryRelativeUnitPeriod(ofAt, out int trailingNode);
+                    _modDepth--;
 
-                end = ofAt + 1;
+                    if (trailingEnd < 0 || NodeAt(trailingNode).PeriodUnit != TimeUnit.Month
+                        || NodeAt(trailingNode).PeriodCount != 1 || NodeAt(trailingNode).Relative == RelativeKind.None) return -1;
+
+                    monthRelative = NodeAt(trailingNode).Relative;
+                    end           = trailingEnd;
+                }
+                else
+                {
+                    return -1;
+                }
             }
 
             int year = Node.Unspecified;
