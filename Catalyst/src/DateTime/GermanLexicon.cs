@@ -127,12 +127,13 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayBeforeYesterday, "vorgestern");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Now,                "jetzt", "sofort", "gerade", "im moment", "momentan");
 
-            b.Add(TermKind.Ago,     "vor", "davor", "früher", "frueher");
+            b.Add(TermKind.Ago,     "vor", "davor");
+            b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "früher", "frueher");
             b.Add(TermKind.FromNow, "danach", "ab jetzt");
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "später", "spaeter");
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.Mod, (int)ModKind.Earlier), "früher", "frueher");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "früh", "frueh", "vormittagszeit");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "vormittag", "vormittagszeit");
             b.Add(TermKind.PastWord, "nach");
             b.Add(new TermInfo(TermKind.Ago, 0, TermKind.ToWord), "vor");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag");
@@ -183,6 +184,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Mod, (int)ModKind.End,       "ende", "ende des", "zum ende");
             b.Add(TermKind.Mod, (int)ModKind.Mid,       "mitte", "mitte des");
             b.Add(TermKind.Mod, (int)ModKind.Early,     "früh im", "anfangs");
+            b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Early, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "früh", "frueh");
             b.Add(TermKind.Mod, (int)ModKind.Late,      "spät im", "ende von", "spät", "spaet");
             b.Add(TermKind.Mod, (int)ModKind.Since,     "seitdem", "seit dem");
             b.Add(TermKind.Mod, (int)ModKind.OrLater,   "oder später", "und später", "oder danach", "und danach",
@@ -239,7 +241,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.AutumnStart,    "herbstanfang");
             b.Add(TermKind.Holiday, (int)HolidayKind.WinterStart,    "winteranfang");
 
-            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true, movableHolidayNamesItsDay: false);
+            return b.Build(Language.German, dayMonthOrder: true, decimalComma: true, articleInDateSpan: false, pluralEndsInS: false, splitsCompounds: true, halfIsBeforeTheHour: true, ordinalEndsInDot: true, movableHolidayNamesItsDay: false, narrowingFollowsPeriod: true);
         }
     }
 }

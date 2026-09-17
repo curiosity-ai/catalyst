@@ -147,8 +147,11 @@ namespace Catalyst.DateTimeRecognition
 
             kind = (PartOfDayKind)podValue;
 
-            // "frühmorgens", "spätabends" — one word names the part of the day and which end of it is meant
-            if (mod == ModKind.None && AtTerm(at, TermKind.Mod, out int ownMod)) mod = (ModKind)ownMod;
+            // "frühmorgens", "spätabends" — one word names the part of the day and which end of it is meant.
+            // The word has to name the part first: "früh" is the morning as much as it is "early", and
+            // "morgen früh" is the whole of it
+            if (mod == ModKind.None && _lex[at].Term.Kind == TermKind.PartOfDay
+                && AtTerm(at, TermKind.Mod, out int ownMod)) mod = (ModKind)ownMod;
 
             at = After(at);
 
@@ -183,8 +186,15 @@ namespace Catalyst.DateTimeRecognition
 
             int at = i;
 
-            // "noon" / "midnight" / "noonish", and "12 noon" / "12 midnight", where the hour repeats the word
-            int spoken = AtNumber(at) && (NumberAt(at) == 12 || NumberAt(at) == 0) && AtTerm(at + 1, TermKind.PartOfDay) ? at + 1 : at;
+            // "noon" / "midnight" / "noonish", and "12 noon" / "12 (Uhr) midnight", where the hour repeats
+            // the word — the clock word may stand between the two, as German writes "12 Uhr nachts"
+            int spoken = at;
+
+            if (AtNumber(at) && (NumberAt(at) == 12 || NumberAt(at) == 0))
+            {
+                int named = AtTerm(at + 1, TermKind.OClock) ? After(at + 1) : at + 1;
+                if (AtTerm(named, TermKind.PartOfDay)) spoken = named;
+            }
 
             if (AtTerm(spoken, TermKind.PartOfDay, out int podValue))
             {

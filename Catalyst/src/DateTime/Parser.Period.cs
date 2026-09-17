@@ -43,6 +43,28 @@ namespace Catalyst.DateTimeRecognition
                     SetSpan(ref n);
                     best = n.LexEnd;
                 }
+
+                // "dieses Jahr früh", "dieses Jahr später" — the narrowing word follows what it narrows
+                else if (_lexicon.NarrowingFollowsPeriod && NodeAt(bestNode).Kind == NodeKind.DateRange
+                         && NodeAt(bestNode).Mod == ModKind.None)
+                {
+                    var slice = k switch
+                    {
+                        ModKind.Early or ModKind.Earlier => ModKind.Start,
+                        ModKind.Late  or ModKind.Later   => ModKind.End,
+                        ModKind.Mid                      => ModKind.Mid,
+                        _                                => ModKind.None,
+                    };
+
+                    if (slice != ModKind.None)
+                    {
+                        ref var n = ref NodeAt(bestNode);
+                        n.Mod    = slice;
+                        n.LexEnd = After(best);
+                        SetSpan(ref n);
+                        best = n.LexEnd;
+                    }
+                }
             }
 
             node = bestNode;

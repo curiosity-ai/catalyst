@@ -360,8 +360,15 @@ namespace Catalyst.DateTimeRecognition
         /// </summary>
         public bool     MovableHolidayNamesItsDay { get; }
 
-        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false)
+        /// <summary>
+        /// Whether a narrowing word may follow the period it narrows: German's "dieses Jahr früh" is the
+        /// first half of this year. English writes it in front, so a trailing "early" there is a new phrase.
+        /// </summary>
+        public bool     NarrowingFollowsPeriod { get; }
+
+        public Lexicon(Language language, bool dayMonthOrder, IEnumerable<KeyValuePair<string, TermInfo>> words, IEnumerable<KeyValuePair<string, TermInfo>> phrases, bool decimalComma = false, bool articleInDateSpan = true, bool articleInPeriodSpan = false, bool relativeAfterUnit = false, bool pluralEndsInS = true, bool partNamedWithOf = false, bool minutesFollowHour = false, bool splitsCompounds = false, bool halfIsBeforeTheHour = false, bool ordinalEndsInDot = false, bool movableHolidayNamesItsDay = true, bool hourUnitNamesTheClock = false, bool narrowingFollowsPeriod = false)
         {
+            NarrowingFollowsPeriod    = narrowingFollowsPeriod;
             HourUnitNamesTheClock     = hourUnitNamesTheClock;
             MovableHolidayNamesItsDay = movableHolidayNamesItsDay;
             OrdinalEndsInDot  = ordinalEndsInDot;
