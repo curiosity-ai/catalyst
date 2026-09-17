@@ -660,7 +660,7 @@ namespace Catalyst.DateTimeRecognition
             at++;
 
             int ofAt = at;
-            ofAt = SkipWords(ofAt, "of", "in");
+            ofAt = SkipGlue(ofAt, 1);   // "of 2021", "de 2021", "do próximo ano"
             ofAt = SkipArticle(ofAt);
 
             int anchorEnd = TryRangeEndpoint(ofAt, out int anchor);

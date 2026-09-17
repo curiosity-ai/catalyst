@@ -287,6 +287,8 @@ namespace Catalyst.DateTimeRecognition
     {
         private readonly FrozenDictionary<string, TermInfo>                                              _words;
         private readonly FrozenDictionary<string, TermInfo>.AlternateLookup<ReadOnlySpan<char>>          _wordsBySpan;
+        private readonly FrozenSet<string>                                                               _suffixes;
+        private readonly FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>>                           _suffixesBySpan;
         private readonly FrozenDictionary<string, Phrase[]>                                              _phrases;
         private readonly FrozenDictionary<string, Phrase[]>.AlternateLookup<ReadOnlySpan<char>>          _phrasesBySpan;
 
@@ -386,9 +388,15 @@ namespace Catalyst.DateTimeRecognition
 
             var singles = new Dictionary<string, TermInfo>(StringComparer.OrdinalIgnoreCase);
             var multi   = new Dictionary<string, List<Phrase>>(StringComparer.OrdinalIgnoreCase);
+            var suffixes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var kv in words)
             {
+                // An ordinal suffix is a letter the language also uses for something else — Portuguese's
+                // "o" is its article and "a" its preposition — so it is remembered apart from the reading
+                // that ends up winning the word
+                if (kv.Value.Is(TermKind.OrdinalSuffix)) suffixes.Add(kv.Key);
+
                 singles[kv.Key] = kv.Value;
             }
 
@@ -424,6 +432,8 @@ namespace Catalyst.DateTimeRecognition
             _wordsBySpan   = _words.GetAlternateLookup<ReadOnlySpan<char>>();
             _phrases       = byFirstWord.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
             _phrasesBySpan = _phrases.GetAlternateLookup<ReadOnlySpan<char>>();
+            _suffixes      = suffixes.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+            _suffixesBySpan = _suffixes.GetAlternateLookup<ReadOnlySpan<char>>();
         }
 
         /// <summary>
@@ -558,5 +568,8 @@ namespace Catalyst.DateTimeRecognition
         }
 
         public bool TryGetPhrases(ReadOnlySpan<char> firstWord, out Phrase[] phrases) => _phrasesBySpan.TryGetValue(firstWord, out phrases);
+
+        /// <summary>Whether the word is one the language writes an ordinal's number with ("9º", "9o", "6a").</summary>
+        public bool IsOrdinalSuffix(ReadOnlySpan<char> word) => _suffixesBySpan.Contains(word);
     }
 }

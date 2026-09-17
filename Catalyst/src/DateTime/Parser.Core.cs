@@ -269,12 +269,17 @@ namespace Catalyst.DateTimeRecognition
         private readonly bool AtDottedOrdinal(int i)
             => _lexicon.OrdinalEndsInDot && AtNumber(i) && At(i + 1, LexKind.Dot) && !_lex[i + 1].SpaceBefore;
 
+        /// <summary>Whether the word at <paramref name="i"/> is one an ordinal's number is written with.</summary>
+        private readonly bool AtOrdinalSuffix(int i)
+            => In(i) && _lex[i].Kind == LexKind.Word
+            && (_lex[i].Term.Is(TermKind.OrdinalSuffix) || _lexicon.IsOrdinalSuffix(_text.Slice(_lex[i].Start, _lex[i].Length)));
+
         private readonly bool TryOrdinal(int i, out int value, out int end)
         {
             value = 0;
             end   = i;
 
-            if (AtNumber(i) && (AtTerm(i + 1, TermKind.OrdinalSuffix) || AtDottedOrdinal(i)) && !_lex[i + 1].SpaceBefore)
+            if (AtNumber(i) && (AtOrdinalSuffix(i + 1) || AtDottedOrdinal(i)) && !_lex[i + 1].SpaceBefore)
             {
                 value = NumberAt(i);
                 end   = i + 2;
@@ -283,7 +288,7 @@ namespace Catalyst.DateTimeRecognition
 
             // "1.º" — the suffix written after a full stop
             if (AtNumber(i) && At(i + 1, LexKind.Dot) && !_lex[i + 1].SpaceBefore
-                && AtTerm(i + 2, TermKind.OrdinalSuffix) && !_lex[i + 2].SpaceBefore)
+                && AtOrdinalSuffix(i + 2) && !_lex[i + 2].SpaceBefore)
             {
                 value = NumberAt(i);
                 end   = i + 3;

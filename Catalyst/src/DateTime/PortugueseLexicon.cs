@@ -75,9 +75,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Multiplier,    1000, "mil");
             b.Add(TermKind.Multiplier, 1000000, "milhão", "milhao", "milhões");
 
-            b.Add(TermKind.Ordinal,  1, "primeiro", "primeira");
+            b.Add(TermKind.Ordinal,  1, "primeiro", "primeira", "primeiros", "primeiras");
             
-            b.Add(TermKind.Ordinal,  3, "terceiro", "terceira");
+            b.Add(TermKind.Ordinal,  3, "terceiro", "terceira", "terceiros", "terceiras");
             
             b.Add(TermKind.Ordinal,  5, "quinto");
             b.Add(TermKind.Ordinal,  6, "sexto");
@@ -90,6 +90,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Second,  "segundos");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Second, TermKind.Ordinal, 2), "segundo");
             b.Add(new TermInfo(TermKind.Weekday, 1, TermKind.Unit, (int)TimeUnit.Second), "seg");
+            b.Add(new TermInfo(TermKind.Weekday, 1, TermKind.Ordinal, 2), "segunda");   // Monday, and the second of anything else
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,  "minuto", "minutos", "min");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Hour, TermKind.OClock), "hora", "horas", "h", "hrs");
             b.Add(TermKind.Unit, (int)TimeUnit.Day,     "dia", "dias", "d");
@@ -110,6 +111,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.QuarterWord, 1, TermKind.Ordinal, 4), "quarto");
 
             b.Add(TermKind.Relative, (int)RelativeKind.This,     "este", "esta", "estes", "estas", "esse", "essa");
+            // "em este" and "de este" are written as one word, and the preposition travels with the period
+            b.Add(TermKind.Relative, (int)RelativeKind.This,     "neste", "nesta", "nestes", "nestas",
+                                                                 "deste", "desta", "destes", "destas",
+                                                                 "nesse", "nessa", "desse", "dessa");
             b.Add(TermKind.Relative, (int)RelativeKind.Next,     "próximo", "proximo", "próxima", "proxima", "próximos", "proximos",
                                                                  "próximas", "proximas", "seguinte", "seguintes", "que vem");
             b.Add(TermKind.Relative, (int)RelativeKind.Last,     "passado", "passada", "passados", "passadas",
@@ -150,7 +155,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.RangeStart, 0, "a partir de", "começando");
             b.Add(TermKind.RangeStart, 1, "entre");
 
-            b.Add(TermKind.Filler, "dos", "no", "na", "por", "para");
+            b.Add(TermKind.Filler, "dos", "no", "na", "nos", "nas", "por", "para");
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "o", "os");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "um", "uma");
             b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "todo", "toda", "todos", "todas", "inteiro", "inteira");   // "the whole day" counts as one
