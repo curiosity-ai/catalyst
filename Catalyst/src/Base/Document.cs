@@ -21,7 +21,7 @@ namespace Catalyst
     /// Represents a document in the Catalyst NLP pipeline.
     /// </summary>
     [JsonObject]
-    [MessagePackObject]
+    [MessagePackObject(AllowPrivate = true)]
     public class Document : IDocument
     {
         /// <summary>
@@ -29,10 +29,83 @@ namespace Catalyst
         /// </summary>
         [Key(0)] public Language Language { get; set; }
 
+        //AllowPrivate above settles MsgPack015; it also makes these backing fields serialization
+        //candidates, so each has to say it is not one
+        [IgnoreMember] private ReadOnlyMemory<char> _value;
+        [IgnoreMember] private string _valueAsString;
+        [IgnoreMember] private bool _valueIsNull;
+
+        /// <summary>
+        /// Gets or sets the document's text as memory over whatever buffer holds it. This is the document's
+        /// backing store: <see cref="Value"/>, <see cref="ValueAsSpan"/> and every span and token value are
+        /// views over it.
+        /// </summary>
+        /// <remarks>
+        /// Setting this does not copy. The caller keeps ownership of the buffer and must not overwrite it,
+        /// or return it to a pool, while the document is alive - the document holds a view, not a copy.
+        /// </remarks>
+        [JsonIgnore]
+        [IgnoreMember]
+        public ReadOnlyMemory<char> ValueMemory
+        {
+            get { return _value; }
+            set { _value = value; _valueAsString = null; _valueIsNull = false; }
+        }
+
+        /// <summary>
+        /// Gets the document's text as a span, without allocating.
+        /// </summary>
+        [JsonIgnore]
+        [IgnoreMember]
+        public ReadOnlySpan<char> ValueAsSpan { get { return _value.Span; } }
+
         /// <summary>
         /// Gets or sets the text value of the document.
         /// </summary>
-        [Key(1)] public string Value { get; set; }
+        /// <remarks>
+        /// The text is stored as <see cref="ValueMemory"/>. Setting this is free - the string becomes the
+        /// backing buffer. Reading it is free when the text came from a string, which is handed straight
+        /// back, and allocates one string, cached for later reads, when the text is a slice of a larger
+        /// buffer.
+        /// </remarks>
+        [Key(1)]
+        public string Value
+        {
+            get
+            {
+                if (_valueIsNull) { return null; }
+                return _valueAsString ??= DocumentText.Materialize(_value);
+            }
+            set
+            {
+                _valueAsString = value;
+                _valueIsNull   = value is null;
+                _value         = value.AsMemory();
+            }
+        }
+
+        /// <summary>
+        /// Whether <see cref="Value"/> is null, answered without materializing it.
+        /// </summary>
+        [JsonIgnore]
+        [IgnoreMember]
+        internal bool IsValueNull { get { return _valueIsNull; } }
+
+        /// <summary>
+        /// Takes the text of another document without copying it, keeping a null <see cref="Value"/> null.
+        /// </summary>
+        internal void CopyValueFrom(Document source)
+        {
+            if (source.IsValueNull) { Value = null; } else { ValueMemory = source.ValueMemory; }
+        }
+
+        /// <summary>
+        /// Takes the text of an immutable document without copying it, keeping a null <see cref="Value"/> null.
+        /// </summary>
+        internal void CopyValueFrom(ImmutableDocument source)
+        {
+            if (source.IsValueNull) { Value = null; } else { ValueMemory = source.ValueMemory; }
+        }
 
         /// <summary>
         /// Gets or sets the token data for each span in the document.
@@ -72,7 +145,7 @@ namespace Catalyst
         /// <summary>
         /// Gets the length of the document's text value.
         /// </summary>
-        [IgnoreMember] public int Length { get { return Value.Length; } }
+        [IgnoreMember] public int Length { get { return _value.Length; } }
 
         /// <summary>
         /// Gets a value indicating whether the document has been parsed (contains spans and tokens).
@@ -142,13 +215,25 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Document"/> class over text the caller already holds,
+        /// without copying it - see <see cref="ValueMemory"/> for what the document then expects of that buffer.
+        /// </summary>
+        /// <param name="doc">The text of the document.</param>
+        /// <param name="language">The language of the document.</param>
+        public Document(ReadOnlyMemory<char> doc, Language language = Language.Unknown) : this()
+        {
+            ValueMemory = doc.Span.IsWhiteSpace() ? default : doc.RemoveControlCharacters();
+            Language = language;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Document"/> class as a copy of another document.
         /// </summary>
         /// <param name="doc">The document to copy.</param>
         public Document(Document doc)
         {
             Language = doc.Language;
-            Value = doc.Value;
+            CopyValueFrom(doc);
             TokensData = doc.TokensData.Select(tds => tds.Select(td => new TokenData(td.LowerBound, td.UpperBound, td.Tag, td.Hash, td.IgnoreCaseHash, td.Head, td.Frequency, td.DependencyType, td.Replacement)).ToList()).ToList();
             SpanBounds = doc.SpanBounds.Select(sb => sb.ToArray()).ToList();
             Metadata = doc.Metadata?.ToDictionary(kv => kv.Key, kv => kv.Value);
@@ -315,7 +400,7 @@ namespace Catalyst
         /// <returns>The tokenized text.</returns>
         public string TokenizedValue(bool mergeEntities = false)
         {
-            var sb = new StringBuilder(Value.Length + TokensCount * 10 + 100);
+            var sb = new StringBuilder(Length + TokensCount * 10 + 100);
             for (int i = 0; i < SpanBounds.Count(); i++)
             {
                 foreach (var token in this[i])
@@ -383,13 +468,13 @@ namespace Catalyst
         internal string GetSpanValue(int index)
         {
             var span = SpanBounds[index];
-            return Value.Substring(span[0], span[1] - span[0] + 1);
+            return _value.Span.Slice(span[0], span[1] - span[0] + 1).ToString();
         }
 
         internal ReadOnlySpan<char> GetSpanValue2(int index)
         {
             var span = SpanBounds[index];
-            return Value.AsSpan().Slice(span[0], span[1] - span[0] + 1);
+            return _value.Span.Slice(span[0], span[1] - span[0] + 1);
         }
 
         internal IReadOnlyList<EntityType> GetTokenEntityTypes(int tokenIndex, int spanIndex)
@@ -562,7 +647,7 @@ namespace Catalyst
 
             int b = td.LowerBound;
             int e = td.UpperBound;
-            return Value.Substring(b, e - b + 1);
+            return _value.Span.Slice(b, e - b + 1).ToString();
         }
 
         internal ReadOnlySpan<char> GetTokenValueAsSpan(int index, int spanIndex)
@@ -570,7 +655,7 @@ namespace Catalyst
             var td = TokensData[spanIndex][index];
             int b = td.LowerBound;
             int e = td.UpperBound;
-            return Value.AsSpan(b, e - b + 1);
+            return _value.Span.Slice(b, e - b + 1);
         }
 
         /// <summary>
@@ -580,9 +665,9 @@ namespace Catalyst
         /// <returns>The text with replacements.</returns>
         public string ToStringWithReplacements(Func<ITokens, string> replacement)
         {
-            var sb = new StringBuilder();
+            var sb = new StringBuilder(Length);
 
-            sb.Append(Value);
+            sb.Append(ValueAsSpan);
 
             foreach(var span in this.Reverse())
             {
@@ -953,7 +1038,9 @@ namespace Catalyst
             var labels = imDoc.Labels?.ToList();
             var entityData = imDoc.EntityData?.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
             var tokenMetadata = imDoc.TokenMetadata?.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(kv2 => kv2.Key, kv2 => kv2.Value));
-            return new Document(imDoc.Language, imDoc.Value, tokensData, spanBounds.Select(l => new int[] { (int)(l >> 32), (int)(l & 0xFFFF_FFFFL) }).ToList(), metadata, imDoc.UID, labels, entityData, tokenMetadata);
+            var doc = new Document(imDoc.Language, null, tokensData, spanBounds.Select(l => new int[] { (int)(l >> 32), (int)(l & 0xFFFF_FFFFL) }).ToList(), metadata, imDoc.UID, labels, entityData, tokenMetadata);
+            doc.CopyValueFrom(imDoc);
+            return doc;
         }
 
         /// <summary>
@@ -962,7 +1049,7 @@ namespace Catalyst
         /// <returns>An <see cref="ImmutableDocument"/> instance.</returns>
         public ImmutableDocument ToImmutable()
         {
-            return new ImmutableDocument(Language, Value,
+            var immutable = new ImmutableDocument(Language, ValueMemory,
                                          TokensData.Select(td => td.ToArray()).ToArray(),
                                          SpanBounds.Select(sb => (long)sb[0] << 32 | (uint)sb[1]).ToArray(),
                                          Metadata?.ToDictionary(kv => kv.Key, kv => kv.Value),
@@ -971,14 +1058,18 @@ namespace Catalyst
                                          EntityData?.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray()),
                                          TokenMetadata?.ToDictionary(kv => kv.Key, kv => kv.Value.ToDictionary(kv2 => kv2.Key, kv2 => kv2.Value))
                                         );
+
+            if (_valueIsNull) { immutable.Value = null; }
+
+            return immutable;
         }
 
         internal char? GetNextChar(int index, int spanIndex)
         {
             var td = TokensData[spanIndex][index];
             int e = td.UpperBound;
-            if (e == Value.Length - 1) return null;
-            return Value[e + 1];
+            if (e == _value.Length - 1) return null;
+            return _value.Span[e + 1];
         }
 
         internal char? GetPreviousChar(int index, int spanIndex)
@@ -986,7 +1077,7 @@ namespace Catalyst
             var td = TokensData[spanIndex][index];
             int b = td.LowerBound;
             if (b == 0) return null;
-            return Value[b - 1];
+            return _value.Span[b - 1];
         }
     }
 }

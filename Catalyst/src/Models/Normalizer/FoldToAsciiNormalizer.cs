@@ -1288,10 +1288,11 @@ namespace Catalyst.Models
 
         public void Normalize(IDocument document)
         {
-            var sb = new StringBuilder(document.Length);
-            for (int i = 0; i < document.Length; i++)
+            var text = document.ValueAsSpan;
+            var sb = new StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
             {
-                var c = document.Value[i];
+                var c = text[i];
                 var n = ReplaceUnicodeChar(c);
                 sb.Append(n);
             }

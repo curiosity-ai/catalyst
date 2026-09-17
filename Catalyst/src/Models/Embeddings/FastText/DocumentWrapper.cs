@@ -30,6 +30,10 @@ namespace Catalyst.Models
 
         public string Value { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+        public ReadOnlyMemory<char> ValueMemory { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        public ReadOnlySpan<char> ValueAsSpan => throw new NotImplementedException();
+
         public string TokenizedValue(bool mergeEntities = false) => throw new NotImplementedException();
 
         public UID128 UID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

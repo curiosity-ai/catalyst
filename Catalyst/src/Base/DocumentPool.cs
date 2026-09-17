@@ -170,6 +170,23 @@ namespace Catalyst
         }
 
         /// <summary>
+        /// Rents an empty document over text the caller already holds, without copying it. The buffer must
+        /// stay untouched until the document is handed back with <see cref="Return"/>.
+        /// </summary>
+        /// <param name="text">The document's text. Control characters are removed, as in <see cref="Document"/>.</param>
+        /// <param name="language">The document's language.</param>
+        /// <returns>A document the caller must hand back with <see cref="Return"/>.</returns>
+        public PooledDocument Rent(ReadOnlyMemory<char> text, Language language = Language.Unknown)
+        {
+            var document = RentEmpty();
+
+            document.ValueMemory = text.Span.IsWhiteSpace() ? default : text.RemoveControlCharacters();
+            document.Language    = language;
+
+            return document;
+        }
+
+        /// <summary>
         /// Rents a document holding a copy of <paramref name="source"/>: same text, spans, tokens, entities
         /// and metadata, none of it shared with the source.
         /// </summary>
@@ -182,8 +199,8 @@ namespace Catalyst
             var document = RentEmpty();
 
             document.Language = source.Language;
-            document.Value    = source.Value;
             document.UID      = source.UID;
+            document.CopyValueFrom(source);
 
             for (int i = 0; i < source.SpanBounds.Count; i++)
             {
@@ -264,8 +281,8 @@ namespace Catalyst
             var document = RentEmpty();
 
             document.Language = source.Language;
-            document.Value    = source.Value;
             document.UID      = source.UID;
+            document.CopyValueFrom(source);
 
             if (source.SpanBounds is object)
             {
