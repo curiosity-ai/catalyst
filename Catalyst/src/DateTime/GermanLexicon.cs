@@ -33,7 +33,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Weekday, 3, "mittwoch", "mittwochs", "mi");
             b.Add(TermKind.Weekday, 4, "donnerstag", "donnerstags", "do");
             b.Add(TermKind.Weekday, 5, "freitag", "freitags", "fr");
-            b.Add(TermKind.Weekday, 6, "samstag", "samstags", "sonnabend", "sa");
+            b.Add(TermKind.Weekday, 6, "samstag", "samstags", "sonnabend", "sonnabends", "sa");
 
             b.Add(TermKind.Cardinal,  0, "null");
             b.Add(TermKind.Cardinal,  1, "ein", "eine", "einen", "einer", "eins");
@@ -92,8 +92,9 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Second,    "sekunde", "sekunden", "sek");
             b.Add(TermKind.Unit, (int)TimeUnit.Minute,    "minute", "minuten", "min");
             b.Add(TermKind.Unit, (int)TimeUnit.Hour,      "stunde", "stunden", "std", "h");
-            b.Add(TermKind.Unit, (int)TimeUnit.Day,       "tag", "tage", "tagen", "tages", "t");
-            b.Add(TermKind.Unit, (int)TimeUnit.Week,      "woche", "wochen", "wo", "arbeitswoche", "arbeitswochen");
+            b.Add(TermKind.Unit, (int)TimeUnit.Day,       "tag", "tage", "tagen", "tages", "t", "tg");
+            b.Add(TermKind.Unit, (int)TimeUnit.Week,      "woche", "wochen", "wo");
+            b.Add(TermKind.Unit, (int)TimeUnit.WorkWeek,  "arbeitswoche", "arbeitswochen", "werktags", "wochentags", "unter der woche");
             b.Add(TermKind.Unit, (int)TimeUnit.Fortnight, "vierzehn tage");
             b.Add(TermKind.Unit, (int)TimeUnit.Month,     "monat", "monate", "monaten", "monats");
             b.Add(TermKind.Unit, (int)TimeUnit.Quarter,   "quartal", "quartale", "vierteljahr");
