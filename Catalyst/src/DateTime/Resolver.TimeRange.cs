@@ -171,9 +171,9 @@ namespace Catalyst.DateTimeRecognition
             {
                 sharedAmPm = right.PartOfDay switch
                 {
-                    PartOfDayKind.Morning or PartOfDayKind.EarlyMorning => 0,
+                    PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.ThisMorning => 0,
                     PartOfDayKind.Afternoon or PartOfDayKind.Evening or PartOfDayKind.Night
-                        or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening => 1,
+                        or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening or PartOfDayKind.ThisAfternoon => 1,
                     _ => -1,
                 };
             }
@@ -410,9 +410,10 @@ namespace Catalyst.DateTimeRecognition
         /// <summary>Which half of the day a part of the day falls in, or -1 where it says nothing.</summary>
         private static int AmPmOfPart(PartOfDayKind part) => part switch
         {
-            PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast => 0,
+            PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast
+                        or PartOfDayKind.ThisMorning                                               => 0,
             PartOfDayKind.Afternoon or PartOfDayKind.Evening or PartOfDayKind.Night
-                or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening
+                or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening or PartOfDayKind.ThisAfternoon
                 or PartOfDayKind.Dinner                                                    => 1,
             _                                                                              => -1,
         };

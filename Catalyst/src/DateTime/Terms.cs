@@ -120,6 +120,8 @@ namespace Catalyst.DateTimeRecognition
         Dawn,
         LastNight,
         ThisEvening,
+        ThisMorning,
+        ThisAfternoon,
         LateNight,
         Tonight,
         Lunch,

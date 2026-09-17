@@ -129,8 +129,10 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.FromNow, "vanaf nu", "daarna");
             b.Add(new TermInfo(TermKind.FromNow, 0, TermKind.Mod, (int)ModKind.Later), "later");
 
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,   "ochtend", "ochtenden", "'s ochtends", "'s morgens", "vanmorgen", "vanochtend", "voormiddag");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "middag", "namiddag", "'s middags", "vanmiddag");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Morning,      "ochtend", "ochtenden", "'s ochtends", "'s morgens", "voormiddag");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.ThisMorning,  "vanmorgen", "vanochtend");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon,     "middag", "namiddag", "'s middags");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.ThisAfternoon, "vanmiddag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "avond", "avonden", "'s avonds");
             b.Add(new TermInfo(TermKind.PastWord, 0, TermKind.InPrefix, 0), "over");
             // "voor 2010" is before 2010, and "10 voor half negen" counts off the hour

@@ -520,9 +520,10 @@ namespace Catalyst.DateTimeRecognition
             {
                 ampm = n.PartOfDay switch
                 {
-                    PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast => 0,
+                    PartOfDayKind.Morning or PartOfDayKind.EarlyMorning or PartOfDayKind.Breakfast
+                        or PartOfDayKind.ThisMorning                                               => 0,
                     PartOfDayKind.Afternoon or PartOfDayKind.Evening or PartOfDayKind.Night
-                        or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening
+                        or PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening or PartOfDayKind.ThisAfternoon
                         or PartOfDayKind.Dinner                                                    => 1,
                     _                                                                              => -1,
                 };

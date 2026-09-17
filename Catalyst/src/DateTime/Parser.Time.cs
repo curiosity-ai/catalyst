@@ -34,6 +34,8 @@ namespace Catalyst.DateTimeRecognition
             PartOfDayKind.Tonight      => new DayPart("TNI",  20, 23, 0, 59, 59),
             PartOfDayKind.LastNight    => new DayPart("TNI",  20, 23, 0, 59, 59),
             PartOfDayKind.ThisEvening  => new DayPart("TEV",  16, 20),
+            PartOfDayKind.ThisMorning  => new DayPart("TMO",   8, 12),
+            PartOfDayKind.ThisAfternoon=> new DayPart("TAF",  12, 16),
             PartOfDayKind.DayTime      => new DayPart("TDT",   8, 18),
             PartOfDayKind.LateNight    => new DayPart("TNT",   0,  8),
             PartOfDayKind.Business     => new DayPart("TBH",   8, 18),
@@ -674,6 +676,14 @@ namespace Catalyst.DateTimeRecognition
             return LooksLikeClock(i) && LooksLikeClock(other);
         }
 
+        /// <summary>Whether the word at <paramref name="i"/> names a part of one particular day.</summary>
+        private readonly bool NamesPartOfToday(int i)
+            => AtTerm(i, TermKind.PartOfDay, out int value) && IsPartOfToday((PartOfDayKind)value);
+
+        internal static bool IsPartOfToday(PartOfDayKind kind)
+            => kind is PartOfDayKind.Tonight or PartOfDayKind.LastNight or PartOfDayKind.ThisEvening
+                    or PartOfDayKind.ThisMorning or PartOfDayKind.ThisAfternoon;
+
         /// <summary>A written year has no leading zero and sits in the calendar range; a clock reading does not.</summary>
         private readonly bool LooksLikeClock(int i)
         {
@@ -731,8 +741,11 @@ namespace Catalyst.DateTimeRecognition
 
             if (!podLeading)
             {
-                // "2 nights" is a duration; only a marked clock or an introduced phrase takes a part of the day
-                bool introduced = AtTerm(at, TermKind.Filler) || AtTerm(at, TermKind.Mod);
+                // "2 nights" is a duration; only a marked clock or an introduced phrase takes a part of the
+                // day — or a word that names a part of *today*, which marks the number by itself
+                if (At(at, LexKind.Comma) && AtTerm(at + 1, TermKind.PartOfDay)) at++;
+
+                bool introduced = AtTerm(at, TermKind.Filler) || AtTerm(at, TermKind.Mod) || NamesPartOfToday(at);
 
                 // Inside a range each side is already known to be a clock, so "et 6 après-midi" qualifies it
                 if (ampm >= 0 || explicitMinutes || marked || introduced || allowBareHour)
@@ -760,6 +773,15 @@ namespace Catalyst.DateTimeRecognition
             n.AmPm      = ampm;
             n.PartOfDay = pod;
             n.Mod       = mod;
+
+            // "8 vanmorgen", "anoche a las 8" — the part of the day names a day as well as an hour
+            if (IsPartOfToday(pod))
+            {
+                n.Kind       = NodeKind.DateTime;
+                n.Relative   = RelativeKind.Current;
+                n.OffsetDays = pod == PartOfDayKind.LastNight ? -1 : 0;
+            }
+
             SetSpan(ref n);
             node = Alloc(n);
             return at;
