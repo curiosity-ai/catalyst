@@ -98,6 +98,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Day, "weekdag", "weekdagen");
             b.Add(TermKind.Several, 3, "enkele", "enige", "wat", "een paar", "verscheidene", "sommige", "meerdere");
             b.Add(TermKind.Several, 2, "paar");
+            b.Add(TermKind.Several, 1, "andere", "ander");
             b.Add(TermKind.HalfWord, "halve");
             b.Add(TermKind.HalfWord, 3, "anderhalf", "anderhalve");   // three halves
             b.Add(TermKind.QuarterWord, "kwartier", "kwart");
@@ -114,7 +115,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Relative, (int)RelativeKind.Previous, "voorgaande", "voorafgaande");
             b.Add(TermKind.Relative, (int)RelativeKind.Current,  "huidige", "huidig", "zelfde", "dezelfde", "hetzelfde", "dat", "die");
 
-            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "vandaag");
+            b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Today,              "vandaag", "deze dag", "vandaag de dag");
             b.Add(new TermInfo(TermKind.SpecialDay, (int)SpecialDayKind.Tomorrow, TermKind.PartOfDay, (int)PartOfDayKind.Morning), "morgen");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.Yesterday,          "gisteren");
             b.Add(TermKind.SpecialDay, (int)SpecialDayKind.DayAfterTomorrow,   "overmorgen");

@@ -149,7 +149,8 @@ namespace Catalyst.DateTimeRecognition
             if ((!_lexicon.ArticleInDateSpan || _lexicon.ArticleInPeriodSpan)
                 && AtTerm(i, TermKind.Filler)
                 && !AtTerm(i, TermKind.Month) && !AtTerm(i, TermKind.Weekday) && !AtTerm(i, TermKind.Unit)
-                && !AtTerm(i, TermKind.Relative) && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal))
+                && !AtTerm(i, TermKind.Relative) && !AtTerm(i, TermKind.SpecialDay) && !AtTerm(i, TermKind.Cardinal)
+                && !AtTerm(i, TermKind.Whole))   // "hele week" is a length, not the week itself
             {
                 return After(i);
             }
