@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Mosaik.Core;
 
 namespace Catalyst.DateTimeRecognition
@@ -168,6 +168,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.ClockPrefix), "om");
 
             b.Add(new TermInfo(TermKind.Mod, (int)ModKind.Before, TermKind.ToWord), "voor de", "uiterlijk", "niet later dan");
+            b.Add(TermKind.Mod, (int)ModKind.Before, "tegen");   // "tegen 2 uur" is a deadline, never a count off the hour
             b.Add(TermKind.Mod, (int)ModKind.After, "na", "na de", "later dan", "hoger dan", "groter dan");
             b.Add(TermKind.Mod, (int)ModKind.Less,  "minder dan", "korter dan");
             b.Add(TermKind.Mod, (int)ModKind.More,  "meer dan", "langer dan");
