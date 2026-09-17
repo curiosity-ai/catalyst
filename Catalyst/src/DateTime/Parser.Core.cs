@@ -207,10 +207,12 @@ namespace Catalyst.DateTimeRecognition
                     if      (current == 0)                                                { current = v; }
                     else if (current >= 100 && current % 100 == 0 && v < 100 && v >= 10)  { current += v; }
                     else if (current % 10 == 0 && v < 10)                                 { current += v; }
+                    // "soixante-dix", "quatre-vingt-dix" — a vigesimal ten counts its teens on
+                    else if ((current == 60 || current == 80) && v >= 10 && v < 20)       { current += v; }
                     else                                                                  { break; }
 
                     any      = true;
-                    at++;
+                    at       = After(at);   // "quatre-vingt" is one cardinal written as a phrase
                     lastGood = at;
                     continue;
                 }
@@ -230,7 +232,7 @@ namespace Catalyst.DateTimeRecognition
                         current = (current == 0 ? 1 : current) * m;
                     }
 
-                    at++;
+                    at       = After(at);
                     lastGood = at;
                     continue;
                 }

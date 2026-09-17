@@ -599,6 +599,10 @@ namespace Catalyst.DateTimeRecognition
                 at    = After(at);
             }
 
+            // "il y a 30 minutes" — the word for "ago" leads what it counts back over
+            bool leadingAgo = !sawIn && AtTerm(at, TermKind.Ago) && !AtTerm(at, TermKind.Unit);
+            if (leadingAgo) at = After(at);
+
             int durationEnd = TryDuration(at, out int duration);
             if (durationEnd < 0) return -1;
 
@@ -608,7 +612,8 @@ namespace Catalyst.DateTimeRecognition
             int  sign = 0;
             int  end  = durationEnd;
 
-            if (AtTerm(durationEnd, TermKind.Ago))          { sign = -1; end = After(durationEnd); }
+            if (leadingAgo)                                 { sign = -1; }
+            else if (AtTerm(durationEnd, TermKind.Ago))     { sign = -1; end = After(durationEnd); }
             // "30 minutes later this week" is half an hour and a week, not a moment
             else if (AtTerm(durationEnd, TermKind.FromNow) && !AtTerm(After(durationEnd), TermKind.Relative)) { sign = 1; end = After(durationEnd); }
             else if (AtWord(durationEnd, "from") && AtTermValue(durationEnd + 1, TermKind.SpecialDay, (int)SpecialDayKind.Now))

@@ -19,7 +19,8 @@ namespace Catalyst.DateTimeRecognition
             {
                 var k = (ModKind)modValue;
 
-                if (k == ModKind.Less || k == ModKind.More || k == ModKind.Approx)
+                // "depuis 3 ans" — a length the word for "since" introduced keeps it, and says so
+                if (k == ModKind.Less || k == ModKind.More || k == ModKind.Approx || k == ModKind.Since)
                 {
                     mod = k;
                     i   = After(i);
