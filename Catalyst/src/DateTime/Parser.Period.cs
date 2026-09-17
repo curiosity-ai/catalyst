@@ -460,6 +460,7 @@ namespace Catalyst.DateTimeRecognition
             Consider(TryDate(i, out int n3),          n3, ref best, ref bestNode);
             Consider(TryNowAsDate(i, out int n4),     n4, ref best, ref bestNode);
             Consider(TryDateTimePeriod(i, out int n5), n5, ref best, ref bestNode);   // "até amanhã de manhã"
+            Consider(TryWeekOfDate(i, out int n6),      n6, ref best, ref bestNode);   // "de week beginnend op 4 feb."
 
             node = bestNode;
             return best;
@@ -577,12 +578,6 @@ namespace Catalyst.DateTimeRecognition
 
             if (mod == ModKind.OrLater || mod == ModKind.OrEarlier || mod == ModKind.Less || mod == ModKind.More) return -1;
 
-            // Where the word that bounds is the language's "for" and "from" as well, a definite article
-            // behind it is what says it is not bounding: "voor de hele dag" is how long, not how late.
-            // The words that can only bound — "sinds", "uiterlijk" — are unaffected
-            if (_lexicon.BoundsOnlyOnTimes && IsBounding(mod)
-                && (openedByRangeWord
-                    || (AtTerm(i, TermKind.ToWord) && (AtTerm(After(i), TermKind.Article) || AtTerm(After(i), TermKind.Whole))))) return -1;
 
             int at = After(i);
 
@@ -626,6 +621,15 @@ namespace Catalyst.DateTimeRecognition
             if (inner < 0) return -1;
 
             ref var target = ref NodeAt(child);
+
+            // Where the word that bounds is the language's "for" and "from" as well, a definite article
+            // behind it is what says it is not bounding: "voor de hele dag" is how long, not how late.
+            // A period already narrowed to one of its ends is a deadline either way, and the words that
+            // can only bound — "sinds", "uiterlijk" — are unaffected
+            if (_lexicon.BoundsOnlyOnTimes && IsBounding(mod) && !IsNarrowing(target.Mod)
+                && (openedByRangeWord
+                    || (AtTerm(i, TermKind.ToWord) && (AtTerm(After(i), TermKind.Article) || AtTerm(After(i), TermKind.Whole)
+                                                       || AtTerm(i + 1, TermKind.Article))))) return -1;   // "voor de" is one phrase
 
             // "end of tomorrow" / "end of this sunday" name a moment, not a period
             if (mod == ModKind.End && target.Kind == NodeKind.Date) return -1;

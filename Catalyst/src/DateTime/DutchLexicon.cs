@@ -147,7 +147,8 @@ namespace Catalyst.DateTimeRecognition
 
             b.Add(TermKind.Filler, "in", "op", "om", "van de", "aan");
             b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "het");
-            b.Add(new TermInfo(TermKind.Filler, 0, TermKind.OrdinalSuffix), "de");
+            // Also an ordinal suffix ("de 9e"), which the lexicon remembers apart from the winning reading
+            b.Add(new TermInfo(TermKind.Article, 0, TermKind.Filler, 0), "de");
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.Cardinal, 1), "een");
             b.Add(new TermInfo(TermKind.Whole, 0, TermKind.Filler, 0), "hele", "heel", "gehele", "geheel");   // "the whole day" counts as one
             b.Add(new TermInfo(TermKind.Filler, 0, TermKind.InPrefix, 0), "in");
