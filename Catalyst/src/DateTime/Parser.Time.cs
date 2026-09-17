@@ -485,6 +485,11 @@ namespace Catalyst.DateTimeRecognition
             if (hour > 12 && hour < 24) return true;   // "24 uur" is a day's worth, not midnight
             if (AtNumber(at + 1) && DigitsAt(at + 1) == 2 && NumberAt(at + 1) < 60) return true;
 
+            // "9 uur 's ochtends" — a part of the day behind the unit says the number was a reading
+            int named = After(at);
+            if (AtTerm(named, TermKind.PartOfDay) && !AtTerm(named, TermKind.Unit)) return true;
+            if (AtTerm(named, TermKind.AmPm)) return true;
+
             int before = hourAt - 1;
 
             // Where the hour unit names the time of day, only a preposition in front of it opens a length
