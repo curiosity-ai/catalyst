@@ -66,12 +66,20 @@ namespace Catalyst.DateTimeRecognition
 
                 // "from next monday to friday" — the closing weekday is the one that comes next
                 ref var right = ref At(n.Right);
+                ref var left  = ref At(n.Left);
+
+                bool bareWeekdays = IsBareWeekday(ref left) && IsBareWeekday(ref right);
 
                 if (right.Weekday >= 0 && right.Day < 0 && right.Month < 0 && right.Year < 0 && right.Relative == RelativeKind.None)
                 {
-                    rightStart       = leftStart.AddDays((right.Weekday - (int)leftStart.DayOfWeek + 7) % 7);
-                    rightTimex       = FormatDate(rightStart);
-                    rightYearUnknown = false;
+                    rightStart = leftStart.AddDays((right.Weekday - (int)leftStart.DayOfWeek + 7) % 7);
+
+                    // "from monday to friday" names no date at either end, so neither end reports one
+                    if (!bareWeekdays)
+                    {
+                        rightTimex       = FormatDate(rightStart);
+                        rightYearUnknown = false;
+                    }
                 }
 
                 string span = SpanTimex(leftStart, rightStart, months, daysOnly: anchoredToNow);
@@ -80,7 +88,15 @@ namespace Catalyst.DateTimeRecognition
                 period.End   = rightStart;
                 period.Timex = $"({leftTimex},{rightTimex},{span})";
 
-                if (leftYearUnknown && rightYearUnknown && !anchoredToNow)
+                if (bareWeekdays)
+                {
+                    // A week on, not a year on: the pair says which days of a week, not which week
+                    alternate.Start = period.Start.AddDays(7);
+                    alternate.End   = period.End.AddDays(7);
+                    alternate.Timex = period.Timex;
+                    hasAlternate    = true;
+                }
+                else if (leftYearUnknown && rightYearUnknown && !anchoredToNow)
                 {
                     // "from sep to nov" is this year's and last year's while this year's has not gone by
                     int shift = period.End > _reference.Date ? -1 : 0;
@@ -554,6 +570,10 @@ namespace Catalyst.DateTimeRecognition
                 Timex = $"{IsoYear(saturday):0000}-W{IsoWeekOfYear(saturday):00}-WE",
             };
         }
+
+        /// <summary>A weekday named on its own, which says which day of a week and not which week.</summary>
+        private static bool IsBareWeekday(ref Node n)
+            => n.Weekday >= 0 && n.Day < 0 && n.Month < 0 && n.Year < 0 && n.Relative == RelativeKind.None;
 
         internal static int WeekShift(RelativeKind rel) => rel switch
         {

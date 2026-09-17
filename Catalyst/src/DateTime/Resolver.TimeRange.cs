@@ -389,15 +389,18 @@ namespace Catalyst.DateTimeRecognition
                 });
             }
 
-            // A day neither end pinned to a year has the second reading a year on
+            // A day neither end pinned to a year has the second reading a year on — or, where what it
+            // named was a weekday, a week on: "from monday to friday" says which days, not which week
             if (timex.Contains("XXXX", StringComparison.Ordinal))
             {
+                bool weekly = timex.Contains("WXX", StringComparison.Ordinal);
+
                 values.Add(new DateTimeResolutionValue
                 {
                     Timex = timex,
                     Type  = "datetimerange",
-                    Start = FormatDateTime(start.AddYears(1)),
-                    End   = FormatDateTime(end.AddYears(1)),
+                    Start = FormatDateTime(weekly ? start.AddDays(7) : start.AddYears(1)),
+                    End   = FormatDateTime(weekly ? end.AddDays(7)   : end.AddYears(1)),
                     Mod   = CombinedModName(n.Mod, n.InnerMod),
                 });
             }
