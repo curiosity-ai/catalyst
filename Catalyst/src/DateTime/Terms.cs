@@ -526,7 +526,9 @@ namespace Catalyst.DateTimeRecognition
             return false;
         }
 
-        private static bool NamesSomething(TermInfo info) => info.Kind is TermKind.Weekday or TermKind.Month
+        private static bool NamesSomething(TermInfo info) => NamesSomething(info.Kind) || NamesSomething(info.AltKind);
+
+        private static bool NamesSomething(TermKind kind) => kind is TermKind.Weekday or TermKind.Month
             or TermKind.SpecialDay or TermKind.PartOfDay or TermKind.Unit or TermKind.Relative or TermKind.Season
             or TermKind.HalfWord or TermKind.QuarterWord;
 

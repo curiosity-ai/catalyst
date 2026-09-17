@@ -141,7 +141,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "mitternacht", "mitternachts");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "heute abend", "heute nacht");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "mittagessen", "mittagszeit");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "mittagessen");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittagszeit");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "abendessen", "abendbrot");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "frühstück", "fruehstueck");
             b.Add(new TermInfo(TermKind.PartOfDay, (int)PartOfDayKind.Morning, TermKind.Mod, (int)ModKind.Early), "früher morgen", "frühmorgens", "fruehmorgens");
@@ -210,6 +211,8 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Holiday, (int)HolidayKind.NewYearEve,     "silvester");
             b.Add(TermKind.Holiday, (int)HolidayKind.Christmas,      "weihnachten", "weihnachtstag", "erster weihnachtstag",
                                                                      "weihnachtsfeiertag", "erster weihnachtsfeiertag", "ersten weihnachtsfeiertag");
+            b.Add(TermKind.Holiday, (int)HolidayKind.Boxing,         "zweiter weihnachtstag", "zweiten weihnachtstag", "zweiter weihnachtsfeiertag",
+                                                                     "zweiten weihnachtsfeiertag", "stephanstag", "stefanitag");
             b.Add(TermKind.Holiday, (int)HolidayKind.ChristmasEve,   "heiligabend", "heiliger abend");
             b.Add(TermKind.Holiday, (int)HolidayKind.Easter,         "ostern", "ostersonntag");
             b.Add(TermKind.Holiday, (int)HolidayKind.EasterMonday,   "ostermontag");

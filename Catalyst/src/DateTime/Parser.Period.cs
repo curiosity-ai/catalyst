@@ -866,8 +866,11 @@ namespace Catalyst.DateTimeRecognition
             int unitAt = at;
             at = After(at);   // "working week" is two words
 
+            // A period spelled as a phrase carries the determiner it needs inside it: "unter der Woche"
+            bool spelledOut = _lex[unitAt].PhraseLength > 2;
+
             // "the weekend" and "weekend" name a period; "three weekends" is how long something lasts
-            if (relative == RelativeKind.None && (unit != TimeUnit.Weekend || count >= 0) && (!hadThe || count >= 0)) return -1;
+            if (relative == RelativeKind.None && (unit != TimeUnit.Weekend || count >= 0) && (!(hadThe || spelledOut) || count >= 0)) return -1;
             if (unit == TimeUnit.Hour || unit == TimeUnit.Minute || unit == TimeUnit.Second) return -1;
             if (unit == TimeUnit.Day && count < 0) return -1;   // "the day" and "next day" name a day, not a period
 
