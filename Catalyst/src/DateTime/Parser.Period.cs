@@ -1130,13 +1130,14 @@ namespace Catalyst.DateTimeRecognition
                 bool namesOne = (TimeUnit)decadeUnit == TimeUnit.Decade
                                 || ((TimeUnit)decadeUnit == TimeUnit.Year && (quoted || ShowsPlural(worded)));
 
-                // "los años noventa" — the number may be spelled out
-                if (namesOne && !AtNumber(at) && AtTerm(at, TermKind.Cardinal, out int spelled)
+                // "los años noventa", "les années quatre-vingt-dix" — the number may be spelled out, in
+                // as many words as the language needs
+                if (namesOne && !AtNumber(at) && TryWordNumber(at, out int spelled, out int spelledEnd)
                     && spelled >= 20 && spelled <= 90 && spelled % 10 == 0)
                 {
                     var ns = Node.Create(NodeKind.DateRange);
                     ns.LexStart = i;
-                    ns.LexEnd   = After(at);
+                    ns.LexEnd   = spelledEnd;
                     ns.Decade   = 1900 + spelled;
                     ns.Century  = 1;
                     SetSpan(ref ns);

@@ -92,7 +92,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Unit, (int)TimeUnit.Weekend,   "week-end", "weekend", "week-ends", "weekends", "fin de semaine");
             b.Add(new TermInfo(TermKind.Unit, (int)TimeUnit.Night, TermKind.PartOfDay, (int)PartOfDayKind.Night), "nuit", "nuits");
             b.Add(TermKind.BusinessDay, "ouvrable", "ouvrables", "ouvré", "ouvrés");
-            b.Add(TermKind.Several, 3, "quelques", "plusieurs", "certains");
+            b.Add(TermKind.Several, 3, "quelques", "quel ques", "plusieurs", "certains");
             b.Add(TermKind.Several, 2, "couple");
             b.Add(TermKind.HalfWord, "demi", "demie");
             b.Add(TermKind.ToWord, "moins");   // "sept heures moins le quart"
@@ -122,7 +122,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "soir", "soirée", "soiree", "soirs");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "midi");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "minuit");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "ce soir", "cette nuit");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "cette nuit");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "déjeuner", "dejeuner");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "dîner", "diner", "souper");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Breakfast, "petit déjeuner", "petit-déjeuner");
