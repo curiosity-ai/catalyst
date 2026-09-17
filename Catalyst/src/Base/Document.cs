@@ -21,7 +21,7 @@ namespace Catalyst
     /// Represents a document in the Catalyst NLP pipeline.
     /// </summary>
     [JsonObject]
-    [MessagePackObject]
+    [MessagePackObject(AllowPrivate = true)]
     public class Document : IDocument
     {
         /// <summary>
@@ -29,7 +29,8 @@ namespace Catalyst
         /// </summary>
         [Key(0)] public Language Language { get; set; }
 
-        //The analyzer wants every field of a MessagePackObject annotated, backing fields included
+        //AllowPrivate above settles MsgPack015; it also makes these backing fields serialization
+        //candidates, so each has to say it is not one
         [IgnoreMember] private ReadOnlyMemory<char> _value;
         [IgnoreMember] private string _valueAsString;
         [IgnoreMember] private bool _valueIsNull;
