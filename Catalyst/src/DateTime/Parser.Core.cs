@@ -110,7 +110,11 @@ namespace Catalyst.DateTimeRecognition
         /// way never answers true.</summary>
         private readonly bool ShowsPlural(int i)
         {
-            if (!_lexicon.PluralEndsInS || !In(i)) return false;
+            if (!In(i)) return false;
+
+            // German marks the recurring weekday with an -s it does not use for plurals elsewhere:
+            // "montags" is every Monday, and "Montag" being a word of its own is what says so
+            if (!_lexicon.PluralEndsInS && !AtTerm(i, TermKind.Weekday)) return false;
 
             return _lexicon.IsPluralOfKnownWord(_text.Slice(_lex[i].Start, _lex[i].Length));
         }

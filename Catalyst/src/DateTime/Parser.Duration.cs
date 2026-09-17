@@ -146,11 +146,11 @@ namespace Catalyst.DateTimeRecognition
                 amount = several;
                 at++;
             }
-            else if (AtTerm(at, TermKind.HalfWord))
+            else if (AtTerm(at, TermKind.HalfWord, out int halves))
             {
-                amount = 0.5;
-                at++;
-                at     = SkipWords(at, "a", "an");   // "half an hour"
+                amount = (halves == 0 ? 1 : halves) * 0.5;   // "anderthalb" names three of them
+                at     = After(at);
+                at     = SkipWords(at, "a", "an");           // "half an hour"
             }
             else if (TryDecimal(at, out double d, out int afterNumber))
             {

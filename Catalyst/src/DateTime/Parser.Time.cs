@@ -188,6 +188,15 @@ namespace Catalyst.DateTimeRecognition
 
                 if (pod == PartOfDayKind.Noon)     { hour = 12; ampm = 1; marked = true; return After(spoken); }
                 if (pod == PartOfDayKind.Midnight) { hour = 0;  ampm = 0; marked = true; return After(spoken); }
+
+                // "12 nachts", "12 abends" — the twelve of the dark half is midnight
+                if (spoken > at && NumberAt(at) == 12 && (pod == PartOfDayKind.Night || pod == PartOfDayKind.Evening))
+                {
+                    hour   = 0;
+                    ampm   = 0;
+                    marked = true;
+                    return After(spoken);
+                }
             }
 
             // "halb acht", "viertel acht", "dreiviertel acht" — the fraction counts towards the hour it names

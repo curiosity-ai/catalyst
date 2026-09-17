@@ -106,6 +106,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.Several, 3, "einige", "mehrere", "ein paar", "manche");
             b.Add(TermKind.Several, 2, "paar");
             b.Add(TermKind.HalfWord, "halbe", "halb", "halben", "einhalb");
+            b.Add(TermKind.HalfWord, 3, "anderthalb", "eineinhalb");   // three halves
             b.Add(TermKind.Several, 2, "beiden", "beide");   // "die nächsten beiden Tage"
             b.Add(TermKind.QuarterWord, 1, "viertel");
             b.Add(TermKind.QuarterWord, 3, "dreiviertel", "drei viertel");
@@ -135,7 +136,7 @@ namespace Catalyst.DateTimeRecognition
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Afternoon, "nachmittag");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Evening,   "abend");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Noon,      "mittag");
-            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "mitternacht");
+            b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Midnight,  "mitternacht", "mitternachts");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Tonight,   "heute abend", "heute nacht");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Lunch,     "mittagessen", "mittagszeit");
             b.Add(TermKind.PartOfDay, (int)PartOfDayKind.Dinner,    "abendessen", "abendbrot");
