@@ -239,6 +239,7 @@ namespace Catalyst.DateTimeRecognition
             if (At(tail, LexKind.Dash) && sawWeek) tail++;
 
             int dateEnd = TryMonthNameDate(tail, out int attached);
+            if (dateEnd < 0) dateEnd = TryTwoOrdinalDate(tail, out attached);   // "Donnerstag, den siebten vierten"
             if (dateEnd < 0) dateEnd = TryNumericDate(tail, out attached);
 
             // "lunes 1-3 p.m." is a clock range on that weekday, not the first of March
