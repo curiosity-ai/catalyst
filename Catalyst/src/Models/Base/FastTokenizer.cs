@@ -315,7 +315,12 @@ namespace Catalyst.Models
                                 }
                                 else
                                 {
-                                    splitPoint = offset + i - 1;
+                                    // The word ends right before the emoji, so the split point is the emoji's first char.
+                                    // Nothing sits between the two, unlike the whitespace a split point normally names,
+                                    // so the one char the loop skips past a split point is given back here. Ending the
+                                    // word one char earlier instead would drop its last letter ("door😀" -> "doo").
+                                    splitPoint = offset + i;
+                                    sufix_offset = -1;
                                     candidate = candidate.Slice(0, i);
                                 }
                                 break;
