@@ -57,13 +57,10 @@ namespace Catalyst.Models
             _exceptions[_exceptionCount++] = unchecked((uint)hash);
         }
 
-        public void AddExceptions(IEnumerable<int> hashes)
-        {
-            if (hashes is null) { return; }
-            foreach (var h in hashes) { AddException(h); }
-        }
-
         public CompactHash32Set BuildExceptions() => CompactHash32Set.Build(_exceptions, _exceptionCount);
+
+        /// <summary>The exception hashes added so far, unsorted and possibly repeating.</summary>
+        public ReadOnlySpan<uint> Exceptions => _exceptions.AsSpan(0, _exceptionCount);
 
         /// <summary>
         /// Entry indices in ascending byte order with duplicates removed. When the same entry was added more
@@ -72,8 +69,27 @@ namespace Catalyst.Models
         /// </summary>
         public int[] SortDistinct(out int distinct)
         {
+            var order = SortGrouped();
+
+            int written = 0;
+            for (int i = 0; i < _count; i++)
+            {
+                bool lastOfRun = i + 1 >= _count || !EntryAt(order[i]).SequenceEqual(EntryAt(order[i + 1]));
+                if (lastOfRun) { order[written++] = order[i]; }
+            }
+
+            distinct = written;
+            return order;
+        }
+
+        /// <summary>
+        /// Every entry index in ascending byte order, repeats kept: the indices of one entry are adjacent and
+        /// in insertion order, so a caller can replay what happened to that entry from first to last.
+        /// </summary>
+        public int[] SortGrouped()
+        {
             var order = new int[_count];
-            if (_count == 0) { distinct = 0; return order; }
+            if (_count == 0) { return order; }
 
             var keys = new ulong[_count];
             for (int i = 0; i < _count; i++)
@@ -85,7 +101,7 @@ namespace Catalyst.Models
             Array.Sort(keys, order);
 
             // Entries sharing their first eight bytes land in one run; re-sort each run on the whole entry,
-            // breaking exact ties by insertion order so the last one added is the one kept below.
+            // breaking exact ties by insertion order.
             int start = 0;
             while (start < _count)
             {
@@ -101,14 +117,6 @@ namespace Catalyst.Models
                 start = end;
             }
 
-            int written = 0;
-            for (int i = 0; i < _count; i++)
-            {
-                bool lastOfRun = i + 1 >= _count || !EntryAt(order[i]).SequenceEqual(EntryAt(order[i + 1]));
-                if (lastOfRun) { order[written++] = order[i]; }
-            }
-
-            distinct = written;
             return order;
         }
 

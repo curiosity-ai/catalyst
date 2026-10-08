@@ -22,7 +22,7 @@ namespace Catalyst.Models
     ///  - it answers "does any entry continue past this one", which is what walking a multi-token entry needs
     ///    and what the tokenizer needs to decide whether to keep a word whole;
     ///  - it can hand back what it stores, so a model can say why something did not match, and can be
-    ///    re-opened for editing without losing the original strings.
+    ///    streamed into a merge with a newer segment without losing the original strings.
     ///
     /// The payload and the block-offset table are the bytes that get serialized, read in place: the stored
     /// form is the in-memory form, and the structure is three managed objects whatever the entry count.
@@ -104,6 +104,75 @@ namespace Catalyst.Models
 
             Array.Resize(ref payload, p);
             return new EntryDictionary(payload, blockOffsets, blockSize, count, maxEntry);
+        }
+
+        /// <summary>
+        /// Writes a dictionary one entry at a time, for when the entries arrive already sorted from a stream -
+        /// a merge of several dictionaries - rather than as a blob that can be measured up front.
+        /// </summary>
+        internal sealed class Writer
+        {
+            private readonly int _blockSize;
+            private byte[]       _payload;
+            private byte[]       _blockOffsets;
+            private byte[]       _previous;
+            private int          _previousLength;
+            private int          _p;
+            private int          _count;
+            private int          _maxEntry;
+
+            public int Count => _count;
+
+            public Writer(int expectedEntries, int expectedPayloadBytes, int blockSize = DEFAULT_BLOCK_SIZE)
+            {
+                _blockSize    = blockSize;
+                _payload      = new byte[Math.Max(64, expectedPayloadBytes)];
+                _blockOffsets = new byte[((Math.Max(1, expectedEntries) + blockSize - 1) / blockSize + 1) * sizeof(int)];
+                _previous     = new byte[64];
+            }
+
+            /// <summary>Appends an entry that sorts strictly after the previous one.</summary>
+            public void Add(ReadOnlySpan<byte> entry)
+            {
+                int shared = 0;
+
+                if (_count % _blockSize == 0)
+                {
+                    int at = (_count / _blockSize) * sizeof(int);
+                    if (at + 2 * sizeof(int) > _blockOffsets.Length) { Array.Resize(ref _blockOffsets, Math.Max(_blockOffsets.Length * 2, at + 2 * sizeof(int))); }
+                    BinaryPrimitives.WriteInt32LittleEndian(_blockOffsets.AsSpan(at), _p);
+                }
+                else
+                {
+                    shared = SharedPrefix(_previous.AsSpan(0, _previousLength), entry);
+                }
+
+                int needed = _p + 1 + 10 + entry.Length - shared;
+                if (needed > _payload.Length) { Array.Resize(ref _payload, Math.Max(_payload.Length * 2, needed)); }
+                _p = WriteEntry(_payload, _p, shared, entry.Slice(shared));
+
+                if (entry.Length > _previous.Length) { _previous = new byte[Math.Max(_previous.Length * 2, entry.Length)]; }
+                entry.CopyTo(_previous);
+                _previousLength = entry.Length;
+
+                if (entry.Length > _maxEntry) { _maxEntry = entry.Length; }
+                _count++;
+            }
+
+            public EntryDictionary Complete()
+            {
+                if (_count == 0) { return Empty; }
+
+                int blocks = (_count + _blockSize - 1) / _blockSize;
+                Array.Resize(ref _blockOffsets, (blocks + 1) * sizeof(int));
+                BinaryPrimitives.WriteInt32LittleEndian(_blockOffsets.AsSpan(blocks * sizeof(int)), _p);
+                Array.Resize(ref _payload, _p);
+
+                var dictionary = new EntryDictionary(_payload, _blockOffsets, _blockSize, _count, _maxEntry);
+                _payload       = null;
+                _blockOffsets  = null;
+                return dictionary;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -261,6 +330,13 @@ namespace Catalyst.Models
             length   = ReadEntry(ref position, scratch);
             return next;
         }
+
+        /// <summary>
+        /// Decodes the entry at <paramref name="position"/> - which starts at 0 and is advanced by every call -
+        /// on top of what the previous call left in <paramref name="scratch"/>. Reading entries strictly in rank
+        /// order this way is how a merge streams a dictionary without materializing it.
+        /// </summary>
+        internal int ReadNext(ref int position, Span<byte> scratch) => ReadEntry(ref position, scratch);
 
         /// <summary>Walks every entry in rank order. The span handed to <paramref name="visitor"/> is only valid during the call.</summary>
         public void Visit(EntryVisitor visitor)

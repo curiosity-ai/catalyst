@@ -157,7 +157,9 @@ namespace Catalyst.Models
             {
                 var set = simpleCases.GetSimpleSpecialCases();
 
-                if (set is object && set.Count > 0)
+                // Registered even while empty: the set is filled in place as entries are added to a model that is
+                // already in a pipeline, and a set left out here would never be consulted.
+                if (set is object)
                 {
                     _lockSpecialCases.EnterWriteLock();
                     try

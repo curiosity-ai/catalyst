@@ -55,32 +55,29 @@ namespace Catalyst.Models
         private SpotterEngine   _engine;
         private bool            _initialized;
 
-        private UID128[] _values;        // by rank, once frozen
-        private UID128[] _pending;       // by insertion index, while building
-        private int      _pendingCount;
-
         private LegacyLinkedSpotterTables _legacy;
 
-        /// <summary>True once the model's entries have been compacted into their read-only in-memory form.</summary>
+        /// <summary>True once everything added to the model has been flushed into its read-only in-memory form.</summary>
         public bool IsMemoryOptimized
         {
             get { Initialize(); return _legacy is object ? _legacy.IsFrozen : _engine.IsFrozen; }
         }
 
-        /// <summary>Estimated bytes held by the compacted tables, or 0 when the model is not compacted.</summary>
+        /// <summary>Estimated bytes held by the read-only tables, or 0 while entries are waiting to be flushed.</summary>
         public long OptimizedMemoryBytes
         {
             get
             {
                 Initialize();
-                if (_legacy is object) { return _legacy.EstimatedBytes; }
-                if (!_engine.IsFrozen) { return 0; }
-                return _engine.EstimatedBytes + 24L + (long)(_values?.Length ?? 0) * 16;
+                return _legacy is object ? _legacy.EstimatedBytes : _engine.EstimatedBytes;
             }
         }
 
         /// <summary>True when this model was loaded from a store written before the entry dictionary existed.</summary>
         public bool IsLegacyModel { get { Initialize(); return _legacy is object; } }
+
+        /// <summary>Number of segments the entries are currently spread over. See <see cref="Flush"/>.</summary>
+        public int SegmentCount { get { Initialize(); return _legacy is object ? 1 : _engine.SegmentCount; } }
 
         private LinkedSpotter(Language language, int version, string tag) : base(language, version, tag, compress: false)
         {
@@ -107,20 +104,16 @@ namespace Catalyst.Models
             {
                 if (_initialized) { return; }
 
+                _engine = new SpotterEngine(withValues: true) { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+
                 if (Data.EntriesCount > 0 && Data.EntriesPayload is object)
                 {
-                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
                     _engine.LoadFrom(Data.EntriesPayload, Data.EntriesBlockOffsets, Data.EntriesCount, Data.EntriesBlockSize, Data.EntriesMaxBytes,
-                                     Data.ExceptionBuckets, Data.ExceptionLows, Data.ExceptionCount);
-                    _values = Data.EntryValues ?? Array.Empty<UID128>();
+                                     Data.ExceptionBuckets, Data.ExceptionLows, Data.ExceptionCount, Data.EntryValues);
                 }
                 else if ((Data.Hashes?.Count ?? 0) > 0 || (Data.MultiGramHashes?.Count ?? 0) > 0)
                 {
                     _legacy = new LegacyLinkedSpotterTables(Data);
-                }
-                else
-                {
-                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
                 }
 
                 _initialized = true;
@@ -135,45 +128,7 @@ namespace Catalyst.Models
                 return;
             }
 
-            if (!_engine.IsFrozen)
-            {
-                lock (_syncRoot)
-                {
-                    if (_engine.IsFrozen) { return; }
-
-                    var order = _engine.Freeze();
-
-                    if (order is object)
-                    {
-                        var values = new UID128[order.Length];
-                        for (int rank = 0; rank < order.Length; rank++)
-                        {
-                            int insertion = order[rank];
-                            values[rank]  = insertion < _pendingCount ? _pending[insertion] : default;
-                        }
-                        _values = values;
-                    }
-
-                    _values ??= Array.Empty<UID128>();
-                    _pending      = null;
-                    _pendingCount = 0;
-
-                    Data.MinTokenLength = _engine.MinTokenLength;
-                    Data.MaxTokenLength = _engine.MaxTokenLength;
-                }
-            }
-        }
-
-        // Entries come back from the dictionary in rank order, so the values array - which is indexed by rank -
-        // becomes the by-insertion-index array the builder needs, unchanged.
-        private void Reopen()
-        {
-            if (!_engine.IsFrozen) { return; }
-
-            _engine.Unfreeze();
-            _pending      = _values ?? Array.Empty<UID128>();
-            _pendingCount = _pending.Length;
-            _values       = null;
+            _engine.Flush();
         }
 
         public void TrimExcess()
@@ -183,8 +138,32 @@ namespace Catalyst.Models
             EnsureFrozen();
         }
 
-        /// <summary>Compacts the in-memory tables. Idempotent with the compaction <see cref="TrimExcess"/> does on load.</summary>
+        /// <summary>Flushes what was added into the read-only tables. Idempotent with what <see cref="TrimExcess"/> does on load.</summary>
         public void OptimizeMemory() => TrimExcess();
+
+        /// <summary>
+        /// Makes every entry added or removed so far visible to recognition. What was buffered becomes a new
+        /// segment next to the ones the model holds, and segments are merged only once they are of comparable
+        /// size - so applying a few changes to a model of millions of entries allocates for the few, not the
+        /// millions. Until this is first called, recognition flushes on its own when nothing else is writing to the
+        /// model. Once it is called, the caller owns flushing: a batch of changes - a removal and the addition that
+        /// replaces it - becomes visible at once, when the caller says it is complete, and never half applied.
+        /// Returns false when there was nothing to apply.
+        /// </summary>
+        public bool Flush()
+        {
+            Initialize();
+            if (_legacy is object) { EnsureFrozen(); return false; }
+            return _engine.Flush(byOwner: true);
+        }
+
+        /// <summary>Merges every segment into one. Storing a model does this; nothing else needs to.</summary>
+        public void Compact()
+        {
+            Initialize();
+            if (_legacy is object) { EnsureFrozen(); return; }
+            _engine.Compact();
+        }
 
         public override async Task StoreAsync(System.IO.Stream stream)
         {
@@ -199,9 +178,10 @@ namespace Catalyst.Models
                 return;
             }
 
-            EnsureFrozen();
+            var segment    = _engine.CompactedSegment();
+            var dictionary = segment?.Dictionary ?? EntryDictionary.Empty;
 
-            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = _engine.Dictionary.ToBlobs();
+            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = dictionary.ToBlobs();
             var (buckets, lows, exceptionCount)                         = _engine.Exceptions.ToBlobs();
 
             Data.EntriesPayload          = count > 0 ? payload : null;
@@ -209,7 +189,7 @@ namespace Catalyst.Models
             Data.EntriesCount            = count;
             Data.EntriesBlockSize        = blockSize;
             Data.EntriesMaxBytes         = maxEntryBytes;
-            Data.EntryValues             = count > 0 ? _values : null;
+            Data.EntryValues             = count > 0 ? segment.Values : null;
             Data.ExceptionBuckets        = exceptionCount > 0 ? buckets : null;
             Data.ExceptionLows           = exceptionCount > 0 ? lows : null;
             Data.ExceptionCount          = exceptionCount;
@@ -257,18 +237,15 @@ namespace Catalyst.Models
 
         private readonly struct Sink : ISpotterMatchSink
         {
-            private readonly string   _captureTag;
-            private readonly UID128[] _values;
+            private readonly string _captureTag;
 
-            public Sink(string captureTag, UID128[] values) { _captureTag = captureTag; _values = values; }
+            public Sink(string captureTag) { _captureTag = captureTag; }
 
-            private UID128 ValueOf(int rank) => rank >= 0 && rank < _values.Length ? _values[rank] : default;
+            public void OnSingle(ref Token token, EntrySegment segment, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single, segment.ValueAt(rank)));
 
-            public void OnSingle(ref Token token, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single, ValueOf(rank)));
-
-            public void OnMultiGram(Span<Token> tokens, int begin, int end, int rank)
+            public void OnMultiGram(Span<Token> tokens, int begin, int end, EntrySegment segment, int rank)
             {
-                var value = ValueOf(rank);
+                var value = segment.ValueAt(rank);
 
                 tokens[begin].AddEntityType(new EntityType(_captureTag, EntityTag.Begin, value));
                 tokens[end].AddEntityType(new EntityType(_captureTag, EntityTag.End, value));
@@ -283,7 +260,7 @@ namespace Catalyst.Models
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
             Initialize();
-            EnsureFrozen();
+            if (_legacy is object) { EnsureFrozen(); } else { _engine.FlushIfIdle(); }
 
             var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
 
@@ -293,7 +270,7 @@ namespace Catalyst.Models
 
                 if (_legacy is object) { return _legacy.Match(tokens, CaptureTag, stopOnFirstFound); }
 
-                var sink = new Sink(CaptureTag, _values ?? Array.Empty<UID128>());
+                var sink = new Sink(CaptureTag);
                 return _engine.Match(tokens, stopOnFirstFound, ref sink);
             }
             finally
@@ -313,15 +290,21 @@ namespace Catalyst.Models
         public IEnumerable<KeyValuePair<string, UID128>> GetEntries()
         {
             Initialize();
-            if (_legacy is object) { yield break; }
+            if (_legacy is object) { return Enumerable.Empty<KeyValuePair<string, UID128>>(); }
 
-            EnsureFrozen();
-            int rank = 0;
-            foreach (var entry in _engine.Entries())
-            {
-                yield return new KeyValuePair<string, UID128>(entry, rank < _values.Length ? _values[rank] : default);
-                rank++;
-            }
+            return _engine.Entries().Select(e => new KeyValuePair<string, UID128>(e.entry, e.value));
+        }
+
+        /// <summary>What <paramref name="entry"/> links to, as recognition would see it now - see <see cref="Flush"/>.</summary>
+        public bool TryGetValue(string entry, out UID128 uid)
+        {
+            Initialize();
+
+            if (_legacy is object) { uid = default; return false; }
+
+            _engine.IgnoreCase = Data.IgnoreCase;
+            _engine.FlushIfIdle();
+            return _engine.TryGetValue(entry, out uid);
         }
 
         public void ClearModel()
@@ -331,13 +314,8 @@ namespace Catalyst.Models
             lock (_syncRoot)
             {
                 _legacy = null;
-                _engine ??= new SpotterEngine { Language = Language };
                 _engine.Clear();
                 _engine.IgnoreCase = Data.IgnoreCase;
-
-                _values       = null;
-                _pending      = null;
-                _pendingCount = 0;
 
                 Data.Hashes                 = null;
                 Data.MultiGramHashes        = null;
@@ -354,29 +332,38 @@ namespace Catalyst.Models
             }
         }
 
+        /// <summary>
+        /// Links <paramref name="entry"/> to <paramref name="uid"/>, replacing whatever it linked to before. The entry
+        /// is buffered and matched from the next <see cref="Flush"/>, as a small segment next to what the model
+        /// already holds: adding to a model of millions of entries does not rebuild it.
+        /// </summary>
         public void AddEntry(string entry, UID128 uid)
         {
             Initialize();
 
             if (_legacy is object) { _legacy.AddEntry(entry, uid, Data, Language); return; }
 
-            lock (_syncRoot)
-            {
-                if (_engine.IsFrozen) { Reopen(); }
+            _engine.IgnoreCase = Data.IgnoreCase;
+            _engine.Add(entry, Data.IgnoreOnlyNumeric, uid);
 
-                _engine.IgnoreCase = Data.IgnoreCase;
-                int index = _engine.Add(entry, Data.IgnoreOnlyNumeric);
-                if (index < 0) { return; }
+            Data.MinTokenLength = _engine.MinTokenLength;
+            Data.MaxTokenLength = _engine.MaxTokenLength;
+        }
 
-                if (_pending is null) { _pending = new UID128[Math.Max(16, index + 1)]; }
-                if (index >= _pending.Length) { Array.Resize(ref _pending, Math.Max(_pending.Length * 2, index + 1)); }
+        /// <summary>
+        /// Stops matching <paramref name="entry"/> if, when the removal is applied, it still links to
+        /// <paramref name="uid"/>: an entry that has meanwhile been linked to something else - another node holding
+        /// the same name - is left alone. Applied at the next <see cref="Flush"/>, in order with the additions around
+        /// it. Returns false for a model stored before the entry dictionary existed, which cannot remove entries.
+        /// </summary>
+        public bool RemoveEntry(string entry, UID128 uid)
+        {
+            Initialize();
 
-                _pending[index] = uid;
-                if (index >= _pendingCount) { _pendingCount = index + 1; }
+            if (_legacy is object) { return false; }
 
-                Data.MinTokenLength = _engine.MinTokenLength;
-                Data.MaxTokenLength = _engine.MaxTokenLength;
-            }
+            _engine.IgnoreCase = Data.IgnoreCase;
+            return _engine.Remove(entry, uid, onlyIfLinkedTo: true);
         }
 
         public void AppendList(IEnumerable<(string word, UID128 uid)> words)
