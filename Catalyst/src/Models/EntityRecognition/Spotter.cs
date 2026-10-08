@@ -348,7 +348,7 @@ namespace Catalyst.Models
 
         /// <summary>
         /// Adds an entry. It is buffered and matched from the next <see cref="Flush"/> - which recognition does on
-        /// its own when nothing else is writing to the model - as a small segment next to what the model already
+        /// its own until a caller first flushes explicitly - as a small segment next to what the model already
         /// holds, so adding to a large model does not rebuild it.
         /// </summary>
         public void AddEntry(string entry)
@@ -379,13 +379,14 @@ namespace Catalyst.Models
 
         /// <summary>
         /// Makes every entry added or removed so far visible to recognition, as a new segment merged with the
-        /// existing ones by size. Returns false when there was nothing to apply.
+        /// existing ones by size. Once this is called the caller owns flushing - recognition stops flushing on its
+        /// own, so a batch of changes is never seen half applied. Returns false when there was nothing to apply.
         /// </summary>
         public bool Flush()
         {
             Initialize();
             if (_legacy is object) { EnsureFrozen(); return false; }
-            return _engine.Flush();
+            return _engine.Flush(byOwner: true);
         }
 
         public void AppendList(IEnumerable<string> words)

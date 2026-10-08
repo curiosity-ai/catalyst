@@ -335,6 +335,34 @@ namespace Catalyst.Tests
         }
 
         [Fact]
+        public async Task LinkedSpotter_OnceFlushedExplicitlyOnlyTheOwnerPublishesABatch()
+        {
+            var spotter = new LinkedSpotter(Language.English, 0, "", "Linked");
+            var node    = UID128.New();
+
+            spotter.AddEntry("Warp Coil", node);
+            spotter.Flush();
+
+            var nlp = await PipelineWithAsync(spotter);
+
+            // Half of a rename: recognition must not publish it on the writer's behalf.
+            spotter.RemoveEntry("Warp Coil", node);
+
+            var doc = new Document("Check the Warp Coil.", Language.English);
+            nlp.ProcessSingle(doc);
+            Assert.Equal(node, Captured(doc, "Linked")["Warp Coil"]);
+
+            spotter.AddEntry("Warp Core", node);
+            spotter.Flush();
+
+            doc = new Document("Check the Warp Coil and the Warp Core.", Language.English);
+            nlp.ProcessSingle(doc);
+            var captured = Captured(doc, "Linked");
+            Assert.False(captured.ContainsKey("Warp Coil"));
+            Assert.Equal(node, captured["Warp Core"]);
+        }
+
+        [Fact]
         public async Task Spotter_RemovesAnEntryWithoutRebuilding()
         {
             var spotter = new Spotter(Language.English, 0, "", "Entity");

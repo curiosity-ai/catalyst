@@ -145,14 +145,16 @@ namespace Catalyst.Models
         /// Makes every entry added or removed so far visible to recognition. What was buffered becomes a new
         /// segment next to the ones the model holds, and segments are merged only once they are of comparable
         /// size - so applying a few changes to a model of millions of entries allocates for the few, not the
-        /// millions. Recognition flushes on its own when nothing else is writing to the model; a writer applying a
-        /// batch of changes calls this once at the end of it. Returns false when there was nothing to apply.
+        /// millions. Until this is first called, recognition flushes on its own when nothing else is writing to the
+        /// model. Once it is called, the caller owns flushing: a batch of changes - a removal and the addition that
+        /// replaces it - becomes visible at once, when the caller says it is complete, and never half applied.
+        /// Returns false when there was nothing to apply.
         /// </summary>
         public bool Flush()
         {
             Initialize();
             if (_legacy is object) { EnsureFrozen(); return false; }
-            return _engine.Flush();
+            return _engine.Flush(byOwner: true);
         }
 
         /// <summary>Merges every segment into one. Storing a model does this; nothing else needs to.</summary>
@@ -293,7 +295,7 @@ namespace Catalyst.Models
             return _engine.Entries().Select(e => new KeyValuePair<string, UID128>(e.entry, e.value));
         }
 
-        /// <summary>What <paramref name="entry"/> links to. Flushes first, so it answers for everything added so far.</summary>
+        /// <summary>What <paramref name="entry"/> links to, as recognition would see it now - see <see cref="Flush"/>.</summary>
         public bool TryGetValue(string entry, out UID128 uid)
         {
             Initialize();
@@ -301,7 +303,7 @@ namespace Catalyst.Models
             if (_legacy is object) { uid = default; return false; }
 
             _engine.IgnoreCase = Data.IgnoreCase;
-            _engine.Flush();
+            _engine.FlushIfIdle();
             return _engine.TryGetValue(entry, out uid);
         }
 

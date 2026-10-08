@@ -104,6 +104,10 @@ namespace Catalyst.Models
         private UID128[]          _pendingValues;
         private volatile int      _pendingCount;
 
+        // Set once the owner flushes on its own: from then on it decides when a batch is complete, and a reader
+        // flushing in between could publish half of one - a renamed entry's removal without its replacement.
+        private volatile bool _ownerFlushes;
+
         public CompactHash32Set Exceptions { get; } = CompactHash32Set.CreateEmpty();
 
         public bool     IgnoreCase { get; set; }
@@ -262,9 +266,11 @@ namespace Catalyst.Models
         /// <summary>
         /// Turns what was buffered into a new segment and merges segments by the policy above. Everything
         /// buffered is matched from the moment this returns. Returns false when there was nothing to flush.
+        /// With <paramref name="byOwner"/>, readers stop flushing on their own: see <see cref="FlushIfIdle"/>.
         /// </summary>
-        public bool Flush()
+        public bool Flush(bool byOwner = false)
         {
+            if (byOwner) { _ownerFlushes = true; }
             if (_pendingCount == 0) { return false; }
 
             lock (_writeLock)
@@ -274,12 +280,13 @@ namespace Catalyst.Models
         }
 
         /// <summary>
-        /// Flushes when something is buffered and no writer holds the model. A reader calls this before it
-        /// matches: it never waits on a writer, it matches against what is published until the writer is done.
+        /// Flushes when something is buffered and no writer holds the model, unless the owner flushes on its
+        /// own. A reader calls this before it matches: it never waits on a writer, it matches against what is
+        /// published until the writer is done.
         /// </summary>
         public void FlushIfIdle()
         {
-            if (_pendingCount == 0) { return; }
+            if (_pendingCount == 0 || _ownerFlushes) { return; }
 
             if (Monitor.TryEnter(_writeLock))
             {
@@ -583,16 +590,17 @@ namespace Catalyst.Models
                 _pendingOps    = null;
                 _pendingValues = null;
                 _pendingCount  = 0;
+                _ownerFlushes  = false;
                 Exceptions.ReplaceWith(CompactHash32Set.Empty);
                 MinTokenLength = 0;
                 MaxTokenLength = 0;
             }
         }
 
-        /// <summary>Every stored entry in sorted order, with what it links to. Flushes first.</summary>
+        /// <summary>Every stored entry in sorted order, with what it links to, as recognition would see it now.</summary>
         public List<(string entry, UID128 value)> Entries()
         {
-            Flush();
+            FlushIfIdle();
 
             var entries = new List<(string entry, UID128 value)>(Count);
 

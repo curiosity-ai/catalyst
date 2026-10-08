@@ -72,8 +72,9 @@ Load-bearing, with tests in `SpotterLiveMergeTests`:
 
 - **Adding a few entries to a large model must not rewrite it.** Never reintroduce a re-open/re-freeze of the
   whole dictionary on `AddEntry`; `LinkedSpotter_AddingAFewEntriesDoesNotReallocateALargeModel` measures it.
-- **Readers never wait on a writer.** Recognition calls `FlushIfIdle`, which flushes only when no writer
-  holds the lock, and otherwise matches against the published segments.
+- **Readers never wait on a writer, and never publish half a batch.** Recognition calls `FlushIfIdle`, which
+  flushes only when no writer holds the lock and nobody has called `Flush()` explicitly; once the owner has,
+  it alone decides when a batch (a removal and the addition replacing it) becomes visible.
 - **The tokenizer-exception set is filled in place.** `FastTokenizer.ImportSpecialCases` registers a model's
   `CompactHash32Set` even while it is empty, and `CompactHash32Set.Add` keeps new hashes in a small overflow
   until it holds `OVERFLOW_LIMIT` of them.
