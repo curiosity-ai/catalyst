@@ -24,30 +24,35 @@ namespace Catalyst.Models
         internal const int BUCKET_COUNT = 1 << 16;
         internal const int BUCKET_BYTES = (BUCKET_COUNT + 1) * sizeof(int);
 
+        // Hashes added to a built set wait in a small sorted array beside it, so a model taking a handful of
+        // new entries does not rebuild the 256 KB bucket table each time; past this many they are folded in.
+        internal const int OVERFLOW_LIMIT = 4096;
+
         // The contents sit behind one immutable snapshot so a model can be re-frozen - after new entries are
         // added to it - without the tokenizer, which holds this object by reference, ever seeing a torn or
         // stale table.
         private sealed class Contents
         {
-            public byte[] Buckets; // (BUCKET_COUNT + 1) int32 offsets into Lows
-            public byte[] Lows;    // Count uint16 low halves, ascending within each bucket
+            public byte[] Buckets;  // (BUCKET_COUNT + 1) int32 offsets into Lows
+            public byte[] Lows;     // Count uint16 low halves, ascending within each bucket
             public int    Count;
+            public uint[] Overflow; // ascending, none of them in the table above
         }
 
         private volatile Contents _contents;
 
         /// <summary>Number of distinct hashes in the set.</summary>
-        public int Count => _contents.Count;
+        public int Count { get { var c = _contents; return c.Count + c.Overflow.Length; } }
 
         /// <summary>Bytes held by this structure, counting every array header.</summary>
         public long EstimatedBytes
         {
-            get { var c = _contents; return 40L + 24L + 24L + c.Buckets.Length + 24L + c.Lows.Length; }
+            get { var c = _contents; return 40L + 32L + 24L + c.Buckets.Length + 24L + c.Lows.Length + 24L + (long)c.Overflow.Length * sizeof(uint); }
         }
 
         private CompactHash32Set(byte[] buckets, byte[] lows, int count)
         {
-            _contents = new Contents { Buckets = buckets, Lows = lows, Count = count };
+            _contents = new Contents { Buckets = buckets, Lows = lows, Count = count, Overflow = Array.Empty<uint>() };
         }
 
         /// <summary>A new, empty set. Each model owns its own so it can be refilled in place.</summary>
@@ -106,13 +111,67 @@ namespace Catalyst.Models
             return new CompactHash32Set(buckets, lows, distinct);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Contains(int hash)
+        /// <summary>
+        /// Adds hashes to the set in place. A few go into the overflow beside the table; the table is only rebuilt
+        /// once the overflow fills, so its cost is paid once per <see cref="OVERFLOW_LIMIT"/> additions.
+        /// </summary>
+        internal void Add(ReadOnlySpan<uint> hashes)
         {
+            if (hashes.Length == 0) { return; }
+
             var contents = _contents;
+            var added    = new List<uint>();
+
+            foreach (var h in hashes)
+            {
+                if (!Contains(contents, h)) { added.Add(h); }
+            }
+
+            if (added.Count == 0) { return; }
+
+            added.Sort();
+
+            int unique = 0;
+            for (int i = 0; i < added.Count; i++)
+            {
+                if (i == 0 || added[i] != added[i - 1]) { added[unique++] = added[i]; }
+            }
+
+            var overflow = new uint[contents.Overflow.Length + unique];
+            int a = 0, b = 0, o = 0;
+            while (a < contents.Overflow.Length || b < unique)
+            {
+                if (b >= unique || (a < contents.Overflow.Length && contents.Overflow[a] < added[b])) { overflow[o++] = contents.Overflow[a++]; }
+                else { overflow[o++] = added[b++]; }
+            }
+
+            if (overflow.Length <= OVERFLOW_LIMIT)
+            {
+                _contents = new Contents { Buckets = contents.Buckets, Lows = contents.Lows, Count = contents.Count, Overflow = overflow };
+                return;
+            }
+
+            _contents = Fold(contents, overflow);
+        }
+
+        // The table rebuilt with the overflow inside it.
+        private static Contents Fold(Contents contents, uint[] overflow)
+        {
+            var keys = new uint[contents.Count + overflow.Length];
+            int n    = 0;
+            foreach (var h in EnumerateTable(contents)) { keys[n++] = unchecked((uint)h); }
+            foreach (var h in overflow)                 { keys[n++] = h; }
+            return Build(keys, n)._contents;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(int hash) => Contains(_contents, unchecked((uint)hash));
+
+        private static bool Contains(Contents contents, uint h)
+        {
+            if (contents.Overflow.Length > 0 && Array.BinarySearch(contents.Overflow, h) >= 0) { return true; }
             if (contents.Count == 0) { return false; }
 
-            uint h      = unchecked((uint)hash);
             int  bucket = (int)(h >> 16);
             int  lo     = BinaryPrimitives.ReadInt32LittleEndian(contents.Buckets.AsSpan(bucket * sizeof(int)));
             int  hi     = BinaryPrimitives.ReadInt32LittleEndian(contents.Buckets.AsSpan((bucket + 1) * sizeof(int))) - 1;
@@ -131,10 +190,17 @@ namespace Catalyst.Models
             return false;
         }
 
-        /// <summary>Every hash in the set, ascending by bucket. Used when a model has to be rebuilt or compared.</summary>
-        public IEnumerable<int> Hashes()
+        /// <summary>Every hash in the set: the ones not yet folded into the table first, then the table ascending by bucket. Used when a model has to be rebuilt or compared.</summary>
+        public IEnumerable<int> Hashes() => Enumerate(_contents);
+
+        private static IEnumerable<int> Enumerate(Contents contents)
         {
-            var contents = _contents;
+            foreach (var h in contents.Overflow)        { yield return unchecked((int)h); }
+            foreach (var h in EnumerateTable(contents)) { yield return h; }
+        }
+
+        private static IEnumerable<int> EnumerateTable(Contents contents)
+        {
             for (int b = 0; b < BUCKET_COUNT && contents.Count > 0; b++)
             {
                 int from = BinaryPrimitives.ReadInt32LittleEndian(contents.Buckets.AsSpan(b * sizeof(int)));
@@ -151,6 +217,13 @@ namespace Catalyst.Models
         internal (byte[] buckets, byte[] lows, int count) ToBlobs()
         {
             var contents = _contents;
+
+            if (contents.Overflow.Length > 0)
+            {
+                contents  = Fold(contents, contents.Overflow);
+                _contents = contents;
+            }
+
             return (contents.Buckets, contents.Lows, contents.Count);
         }
 

@@ -107,7 +107,7 @@ namespace Catalyst.Models
 
                 if (Data.EntriesCount > 0 && Data.EntriesPayload is object)
                 {
-                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                    _engine = new SpotterEngine(withValues: false) { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
                     _engine.LoadFrom(Data.EntriesPayload, Data.EntriesBlockOffsets, Data.EntriesCount, Data.EntriesBlockSize, Data.EntriesMaxBytes,
                                      Data.ExceptionBuckets, Data.ExceptionLows, Data.ExceptionCount);
                 }
@@ -117,7 +117,7 @@ namespace Catalyst.Models
                 }
                 else
                 {
-                    _engine = new SpotterEngine { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
+                    _engine = new SpotterEngine(withValues: false) { Language = Language, IgnoreCase = Data.IgnoreCase, MinTokenLength = Data.MinTokenLength, MaxTokenLength = Data.MaxTokenLength };
                 }
 
                 _initialized = true;
@@ -132,18 +132,7 @@ namespace Catalyst.Models
                 return;
             }
 
-            if (!_engine.IsFrozen)
-            {
-                lock (_syncRoot)
-                {
-                    if (!_engine.IsFrozen)
-                    {
-                        _engine.Freeze();
-                        Data.MinTokenLength = _engine.MinTokenLength;
-                        Data.MaxTokenLength = _engine.MaxTokenLength;
-                    }
-                }
-            }
+            _engine.Flush();
         }
 
         public void TrimExcess()
@@ -176,7 +165,8 @@ namespace Catalyst.Models
 
         private void WriteEngineToData()
         {
-            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = _engine.Dictionary.ToBlobs();
+            var dictionary                                              = _engine.CompactedSegment()?.Dictionary ?? EntryDictionary.Empty;
+            var (payload, blockOffsets, count, blockSize, maxEntryBytes) = dictionary.ToBlobs();
             var (buckets, lows, exceptionCount)                         = _engine.Exceptions.ToBlobs();
 
             Data.EntriesPayload      = count > 0 ? payload : null;
@@ -233,9 +223,9 @@ namespace Catalyst.Models
 
             public Sink(string captureTag) { _captureTag = captureTag; }
 
-            public void OnSingle(ref Token token, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single));
+            public void OnSingle(ref Token token, EntrySegment segment, int rank) => token.AddEntityType(new EntityType(_captureTag, EntityTag.Single));
 
-            public void OnMultiGram(Span<Token> tokens, int begin, int end, int rank)
+            public void OnMultiGram(Span<Token> tokens, int begin, int end, EntrySegment segment, int rank)
             {
                 tokens[begin].AddEntityType(new EntityType(_captureTag, EntityTag.Begin));
                 tokens[end].AddEntityType(new EntityType(_captureTag, EntityTag.End));
@@ -250,7 +240,7 @@ namespace Catalyst.Models
         public bool RecognizeEntities(Span ispan, bool stopOnFirstFound = false)
         {
             Initialize();
-            EnsureFrozen();
+            if (_legacy is object) { EnsureFrozen(); } else { _engine.FlushIfIdle(); }
 
             var pooledTokens = ispan.ToTokenSpanPolled(out var actualLength);
 
@@ -279,11 +269,8 @@ namespace Catalyst.Models
 
             if (_legacy is object) { return _legacy.IsEquivalentTo(other._legacy); }
 
-            EnsureFrozen();
-            other.EnsureFrozen();
-
-            var mine   = _engine.Dictionary.ToBlobs();
-            var theirs = other._engine.Dictionary.ToBlobs();
+            var mine   = (_engine.CompactedSegment()?.Dictionary ?? EntryDictionary.Empty).ToBlobs();
+            var theirs = (other._engine.CompactedSegment()?.Dictionary ?? EntryDictionary.Empty).ToBlobs();
             return mine.count == theirs.count && mine.payload.AsSpan().SequenceEqual(theirs.payload);
         }
 
@@ -324,7 +311,7 @@ namespace Catalyst.Models
             lock (_syncRoot)
             {
                 _legacy = null;
-                _engine ??= new SpotterEngine { Language = Language };
+                _engine ??= new SpotterEngine(withValues: false) { Language = Language };
                 _engine.Clear();
                 _engine.IgnoreCase = Data.IgnoreCase;
 
@@ -346,7 +333,7 @@ namespace Catalyst.Models
         public IEnumerable<string> GetEntries()
         {
             Initialize();
-            return _legacy is object ? Enumerable.Empty<string>() : _engine.Entries();
+            return _legacy is object ? Enumerable.Empty<string>() : _engine.Entries().Select(e => e.entry);
         }
 
         public CompactHash32Set GetSimpleSpecialCases()
@@ -356,6 +343,14 @@ namespace Catalyst.Models
             return _legacy is object ? _legacy.Exceptions : _engine.Exceptions;
         }
 
+        /// <summary>Number of segments the entries are currently spread over. See <see cref="Flush"/>.</summary>
+        public int SegmentCount { get { Initialize(); return _legacy is object ? 1 : _engine.SegmentCount; } }
+
+        /// <summary>
+        /// Adds an entry. It is buffered and matched from the next <see cref="Flush"/> - which recognition does on
+        /// its own when nothing else is writing to the model - as a small segment next to what the model already
+        /// holds, so adding to a large model does not rebuild it.
+        /// </summary>
         public void AddEntry(string entry)
         {
             Initialize();
@@ -366,6 +361,31 @@ namespace Catalyst.Models
             _engine.Add(entry, Data.IgnoreOnlyNumeric);
             Data.MinTokenLength = _engine.MinTokenLength;
             Data.MaxTokenLength = _engine.MaxTokenLength;
+        }
+
+        /// <summary>
+        /// Stops matching an entry, from the next <see cref="Flush"/>. Returns false for a model stored before the
+        /// entry dictionary existed, which cannot remove entries.
+        /// </summary>
+        public bool RemoveEntry(string entry)
+        {
+            Initialize();
+
+            if (_legacy is object) { return false; }
+
+            _engine.IgnoreCase = Data.IgnoreCase;
+            return _engine.Remove(entry, default, onlyIfLinkedTo: false);
+        }
+
+        /// <summary>
+        /// Makes every entry added or removed so far visible to recognition, as a new segment merged with the
+        /// existing ones by size. Returns false when there was nothing to apply.
+        /// </summary>
+        public bool Flush()
+        {
+            Initialize();
+            if (_legacy is object) { EnsureFrozen(); return false; }
+            return _engine.Flush();
         }
 
         public void AppendList(IEnumerable<string> words)

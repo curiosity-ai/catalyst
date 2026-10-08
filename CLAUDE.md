@@ -59,3 +59,21 @@ git lfs pull            # or scope it, e.g. --include="Languages.ForTest/English
 Fresh/ephemeral environments (e.g. Claude Code on the web) clone without LFS content unless the
 environment is set up to fetch it, so make sure LFS is configured there (or run `git lfs pull`
 once per session) before running model-dependent tests.
+
+## Spotter segments
+
+`Spotter` and `LinkedSpotter` keep their entries in `SpotterEngine` as a short list of immutable
+`EntrySegment`s (a sorted front-coded `EntryDictionary`, its prefilter, the values by rank and a removal
+bitmap). `AddEntry` / `RemoveEntry` only buffer; `Flush()` turns the buffer into a new segment and merges
+segments by size (`SMALL_SEGMENT_ENTRIES`, `MERGE_FACTOR`), the way an inverted index merges its segments.
+The newest segment holding an entry decides it, and only a merge into the oldest segment drops removals.
+
+Load-bearing, with tests in `SpotterLiveMergeTests`:
+
+- **Adding a few entries to a large model must not rewrite it.** Never reintroduce a re-open/re-freeze of the
+  whole dictionary on `AddEntry`; `LinkedSpotter_AddingAFewEntriesDoesNotReallocateALargeModel` measures it.
+- **Readers never wait on a writer.** Recognition calls `FlushIfIdle`, which flushes only when no writer
+  holds the lock, and otherwise matches against the published segments.
+- **The tokenizer-exception set is filled in place.** `FastTokenizer.ImportSpecialCases` registers a model's
+  `CompactHash32Set` even while it is empty, and `CompactHash32Set.Add` keeps new hashes in a small overflow
+  until it holds `OVERFLOW_LIMIT` of them.
