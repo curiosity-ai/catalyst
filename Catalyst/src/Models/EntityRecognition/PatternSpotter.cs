@@ -472,10 +472,29 @@ namespace Catalyst.Models
         }
     }
 
+    /// <summary>
+    /// Compares two token shapes (as produced by <see cref="CharSpanExtensions.Shape"/>), treating
+    /// <c>~</c> as a wildcard for a single alphanumeric position.
+    /// </summary>
+    /// <remarks>
+    /// A shape uses one character per character of the token: <c>X</c> uppercase letter, <c>x</c>
+    /// lowercase letter, <c>9</c> digit, <c>-</c> any dash, <c>/</c> slash or backslash, <c>@</c> at
+    /// sign, <c>.</c> any other punctuation, <c>#</c> any other symbol, and <c>~</c> a literal tilde.
+    /// This comparer additionally reads <c>~</c> on either side as "any letter or digit", so the
+    /// shape <c>~~-9999</c> matches both <c>XX-9999</c> (DE-1234) and <c>9X-9999</c> (4B-1234).
+    /// Shapes of different lengths never match - a shape is compared position by position.
+    /// </remarks>
     public class ShapeEqualityComparer : IEqualityComparer<string>
     {
+        /// <summary>Gets the shared comparer instance.</summary>
         public static readonly ShapeEqualityComparer Instance = new ShapeEqualityComparer();
 
+        /// <summary>
+        /// Determines whether two shapes match, with <c>~</c> matching any letter or digit.
+        /// </summary>
+        /// <param name="x">The first shape.</param>
+        /// <param name="y">The second shape.</param>
+        /// <returns><see langword="true"/> if the shapes match.</returns>
         public bool Equals(string x, string y)
         {
             if (x == null && y == null) return true;
@@ -492,11 +511,18 @@ namespace Catalyst.Models
             return true;
         }
 
+        /// <summary>The shape characters the <c>~</c> wildcard stands in for.</summary>
         private bool IsValidShapeChar(char c)
         {
             return c == 'x' || c == 'X' || c == '9';
         }
 
+        /// <summary>
+        /// Returns a hash code in which every position the <c>~</c> wildcard can match collapses to
+        /// the same value, so that wildcard and concrete shapes land in the same hash bucket.
+        /// </summary>
+        /// <param name="obj">The shape to hash.</param>
+        /// <returns>The hash code.</returns>
         public int GetHashCode(string obj)
         {
             if (obj == null) return 0;
@@ -532,7 +558,14 @@ namespace Catalyst.Models
         [Key(5)] public string Suffix { get => suffix; set { suffix = value; _splitSuffix = suffix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
         /// <summary>Gets or sets the prefix to match.</summary>
         [Key(6)] public string Prefix { get => prefix; set { prefix = value; _splitPrefix = prefix?.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries)?.Distinct()?.ToArray(); } }
-        /// <summary>Gets or sets the shape to match.</summary>
+        /// <summary>Gets or sets the shape to match, as one or more comma- or whitespace-separated alternatives.</summary>
+        /// <remarks>
+        /// Each alternative is itself run through <see cref="CharSpanExtensions.Shape"/> before being
+        /// compared with <see cref="ShapeEqualityComparer"/>, so a literal example is a valid shape
+        /// (<c>DE-1234</c> is the same rule as <c>XX-9999</c>) and <c>~</c> matches any letter or
+        /// digit. One consequence: a literal <c>#</c> is punctuation and normalizes to <c>.</c>, so a
+        /// symbol position has to be written as an actual symbol (e.g. <c>$</c>).
+        /// </remarks>
         [Key(7)] public string Shape { get => shape; set { shape = value; _splitShape = !string.IsNullOrWhiteSpace(shape) ? new HashSet<string>(shape.Split(splitCharWithWhitespaces, StringSplitOptions.RemoveEmptyEntries).Select(s => s.AsSpan().Shape(compact: false)), ShapeEqualityComparer.Instance) : null; } }
         /// <summary>Gets or sets the exact token value to match.</summary>
         [Key(8)] public string Token { get; set; }
